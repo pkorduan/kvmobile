@@ -1,0 +1,57 @@
+/*** Open Layers Styles ***/
+/* Map */
+.map {
+	clear: both;
+	height: 100%;
+	position:fixed;
+	width: 100%;
+	margin: auto;
+	/*position: relative;*/
+}
+
+.jumbotron {
+	background-color:rgb(150, 188, 31);
+	margin:0;
+	border:0;
+	box-shadow:10px 10px 50px 5px rgba(38,50,134,0.2) inset;
+}
+
+.menubutton {
+	color: rgb(38, 50, 134);
+}
+
+.menubutton:hover {
+	color: #FFFFFF;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+body {
+	font-size: 48px;
+}
+
+h1 {
+	font-size:64px;
+}
+
+input[type="checkbox"]{
+	width: 56px;
+	height: 56px;
+	cursor: pointer;
+}
+
+input[type="radio"]{
+	width: 56px;
+	height: 56px;
+	cursor: pointer;
+}
+
+input[type=text], select {
+	width: 100%;
+	padding: 12px 20px;
+	margin: 8px 0;
+	display: inline-block;
+	border: 1px solid rgb(38, 50, 134);
+	border-radius: 4px;
+	box-sizing: border-box;
+}
