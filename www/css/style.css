@@ -27,7 +27,7 @@
 }
 
 body {
-	font-size: 48px;
+	font-size: 10px;
 }
 
 h1 {
@@ -54,4 +54,13 @@ input[type=text], select {
 	border: 1px solid rgb(38, 50, 134);
 	border-radius: 4px;
 	box-sizing: border-box;
+}
+
+#geoLocationButton {
+  color: #337ab7;
+  cursor: pointer;
+}
+
+label: {
+  display: inline-block;
 }
