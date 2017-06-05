@@ -27,16 +27,14 @@
 }
 
 body {
-	font-size: 10px;
+	font-size: 14px;
 }
 
 h1 {
-	font-size:64px;
+	font-size: 18px;
 }
 
 input[type="checkbox"]{
-	width: 56px;
-	height: 56px;
 	cursor: pointer;
 }
 

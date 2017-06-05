@@ -65,13 +65,13 @@ var kvm = {
     	$("#showHaltestelle_button_white").hide();
     });
 
-    $("#showLine").mouseover(function() {
-    	$("#showLine_button").hide();
-    	$("#showLine_button_white").show();
-    });
-    $("#showLine").mouseleave(function() {
-    	$("#showLine_button").show();
-    	$("#showLine_button_white").hide();
+    $("#showSearch").click(function() {
+    	if ($("#searchHaltestelle").is(':visible')) { 
+    	  $("#searchHaltestelle").hide();
+      }
+      else {
+        $("#searchHaltestelle").show();
+      }
     });
 
     /* Clientside Filter according to http://stackoverflow.com/questions/12433835/client-side-searching-of-a-table-with-jquery */
@@ -95,26 +95,6 @@ var kvm = {
     	});
     });
 
-    /*** Search Linie ***/
-    $("#searchLinie").on("keyup paste", function() {
-    	var value = $(this).val().toUpperCase();
-    	var $rows = $("#linien_table tr");
-    	if(value === ''){
-    		$rows.show(500);
-    		return false;
-    	}
-    	$rows.each(function(index) {
-    		$row = $(this);
-    		var column = $row.find("td:first a").html().toUpperCase();
-    		if (column.indexOf(value) > -1) {
-    			$row.show(500);
-    		}
-    		else {
-    			$row.hide(500);
-    		}
-      });
-    });
-
     $(".haltestelle").click(function() {
     	kvm.showItem("formular");
     	// Sets Name of Haltestelle
@@ -131,33 +111,29 @@ var kvm = {
     console.log('init app');
     this.initMap();
     this.bindEvents();
+    $('#map').hide();
   },
 
   showItem: function(item) {
   	switch (item) {
   		case 'map':
   			kvm.showDefaultMenu();
-  			$("#line, #haltestellen, #settings, #formular").hide();
+  			$("#haltestellen, #settings, #formular").hide();
   			$("#map").show();
-  			break;
-  		case "line":
-  			kvm.showDefaultMenu();
-  			$("#map, #haltestellen, #settings, #formular").hide();
-  			$("#line").show();
   			break;
   		case "haltestelle":
   			kvm.showDefaultMenu();
-  			$("#map, #line, #settings, #formular").hide();
+  			$("#map, #settings, #formular").hide();
   			$("#haltestellen").show();
   			break;
   		case "settings":
   			kvm.showDefaultMenu();
-  			$("#map, #line, #haltestellen, #formular").hide();
+  			$("#map, #haltestellen, #formular").hide();
   			$("#settings").show();
   			break;
   		case "formular":
   			kvm.showFormMenu();
-  			$("#map, #line, #haltestellen, #settings").hide();
+  			$("#map, #haltestellen, #settings").hide();
   			$("#formular").show();
   			break;
   		default:
