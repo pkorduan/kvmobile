@@ -62,3 +62,8 @@ input[type=text], select {
 label: {
   display: inline-block;
 }
+
+.active-button {
+  cursor: pointer;
+  color: #337ab7;
+}

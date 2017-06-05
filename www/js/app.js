@@ -24,50 +24,50 @@ var kvm = {
 
     /*** Set View **/
     var view = new ol.View({
-    	projection: myProjection,
-    	center: ol.proj.transform([12.10,54.10], "EPSG:4326", "EPSG:25832"),
-    	extent: [655000.000000000, 5945000.000000000, 750000.000000000, 6030000.000000000],
-    	zoom: 12,
-    	minZoom: 11
+      projection: myProjection,
+      center: ol.proj.transform([12.10,54.10], "EPSG:4326", "EPSG:25832"),
+      extent: [655000.000000000, 5945000.000000000, 750000.000000000, 6030000.000000000],
+      zoom: 12,
+      minZoom: 11
     });
 
     /*** Set the Map***/
     var map = new ol.Map({
-    	controls: [],
-    	layers: [],
-    	projection: "EPSG:25832",
-    	target: "map",
-    	view: view
+      controls: [],
+      layers: [],
+      projection: "EPSG:25832",
+      target: "map",
+      view: view
     });
 
     var orkaMv= new ol.layer.Tile({
-    	source: new ol.source.TileWMS({
-    		url: "https://www.orka-mv.de/geodienste/orkamv/wms",
-    		params: {"LAYERS": "orkamv-gesamt",
-    										"VERSION": "1.3.0"}
-    	})
+      source: new ol.source.TileWMS({
+        url: "https://www.orka-mv.de/geodienste/orkamv/wms",
+        params: {"LAYERS": "orkamv-gesamt",
+                        "VERSION": "1.3.0"}
+      })
     });
     map.addLayer(orkaMv);
     this.map = map;
   },
 
   bindEvents: function() {
-    /***																	***/
+    /***                                  ***/
     /*** General Functions ***/
-    /***																	***/
+    /***                                  ***/
     /*** Awesome Font imitation mouseover ***/
     $("#showHaltestelle").mouseover(function() {
-    	$("#showHaltestelle_button").hide();
-    	$("#showHaltestelle_button_white").show();
+      $("#showHaltestelle_button").hide();
+      $("#showHaltestelle_button_white").show();
     });
     $("#showHaltestelle").mouseleave(function() {
-    	$("#showHaltestelle_button").show();
-    	$("#showHaltestelle_button_white").hide();
+      $("#showHaltestelle_button").show();
+      $("#showHaltestelle_button_white").hide();
     });
 
     $("#showSearch").click(function() {
-    	if ($("#searchHaltestelle").is(':visible')) { 
-    	  $("#searchHaltestelle").hide();
+      if ($("#searchHaltestelle").is(':visible')) { 
+        $("#searchHaltestelle").hide();
       }
       else {
         $("#searchHaltestelle").show();
@@ -77,28 +77,28 @@ var kvm = {
     /* Clientside Filter according to http://stackoverflow.com/questions/12433835/client-side-searching-of-a-table-with-jquery */
     /*** Search Haltestelle ***/
     $("#searchHaltestelle").on("keyup paste", function() {
-    	var value = $(this).val().toUpperCase();
-    	var $rows = $("#haltestellen_table tr");
-    	if(value === ''){
-    		$rows.show(500);
-    		return false;
-    	}
-    	$rows.each(function(index) {
-    		$row = $(this);
-    		var column = $row.find("td a").html().toUpperCase();
-    		if (column.indexOf(value) > -1) {
-    			$row.show(500);
-    		}
-    		else {
-    			$row.hide(500);
-    		}
-    	});
+      var value = $(this).val().toUpperCase();
+      var $rows = $("#haltestellen_table tr");
+      if(value === ''){
+        $rows.show(500);
+        return false;
+      }
+      $rows.each(function(index) {
+        $row = $(this);
+        var column = $row.find("td a").html().toUpperCase();
+        if (column.indexOf(value) > -1) {
+          $row.show(500);
+        }
+        else {
+          $row.hide(500);
+        }
+      });
     });
 
     $(".haltestelle").click(function() {
-    	kvm.showItem("formular");
-    	// Sets Name of Haltestelle
-    	$("#nameHaltestelle").val($(this).text());
+      kvm.showItem("formular");
+      // Sets Name of Haltestelle
+      $("#nameHaltestelle").val($(this).text());
     });
     
     $("#geoLocationButton").on(
@@ -109,59 +109,69 @@ var kvm = {
     $("#startSyncButton").on(
       'click',
       function() {
-        alert('Start syncronisation');
-        navigator.network.isReachable(
-          'phonegap.com',
-          kvm.sync
-        );
+        if (navigator.onLine) {
+          kvm.sync();
+        }
+        else {
+          alert('Keine Netzverbindung!');
+        }
       }
     );
   },
 
   init: function() {
-    console.log('init app');
     this.initMap();
     this.bindEvents();
     $('#map').hide();
   },
 
   showItem: function(item) {
-  	switch (item) {
-  		case 'map':
-  			kvm.showDefaultMenu();
-  			$("#haltestellen, #settings, #formular").hide();
-  			$("#map").show();
-  			break;
-  		case "haltestelle":
-  			kvm.showDefaultMenu();
-  			$("#map, #settings, #formular").hide();
-  			$("#haltestellen").show();
-  			break;
-  		case "settings":
-  			kvm.showDefaultMenu();
-  			$("#map, #haltestellen, #formular").hide();
-  			$("#settings").show();
-  			break;
-  		case "formular":
-  			kvm.showFormMenu();
-  			$("#map, #haltestellen, #settings").hide();
-  			$("#formular").show();
-  			break;
-  		default:
-  			kvm.showDefaultMenu();
-  			$("#line, #haltestellen, #settings, #formular").hide();
-  			$("#map").show();
-  	}
+    switch (item) {
+      case 'map':
+        kvm.showDefaultMenu();
+        $("#haltestellen, #settings, #formular").hide();
+        $("#map").show();
+        break;
+      case "haltestelle":
+        kvm.showDefaultMenu();
+        $("#map, #settings, #formular").hide();
+        $("#haltestellen").show();
+        break;
+      case "settings":
+        kvm.showDefaultMenu();
+        $("#map, #haltestellen, #formular").hide();
+        if (navigator.onLine) {
+          if (!$('#startSyncButton').hasClass('active-button')) {
+            $('#startSyncButton').addClass('active-button');
+          }
+        }
+        else {
+          if ($('#startSyncButton').hasClass('active-button')) {
+            $('#startSyncButton').removeClass('active-button');
+          }
+        }
+        $("#settings").show();
+        break;
+      case "formular":
+        kvm.showFormMenu();
+        $("#map, #haltestellen, #settings").hide();
+        $("#formular").show();
+        break;
+      default:
+        kvm.showDefaultMenu();
+        $("#line, #haltestellen, #settings, #formular").hide();
+        $("#map").show();
+    }
   },
   
   showDefaultMenu: function() {
-  	$("#backArrow, #saveForm").hide();
-  	$("#showMap, #showLine, #showHaltestelle, #showSettings").show();
+    $("#backArrow, #saveForm").hide();
+    $("#showMap, #showLine, #showHaltestelle, #showSettings").show();
   },
 
   showFormMenu: function() {
-  	$("#showMap, #showLine, #showHaltestelle, #showSettings").hide();
-  	$("#backArrow, #saveForm").show();
+    $("#showMap, #showLine, #showHaltestelle, #showSettings").hide();
+    $("#backArrow, #saveForm").show();
   },
 
   getGeoLocation: function() {
@@ -179,18 +189,7 @@ var kvm = {
     alert('Fehler: ' + error.code + ' ' + error.message); 
   },
 
-  sync: function(reachability) {
-    var networkState = reachability.code || reachability;
-    var states = {};
-    states[NetworkStatus.NOT_REACHABLE] = 'No network connection';
-    states[NetworkStatus.REACHABLE_VIA_CARRIER_DATA_NETWORK] = 'Carrier data connection';
-    states[NetworkStatus.REACHABLE_VIA_WIFI_NETWORK] = 'WiFi connection';
-    if (networkState == NetworkStatus.NOT_REACHABLE) {
-      alert('Keine Netzverbindung');
-    }
-    else {
-      alert('Netzverbindung vorhanden. Typ: ' + states[networkState]);
-    }
+  sync: function() {
+    alert('Start syncronisation');
   }
-
 };
