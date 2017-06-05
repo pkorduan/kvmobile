@@ -21,7 +21,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.3.12/proj4-src.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.3.12/proj4.js"></script>
     <script src="https://openlayers.org/en/v3.20.1/build/ol.js" type="text/javascript"></script>
-    <!--script src="cordova.js"></script//-->
+    <script src="cordova.js"></script>
     <script src="js/app.js"></script>
   </head>
   <body onload="kvm.init()">
@@ -114,6 +114,11 @@
       <h1>Einstellungen</h1>
       <input type="checkbox" style="vertical-align: top;" />
       Automatisches Öffnen von Formular, wenn in der Nähe von Haltestellen
+      <h1>Synchronisierung</h1>
+      Jetzt synchronisierung starten
+      <a id="startSyncButton" style="padding: 20px; vertical-align: -webkit-baseline-middle;">
+        <i id="startSync" class="fa fa-refresh fa-2x" aria-hidden="true"></i>
+      </a>
     </div>
     <!-- Formular -->
     <div id="formular" style="margin: 20px; display:none;">

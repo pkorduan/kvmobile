@@ -105,6 +105,17 @@ var kvm = {
       'click',
       kvm.getGeoLocation
     );
+    
+    $("#startSyncButton").on(
+      'click',
+      function() {
+        alert('Start syncronisation');
+        navigator.network.isReachable(
+          'phonegap.com',
+          kvm.sync
+        );
+      }
+    );
   },
 
   init: function() {
@@ -166,5 +177,20 @@ var kvm = {
   
   getGeoLocationOnError: function(error) {
     alert('Fehler: ' + error.code + ' ' + error.message); 
+  },
+
+  sync: function(reachability) {
+    var networkState = reachability.code || reachability;
+    var states = {};
+    states[NetworkStatus.NOT_REACHABLE] = 'No network connection';
+    states[NetworkStatus.REACHABLE_VIA_CARRIER_DATA_NETWORK] = 'Carrier data connection';
+    states[NetworkStatus.REACHABLE_VIA_WIFI_NETWORK] = 'WiFi connection';
+    if (networkState == NetworkStatus.NOT_REACHABLE) {
+      alert('Keine Netzverbindung');
+    }
+    else {
+      alert('Netzverbindung vorhanden. Typ: ' + states[networkState]);
+    }
   }
+
 };
