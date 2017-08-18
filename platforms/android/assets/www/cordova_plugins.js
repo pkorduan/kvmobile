@@ -259,6 +259,14 @@ module.exports = [
         "clobbers": [
             "window.FileTransfer"
         ]
+    },
+    {
+        "id": "cordova-sqlite-storage.SQLitePlugin",
+        "file": "plugins/cordova-sqlite-storage/www/SQLitePlugin.js",
+        "pluginId": "cordova-sqlite-storage",
+        "clobbers": [
+            "SQLitePlugin"
+        ]
     }
 ];
 module.exports.metadata = 
@@ -271,7 +279,8 @@ module.exports.metadata =
     "cordova-plugin-geolocation": "2.4.3",
     "cordova-plugin-network-information": "1.3.3",
     "cordova-plugin-file": "4.3.3",
-    "cordova-plugin-file-transfer": "1.6.3"
+    "cordova-plugin-file-transfer": "1.6.3",
+    "cordova-sqlite-storage": "2.0.4"
 };
 // BOTTOM OF METADATA
 });
