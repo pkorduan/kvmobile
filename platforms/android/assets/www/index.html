@@ -34,12 +34,49 @@ under the License.
     <meta name="format-detection" content="telephone=no">
     <meta name="msapplication-tap-highlight" content="no">
     <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width">
+    <script type="text/javascript" src="cordova.js"></script>
+    <script src="js/jquery-1.12.0.min.js"></script>
+    <script src="js/jquery.mobile-1.4.5.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="css/jquery.mobile-1.4.5.min.css">
     <link rel="stylesheet" type="text/css" href="css/index.css">
     <title>kvmobile</title>
   </head>
   <body>
-    <div class="app">
+    <div>
       <h2>kvmobile v0.2</h2>
+      <ul id="haltestellenliste" data-role="listview" data-autodividers="true" data-filter="true" data-inset="true">
+      </ul>
+      <div class="container-fluid" style="display: none">
+        <div class="row">
+          <div class="col-xs-3" style="text-align:center;">
+            <a onClick="kvm.showItem('settings')" class="menubutton" id="showSettings">
+              <i class="fa fa-bars fa-2x" aria-hidden="true"></i>
+            </a>
+            <a onClick="kvm.showItem('haltestelle')" class="menubutton" id="backArrow" style="display:none;">
+              <i class="fa fa-arrow-left fa-2x" aria-hidden="true"></i>
+            </a>
+          </div>
+          <div class="col-xs-3" style="text-align:center;">
+            <a onClick="kvm.showItem('haltestelle')" class="menubutton" id="showHaltestelle">
+              <img id="showHaltestelle_button" src="img/haltestelle_icon.png" height="32">
+              <img id="showHaltestelle_button_white" src="img/haltestelle_weiss_icon.png" height="32" style="display:none;"/img>
+            </a>
+          </div>
+          <div class="col-xs-3" style="text-align:center;">
+            <a onClick="kvm.showItem('map')" class="menubutton" id="showMap">
+              <i class="fa fa-map-o fa-2x" aria-hidden="true"></i>
+            </a>
+          </div>
+          <div class="col-xs-3" style="text-align:center;">
+            <a onClick="kvm.showItem('formular')" class="menubutton" id="showLine">
+              <i id="addHaltestelle" class="fa fa-plus-square fa-2x" aria-hidden="true"></i>
+            </a>
+            <a onClick="alert('Speichert Eingaben')" class="menubutton" id="saveForm" style="display:none;">
+              <i class="fa fa-check-square-o fa-2x" aria-hidden="true"></i>
+            </a>
+          </div>
+        </div>
+      </div>
       <div id="deviceready">
         <p class="event listening">Connecting to Device</p>
         <p class="event received">kvmobile is Ready</p>
@@ -91,8 +128,7 @@ under the License.
         <div id="deviceDataText">...</div>
       </div>
     </div>
-    <script type="text/javascript" src="cordova.js"></script>
+    <script type="text/javascript" src="js/config.js"></script>
     <script type="text/javascript" src="js/index.js"></script>
-    <script src="js/jquery-1.12.0.min.js"></script>
   </body>
 </html>

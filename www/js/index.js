@@ -218,7 +218,7 @@ var app = {
       url = 'https://gdi-service.de/kvwmap_pet_dev/index.php' + '?' +
             'Stelle_ID=54' + '&' +
             'username=korduan' + '&' +
-            'passwort=StupfKo-1' + '&' +
+            'passwort=' + config.password + '&' +
             'go=Layer-Suche_Suchen' + '&' +
             'selected_layer_id=789' + '&' +
             'orderby789=name' + '&' +
@@ -233,9 +233,11 @@ var app = {
               var reader = new FileReader();
 
               reader.onloadend = function() {
+                var li = '';
                 $.each($.parseJSON(this.result), function(i, item) {
-                  $('#fileContentArea').append('Haltestelle ' + item.id + ': ' + item.name + '<br>');
+                  li += '<li><a href="index.html?id=' + item.id + '">' + item.name + '</a></li>';
                 });
+                $('#haltestellenliste').append(li).listview('refresh');
               };
               reader.readAsText(file);
             },
