@@ -237,7 +237,6 @@ var app = {
                 $.each($.parseJSON(this.result), function(i, item) {
                   li += '<li><a href="index.html?id=' + item.id + '">' + item.name + '</a></li>';
                 });
-                console.log(li);
                 $('#haltestellenliste').append(li).listview('refresh');
               };
               reader.readAsText(file);
