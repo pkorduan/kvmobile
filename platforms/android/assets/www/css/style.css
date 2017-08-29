@@ -1,0 +1,74 @@
+/*** Open Layers Styles ***/
+/* Map */
+.map {
+	clear: both;
+	height: 100%;
+	position:fixed;
+	width: 100%;
+	margin: auto;
+	/*position: relative;*/
+}
+
+.jumbotron {
+	background-color:rgb(150, 188, 31);
+	margin:0;
+	border:0;
+	box-shadow:10px 10px 50px 5px rgba(38,50,134,0.2) inset;
+}
+
+.menubutton {
+	color: rgb(38, 50, 134);
+}
+
+.menubutton:hover {
+	color: #FFFFFF;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+body {
+	font-size: 14px;
+}
+
+h1 {
+	font-size: 18px;
+}
+
+input[type="checkbox"]{
+	cursor: pointer;
+}
+
+input[type="radio"]{
+	width: 56px;
+	height: 56px;
+	cursor: pointer;
+}
+
+input[type=text], input[type=password], select {
+	width: 80%;
+	padding: 4px;
+	margin: 20px;
+	display: inline-block;
+	border: 1px solid rgb(38, 50, 134);
+	border-radius: 4px;
+	box-sizing: border-box;
+}
+
+#geoLocationButton {
+  color: #337ab7;
+  cursor: pointer;
+}
+
+label: {
+  display: inline-block;
+}
+
+.inactive-button {
+  cursor: pointer;
+  color: gray;
+}
+
+.active-button {
+  cursor: pointer;
+  color: #337ab7;
+}
