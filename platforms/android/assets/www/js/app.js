@@ -25,51 +25,38 @@ var kvm = {
   },
 
   onDeviceReady: function() {
-    console.log('onDeviceReady');
-    this.storage = window.localStorage;
+    kvm.log('onDeviceReady');
+
+    this.store = window.localStorage;
+    kvm.log('Lokaler Speicher verfügbar');
+
     this.db = window.sqlitePlugin.openDatabase({name: config.dbname + '.db', location: 'default'});
+    kvm.log('Lokale Datenbank geöffnet.');
     $('#dbnameText').html(config.dbname + '.db');
-    console.log('Database kvmobile.db is open: %o', this.db);
-    this.initSettings();
-    this.setSyncStatus();
-    this.setConnectionStatus();
-    this.initMap();
-    this.bindEvents();
-    $('#login').hide();
-    $('#map').hide();
-/*
-    this.showGPSCoordinates();
-*/
-  },
 
-  initSettings: function() {
     this.loadDeviceData();
+    kvm.log('Gerätedaten geladen.');
 
-    if (this.allSettingsExists()) {
-      $('#kvwmapServerUrlField').val(this.storage.getItem('kvwmapServerUrl'));
-      $('#kvwmapServerUsernameField').val(this.storage.getItem('kvwmapServerUsername'));
-      $('#kvwmapServerPasswortField').val(this.storage.getItem('kvwmapServerPasswort'));
-      $('#kvwmapServerStelleIdField').val(this.storage.getItem('kvwmapServerStelleId'));
-      $('#kvwmapServerLayerIdField').val(this.storage.getItem('kvwmapServerLayerId'));
-    }
-    else {
-      kvm.log('Es fehlen Parameter für den Zugang zum kvwmap Server.');
-      alert('Es fehlen Zugangsdaten zum kvwmap Server. Geben Sie diese unter Menüpunkt Optionen Abschnitt Serverdaten ein!');
-      $('#kvwmapServerUrlField').val(config.kvwmapServerUrl);
-      $('#kvwmapServerUsernameField').val(config.kvwmapServerUsername);
-      $('#kvwmapServerPasswortField').val(config.kvwmapServerPasswort);
-      $('#kvwmapServerStelleIdField').val(config.kvwmapServerStelleId);
-      $('#kvwmapServerLayerIdField').val(config.kvwmapServerLayerId);
-      $('#haltestellen').hide();
-      $('#settings').show();
-    }
+    SyncStatus.load(this.store);
+    kvm.log('Sync Status geladen.');
 
-    /*
-    check if local data in database exists
-    if not tell the client that he have to sync
-    if yes load it to haltestellen liste view
-    */
-    this.checkIfTableExists();
+    NetworkStatus.load();
+    kvm.log('Netzwerkstatus geladen');
+
+    Layer.loadData(0, false); // load from loacl db
+    kvm.log('Layer und Daten geladen');
+
+    this.initMap();
+    kvm.log('Karte initialisiert.');
+
+    // ToDo
+    //GpsStatus.load();
+    //kvm.log('GPS Position geladen');
+
+    this.bindEvents();
+    kvm.log('Ereignisüberwachung eingerichtet.');
+
+    this.showItem('haltestelle');
   },
 
   initMap: function() {
@@ -122,17 +109,35 @@ var kvm = {
       false
     );
 
+    $('.server-settings').on(
+      'click',
+      function(evt) {
+        console.log(evt);
+        evt.target.next().toggle();
+      }
+    );
+
     $('#saveKvwmapServerDataButton').on(
-      'click', {
-        "context": this
-      },
-      this.saveKvwmapServerData
+      'click',
+      ServerSettings.save
     ),
 
     $('#kvwmapServerDataForm > input').on(
       'keyup',
       function() {
         $('#saveKvwmapServerDataButton').css('background', '#f9afaf');
+      }
+    ),
+
+    $('#saveLayerSettingsButton_0').on(
+      'click',
+      LayerSettings.save
+    ),
+
+    $('#layerSettingsForm_0 > input').on(
+      'keyup',
+      function() {
+        $('#saveLayerSettingsButton_0').css('background', '#f9afaf');
       }
     ),
 
@@ -192,16 +197,20 @@ var kvm = {
         "context": this
       },
       function(evt) {
+        kvm.log('Syncronisation aufgerufen.');
         var _this = evt.data.context,
-            syncVersion = _this.storage.getItem('syncVersion');
+            syncVersion = _this.store.getItem('syncVersion');
 
         if (navigator.onLine) {
-          kvm.log('onLine');
-          if (_this.allSettingsExists()) {
+          kvm.log('Gerät ist onLine.');
+          if (_this.serverSettingsExists()) {
+            kvm.log('Alle Verbindungseinstellungen sind gesetzt.');
             if (syncVersion) {
+              kvm.log('Es existiert eine Version der letzten Syncronisation.');
               _this.syncronize(evt.data.context);
             }
             else {
+              kvm.log('Keine letzte Version gefunden. Starte Download aller Daten.');
               _this.downloadData(evt.data.context);
             }
           }
@@ -214,13 +223,7 @@ var kvm = {
         }
       }
     );
-    
-    $("#loginButton").on(
-      'click',
-      function() {
-        kvm.loadLayer();
-      }
-    )
+
   },
 
   bindHaltestellenClickEvents: function() {
@@ -232,6 +235,7 @@ var kvm = {
   },
 
   loadDeviceData: function() {
+    console.log('loadDeviceData');
     $('#deviceDataText').html(
       'Cordova Version: ' + device.cordova + '<br>' +
       'Modell: ' + device.model + '<br>' +
@@ -240,58 +244,6 @@ var kvm = {
       'Version: ' + device.version + '<br>' +
       'Hersteller: ' + device.manufacturer + '<br>' +
       'Seriennummer: ' + device.serial
-    );
-  },
-
-  setSyncStatus: function() {
-    var syncLastLocalTimestamp = this.storage.getItem('syncLastLocalTimestamp'),
-        syncLastLocalVersion = this.storage.getItem('syncVersion');
-
-    $('#syncLastLocalTimestampText').html(
-      (syncLastLocalTimestamp ? syncLastLocalTimestamp : 'noch nie synchronisiert')
-    );
-    $('#syncLastLocalVersionText').html(
-      (syncLastLocalVersion ? syncLastLocalVersion : 'keine')
-    );
-  },
-
-  setConnectionStatus: function() {
-    var networkState = navigator.connection.type;
-
-    var states = {};
-    states[Connection.UNKNOWN]  = 'Unbekannte Netzverbindung';
-    states[Connection.ETHERNET] = 'Ethernet Verbindung';
-    states[Connection.WIFI]     = 'WLAN Netz';
-    states[Connection.CELL_2G]  = '2G Netz';
-    states[Connection.CELL_3G]  = '3G Netz';
-    states[Connection.CELL_4G]  = '4G Netz';
-    states[Connection.CELL]     = 'generisches Netz';
-    states[Connection.NONE]     = 'Keine Netzwerkverbindung';
-
-    $('#networkStatusText').html(states[networkState]);
-
-    if (navigator.onLine) {
-      if ($('#startSyncButton').hasClass('inactive-button')) {
-        $('#startSyncButton').toggleClass('active-button', 'inactive-button');
-      }
-    }
-    else {
-      if ($('#startSyncButton').hasClass('active-button')) {
-        $('#startSyncButton').toggleClass('active-button', 'inactive-button');
-      }
-    }
-  },
-
-  /*
-  * Return true if all settings exists
-  */
-  allSettingsExists: function() {
-    return !(
-      !this.storage.getItem('kvwmapServerUrl') ||
-      !this.storage.getItem('kvwmapServerUsername') ||
-      !this.storage.getItem('kvwmapServerPasswort') ||
-      !this.storage.getItem('kvwmapServerStelleId') ||
-      !this.storage.getItem('kvwmapServerLayerId')
     );
   },
 
@@ -311,12 +263,20 @@ var kvm = {
       function(rs, context) {
         kvm.log('checkIfTableExists success');
         var numTables = rs.rows.item(0).n;
-        kvm.log('Tabelle haltestellen existiert ' + numTables + ' mal.');
         if (numTables == 1) {
+          kvm.log('numTables: 1, Tablle haltestellen existiert.');
           kvm.loadData();
         }
         else {
-          kvm.createTable();
+          kvm.log('numTables: != 1, Tabelle haltestellen existiert noch nicht');
+          if (tableSettingsExists) {
+            kvm.log('tableSettingsExists: ja, Layereinstellungen zur Tabelle haltestellen liegen vor.');
+            kvm.createTable();
+          }
+          else {
+            kvm.log('tableSettingsExists: nein, Layereinstellungen liegen noch nicht vor');
+            kvm.loadLayer(context);
+          }
         }
         $('#numDatasetsText').html(numDatasets);
       },
@@ -388,7 +348,7 @@ var kvm = {
     );
   },
 
-  loadData: function() {
+  rudimentvoneinerfunction: function() {
     kvm.log('function loadData');
     this.db.executeSql(
       "\
@@ -470,6 +430,10 @@ var kvm = {
       [],
       function(rs) {
         kvm.log('Daten erfolgreich in Datenbank geschrieben');
+        // ToDo setze hier die vom Server gelieferte letzte syncVersion und Zeit
+        kvm.store.setItem('syncVersion', 1);
+        kvm.store.setItem('syncLastLocalTimestamp', Date());
+        kvm.setSyncStatus();
         kvm.readData();
       },
       function(error) {
@@ -512,16 +476,6 @@ var kvm = {
         $('#storeTestDataResult').html('SQL ERROR: ' + error.message);
       }
     );
-  },
-
-  saveKvwmapServerData: function(evt) {
-    var storage = evt.data.context.storage;
-    storage.setItem('kvwmapServerUrl', $('#kvwmapServerUrlField').val());
-    storage.setItem('kvwmapServerUsername', $('#kvwmapServerUsernameField').val());
-    storage.setItem('kvwmapServerPasswort', $('#kvwmapServerPasswortField').val());
-    storage.setItem('kvwmapServerStelleId', $('#kvwmapServerStelleIdField').val());
-    storage.setItem('kvwmapServerLayerId', $('#kvwmapServerLayerIdField').val());
-    $('#saveKvwmapServerDataButton').css('background', '#afffaf');
   },
 
   showItem: function(item) {
@@ -583,51 +537,9 @@ var kvm = {
     alert('Fehler: ' + error.code + ' ' + error.message); 
   },
 
-  loadLayer: function() {
-    console.log('loadLayer');
-    
-  },
-
   syncronize: function(context) {
     kvm.log('function syncronize');
     var url = context.getSyncUrl();
-  },
-
-  getSyncUrl: function() {
-    kvm.log('function getSyncUrl');
-    var url = this.storage.getItem('kvwmapServerUrl'),
-        file = '';
-
-    kvm.log('url vor file: ' + url);
-    // add missing parts to url when server.de, server.de/ oder server.de/index.php
-    if (url.slice(-3) == '.de') file = '/index.php?';
-    if (url.slice(-1) == '/') file = 'index.php?';
-    if (url.slice(-9) == 'index.php') file = '?';
-    if (file == '') file = '/index.php?';
-
-    url += file +
-      'Stelle_ID=' + this.storage.getItem('kvwmapServerStelleId') + '&' +
-      'username=' + this.storage.getItem('kvwmapServerUsername') + '&' +
-      'passwort=' + this.storage.getItem('kvwmapServerPasswort') + '&' +
-      'selected_layer_id=' + this.storage.getItem('kvwmapServerLayerId');
-
-    if (this.storage.getItem('syncVersion')) {
-      // sync deltas
-      url += '&' +
-        'go=Syncronize';
-      
-    }
-    else {
-      // get all data as new base for deltas
-      url += '&' +
-        'go=Layer-Suche_Suchen' + '&' +
-        'anzahl=10000' + '&' +
-        'orderby' + this.storage.getItem('kvwmapServerLayerId') + '=name' + '&' +
-        'mime_type=application/json' + '&' +
-        'format=json' + '&' + 'selectors=id,name,nr,lat,lon,haltestellenmast_mit_fahrplanaushang,taktiles_aufmerksamkeitsfeld,taktiles_leitsystem_parallel_zur_haltestellenkante,befestigte_warteflaeche,barrierefreie_bordhoehe,wegweisung_zur_haltestelle_taktiles_leitsystem_zur_haltestelle,wegweisung_zur_haltestelle_querungshilfen,wegweisung_zur_haltestelle_befestigte_wege_zur_haltestelle,wegweisung_zur_haltestelle_lichtsignalanlage,wegweisung_zur_haltestelle_fussgaengerueberweg,aufstellflaeche_hoehe,aufstellflaeche_breite,aufstellflaeche_laenge,fahrgastunterstand,dfi,visuell_kontrastreiche_gestaltung_der_bedienelemente,beleuchtung,uhr,auflademoeglichkeiten_fuer_ebikes,papierkorb,fahrradabstellmoeglichkeiten,ein_aussteiger,einwohnerzahl,created_at,updated_at_server,bilder,bilder_updated_at,user,status,point,updated_at_client,version';
-    }
-    kvm.log('Url: ' +  url);
-    return url;
   },
 
   downloadData: function(context) {
@@ -671,13 +583,7 @@ var kvm = {
         );
         console.log('mach was mit der Datei: %o', fileEntry);
       },
-      function (error) {
-        kvm.log("download error source " + error.source);
-        kvm.log("download error target " + error.target);
-        kvm.log("download error code: " + error.code);
-        kvm.log("download error message: " + error.code);
-        alert('Fehler beim herunterladen der Datei von der Url: . Prüfen Sie ob die Netzverbidnung besteht und versuchen Sie es später noch einmal, wenn Sie wieder Netz haben. ' + error.message);
-      },
+      kvm.downloadError,
       true
     );
   },
@@ -685,42 +591,12 @@ var kvm = {
   log: function(msg) {
     if (this.debug) {
       $('#logText').append('<br>' + msg);
-      console.log(msg);
+      console.log('Log msg: ' + msg);
     }
+  },
+
+  msg: function(msg) {
+    alert(msg);
+    console.log('Output msg: ' + msg);
   }
-
 };
-
-
-/*
-            <tr><td id="haltestelle_1"><a class="haltestelle">A.-Schweitzer-Str.</a></td></tr>
-            <tr><td id="haltestelle_2"><a class="haltestelle">Albert-Schulz-Straße</a></td></tr>
-            <tr><td id="haltestelle_3"><a class="haltestelle">Alter Hafen Süd</a></td></tr>
-            <tr><td id="haltestelle_4"><a class="haltestelle">Am Bagehl</a></td></tr>
-            <tr><td id="haltestelle_5"><a class="haltestelle">Am Dorfteich</a></td></tr>
-            <tr><td id="haltestelle_6"><a class="haltestelle">Am Kringelgraben</a></td></tr>
-            <tr><td id="haltestelle_7"><a class="haltestelle">Am Liepengraben</a></td></tr>
-            <tr><td id="haltestelle_8"><a class="haltestelle">Am Petridamm</a></td></tr>
-            <tr><td id="haltestelle_9"><a class="haltestelle">Bahnbetriebswerk</a></td></tr>
-            <tr><td id="haltestelle_10"><a class="haltestelle">Campingplatz</a></td></tr>
-            <tr><td id="haltestelle_11"><a class="haltestelle">Dänenberg</a></td></tr>
-            <tr><td id="haltestelle_12"><a class="haltestelle">E.-Schlesinger-Straße</a></td></tr>
-            <tr><td id="haltestelle_13"><a class="haltestelle">Fährstr. Michaelshof</a></td></tr>
-            <tr><td id="haltestelle_14"><a class="haltestelle">Galileistraße</a></td></tr>
-            <tr><td id="haltestelle_15"><a class="haltestelle">Hafenallee</a></td></tr>
-            <tr><td id="haltestelle_16"><a class="haltestelle">Immendiek</a></td></tr>
-            <tr><td id="haltestelle_17"><a class="haltestelle">J.-Curie-Allee</a></td></tr>
-            <tr><td id="haltestelle_18"><a class="haltestelle">K.-Schumacher-Ring</a></td></tr>
-            <tr><td id="haltestelle_19"><a class="haltestelle">Lange Straße</a></td></tr>
-            <tr><td id="haltestelle_20"><a class="haltestelle">M.-Gorki-Straße</a></td></tr>
-            <tr><td id="haltestelle_21"><a class="haltestelle">Neu Hinrichsdorf</a></td></tr>
-            <tr><td id="haltestelle_22"><a class="haltestelle">Oldendorf</a></td></tr>
-            <tr><td id="haltestelle_23"><a class="haltestelle">Parkstraße</a></td></tr>
-            <tr><td id="haltestelle_24"><a class="haltestelle">R.-Wagner-Str. TZW</a></td></tr>
-            <tr><td id="haltestelle_25"><a class="haltestelle">Saarplatz</a></td></tr>
-            <tr><td id="haltestelle_26"><a class="haltestelle">Taklerring</a></td></tr>
-            <tr><td id="haltestelle_27"><a class="haltestelle">U.-Kekkonen-Str.</a></td></tr>
-            <tr><td id="haltestelle_28"><a class="haltestelle">Vicke-Schorler-Ring</a></td></tr>
-            <tr><td id="haltestelle_29"><a class="haltestelle">W'münde Kirchenplatz</a></td></tr>
-            <tr><td id="haltestelle_30"><a class="haltestelle">ZOB</td></tr>
-*/
