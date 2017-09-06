@@ -25,6 +25,7 @@ var kvm = {
   },
 
   onDeviceReady: function() {
+    var activeView = 'haltestellen'
     kvm.log('onDeviceReady');
 
     this.store = window.localStorage;
@@ -34,29 +35,56 @@ var kvm = {
     kvm.log('Lokale Datenbank geöffnet.');
     $('#dbnameText').html(config.dbname + '.db');
 
+    kvm.log('Lade Gerätedaten.');
     this.loadDeviceData();
-    kvm.log('Gerätedaten geladen.');
 
+    kvm.log('Lade Sync Status.');
     SyncStatus.load(this.store);
-    kvm.log('Sync Status geladen.');
 
+    kvm.log('Lade Netzwerkstatus');
     NetworkStatus.load();
-    kvm.log('Netzwerkstatus geladen');
 
-    Layer.loadData(0, false); // load from loacl db
-    kvm.log('Layer und Daten geladen');
+    if (this.store.getItem('activeStelleId')) {
+      var activeStelleId = this.store.getItem('activeStelleId'),
+          activeStelleSettings = this.store.getItem('stelleSettings_' + activeStelleId),
+          stelle = new Stelle(activeStelleSettings);
 
+      stelle.viewSettings();
+      stelle.setActive();
+
+      if (this.store.getItem('activeLayerId')) {
+        var activeLayerId = this.store.getItem('activeLayerId'),
+            activeLayerSettings = this.store.getItem('layerSettings_' + activeStelleId + '_' + activeLayerId),
+            layer = new Layer(stelle, activeLayerSettings);
+
+        layer.viewLayerList();
+        layer.setActive();
+        layer.readData(); // load from loacl db to feature list
+      }
+      else {
+        kvm.msg('Laden Sie die Layer vom Server.');
+        activeView = 'settings';
+      }
+    }
+    else {
+      kvm.msg('Stellen Sie die Zugangsdaten zum Server ein.');
+      var stelle = new Stelle('{}');
+      stelle.viewDefaultSettings();
+      activeView = 'settings';
+    };
+
+    kvm.log('initialisiere Karte.');
     this.initMap();
-    kvm.log('Karte initialisiert.');
 
     // ToDo
     //GpsStatus.load();
     //kvm.log('GPS Position geladen');
 
+    kvm.log('richte Ereignisüberwachung ein.');
     this.bindEvents();
-    kvm.log('Ereignisüberwachung eingerichtet.');
 
-    this.showItem('haltestelle');
+    kvm.log('zeige Liste der Datensätze');
+    this.showItem(activeView);
   },
 
   initMap: function() {
@@ -109,35 +137,42 @@ var kvm = {
       false
     );
 
-    $('.server-settings').on(
+    $('#requestLayersButton').on(
       'click',
-      function(evt) {
-        console.log(evt);
-        evt.target.next().toggle();
+      function () {
+        var layer = new Layer(kvm.activeStelle);
+        layer.requestLayers();
+        $('#requestLayersButton').hide();
       }
     );
 
-    $('#saveKvwmapServerDataButton').on(
+    $('#saveServerSettingsButton').on(
       'click',
-      ServerSettings.save
+      function() {
+        var stelle = new Stelle({
+          "id": $('#kvwmapServerIdField').val(),
+          "name": $('#kvwmapServerNameField').val(),
+          "url": $('#kvwmapServerUrlField').val(),
+          "username": $('#kvwmapServerUsernameField').val(),
+          "passwort": $('#kvwmapServerPasswortField').val(),
+          "Stelle_ID": $('#kvwmapServerStelleIdField').val(),
+        });
+        stelle.saveToStore();
+        stelle.setActive();
+        $('#saveServerSettingsButton').css('background', '#afffaf');
+        if (navigator.onLine) {
+          $('#requestLayersButton').show();
+        }
+        else {
+          kvm.msg('Stellen Sie eine Netzverbindung her zum Laden der Layer und speichern Sie noch mal die Servereinstellungen.');
+        }
+      }
     ),
 
     $('#kvwmapServerDataForm > input').on(
       'keyup',
       function() {
-        $('#saveKvwmapServerDataButton').css('background', '#f9afaf');
-      }
-    ),
-
-    $('#saveLayerSettingsButton_0').on(
-      'click',
-      LayerSettings.save
-    ),
-
-    $('#layerSettingsForm_0 > input').on(
-      'keyup',
-      function() {
-        $('#saveLayerSettingsButton_0').css('background', '#f9afaf');
+        $('#saveServerSettingsButton').css('background', '#f9afaf');
       }
     ),
 
@@ -232,6 +267,32 @@ var kvm = {
       // Sets Name of Haltestelle
       $("#nameHaltestelle").val($(this).text());
     });
+  },
+
+  bindLayerEvents: function() {
+    $('input[name=activeLayerId]').on(
+      'change',
+      function(evt) {
+        var id = evt.target.value,
+            layerSettings = kvm.store.getItem('layerSettings_' + id);
+            layer = new Layer(kvm.activeStelle, layerSettings);
+
+        layer.readData();
+        layer.setActive();
+        kvm.showItem('haltestellen');
+      }
+    );
+
+    $('.sync-layer-button').on(
+      'click',
+      function(evt) {
+        var id = evt.target.value,
+            layer = kvm.activeLayer;
+
+        layer.requestData();
+      }
+    )
+
   },
 
   loadDeviceData: function() {
@@ -348,137 +409,8 @@ var kvm = {
     );
   },
 
-  rudimentvoneinerfunction: function() {
-    kvm.log('function loadData');
-    this.db.executeSql(
-      "\
-        SELECT\
-          count(*) AS n\
-        FROM\
-          haltestellen\
-      ",
-      [],
-      function(rs) {
-        console.log('rs in loadData success: %o', rs);
-        var numDatasets = rs.rows.item(0).n;
-        kvm.log('Anzahl der Datensätze: ' + numDatasets);
-        if (numDatasets > 0) {
-          kvm.log('Es sind Datensätze vorhanden rufe readData auf.');
-          kvm.readData();
-        }
-        else {
-          // if network connection
-          // anbieten das jetzt synchronisiert wird
-          // wenn nicht
-          // darauf hinweisen, dass synchronisiert werden sollte, wenn Netzverbindung besteht.
-          alert('Es sind noch keine Daten auf dem Gerät vorhanden. Synchronisieren Sie mit dem Server.');
-        }
-        $('#numDatasetsText').html(numDatasets);
-      },
-      function(error) {
-        alert('Fehler beim Zugriff auf die Datenbank');
-      }
-    );
-  },
-
-  writeData: function(items) {
-    kvm.log('function writeData');
-    console.log('write Data Items: %o', items);
-    debug_items = items;
-/* example of haltestelle
-{"id":"27","name":"Ahlbecker Stra\u00dfe","nr":"18","lat":null,"lon":null,"haltestellenmast_mit_fahrplanaushang":"f","taktiles_aufmerksamkeitsfeld":"f","taktiles_leitsystem_parallel_zur_haltestellenkante":"f","befestigte_warteflaeche":"f","barrierefreie_bordhoehe":"unter 16cm","wegweisung_zur_haltestelle_taktiles_leitsystem_zur_haltestelle":"f","wegweisung_zur_haltestelle_querungshilfen":"f","wegweisung_zur_haltestelle_befestigte_wege_zur_haltestelle":"f","wegweisung_zur_haltestelle_lichtsignalanlage":"f","wegweisung_zur_haltestelle_fussgaengerueberweg":"f","aufstellflaeche_hoehe":null,"aufstellflaeche_breite":null,"aufstellflaeche_laenge":null,"fahrgastunterstand":"Sitzschalen","dfi":"4-zeilig","visuell_kontrastreiche_gestaltung_der_bedienelemente":"f","beleuchtung":"f","uhr":"f","auflademoeglichkeiten_fuer_ebikes":"f","papierkorb":"f","fahrradabstellmoeglichkeiten":"f","ein_aussteiger":null,"einwohnerzahl":null,"created_at":"25.08.2017 17:55:40.188323","updated_at_server":"25.08.2017 17:56:22","bilder":null,"bilder_updated_at":"25.08.2017 17:56:22","status":null,"point":"0101000020E6100000751E6242B6182840A77253986E124B40","updated_at_client":"25.08.2017 17:56:22","deleted_at_server":null,"version":"32"}
-*/
-    var tableName = 'haltestellen',
-        keys = $.map(
-          items[0],
-          function(value, key) {
-            return key;
-          }
-        ).join(', '),
-        values = '(' +
-          $.map(
-            items,
-            function(item) {
-              return $.map(
-                item,
-                function(value, key) {
-                  var v;
-                  switch (true) {
-                    case value == 't' :
-                      v = 1;
-                      break;
-                    default:
-                      v = "'" + value + "'";
-                  }
-                  return v;
-                }
-              ).join(', ');
-            }
-          ).join('), (') +
-        ')';
-
-    sql = "\
-      INSERT INTO haltestellen (\
-        " + keys + ")\
-      VALUES\
-        " + values + "\
-    ";
-
-    kvm.log('write Data with sql: ' + sql);
-    this.db.executeSql(
-      sql,
-      [],
-      function(rs) {
-        kvm.log('Daten erfolgreich in Datenbank geschrieben');
-        // ToDo setze hier die vom Server gelieferte letzte syncVersion und Zeit
-        kvm.store.setItem('syncVersion', 1);
-        kvm.store.setItem('syncLastLocalTimestamp', Date());
-        kvm.setSyncStatus();
-        kvm.readData();
-      },
-      function(error) {
-        alert('Fehler beim Zugriff auf die Datenbank: ' + error.message);
-      }
-    );
-  },
-
-  readData: function() {
-    kvm.log('function readData');
-    console.log('context in readData: %o', this);
-    this.db.executeSql(
-      "\
-        SELECT\
-          *\
-        FROM\
-          haltestellen\
-      ",
-      [],
-      function(rs) {
-        kvm.log('readData success function');
-        var html = '',
-            numRows = rs.rows.length,
-            item;
-
-        console.log('result: %o', rs);
-        kvm.log('readData ' + numRows + ' Datensaetze gelesen.');
-        for (var i = 0; i < numRows; i++) {
-          item = rs.rows.item(i);
-          html += '<tr><td id="haltestelle_' + item.id + '"><a class="haltestelle">' + item.name + '</a></td></tr>';
-        }
-        kvm.log('replace feature list with html: ' + html);
-        $('#haltestellenBody').html(html);
-        kvm.bindHaltestellenClickEvents();
-
-        $('#storeTestDataResult').html('Anzahl Testdatensätze: ' + rs.rows.length);
-      },
-      function(error) {
-        kvm.log('Fehler bei der Abfrage der Daten aus lokaler Datenbank: ' + error.message);
-        $('#storeTestDataResult').html('SQL ERROR: ' + error.message);
-      }
-    );
-  },
-
   showItem: function(item) {
+    console.log('showItem: ' + item);
     switch (item) {
       case 'map':
         kvm.showDefaultMenu();
@@ -507,8 +439,8 @@ var kvm = {
         break;
       default:
         kvm.showDefaultMenu();
-        $("#line, #haltestellen, #settings, #formular").hide();
-        $("#map").show();
+        $("#map, #haltestellen, #settings, #loggings, #formular").hide();
+        $("#settings").show();
     }
   },
   

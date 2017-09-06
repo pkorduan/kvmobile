@@ -10,11 +10,12 @@ LayerSettings = {
       this.get();
     }
     else {
-      kvm.log('Es wurden noch keine Einstellungen zum Layer ' + this.id + ' eingestellt. Es wurden die default-Werte in das Formular übernommen.');
-      kvm.msg('Geben Sie unter Menüpunkt Optionen im Abschnitt Layer einen Namen sowie die Stellen und Layer ID für den Zugriff auf den Layer ein.');
+      console.log('setze layerSettings von config: %o', config);
       this.name = config.layerSettingsName;
       this.stelleId = config.layerSettingsStelleId;
       this.layerId = config.layerSettingsLayerId;
+      kvm.log('Es wurden noch keine Einstellungen zum Layer ' + this.id + ' eingestellt. Es wurden die default-Werte gelesen.');
+      kvm.msg('Geben Sie unter Menüpunkt Optionen im Abschnitt Layer einen Namen sowie die Stellen und Layer ID für den Zugriff auf den Layer ein.');
     }
     this.view();
     return this;
@@ -22,6 +23,7 @@ LayerSettings = {
 
   view: function() {
     console.log('LayerSettings(' + this.id + ').view');
+    console.log('trage die Werte von this ein: %o', this);
     $('#layerSettingsNameField_' + this.id).val(this.name);
     $('#layerSettingsStelleIdField_' + this.id).val(this.stelleId);
     $('#layerSettingsLayerIdField_' + this.id).val(this.layerId);
@@ -42,21 +44,20 @@ LayerSettings = {
     kvm.store.setItem('layerSettingsStelleId_' + id, $('#layerSettingsStelleIdField_' + id).val());
     kvm.store.setItem('layerSettingsLayerId_' + id, $('#layerSettingsLayerIdField_' + id).val());
     kvm.store.setItem('layer' + $('#layerSettingsLayerIdField_' + id).val() + 'SettingsId', id);
+    kvm.store.setItem('activeLayerSetting', id);
 
     $('#layerSettingsName_0').val(kvm.store.getItem('layerSettingsName_' + id));
     $('#saveLayerSettingsButton_' + id).css('background', '#afffaf');
 
-    kvm.log('Layerdaten erfolgreich gespeichert.');
+    kvm.log('Layerauswahl erfolgreich gespeichert.');
   },
 
   settingsExists: function() {
     console.log('LayerSettings(' + this.id + ').settingsExists');
-    var exists = !(
+    return !(
       !kvm.store.getItem('layerSettingsName_' + this.id) ||
       !kvm.store.getItem('layerSettingsLayerId_' + this.id) ||
       !kvm.store.getItem('layerSettingsStelleId_' + this.id)
     );
-    console.log('exists: ' + exists);
-    return exists;
   },
 }

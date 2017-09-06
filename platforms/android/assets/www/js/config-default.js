@@ -1,10 +1,9 @@
 config = {
   dbname: 'kvmobile',
-  kvwmapServerName: 'kvwmap Lk-ROS',
-  kvwmapServerUrl: 'https://gdi-service.de/kvwmap_pet_dev',
+  kvwmapServerId: 1,
+  kvwmapServerName: 'kvwmap Server',
+  kvwmapServerUrl: 'https://meinserver.de/kvwmap',
   kvwmapServerUsername: 'username',
-  kvwmapServerPasswort: 'passwort',
-  layerSettingsName: 'Haltestellen',
-  layerSettingsStelleId: 1,
-  layerSettingsLayerId: 1
+  kvwmapServerPasswort: 'secret',
+  kvwmapServerStelleId: 1,
 }

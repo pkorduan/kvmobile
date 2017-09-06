@@ -1,92 +1,212 @@
-Layer = {
+function Layer(stelle, settings = {}) {
+  this.stelle = stelle;
+  this.settings = (typeof settings == 'string' ? $.parseJSON(settings) : settings);
+
+  this.get = function(key) {
+    return this.settings[key];
+  };
+
+  this.set = function(key, value) {
+    this.settings[key] = value;
+    return this.settings[key];
+  };
 
   /*
-  * Load data from local db only (sync=false) or
-  * sync data with server before (sync=true) and
-  * load than data from local db
+  * Load data from local db and show in list view
   */
-  loadData: function(id, sync) {
-    console.log('Layer(' + id + ').load with sync: ' + sync);
-    this.id = id;
+  this.readData = function() {
+    console.log('Layer.readData');
+    kvm.log('Lese Daten aus lokaler Datenbank');
+    kvm.db.executeSql(
+      "\
+        SELECT\
+          *\
+        FROM\
+          haltestellen\
+      ",
+      [],
+      function(rs) {
+        kvm.log('Daten erfolgreich gelesen.');
+        var html = '',
+            numRows = rs.rows.length,
+            item;
 
-    if (this.layerExists()) {
-      kvm.log('Layer existiert.');
-      if (this.tableExists()) {
-        if (sync) {
-          if (navigator.onLine) {
-            if (this.lastVersionExists) {
-              this.requestDeltas();
-            }
-            else {
-              this.requestData();
-            }
+        console.log('Layer.readData result: %o', rs);
+        kvm.log(numRows + ' Datensaetze gelesen.');
+        kvm.log('Erzeuge die Liste der Datensätze.');
+        for (var i = 0; i < numRows; i++) {
+          item = rs.rows.item(i);
+          html += '<tr><td id="haltestelle_' + item.id + '"><a class="haltestelle">' + item.name + '</a></td></tr>';
+        }
+        $('#haltestellenBody').html(html);
+        kvm.bindHaltestellenClickEvents();
+
+        $('#numDatasetsText').html(rs.rows.length);
+      },
+      function(error) {
+        kvm.log('Fehler bei der Abfrage der Daten aus lokaler Datenbank: ' + error.message);
+        $('#storeTestDataResult').html('SQL ERROR: ' + error.message);
+      }
+    );
+  };
+
+  this.writeData = function(items) {
+    kvm.log('Schreibe die Empfangenen Daten in die lokale Datebbank');
+    var tableName = this.get('table_name'),
+        keys = $.map(
+          items[0],
+          function(value, key) {
+            return key;
           }
-        }
-        else {
-          this.readData();
-        }
+        ).join(', '),
+        values = '(' +
+          $.map(
+            items,
+            function(item) {
+              return $.map(
+                item,
+                function(value, key) {
+                  var v;
+                  switch (true) {
+                    case value == 't' :
+                      v = 1;
+                      break;
+                    default:
+                      v = "'" + value + "'";
+                  }
+                  return v;
+                }
+              ).join(', ');
+            }
+          ).join('), (') +
+        ')';
+
+    sql = "\
+      INSERT INTO " + this.get('table_name') +" (\
+        " + keys + ")\
+      VALUES\
+        " + values + "\
+    ";
+
+    kvm.log('Schreibe Daten in lokale Datenbank mit Sql: ' + sql);
+    kvm.db.executeSql(
+      sql,
+      [],
+      function(rs) {
+        kvm.log('Daten erfolgreich in Datenbank geschrieben');
+        // ToDo setze hier die vom Server gelieferte letzte syncVersion und Zeit
+        var layer = kvm.activeLayer;
+        layer.set('syncVersion', 1);
+        layer.set('syncLastLocalTimestamp', Date());
+        layer.saveToStore();
+        layer.setActive();
+        layer.readData();
+      },
+      function(error) {
+        alert('Fehler beim Zugriff auf die Datenbank: ' + error.message);
       }
-      else {
-        kvm.log('Tablle existiert noch nicht. Lege Tabelle an.');
-        this.createTable(sync);
+    );
+  };
+  
+  this.createTables = function() {
+    console.log('Layer.createTables');
+    var layerIds = $.parseJSON(kvm.store.getItem('layerIds_' + this.stelle.get('id'))),
+        i;
+
+    for (i = 0; i < layerIds.length; i++) {
+      this.set('id', layerIds[i]);
+      this.layerSettings = $.parseJSON(kvm.store.getItem('layerSettings_' + this.getGlobalId()));
+      this.createTable();
+    };
+  };
+
+  this.createTable = function() {
+    console.log('Layer.createTable');
+    kvm.log('Erzeuge Tabelle in lokaler Datenbank.');
+    sql = '\
+      CREATE TABLE IF NOT EXISTS ' + this.get('table_name') + ' (' +
+        $.map(
+          this.get('attributes'),
+          function(attr) {
+            return attr.name + ' ' + mapDataType(attr.type);
+          }
+        ).join(', ') + '\
+      )\
+    ';
+    console.log('Erzeuge Tabelle mit Statement sql: ' + sql);
+
+    kvm.db.executeSql(
+      sql,
+      [],
+      function(db, res) {
+        kvm.log('Tabelle erfolgreich angelegt.');
+      },
+      function(error) {
+        kvm.msg('Fehler beim Anlegen der Tabelle: ' + error.message);
       }
-    }
-    else {
-      kvm.log('Layer existiert noch nicht.');
-      this.load();
-    }
-  },
+    );
+  };
 
-  layerExists: function() {
-    console.log('Layer(' + this.id + ').layerExists');
-    return kvm.store.getItem('layer' + this.id + 'Exists');
-  },
-
-  tableExists: function() {
-    console.log('Layer.tableExists');
-    return false;
-  },
-
-  createTable: function(sync) {
-    console.log('Layer.createTable with getFunction: %o', getFunction);
-    // create Table with Layer.loadData(sync) as success callback
-  },
-
-  lastVersionExists: function() {
+/*  lastVersionExists: function() {
     console.log('Layer.lastVersionExists');
-    return false;
+    return (kvm.activeLayer.lastVersion ? true : false);
   },
 
   requestDeltas: function() {
     console.log('Layer.requestDeltas');
   },
-
-  requestData: function() {
+*/
+  this.requestData = function() {
     console.log('Layer.requestData');
-  },
-
-  load: function() {
-    console.log('Layer(' + this.id + ').load');
-    this.serverSettings = ServerSettings.load();
-    if (this.serverSettings.settingsExists()) {
-      this.layerSettings = LayerSettings.load(this.id);
-      if (this.layerSettings.settingsExists()) {
-        if (navigator.onLine) {
-          console.log('Layer(' + this.id + ').load online');
-          this.request();
-        }
-        else {
-          console.log('Layer(' + this.id + ').load offline');
-          kvm.msg('Kann Layerdaten nicht vom Server laden, weil keine Netzverbindung besteht. Versuchen Sie es noch einmal wenn Sie Netz haben.');
-        }
-      }
-    }
-  },
-
-  request: function() {
-    console.log('Layer(' + this.id + ').request');  
     var fileTransfer = new FileTransfer(),
-        filename = 'download_layer_' + this.id + '.json',
+        filename = 'data_layer_' + this.getGlobalId() + '.json',
+        url = this.getSyncUrl();
+
+    kvm.log('Speicher die Daten in Datei: ' + cordova.file.dataDirectory + filename);
+    fileTransfer.download(
+      url,
+      cordova.file.dataDirectory + filename,
+      function (fileEntry) {
+        fileEntry.file(
+          function (file) {
+            var reader = new FileReader();
+
+            reader.onloadend = function() {
+              kvm.log('Download der Daten ist abgeschlossen.');
+              var items = [];
+              kvm.log('Download result: ' + this.result)
+              items = $.parseJSON(this.result);
+              if (items.length > 0) {
+                kvm.log('Mindestens 1 Datensatz empfangen.');
+                var layer = kvm.activeLayer;
+                layer.writeData(items);
+              }
+              else {
+                alert('Abfrage liefert keine Daten vom Server. Entweder sind noch keine auf dem Server vorhanden oder die URL der Anfrage ist nicht korrekt. Prüfen Sie die Parameter unter Einstellungen.');
+              }
+            };
+
+            reader.readAsText(file);
+          },
+          function(error) {
+            alert('Fehler beim Einlesen der heruntergeladenen Datei. Prüfen Sie die URL und Parameter, die für die Synchronisation verwendet werden.');
+            kvm.log('Fehler beim lesen der Datei: ' + error.code);
+          }
+        );
+        console.log('mach was mit der Datei: %o', fileEntry);
+      },
+      this.downloadError,
+      true
+    );
+  },
+
+  /*
+  * Request all layers from active serversetting
+  */
+  this.requestLayers = function() {
+    console.log('Layer.requestLayers for stelle: %o', this.stelle);
+    var fileTransfer = new FileTransfer(),
+        filename = 'layers_stelle_' + this.stelle.get('id') + '.json',
         url = this.getLayerUrl();
 
     kvm.log('Download Layerdaten von Url: ' + url);
@@ -95,28 +215,22 @@ Layer = {
       url,
       cordova.file.dataDirectory + filename,
       function (fileEntry) {
-        kvm.log("download complete: " + fileEntry.toURL());
         fileEntry.file(
           function (file) {
             var reader = new FileReader();
 
             reader.onloadend = function() {
-              kvm.log('Download Layerdaten abgeschlossen.');
-              console.log('Download layerData onloadend this: %o', this);
+              kvm.log('Download der Layerdaten abgeschlossen.');
               var items = [];
               kvm.log('Download Result: ' + this.result);
               resultObj = $.parseJSON(this.result);
               if (resultObj.success) {
                 kvm.log('Download erfolgreich');
-                var layer = resultObj.layers[0];
-                console.log('Layerobject from download: %o', layer);
-                Layer.saveAttributes(layer);
-                var layerSettingsId = kvm.store.getItem('layer' + layer.id + 'SettingsId');
-                kvm.store.setItem('layer' + layerSettingsId + 'Exists', true);
-                kvm.log('Daten von Layer ' + layer.id + ' auf dem Gerät gespeichert.');
+                layer = new Layer(kvm.activeStelle, {});
+                layer.storeLayerSettings(resultObj.layers);
+                layer.createTables();
+                layer.viewLayerList();
                 console.log('Store after save layer: %o', kvm.store);
-                
-                //Layer.loadData(layerSettingsId, false);
               }
               else {
                 alert('Abfrage liefert keine Daten vom Server. Entweder sind keine auf dem Server vorhanden oder die URL der Anfrage ist nicht korrekt. Prüfen Sie die Parameter unter Einstellungen.');
@@ -134,27 +248,78 @@ Layer = {
       this.downloadError,
       true
     );
-  },
+  };
 
-  getLayerUrl: function() {
-    kvm.log('Layer(' + this.id + ').getLayerUrl');
-    var url = kvm.store.getItem('kvwmapServerUrl'),
+  this.storeLayerSettings = function(settings) {
+    console.log('Layer.storeLayerSettings settings %o', settings);
+    var layerIds = [],
+        layer,
+        i;
+
+    for (i = 0; i < settings.length; i++) {
+      this.settings = settings[i];
+      this.saveToStore();
+      layerIds.push(this.get('id'));
+    }
+    console.log('Layer.storeLayerSettings store layerIds: %o', layerIds);
+    kvm.store.setItem('layerIds_' + this.stelle.get('id'), JSON.stringify(layerIds));
+  };
+
+  this.viewLayerList = function() {
+    console.log('Layer.viewLayerList');
+    var layerIds = $.parseJSON(kvm.store.getItem('layerIds_' + this.stelle.get('id'))),
+        i;
+
+    $('#layer_list').html('');
+    for (i = 0; i < layerIds.length; i++) {
+      this.set('id', layerIds[i]);
+      this.layerSettings = $.parseJSON(kvm.store.getItem('layerSettings_' + this.getGlobalId()));
+      this.appendToList();
+    };
+
+    kvm.bindLayerEvents();
+  };
+
+  this.appendToList = function() {
+    console.log('Layer.appendToList');
+    kvm.log('Füge Layer ' + this.get('title') + ' zur Layerliste hinzu.');
+    $('#layer_list').append(this.getListItem());
+  };
+
+  this.getGlobalId = function() {
+    return this.stelle.get('id') + '_' + this.get('id');
+  };
+
+  this.getListItem = function() {
+    var html = '\
+      <div id="layer_' + this.getGlobalId()  + '">\
+        <input type="radio" name="activeLayerId" value="' + this.getGlobalId() + '"/> ' +
+        this.get('title') + '\
+        <button id="syncLayerButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="sync-layer-button" style="border-radius: 5px; background: #afffaf; float: right; display: none;">\
+          <i class="fa fa-refresh" aria-hidden="true"></i>\
+        </button>\
+      </div>\
+      <div style="clear: both"></div>';
+    return html;
+  };
+
+  this.getLayerUrl = function() {
+    console.log('Layer.getLayerUrl');
+    var url = this.stelle.get('url'),
         file = this.getUrlFile(url);
 
     url += file +
-      'go=mobile_get_layer' + '&' +
-      'username=' + kvm.store.getItem('kvwmapServerUsername') + '&' +
-      'passwort=' + kvm.store.getItem('kvwmapServerPasswort') + '&' +
-      'Stelle_ID=' + kvm.store.getItem('layerSettingsStelleId_' + this.id) + '&' +
-      'selected_layer_id=' + kvm.store.getItem('layerSettingsLayerId_' + this.id);
+      'go=mobile_get_layers' + '&' +
+      'username=' + stelle.get('username') + '&' +
+      'passwort=' + stelle.get('passwort') + '&' +
+      'Stelle_ID=' + stelle.get('Stelle_ID');
     return url;
-  },
+  };
 
   /*
   * get missing parts to url when server.de, server.de/ oder server.de/index.php
   */
-  getUrlFile: function(url) {
-    kvm.log('url vor file: ' + url);
+  this.getUrlFile = function(url) {
     var file = '';
 
     if (url.slice(-3) == '.de') file = '/index.php?';
@@ -163,63 +328,95 @@ Layer = {
     if (file == '') file = '/index.php?';
 
     return file;
-  },
+  };
 
-  getSyncUrl: function() {
-    kvm.log('function getSyncUrl');
-    var url = kvm.store.getItem('kvwmapServerUrl'),
+  this.getSyncUrl = function() {
+    console.log('Layer.getSyncUrl');
+    var url = this.stelle.get('url'),
         file = this.getUrlFile(url);
 
     url += file +
-      'Stelle_ID=' + kvm.store.getItem('kvwmapServerStelleId') + '&' +
-      'username=' + kvm.store.getItem('kvwmapServerUsername') + '&' +
-      'passwort=' + kvm.store.getItem('kvwmapServerPasswort') + '&' +
-      'selected_layer_id=' + kvm.store.getItem('kvwmapServerLayerId');
+      'Stelle_ID=' + stelle.get('Stelle_ID') + '&' +
+      'username=' + stelle.get('username') + '&' +
+      'passwort=' + stelle.get('passwort') + '&' +
+      'selected_layer_id=' + this.get('id');
 
-    if (kvm.store.getItem('syncVersion')) {
+    if (this.get('syncVersion')) {
       // sync deltas
       url += '&' +
         'go=Syncronize';
-      
+      kvm.log('Hole Deltas mit Url: ' + url);
     }
     else {
       // get all data as new base for deltas
       url += '&' +
         'go=Layer-Suche_Suchen' + '&' +
         'anzahl=10000' + '&' +
-        'orderby' + kvm.store.getItem('kvwmapServerLayerId') + '=name' + '&' +
+        'orderby' + this.get('id') + '=name' + '&' +
         'mime_type=application/json' + '&' +
-        'format=json' + '&' + 'selectors=id,name,nr,lat,lon,haltestellenmast_mit_fahrplanaushang,taktiles_aufmerksamkeitsfeld,taktiles_leitsystem_parallel_zur_haltestellenkante,befestigte_warteflaeche,barrierefreie_bordhoehe,wegweisung_zur_haltestelle_taktiles_leitsystem_zur_haltestelle,wegweisung_zur_haltestelle_querungshilfen,wegweisung_zur_haltestelle_befestigte_wege_zur_haltestelle,wegweisung_zur_haltestelle_lichtsignalanlage,wegweisung_zur_haltestelle_fussgaengerueberweg,aufstellflaeche_hoehe,aufstellflaeche_breite,aufstellflaeche_laenge,fahrgastunterstand,dfi,visuell_kontrastreiche_gestaltung_der_bedienelemente,beleuchtung,uhr,auflademoeglichkeiten_fuer_ebikes,papierkorb,fahrradabstellmoeglichkeiten,ein_aussteiger,einwohnerzahl,created_at,updated_at_server,bilder,bilder_updated_at,user,status,point,updated_at_client,version';
+        'format=json' + '&' + 'selectors=' +
+        $.map(
+          this.get('attributes'),
+          function(attr) {
+            return attr.name;
+          }
+        ).join(',');
+      kvm.log('Hole initial alle Daten mit Url: ' +  url);
     }
-    kvm.log('Url: ' +  url);
     return url;
-  },
+  };
 
-  saveAttributes: function(l) {
-    var st = kvm.store,
-        i = 0,
-        a;
-    st.setItem('layer' + l.id + 'NumAttributes', l.attributes.length);
-    for (i = 0; i < l.attributes.length; i++) {
-      a = l.attributes[i];
-      st.setItem('l' + l.id + 'a' + a.index + 'Name', a.name);
-      st.setItem('l' + l.id + 'a' + a.index + 'RealName', a.real_name);
-      st.setItem('l' + l.id + 'a' + a.index + 'Alias', a.alias);
-      st.setItem('l' + l.id + 'a' + a.index + 'Tooltip', a.tooltip);
-      st.setItem('l' + l.id + 'a' + a.index + 'DataType', a.type);
-      st.setItem('l' + l.id + 'a' + a.index + 'Nullable', a.nullable);
-      st.setItem('l' + l.id + 'a' + a.index + 'FormType', a.form_element_type);
-      st.setItem('l' + l.id + 'a' + a.index + 'Options', a.options);
-      st.setItem('l' + l.id + 'a' + a.index + 'Privilege', a.privilege);
-    }
-  },
-
-  downloadError: function (error) {
+  this.downloadError = function (error) {
     kvm.log("download error source " + error.source);
     kvm.log("download error target " + error.target);
     kvm.log("download error code: " + error.code);
     kvm.log("download error message: " + error.code);
     alert('Fehler beim herunterladen der Datei von der Url: . Prüfen Sie ob die Netzverbidnung besteht und versuchen Sie es später noch einmal, wenn Sie wieder Netz haben. ' + error.message);
-  }
+  };
 
+  this.saveToStore = function() {
+    console.log('Layer.saveToStore settings %o', this.settings);
+    kvm.store.setItem('layerSettings_' + this.getGlobalId(), JSON.stringify(this.settings));
+  };
+
+  this.setActive = function() {
+    console.log('Layer.setActive layer: %o', this);
+    kvm.activeLayer = this;
+    kvm.store.setItem('activeLayerId', this.get('id'));
+    $('input[name=activeLayerId]').checked = false
+    $('input[value=' + this.getGlobalId() + ']')[0].checked = true;
+    $('.sync-layer-button').hide();
+    $('#syncLayerButton_' + this.getGlobalId()).show();
+  };
+
+  return this;
+};
+
+function mapDataType(pgType) {
+  var slType = '';
+  switch (true) {
+    case ($.inArray(pgType, [
+        'character varying',
+        'text',
+        'character'
+      ]) > -1) :
+      slType = 'TEXT';
+      break;
+    case ($.inArray(pgType, [
+        'int4',
+        'int2',
+        'int8',
+        'int16',
+        'bigint',
+        'integer'
+      ]) > -1) :
+      slType = 'INTEGER';
+      break;
+    case ($.inArray(pgType, [
+        'double precision'
+      ]) > -1) :
+      slType = 'REAL';
+      default : slType = 'TEXT';
+  }
+  return slType;
 }

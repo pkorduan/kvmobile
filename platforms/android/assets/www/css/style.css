@@ -39,8 +39,8 @@ input[type="checkbox"]{
 }
 
 input[type="radio"]{
-	width: 56px;
-	height: 56px;
+/*	width: 56px;
+	height: 56px; */
 	cursor: pointer;
 }
 

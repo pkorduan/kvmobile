@@ -23,11 +23,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.3.12/proj4.js"></script>
     <script src="https://openlayers.org/en/v3.20.1/build/ol.js" type="text/javascript"></script>
     <script type="text/javascript" src="js/config.js"></script>
-    <script type="text/javascript" src="js/serverSettings.js"></script>
-    <script type="text/javascript" src="js/layerSettings.js"></script>
+    <script type="text/javascript" src="js/Stelle.js"></script>
+    <script type="text/javascript" src="js/Layer.js"></script>
     <script type="text/javascript" src="js/syncStatus.js"></script>
     <script type="text/javascript" src="js/networkStatus.js"></script>
-    <script type="text/javascript" src="js/layer.js"></script>
     <script type="text/javascript" src="js/app.js"></script>
   </head>
   <body onload="kvm.init();">
@@ -100,67 +99,41 @@
       <b>Netzwerk</b>
       <div id="networkStatusText">...wird geladen</div>
 
-      <hr>
+      <!--hr>
       <b>Synchronisierung</b>
       Letzte Sync: <span id="syncLastLocalTimestampText"></span><br>
       aktuelle Version: <span id="syncLastLocalVersionText"></span><br>
       Jetzt synchronisierung starten
       <button id="startSyncButton" style="border-radius: 5px; background: #afffaf; float: right; inactive-button">
           <i class="fa fa-refresh" aria-hidden="true"></i>
-      </button>
+      </button//-->
 
       <hr>
       <b>Server</b>
-      <button id="addServerSettingButton" style="border-radius: 5px; background: #afffaf; float: right; display: none;">
-        <i class="fa fa-plus-square" aria-hidden="true"></i>
-      </button>
-      <div style="clear: both"></div>
-      <div>
-        <div class="server-setting">
-          <span id="kvwmapServerName"></span>
-          <button id="editServerSettingButton" style="border-radius: 5px; background: #afffaf; float: right; display: none;">
-            <i class="fa fa-pencil" aria-hidden="true"></i>
-          </button>
-        </div>
-        <div id="kvwmapServerDataForm" class="div-form" style="">
-          Name
-          <input id="kvwmapServerNameField" name="kvwmapServerName" type="text" value="Server kvwmap LK-ROS"><br>
-          URL
-          <input id="kvwmapServerUrlField" name="kvwmapServerUrl" type="text" value="https://"><br>
-          Nutzername
-          <input id="kvwmapServerUsernameField" name="kvwmapServerUsername" type="text" value=""><br>
-          Password
-          <input id="kvwmapServerPasswortField" name="kvwmapServerPasswort" type="password" value=""><br>
-          <button id="saveKvwmapServerDataButton" style="border-radius: 5px; background: #afffaf">
-            <i class="fa fa-floppy-o" aria-hidden="true"></i> Speichern
-          </button>
-        </div>
+      <div id="kvwmapServerDataForm" class="div-form" style="">
+        <input id="kvwmapServerIdField" name="kvwmapServerId" type="hidden" value="1"><br>
+        Name
+        <input id="kvwmapServerNameField" name="kvwmapServerName" type="text" value="Server kvwmap LK-ROS"><br>
+        URL
+        <input id="kvwmapServerUrlField" name="kvwmapServerUrl" type="text" value="https://"><br>
+        Nutzername
+        <input id="kvwmapServerUsernameField" name="kvwmapServerUsername" type="text" value=""><br>
+        Password
+        <input id="kvwmapServerPasswortField" name="kvwmapServerPasswort" type="password" value=""><br>
+        Stelle Id
+        <input id="kvwmapServerStelleIdField" name="kvwmapServerStelleId" type="text" value=""><br>
+        <button id="saveServerSettingsButton" style="border-radius: 5px; background: #afffaf">
+          <i class="fa fa-floppy-o" aria-hidden="true"></i> Speichern
+        </button>
       </div>
 
       <hr>
       <b>Layer</b>
-      <button id="addLayerSettingButton_0" style="border-radius: 5px; background: #afffaf; float: right; display: none;">
-        <i class="fa fa-plus-square" aria-hidden="true"></i>
+      <button id="requestLayersButton" style="border-radius: 5px; background: #afffaf; float: right; display: none;">
+        <i class="fa fa-download" aria-hidden="true"> Lade verfügbare Layer</i>
       </button>
       <div style="clear: both"></div>
-      <div>
-        <div class="layer-setting">
-          <span id="layerSettingsName_0"></span>
-          <button id="editLayerSettingButton_0" style="border-radius: 5px; background: #afffaf; float: right; display: none;">
-            <i class="fa fa-pencil" aria-hidden="true"></i>
-          </button>
-        </div>
-        <div id="layerSettingsForm_0" class="div-form" style="">
-          Name
-          <input id="layerSettingsNameField_0" name="layerSettingsName_0" type="text" value=""><br>
-          Stelle Id
-          <input id="layerSettingsStelleIdField_0" name="layerSettingsStelleId_0" type="text" value=""><br>
-          Layer Id
-          <input id="layerSettingsLayerIdField_0" name="layerSettingsLayerId_0" type="text" value=""><br>
-          <button id="saveLayerSettingsButton_0" layer_id="0" style="border-radius: 5px; background: #afffaf">
-            <i class="fa fa-floppy-o" aria-hidden="true"></i> Speichern
-          </button>
-        </div>
+      <div id="layer_list">
       </div>
 
       <hr>
