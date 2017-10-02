@@ -30,6 +30,9 @@
         },
         "cordova-sqlite-storage": {
             "PACKAGE_NAME": "com.example.hello"
+        },
+        "cordova-plugin-keyboard": {
+            "PACKAGE_NAME": "de.gdiservice.kvmobile"
         }
     },
     "dependent_plugins": {

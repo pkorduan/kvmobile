@@ -1,6 +1,18 @@
 function Layer(stelle, settings = {}) {
+  console.log('Erzeuge Layerobjekt mit settings %o', settings);
+  var layer_ = this;
   this.stelle = stelle;
   this.settings = (typeof settings == 'string' ? $.parseJSON(settings) : settings);
+  this.attributes = [];
+  if (this.settings.attributes) {
+    this.attributes = $.map(
+      this.settings.attributes,
+      function(attribute) {
+        return new Attribute(layer_, attribute);
+      }
+    )
+  };
+  this.features = {};
 
   this.get = function(key) {
     return this.settings[key];
@@ -12,9 +24,10 @@ function Layer(stelle, settings = {}) {
   };
 
   /*
-  * Load data from local db and show in list view
+  * Load data from local db, create feature objects and show in list view
   */
   this.readData = function() {
+    this_ = this;
     console.log('Layer.readData');
     kvm.log('Lese Daten aus lokaler Datenbank');
     kvm.db.executeSql(
@@ -26,22 +39,19 @@ function Layer(stelle, settings = {}) {
       ",
       [],
       function(rs) {
-        kvm.log('Daten erfolgreich gelesen.');
-        var html = '',
-            numRows = rs.rows.length,
-            item;
-
         console.log('Layer.readData result: %o', rs);
-        kvm.log(numRows + ' Datensaetze gelesen.');
-        kvm.log('Erzeuge die Liste der Datensätze.');
-        for (var i = 0; i < numRows; i++) {
-          item = rs.rows.item(i);
-          html += '<tr><td id="haltestelle_' + item.id + '"><a class="haltestelle">' + item.name + '</a></td></tr>';
-        }
-        $('#haltestellenBody').html(html);
-        kvm.bindHaltestellenClickEvents();
 
-        $('#numDatasetsText').html(rs.rows.length);
+        var numRows = rs.rows.length,
+            item,
+            i;
+
+        kvm.log(numRows + ' Datensaetze gelesen, erzeuge Features neu.');
+        this_.features = {};
+        for (i = 0; i < numRows; i++) {
+          item = rs.rows.item(i);
+          this_.features['id_' + item.uuid] = new Feature(item);
+        }
+        kvm.createFeatureList();
       },
       function(error) {
         kvm.log('Fehler bei der Abfrage der Daten aus lokaler Datenbank: ' + error.message);
@@ -54,17 +64,18 @@ function Layer(stelle, settings = {}) {
     kvm.log('Schreibe die Empfangenen Daten in die lokale Datebbank');
     var tableName = this.get('table_name'),
         keys = $.map(
-          items[0],
+          items[0].properties,
           function(value, key) {
             return key;
           }
-        ).join(', '),
+        ).join(', ') + ', ' +
+        'point',
         values = '(' +
           $.map(
             items,
             function(item) {
               return $.map(
-                item,
+                item.properties,
                 function(value, key) {
                   var v;
                   switch (true) {
@@ -76,7 +87,8 @@ function Layer(stelle, settings = {}) {
                   }
                   return v;
                 }
-              ).join(', ');
+              ).join(', ') + ', ' +
+              "'" + (item.geometry == null ? '' : item.geometry.coordinates.join(' ')) + "'";
             }
           ).join('), (') +
         ')';
@@ -111,24 +123,32 @@ function Layer(stelle, settings = {}) {
   this.createTables = function() {
     console.log('Layer.createTables');
     var layerIds = $.parseJSON(kvm.store.getItem('layerIds_' + this.stelle.get('id'))),
+        layer_ = this,
         i;
 
     for (i = 0; i < layerIds.length; i++) {
       this.set('id', layerIds[i]);
-      this.layerSettings = $.parseJSON(kvm.store.getItem('layerSettings_' + this.getGlobalId()));
+      this.settings = $.parseJSON(kvm.store.getItem('layerSettings_' + this.getGlobalId()));
+      console.log('settings aus store: %o', this.settings);
+      this.attributes = $.map(
+        this.settings.attributes,
+        function(attribute) {
+          return new Attribute(layer_, attribute);
+        }
+      );
       this.createTable();
     };
   };
 
   this.createTable = function() {
-    console.log('Layer.createTable');
+    console.log('Layer.createTable with settings: %o', this.settings);
     kvm.log('Erzeuge Tabelle in lokaler Datenbank.');
     sql = '\
       CREATE TABLE IF NOT EXISTS ' + this.get('table_name') + ' (' +
         $.map(
-          this.get('attributes'),
+          this.attributes,
           function(attr) {
-            return attr.name + ' ' + mapDataType(attr.type);
+            return attr.get('name') + ' ' + attr.getSqliteType();
           }
         ).join(', ') + '\
       )\
@@ -156,6 +176,7 @@ function Layer(stelle, settings = {}) {
     console.log('Layer.requestDeltas');
   },
 */
+
   this.requestData = function() {
     console.log('Layer.requestData');
     var fileTransfer = new FileTransfer(),
@@ -175,11 +196,11 @@ function Layer(stelle, settings = {}) {
               kvm.log('Download der Daten ist abgeschlossen.');
               var items = [];
               kvm.log('Download result: ' + this.result)
-              items = $.parseJSON(this.result);
-              if (items.length > 0) {
+              collection = $.parseJSON(this.result);
+              if (collection.features.length > 0) {
                 kvm.log('Mindestens 1 Datensatz empfangen.');
                 var layer = kvm.activeLayer;
-                layer.writeData(items);
+                layer.writeData(collection.features);
               }
               else {
                 alert('Abfrage liefert keine Daten vom Server. Entweder sind noch keine auf dem Server vorhanden oder die URL der Anfrage ist nicht korrekt. Prüfen Sie die Parameter unter Einstellungen.');
@@ -225,11 +246,13 @@ function Layer(stelle, settings = {}) {
               kvm.log('Download Result: ' + this.result);
               resultObj = $.parseJSON(this.result);
               if (resultObj.success) {
+                debug_res = this.result;
                 kvm.log('Download erfolgreich');
+                console.log('resultObj: %o', resultObj);
                 layer = new Layer(kvm.activeStelle, {});
                 layer.storeLayerSettings(resultObj.layers);
                 layer.createTables();
-                layer.viewLayerList();
+                layer.createLayerList();
                 console.log('Store after save layer: %o', kvm.store);
               }
               else {
@@ -265,15 +288,122 @@ function Layer(stelle, settings = {}) {
     kvm.store.setItem('layerIds_' + this.stelle.get('id'), JSON.stringify(layerIds));
   };
 
-  this.viewLayerList = function() {
-    console.log('Layer.viewLayerList');
+  this.createFeatureForm = function() {
+    console.log('Layer.createFeatureForm');
+    $('#formular').html('\
+      <form id="featureFormular">\
+      </form>'
+    );
+    $.map(
+      this.attributes,
+      function(attr) {
+        $('#featureFormular').append(
+          attr.formField.withLabel()
+        );
+        attr.formField.bindChangeEvent();
+      }
+    );
+  },
+
+  this.loadFeatureToForm = function(feature) {
+    console.log('Layer.loadFeatureToForm %o', feature);
+    this.activeFeature = feature;
+    layer = this;
+
+    $.map(
+      this.attributes,
+      function(attr) {
+        var key = attr.get('name'),
+            val = feature.get(key);
+
+        attr.set('value', val);
+        attr.formField.setValue(val);
+      }
+    );
+  };
+
+  this.collectChanges = function() {
+    console.log('Layer.collectChanges');
+    var activeFeature = this.activeFeature,
+        changes = [];
+
+    // loop over all elements of the form or over all attributes of the layer respectively
+    // compare form element content with old values and if changes exists assign 
+    changes = $.map(
+      this.attributes,
+      function(attr) {
+        var key = attr.get('name'),
+            oldVal = activeFeature.get(key);
+            newVal = attr.formField.getValue();
+
+        console.log('Vergleiche ' + attr.get('form_element_type') + ' Attribut: ' + key + '(' + oldVal + ' == ' + newVal + ')');
+        if (oldVal != newVal) {
+          kvm.log('Änderung in Attribut ' + key + ' gefunden');
+          return {
+            'key': key,
+            'value': newVal,
+            'type' : attr.getSqliteType()
+          }
+        }
+      }
+    );
+
+    return changes;
+  },
+
+  this.createDelta = function(action, changes) {
+    console.log('Layer.createDeltas ' + action + ' %o', changes);
+    var delta = '';
+
+    if (action == 'INSERT') {
+      change = '\
+        INSERT INTO ' + this.get('table_name') + '(' +
+          $.map(
+            changes,
+            function(change) {
+              return change.key;
+            }
+          ).join(', ') + ',\
+          uuid\
+        )\
+        VALUES (' +
+          $.map(
+            changes,
+            function(change) {
+              return (change.type == 'TEXT' ? "'" + change.value + "'" : change.value);
+            }
+          ).join(', ') + ', ' +
+          kvm.uuidv4() + '\
+        )\
+      ';
+    }
+    else {
+      delta = '\
+        UPDATE ' + this.get('table_name') + '\
+        SET' +
+          $.map(
+            changes,
+            function(change) {
+              return change.key + ' = ' + (change.type == 'TEXT' ? "'" + change.value + "'" : change.value);
+            }
+          ).join(', ') + '\
+        WHERE\
+          uuid = \'' + this.activeFeature.get('uuid') + '\'\
+      ';
+    }
+    console.log('delta %o', delta);
+    return delta;
+  },
+
+  this.createLayerList = function() {
+    console.log('Layer.createLayerList');
     var layerIds = $.parseJSON(kvm.store.getItem('layerIds_' + this.stelle.get('id'))),
         i;
 
     $('#layer_list').html('');
     for (i = 0; i < layerIds.length; i++) {
       this.set('id', layerIds[i]);
-      this.layerSettings = $.parseJSON(kvm.store.getItem('layerSettings_' + this.getGlobalId()));
+      this.settings = $.parseJSON(kvm.store.getItem('layerSettings_' + this.getGlobalId()));
       this.appendToList();
     };
 
@@ -344,11 +474,18 @@ function Layer(stelle, settings = {}) {
     if (this.get('syncVersion')) {
       // sync deltas
       url += '&' +
-        'go=Syncronize';
+        'go=Syncronize' + '&' +
+        'pullVersionFrom=1';
       kvm.log('Hole Deltas mit Url: ' + url);
     }
     else {
       // get all data as new base for deltas
+      url += '&' +
+        'go=Daten_Export_Exportieren' + '&' +
+        'export_format=GeoJSON' + '&' +
+        'all=1' + '&' +
+        'epsg=4326';
+/*
       url += '&' +
         'go=Layer-Suche_Suchen' + '&' +
         'anzahl=10000' + '&' +
@@ -356,11 +493,12 @@ function Layer(stelle, settings = {}) {
         'mime_type=application/json' + '&' +
         'format=json' + '&' + 'selectors=' +
         $.map(
-          this.get('attributes'),
+          this.attributes,
           function(attr) {
-            return attr.name;
+            return attr.get('name');
           }
         ).join(',');
+*/
       kvm.log('Hole initial alle Daten mit Url: ' +  url);
     }
     return url;
@@ -375,14 +513,17 @@ function Layer(stelle, settings = {}) {
   };
 
   this.saveToStore = function() {
-    console.log('Layer.saveToStore settings %o', this.settings);
-    kvm.store.setItem('layerSettings_' + this.getGlobalId(), JSON.stringify(this.settings));
+    console.log('Layer.saveToStore: %o', this.settings);
+    settings = JSON.stringify(this.settings);
+    console.log('save settings %o', settings);
+    kvm.store.setItem('layerSettings_' + this.getGlobalId(), settings);
   };
 
   this.setActive = function() {
     console.log('Layer.setActive layer: %o', this);
     kvm.activeLayer = this;
     kvm.store.setItem('activeLayerId', this.get('id'));
+    this.createFeatureForm();
     $('input[name=activeLayerId]').checked = false
     $('input[value=' + this.getGlobalId() + ']')[0].checked = true;
     $('.sync-layer-button').hide();
@@ -391,32 +532,3 @@ function Layer(stelle, settings = {}) {
 
   return this;
 };
-
-function mapDataType(pgType) {
-  var slType = '';
-  switch (true) {
-    case ($.inArray(pgType, [
-        'character varying',
-        'text',
-        'character'
-      ]) > -1) :
-      slType = 'TEXT';
-      break;
-    case ($.inArray(pgType, [
-        'int4',
-        'int2',
-        'int8',
-        'int16',
-        'bigint',
-        'integer'
-      ]) > -1) :
-      slType = 'INTEGER';
-      break;
-    case ($.inArray(pgType, [
-        'double precision'
-      ]) > -1) :
-      slType = 'REAL';
-      default : slType = 'TEXT';
-  }
-  return slType;
-}

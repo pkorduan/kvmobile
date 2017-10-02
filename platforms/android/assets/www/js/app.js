@@ -49,6 +49,8 @@ var kvm = {
           activeStelleSettings = this.store.getItem('stelleSettings_' + activeStelleId),
           stelle = new Stelle(activeStelleSettings);
 
+      kvm.log('Aktive Stelle ' + activeStelleId + ' gefunden');
+
       stelle.viewSettings();
       stelle.setActive();
 
@@ -57,7 +59,9 @@ var kvm = {
             activeLayerSettings = this.store.getItem('layerSettings_' + activeStelleId + '_' + activeLayerId),
             layer = new Layer(stelle, activeLayerSettings);
 
-        layer.viewLayerList();
+        kvm.log('Aktiven Layer ' +  activeLayerId + ' gefunden.');
+
+        layer.createLayerList();
         layer.setActive();
         layer.readData(); // load from loacl db to feature list
       }
@@ -169,6 +173,36 @@ var kvm = {
       }
     ),
 
+    $('#saveFeatureButton').on(
+      'click',
+      function(evt) {
+        var saveButton = $(evt.target),
+//            waitingDiv = $('#waitingDiv'),
+            changes = {},
+            delta = '';
+
+        if ((saveButton).hasClass('active-button')) {
+          changes = kvm.activeLayer.collectChanges();
+
+          console.log('changes: %o', changes);
+
+          delta = kvm.activeLayer.createDelta(
+            ($('#featureFormular input[id=4]').val() == '' ? 'INSERT' : 'UPDATE'),
+            changes
+          );
+
+        //  kvm.execDelta(delta);
+
+        //  waitingDiv.hide();
+
+          saveButton.toggleClass('active-button inactive-button');
+        }
+        else {
+          alert('Keine Änderungen!');
+        }
+      }
+    ),
+
     $('#kvwmapServerDataForm > input').on(
       'keyup',
       function() {
@@ -214,12 +248,6 @@ var kvm = {
         }
       });
     });
-
-    $(".haltestelle").click(function() {
-      kvm.showItem("formular");
-      // Sets Name of Haltestelle
-      $("#nameHaltestelle").val($(this).text());
-    });
     
     $("#geoLocationButton").on(
       'click',
@@ -261,12 +289,20 @@ var kvm = {
 
   },
 
-  bindHaltestellenClickEvents: function() {
-    $(".haltestelle").click(function() {
-      kvm.showItem("formular");
-      // Sets Name of Haltestelle
-      $("#nameHaltestelle").val($(this).text());
-    });
+  bindFeatureItemClickEvents: function() {
+    console.log('bindFeatureItemClickEvents');
+    $(".feature-item").on(
+      'click',
+      function(evt) {
+        console.log('event click on feature item');
+
+        var id = evt.target.getAttribute('id'),
+            feature = kvm.activeLayer.features['id_' + id];
+
+        kvm.activeLayer.loadFeatureToForm(feature);
+        kvm.showItem('formular');
+      }
+    );
   },
 
   bindLayerEvents: function() {
@@ -306,6 +342,32 @@ var kvm = {
       'Hersteller: ' + device.manufacturer + '<br>' +
       'Seriennummer: ' + device.serial
     );
+  },
+
+  /*
+  * create the list of features of active layer in list view
+  */
+  createFeatureList: function() {
+    console.log('app.createFeatureList');
+
+    kvm.log('Erzeuge die Liste der Datensätze neu.');
+    $('#haltestellenBody').html('');
+    
+    $.each(
+      this.activeLayer.features,
+      function (key, feature) {
+        console.log('append feature: %o', feature);
+        $('#haltestellenBody').append('\
+          <tr>\
+            <td>\
+              <a class="feature-item" id="' + feature.get('uuid') + '">' + feature.get('name') + '</a>\
+            </td>\
+          </tr>\
+        ');
+      }
+    );
+    kvm.bindFeatureItemClickEvents();
+    $('#numDatasetsText').html(Object.keys(this.activeLayer.features).length);
   },
 
   checkIfTableExists: function() {
@@ -348,67 +410,6 @@ var kvm = {
     );
   },
 
-  createTable: function() {
-    kvm.log('createTable');
-    this.db.transaction(
-      function(db) {
-        db.executeSql(
-          '\
-            CREATE TABLE IF NOT EXISTS haltestellen (\
-              id INTEGER,\
-              name TEXT,\
-              nr INTEGER,\
-              lat REAL,\
-              lon REAL,\
-              haltestellenmast_mit_fahrplanaushang INTEGER,\
-              taktiles_aufmerksamkeitsfeld INTEGER,\
-              taktiles_leitsystem_parallel_zur_haltestellenkante INTEGER,\
-              befestigte_warteflaeche INTEGER,\
-              barrierefreie_bordhoehe INTEGER,\
-              wegweisung_zur_haltestelle_taktiles_leitsystem_zur_haltestelle INTEGER,\
-              wegweisung_zur_haltestelle_querungshilfen INTEGER,\
-              wegweisung_zur_haltestelle_befestigte_wege_zur_haltestelle INTEGER,\
-              wegweisung_zur_haltestelle_lichtsignalanlage INTEGER,\
-              wegweisung_zur_haltestelle_fussgaengerueberweg INTEGER,\
-              aufstellflaeche_hoehe REAL,\
-              aufstellflaeche_breite REAL,\
-              aufstellflaeche_laenge REAL,\
-              fahrgastunterstand TEXT,\
-              dfi TEXT,\
-              visuell_kontrastreiche_gestaltung_der_bedienelemente INTEGER,\
-              beleuchtung INTEGER,\
-              uhr INTEGER,\
-              auflademoeglichkeiten_fuer_ebikes INTEGER,\
-              papierkorb INTEGER,\
-              fahrradabstellmoeglichkeiten INTEGER,\
-              ein_aussteiger INTEGER,\
-              einwohnerzahl INTEGER,\
-              created_at TEXT,\
-              updated_at_server TEXT,\
-              bilder TEXT,\
-              bilder_updated_at TEXT,\
-              user TEXT,\
-              status TEXT,\
-              point TEXT,\
-              updated_at_client TEXT,\
-              version TEXT\
-            )\
-          ',
-          [],
-          function(db, res) {
-            kvm.log('sql ausgeführt');  
-          }
-        );
-      },
-      function(error) {
-        kvm.log('Fehler beim Anlegen der Tabelle. ' + error.message);
-      },
-      function() {
-        kvm.log('Tabelle erfolgreich angelegt.');
-      }
-    );
-  },
-
   showItem: function(item) {
     console.log('showItem: ' + item);
     switch (item) {
@@ -417,7 +418,7 @@ var kvm = {
         $("#haltestellen, #settings, #formular, #loggings").hide();
         $("#map").show();
         break;
-      case "haltestelle":
+      case "haltestellen":
         kvm.showDefaultMenu();
         $("#map, #settings, #formular, #loggings").hide();
         $("#haltestellen").show();
@@ -445,13 +446,13 @@ var kvm = {
   },
   
   showDefaultMenu: function() {
-    $("#backArrow, #saveForm").hide();
+    $("#backArrow, #saveFeatureButton").hide();
     $("#showMap, #showLine, #showHaltestelle, #showSettings").show();
   },
 
   showFormMenu: function() {
     $("#showMap, #showLine, #showHaltestelle, #showSettings").hide();
-    $("#backArrow, #saveForm").show();
+    $("#backArrow, #saveFeatureButton").show();
   },
 
   getGeoLocation: function() {
@@ -518,6 +519,13 @@ var kvm = {
       kvm.downloadError,
       true
     );
+  },
+
+  uuidv4: function() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
   },
 
   log: function(msg) {

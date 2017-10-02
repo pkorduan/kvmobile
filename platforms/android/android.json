@@ -78,6 +78,16 @@
                         }
                     ]
                 }
+            },
+            "config.xml": {
+                "parents": {
+                    "/*": [
+                        {
+                            "xml": "<feature name=\"Keyboard\"><param name=\"android-package\" onload=\"true\" value=\"org.apache.cordova.labs.keyboard.Keyboard\" /></feature>",
+                            "count": 1
+                        }
+                    ]
+                }
             }
         }
     },
@@ -108,6 +118,9 @@
         },
         "cordova-sqlite-storage": {
             "PACKAGE_NAME": "com.example.hello"
+        },
+        "cordova-plugin-keyboard": {
+            "PACKAGE_NAME": "de.gdiservice.kvmobile"
         }
     },
     "dependent_plugins": {},
@@ -379,6 +392,14 @@
             "clobbers": [
                 "SQLitePlugin"
             ]
+        },
+        {
+            "id": "cordova-plugin-keyboard.keyboard",
+            "file": "plugins/cordova-plugin-keyboard/www/keyboard.js",
+            "pluginId": "cordova-plugin-keyboard",
+            "clobbers": [
+                "window.Keyboard"
+            ]
         }
     ],
     "plugin_metadata": {
@@ -390,6 +411,7 @@
         "cordova-plugin-network-information": "1.3.3",
         "cordova-plugin-file": "4.3.3",
         "cordova-plugin-file-transfer": "1.6.3",
-        "cordova-sqlite-storage": "2.0.4"
+        "cordova-sqlite-storage": "2.0.4",
+        "cordova-plugin-keyboard": "1.1.5"
     }
 }

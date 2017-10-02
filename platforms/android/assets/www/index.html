@@ -11,20 +11,31 @@
     <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline'; style-src * 'unsafe-inline'; media-src *; img-src * data:" />
 
     <link rel="stylesheet" type="text/css" href="3rdparty/font-awesome-4.7.0/css/font-awesome.min.css">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="3rdparty/bootstrap-3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="3rdparty/openlayers/en/v3.20.1/css/ol.css">
     <link rel="stylesheet" type="text/css" href="css/style.css">
-    <link rel="stylesheet" href="https://openlayers.org/en/v3.20.1/css/ol.css" type="text/css">
     <script type="text/javascript" src="cordova.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="3rdparty/jquery/3.2.1/jquery.min.js"></script>
+    <script type="text/javascript" src="3rdparty/bootstrap-3.3.7/js/bootstrap.min.js"></script>
     <!-- The line below is only needed for old environments like Internet Explorer and Android 4.x -->
-    <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.3.12/proj4-src.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.3.12/proj4.js"></script>
-    <script src="https://openlayers.org/en/v3.20.1/build/ol.js" type="text/javascript"></script>
+    <!--script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script//-->
+    <script type="text/javascript" src="3rdparty/proj4js-2.3.12/proj4.js"></script>
+    <script type="text/javascript" src="3rdparty/openlayers/en/v3.20.1/build/ol.js"></script>
+    <!--script type="text/javascript" src="3rdparty/wkx-0.4.2/dist/wkx.min.js"></script//-->
     <script type="text/javascript" src="js/config.js"></script>
+    <script type="text/javascript" src="js/CheckboxFormField.js"></script>
+    <script type="text/javascript" src="js/SelectFormField.js"></script>
+    <script type="text/javascript" src="js/GeometryFormField.js"></script>
+    <script type="text/javascript" src="js/BilderFormField.js"></script>
+    <script type="text/javascript" src="js/TextfeldFormField.js"></script>
+    <script type="text/javascript" src="js/TextFormField.js"></script>
+    <script type="text/javascript" src="js/DateTimeFormField.js"></script>
+    <script type="text/javascript" src="js/ZahlFormField.js"></script>
+    <script type="text/javascript" src="js/Stelle.js"></script>
     <script type="text/javascript" src="js/Stelle.js"></script>
     <script type="text/javascript" src="js/Layer.js"></script>
+    <script type="text/javascript" src="js/Feature.js"></script>
+    <script type="text/javascript" src="js/Attribute.js"></script>
     <script type="text/javascript" src="js/syncStatus.js"></script>
     <script type="text/javascript" src="js/networkStatus.js"></script>
     <script type="text/javascript" src="js/app.js"></script>
@@ -37,12 +48,12 @@
             <a onClick="kvm.showItem('settings')" class="menubutton" id="showSettings">
               <i class="fa fa-bars fa-2x" aria-hidden="true"></i>
             </a>
-            <a onClick="kvm.showItem('haltestelle')" class="menubutton" id="backArrow" style="display:none;">
+            <a onClick="kvm.showItem('haltestellen')" class="menubutton" id="backArrow" style="display:none;">
               <i class="fa fa-arrow-left fa-2x" aria-hidden="true"></i>
             </a>
           </div>
           <div class="col-xs-3" style="text-align:center;">
-            <a onClick="kvm.showItem('haltestelle')" class="menubutton" id="showHaltestelle">
+            <a onClick="kvm.showItem('haltestellen')" class="menubutton" id="showHaltestelle">
               <img id="showHaltestelle_button" src="img/haltestelle_icon.png" height="32">
               <img id="showHaltestelle_button_white" src="img/haltestelle_weiss_icon.png" height="32" style="display:none;"/img>
             </a>
@@ -56,9 +67,7 @@
             <a onClick="kvm.showItem('formular')" class="menubutton" id="showLine">
               <i id="addHaltestelle" class="fa fa-plus-square fa-2x" aria-hidden="true"></i>
             </a>
-            <a onClick="alert('Speichert Eingaben')" class="menubutton" id="saveForm" style="display:none;">
-              <i class="fa fa-check-square-o fa-2x" aria-hidden="true"></i>
-            </a>
+            <i id="saveFeatureButton" class="fa fa-check-square-o fa-2x inactive-button" aria-hidden="true" style="display:none;"></i>
           </div>
         </div>
       </div>
@@ -154,7 +163,7 @@
 
     <!-- Formular -->
     <div id="formular" style="margin: 20px; display:none;">
-      <div style="text-align:center;">
+      <!--<div style="text-align:center;">
         <a onClick="alert('Macht Photo und hinterlegt Thumb')" style="align:center; margin-right: 20px">
           <i class="fa fa-camera fa-2x" aria-hidden="true"></i>
         </a>
@@ -162,54 +171,7 @@
       </div>
       <label for="geoLocation">Position</label>
       <input type="text" name="geoLocation" id="geoLocation" value="">
-      <!-- The value below will be replaced according to the chosen station -->
-      <h1>Stammdaten</h1>
-      <b>Nummer:</b><br>
-      <input type="text" id="nummer" placeholder="Haltestellennummer" value="39121"></input>
-      <b>Busstieg / Richtung:</b><br>
-      <input type="text" id="busstieg_richtung" placeholder="Busstieg / Richtung"></input>
-      <b>Name</b><br>
-      <input type="text" id="name" placeholder="Haltestellenname"></input>
-      <b>Zone</b><br>
-      <input type="text" id="name" placeholder="Zone" value="14"></input>
-      <b>Typen:</b><br>
-      <select name="haltestellentyp">
-        <option value="Busbucht">Busbucht</option>
-        <option value="Haltestelle vor Schule">Haltestelle vor Schule</option>
-        <option value="Straßenrand">Straßenrand</option>
-        <option value="Wendeschleife">Wendeschleife</option>
-      </select>
-      <input type="checkbox"\>&nbsp;fußläufig erreichbar<br>
-      <h1>Ausstattung</h1>
-      <b>Fahrbahn</b><br>
-      <b>A4 quer</b> <input type="text" style="width: 575px;"></input><br>
-      <b>A4 hoch</b> <input type="text" style="width: 575px;"></input><br>
-      <b>A3 quer</b> <input type="text" style="width: 575px;"></input><br>
-      <b>A3 hoch</b> <input type="text" style="width: 575px;"></input><br>
-      <h1>Barrierefreiheit</h1>
-      <input type="checkbox"\>&nbsp;Blindenleitsystem<br>
-      <input type="checkbox"\>&nbsp;Seniorenheim<br>
-      <input type="checkbox"\>&nbsp;Schule<br>
-      <input type="checkbox"\>&nbsp;Kita<br>
-      <input type="checkbox"\>&nbsp;Krankenhaus<br>
-      <input type="checkbox"\>&nbsp;Ärztehaus<br>
-      <b>Bordhöhe</b> <input type="text" style="width: 300px;"></input><br>
-      <h1>Linien</h1>
-      <div class="row">
-        <div class="col-xs-4">
-          <div>Linie 1</div>
-          <div>Linie 2</div>
-        </div>
-        <div class="col-xs-4">
-          <a onClick="alert('entnimmt Linie')"><i class="fa fa-window-close fa-lg" aria-hidden="true"></i></a><br>
-          <a onClick="alert('entnimmt Linie')"><i class="fa fa-window-close fa-lg" aria-hidden="true"></i></a><br>
-        </div>
-        <div class="col-xs-4">
-          <a onClick="alert('Fügt eine weitere Linie hinzu')" style="vertical-align: top;">
-            <i class="fa fa-plus-square fa-2x" aria-hidden="true"></i>
-          </a>
-        </div>
-      </div>
+      <h1>Stammdaten</h1>//-->
     </div>
     
     <!-- Logs -->

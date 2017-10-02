@@ -71,6 +71,7 @@ function Stelle(settings = {}) {
   };
 
   this.setActive = function() {
+    console.log('Stelle.js setActive');
     kvm.activeStelle = this;
     kvm.store.setItem('activeStelleId', this.get('id'));
   };

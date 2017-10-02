@@ -27,6 +27,9 @@
     <feature name="SQLitePlugin">
         <param name="android-package" value="io.sqlc.SQLitePlugin" />
     </feature>
+    <feature name="Keyboard">
+        <param name="android-package" onload="true" value="org.apache.cordova.labs.keyboard.Keyboard" />
+    </feature>
     <name>kvwmobile</name>
     <description>
       Anwendung zur Erfassung von Geodaten und zum synchronisieren mit dem Web-GIS kvwmap.
