@@ -1,4 +1,5 @@
 function DateTimeFormField(formId, settings) {
+  console.log('Erzeuge DateTimeFormField with settings %o', settings);
   this.settings = settings,
 
   this.get = function(key) {
@@ -11,20 +12,16 @@ function DateTimeFormField(formId, settings) {
     <input\
       type="datetime-local"\
       id="' + this.get('index') + '"\
-      name="' + this.get('name') + '"' +
+      name="' + this.get('name') + '"\
+      value=""' +
       (this.get('privilege') == '0' ? ' disabled' : '') + '\
-    />' +
-    this.get('alias')
+    />'
   );
 
   this.setValue = function(val) {
-    if (val == 'null') {
-      val = '';
-    }
-    else {
-      val = this.toISO(val);
-    }
-    console.log('DateTimeFormField.setValue with value: ' + val);
+    var val = kvm.coalesce(val, '');
+    if (val != '') val = this.toISO(val);
+    console.log('DateTimeFormField ' + this.get('name') + ' setValue with value: %o', val);
     this.element.val(val);
   };
 
@@ -41,8 +38,8 @@ function DateTimeFormField(formId, settings) {
     return this.fromISO(val);
   };
 
-  this.bindChangeEvent = function() {
-    console.log('DateTimeFormField.bindChangeEvent');
+  this.bindEvents = function() {
+    console.log('DateTimeFormField.bindEvents');
     $('#featureFormular input[id=' + this.get('index') + ']').on(
       'change',
       function() {
@@ -56,9 +53,9 @@ function DateTimeFormField(formId, settings) {
 
   this.withLabel = function() {
     return $('<div>').append(
-      $('<label for="' + this.get('name') + '"/><br>')
-        .append(
-          this.get('alias')
+      $('<label for="' + this.get('name') + '"/>')
+        .html(
+          (this.get('alias') ? this.get('alias') : this.get('name')) + '<br>' 
         )
         .append(
           this.element

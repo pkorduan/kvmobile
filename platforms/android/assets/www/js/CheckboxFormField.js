@@ -30,8 +30,8 @@ function CheckboxFormField(formId, settings) {
     return (this.element.prop('checked') ? 1 : this.element.val());
   };
 
-  this.bindChangeEvent = function() {
-    console.log('CheckboxFormField.bindChangeEvent');
+  this.bindEvents = function() {
+    console.log('CheckboxFormField.bindEvents');
     $('#featureFormular input[id=' + this.get('index') + ']').on(
       'change',
       function() {

@@ -10,8 +10,9 @@ function TextfeldFormField(formId, settings) {
   this.element = $('\
     <textarea\
       id="' + this.get('index') + '"\
-      placeholder="' + this.get('alias') + '"\
-      name="' + this.get('name') + '"' +
+      placeholder="' + (this.get('alias') ? this.get('alias') : this.get('name')) + '"\
+      name="' + this.get('name') + '"\
+      style="width: 100%;"' +
       (this.get('privilege') == '0' ? ' disabled' : '') + '\
     >\
     </textarea>'
@@ -32,8 +33,8 @@ function TextfeldFormField(formId, settings) {
     return val;
   };
 
-  this.bindChangeEvent = function() {
-    console.log('TextfeldFormField.bindChangeEvent');
+  this.bindEvents = function() {
+    console.log('TextfeldFormField.bindEvents');
     $('#featureFormular textarea[id=' + this.get('index') + ']').on(
       'change',
       function() {
@@ -48,9 +49,6 @@ function TextfeldFormField(formId, settings) {
   this.withLabel = function() {
     return $('<div>').append(
       $('<label for="' + this.get('name') + '"/>')
-        .html(
-          this.get('alias') ? this.get('alias') : this.get('name') + '<br>' 
-        )
         .append(
           this.element
         )

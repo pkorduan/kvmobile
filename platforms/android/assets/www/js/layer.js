@@ -60,6 +60,7 @@ function Layer(stelle, settings = {}) {
     );
   };
 
+
   this.writeData = function(items) {
     kvm.log('Schreibe die Empfangenen Daten in die lokale Datebbank');
     var tableName = this.get('table_name'),
@@ -300,7 +301,7 @@ function Layer(stelle, settings = {}) {
         $('#featureFormular').append(
           attr.formField.withLabel()
         );
-        attr.formField.bindChangeEvent();
+        attr.formField.bindEvents();
       }
     );
   },
@@ -316,7 +317,7 @@ function Layer(stelle, settings = {}) {
         var key = attr.get('name'),
             val = feature.get(key);
 
-        attr.set('value', val);
+//        attr.set('value', val);
         attr.formField.setValue(val);
       }
     );
@@ -332,11 +333,15 @@ function Layer(stelle, settings = {}) {
     changes = $.map(
       this.attributes,
       function(attr) {
+        console.log('Vergleiche Werte von Attribut: ' + attr.get('name'));
         var key = attr.get('name'),
             oldVal = activeFeature.get(key);
             newVal = attr.formField.getValue();
 
-        console.log('Vergleiche ' + attr.get('form_element_type') + ' Attribut: ' + key + '(' + oldVal + ' == ' + newVal + ')');
+        if (typeof oldVal == 'string') oldVal = oldVal.trim();
+        if (typeof newVal == 'string') newVal = newVal.trim();
+
+        console.log('Vergleiche ' + attr.get('form_element_type') + ' Attribut: ' + key + '(' + oldVal + ' (' + typeof oldVal + ') == ' + newVal + '(' + typeof newVal + '))');
         if (oldVal != newVal) {
           kvm.log('Änderung in Attribut ' + key + ' gefunden');
           return {
@@ -378,21 +383,72 @@ function Layer(stelle, settings = {}) {
       ';
     }
     else {
-      delta = '\
-        UPDATE ' + this.get('table_name') + '\
-        SET' +
-          $.map(
-            changes,
-            function(change) {
-              return change.key + ' = ' + (change.type == 'TEXT' ? "'" + change.value + "'" : change.value);
-            }
-          ).join(', ') + '\
-        WHERE\
-          uuid = \'' + this.activeFeature.get('uuid') + '\'\
-      ';
+      delta = 'UPDATE ' + this.get('table_name') + ' ' +
+              'SET ' +
+                $.map(
+                  changes,
+                  function(change) {
+                    return change.key + ' = ' + (change.type == 'TEXT' ? "'" + change.value + "'" : change.value);
+                  }
+                ).join(', ') + ' ' +
+              'WHERE ' +
+              'uuid = \'' + this.activeFeature.get('uuid') + '\'';
     }
     console.log('delta %o', delta);
     return delta;
+  },
+
+  /*
+  * exec sql in layer table and if success write delta in deltas table
+  */
+  this.execDelta = function(delta) {
+    console.log('Layer.execDelta %o', delta);
+    kvm.db.executeSql(
+      delta,
+      [],
+      function(rs) {
+        console.log('Layer.execDelta Speicherung erfolgreich.');
+        kvm.activeLayer.writeDelta(delta);
+      },
+      function(error) {
+        navigator.notification.confirm(
+          'Fehler bei der Speicherung der Änderungen aus dem Formular!\nFehlercode: ' + error.code + '\nMeldung: ' + error.message,
+          function(buttonIndex) {
+            // ToDo handling choices after error
+          },
+          'Datenbank',
+          ['Abbruch']
+        );
+      }
+    );
+  },
+
+  this.writeDelta = function(delta) {
+    console.log('Layer.writeDelta %o', delta);
+/*    kvm.db.executeSql(
+      '\
+        INSERT INFO haltestellen_delta (\
+          delta,\
+          created_at\
+        )\
+        VALUES (' +
+          '\'' + delta + '\',\
+          '\'' + (new Date()).toISOString().replace('Z', '') + '\'\
+        )\
+      ',
+      [],
+      function(rs) {
+        console.log('Layer.writeDelta Speicherung erfolgreich.');*/
+        kvm.activeLayer.activeFeature.update();
+        kvm.activeLayer.features['id_' + kvm.activeLayer.activeFeature.get('uuid')] = kvm.activeLayer.activeFeature;
+        // ToDo update the list item with the selected attribut of active layer (get it from attributs metadata if existant)
+/*      },
+      function(error) {
+        navigator.notification.alert(
+          'Fehler bei der Speicherung der Änderungen aus dem Formular!\nFehlercode: ' + error.code + '\nMeldung: ' + error.message,
+        );
+      }
+    );*/
   },
 
   this.createLayerList = function() {

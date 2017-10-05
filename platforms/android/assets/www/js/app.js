@@ -140,7 +140,20 @@ var kvm = {
       this.setConnectionStatus,
       false
     );
-
+/*
+    navigator.geolocation.watchPosition(
+      function(geoLocation) {
+        console.log(Date() + ' Neue Position: ' + geoLocation.coords.latitude + ' ' + geoLocation.coords.longitude);
+      },
+      function(error) {
+        console.log('Fehler bei der Positionsabfrage code: ' + error.code + ' message: ' + error.message);
+      }, {
+        maximumAge: 2000, // duration to cache current position
+        timeout: 30000, // timeout for try to call successFunction, else call errorFunction 
+        enableHighAccuracy: true // take position from gps not network-based method
+      }
+    );
+*/
     $('#requestLayersButton').on(
       'click',
       function () {
@@ -182,23 +195,42 @@ var kvm = {
             delta = '';
 
         if ((saveButton).hasClass('active-button')) {
-          changes = kvm.activeLayer.collectChanges();
+          navigator.notification.confirm(
+            'Datensatz Speichern?',
+            function(buttonIndex) {
+              if (buttonIndex == 1) { // ja
+                changes = kvm.activeLayer.collectChanges();
+                console.log('changes: %o', changes);
 
-          console.log('changes: %o', changes);
+                delta = kvm.activeLayer.createDelta(
+                  ($('#featureFormular input[id=4]').val() == '' ? 'INSERT' : 'UPDATE'),
+                  changes
+                );
 
-          delta = kvm.activeLayer.createDelta(
-            ($('#featureFormular input[id=4]').val() == '' ? 'INSERT' : 'UPDATE'),
-            changes
+                kvm.activeLayer.execDelta(delta);
+
+                //  waitingDiv.hide();
+
+                saveButton.toggleClass('active-button inactive-button');
+              }
+
+              if (buttonIndex == 2) { // nein
+                // Do nothing
+              }
+
+              if (buttonIndex == 3) { // Abbrechen
+                // dont save form values and switch to feature list
+              }
+
+            },
+            'Datenbank',
+            ['ja', 'nein', 'Abbrechen']
           );
-
-        //  kvm.execDelta(delta);
-
-        //  waitingDiv.hide();
-
-          saveButton.toggleClass('active-button inactive-button');
         }
         else {
-          alert('Keine Änderungen!');
+          navigator.notification.alert(
+            'Keine Änderungen!'
+          );
         }
       }
     ),
@@ -239,7 +271,7 @@ var kvm = {
       }
       $rows.each(function(index) {
         $row = $(this);
-        var column = $row.find("td a").html().toUpperCase();
+        var column = $row.find("td span").html().toUpperCase();
         if (column.indexOf(value) > -1) {
           $row.show(500);
         }
@@ -360,7 +392,7 @@ var kvm = {
         $('#haltestellenBody').append('\
           <tr>\
             <td>\
-              <a class="feature-item" id="' + feature.get('uuid') + '">' + feature.get('name') + '</a>\
+              <span class="feature-item" id="' + feature.get('uuid') + '">' + feature.get('name') + '</span>\
             </td>\
           </tr>\
         ');
@@ -538,5 +570,24 @@ var kvm = {
   msg: function(msg) {
     alert(msg);
     console.log('Output msg: ' + msg);
+  },
+
+  coalesce: function() {
+    var i, undefined, arg;
+
+    for( i=0; i < arguments.length; i++ ) {
+      arg = arguments[i];
+      if (
+        arg !== 'null' &&
+        arg !== null &&
+        arg !== undefined && (
+          typeof arg !== 'number' ||
+          arg.toString() !== 'NaN'
+        )
+      ) {
+        return arg;
+      }
+    }
+    return null;
   }
 };

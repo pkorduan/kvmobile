@@ -19,7 +19,7 @@ function TextFormField(formId, settings) {
   );
 
   this.setValue = function(val) {
-    console.log('TextFormField.setValue with value: ' + val);
+    console.log('TextFormField ' + this.get('name') + ' setValue with value: %o', val);
     this.element.val(val == 'null' ? '' : val);
   };
 
@@ -33,8 +33,8 @@ function TextFormField(formId, settings) {
     return val;
   };
 
-  this.bindChangeEvent = function() {
-    console.log('TextFormField.bindChangeEvent');
+  this.bindEvents = function() {
+    console.log('TextFormField.bindEvents');
     $('#featureFormular input[id=' + this.get('index') + ']').on(
       'keyup',
       function() {
@@ -50,7 +50,7 @@ function TextFormField(formId, settings) {
     return $('<div>').append(
       $('<label for="' + this.get('name') + '"/>')
         .html(
-          this.get('alias') + '<br>'
+          (this.get('alias') ? this.get('alias') : this.get('name')) + '<br>'
         )
         .append(
           this.element

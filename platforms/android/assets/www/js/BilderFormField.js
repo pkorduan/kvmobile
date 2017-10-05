@@ -9,7 +9,7 @@ function BilderFormField(formId, settings) {
 
   this.element = $('\
     <input\
-      type="text"\
+      type="hidden"\
       id="' + this.get('index') + '"\
       name="' + this.get('name') + '"\
       value=""' +
@@ -18,9 +18,11 @@ function BilderFormField(formId, settings) {
   );
 
   this.setValue = function(val) {
+    var val = kvm.coalesce(val, '');
     console.log('BilderFormField.setValue with value: %o', val);
-    this.element.val(val == 'null' ? '' : val);
+    this.element.val(val);
     console.log('Add images to previews div ' + val);
+    $('#large_image_1').attr("src", val).show();
     console.log('Add click handler on preview div' + val);
   };
 
@@ -31,8 +33,8 @@ function BilderFormField(formId, settings) {
     return val;
   };
 
-  this.bindChangeEvent = function() {
-    console.log('SelectFormField.bindChangeEvent');
+  this.bindEvents = function() {
+    console.log('SelectFormField.bindEvents');
     $('#featureFormular input[id=' + this.get('index') + ']').on(
       'change',
       function() {
@@ -43,7 +45,7 @@ function BilderFormField(formId, settings) {
       }
     );
 
-    $('#takePictureButton_' + this.get('index')).bind(
+    $('#takePictureButton_1').bind(
       'click',
       this.takePicture,
     );
@@ -53,12 +55,12 @@ function BilderFormField(formId, settings) {
   this.takePicture = function(evt) {
     console.log('BilderFormField.takePicture %o', evt);
 
-/*    navigator.camera.getPicture(
+    navigator.camera.getPicture(
       function(imageData) {
-        var image = $('#large_image_' + this.get('index'));
-        image.attr("src", imageData);
-        
-        $('#featureFormular input[id=' + this.get('index') + ']')html(imageData);
+        console.log("BilderFormField.takePicture success with imageData %o", imageData);
+        $('#large_image_1').attr("src", imageData).show();
+        $('#featureFormular input[id=1]').html(imageData).trigger('change');
+        $('#featureFormular input[id=2]').val((new Date()).toISOString().replace('Z', '')).show();
       },
       function(message) {
         alert('Failed because: ' + message);
@@ -67,20 +69,19 @@ function BilderFormField(formId, settings) {
         destinationType: Camera.DestinationType.FILE_URI
       }
     );
-*/
   },
 
   this.withLabel = function() {
     return $('\
       <div>\
-        <i id="takePictureButton_' + this.get('index') + '" class="fa fa-camera fa-2x menubutton"/>\
+        <i id="takePictureButton_' + this.get('index') + '" class="fa fa-camera fa-2x" style="color: rgb(38, 50, 134)"/>\
         <div id="previews_' + this.get('index') + '">\
         </div>\
         <img\
           id="large_image_' + this.get('index') + '"\
-          style="display: none;"\
+          style="width: 100%; display: none;"\
         />\
-      </div>\
+      <div/>\
     ')
     .append(
       this.element

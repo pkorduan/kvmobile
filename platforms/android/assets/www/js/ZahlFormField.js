@@ -33,8 +33,8 @@ function ZahlFormField(formId, settings) {
     return val;
   };
 
-  this.bindChangeEvent = function() {
-    console.log('ZahlFormField.bindChangeEvent');
+  this.bindEvents = function() {
+    console.log('ZahlFormField.bindEvents');
     $('#featureFormular input[id=' + this.get('index') + ']').on(
       'keyup',
       function() {
@@ -48,9 +48,9 @@ function ZahlFormField(formId, settings) {
 
   this.withLabel = function() {
     return $('<div>').append(
-      $('<label for="' + this.get('name') + '"/><br>')
+      $('<label for="' + this.get('name') + '"/>')
         .html(
-          this.get('alias')
+          (this.get('alias') ? this.get('alias') : this.get('name')) + '<br>'
         )
         .append(
           this.element

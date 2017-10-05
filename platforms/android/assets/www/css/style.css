@@ -2,8 +2,9 @@ a.hover {
   
 }
 
-#feature-item {
+.feature-item {
   font-size: 18px;
+  color: #337ab7;
 }
 
 /*** Open Layers Styles ***/
