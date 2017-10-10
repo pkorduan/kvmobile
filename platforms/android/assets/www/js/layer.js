@@ -138,6 +138,7 @@ function Layer(stelle, settings = {}) {
         }
       );
       this.createTable();
+      this.createDeltaTable();
     };
   };
 
@@ -168,6 +169,29 @@ function Layer(stelle, settings = {}) {
     );
   };
 
+  this.createDeltaTable = function() {
+    console.log('Layer.createDelataTable with settings: %o', this.settings);
+    kvm.log('Erzeuge Tabelle für deltas in lokaler Datenbank.');
+    sql = '\
+      CREATE TABLE IF NOT EXISTS ' + this.get('table_name') + '_deltas (\
+        version INTEGER PRIMARY KEY,\
+        sql text,\
+        created_at text\
+      )\
+    ';
+    console.log('Erzeuge Deltas Tabelle mit Statement sql: ' + sql);
+
+    kvm.db.executeSql(
+      sql,
+      [],
+      function(db, res) {
+        kvm.log('Deltas Tabelle erfolgreich angelegt.');
+      },
+      function(error) {
+        kvm.msg('Fehler beim Anlegen der Deltas Tabelle: ' + error.message);
+      }
+    );
+  };
 /*  lastVersionExists: function() {
     console.log('Layer.lastVersionExists');
     return (kvm.activeLayer.lastVersion ? true : false);
@@ -425,30 +449,33 @@ function Layer(stelle, settings = {}) {
 
   this.writeDelta = function(delta) {
     console.log('Layer.writeDelta %o', delta);
-/*    kvm.db.executeSql(
-      '\
-        INSERT INFO haltestellen_delta (\
-          delta,\
-          created_at\
-        )\
-        VALUES (' +
-          '\'' + delta + '\',\
-          '\'' + (new Date()).toISOString().replace('Z', '') + '\'\
-        )\
-      ',
+    console.log('write in table: ' + this.get('table_name') + '_deltas');
+    var sql = "\
+          INSERT INTO haltestellen_deltas (\
+            sql,\
+            created_at\
+          )\
+          VALUES (\
+            '" + delta.replace(/\'/g, '\'\'') + "',\
+            '" + (new Date()).toISOString().replace('Z', '') + "'\
+          )\
+        ";
+
+    console.log('Layer.writeDelta with sql: ' + sql);
+    kvm.db.executeSql(
+      sql,
       [],
       function(rs) {
-        console.log('Layer.writeDelta Speicherung erfolgreich.');*/
-        kvm.activeLayer.activeFeature.update();
+        console.log('Layer.writeDelta Speicherung erfolgreich.');
+        kvm.activeLayer.activeFeature.update(); // currently only the name will be updated in features list.
         kvm.activeLayer.features['id_' + kvm.activeLayer.activeFeature.get('uuid')] = kvm.activeLayer.activeFeature;
-        // ToDo update the list item with the selected attribut of active layer (get it from attributs metadata if existant)
-/*      },
+      },
       function(error) {
         navigator.notification.alert(
-          'Fehler bei der Speicherung der Änderungen aus dem Formular!\nFehlercode: ' + error.code + '\nMeldung: ' + error.message,
+          'Fehler bei der Speicherung der Änderungsdaten in delta-Tabelle!\nFehlercode: ' + error.code + '\nMeldung: ' + error.message,
         );
       }
-    );*/
+    );
   },
 
   this.createLayerList = function() {

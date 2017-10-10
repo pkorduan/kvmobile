@@ -184,7 +184,58 @@ var kvm = {
           kvm.msg('Stellen Sie eine Netzverbindung her zum Laden der Layer und speichern Sie noch mal die Servereinstellungen.');
         }
       }
-    ),
+    );
+
+    $('#showDeltasButton').on(
+      'click',
+      { context: this},
+      function(evt) {
+        console.log('Klick on showDeltasButton');
+        var this_ = evt.data.context,
+            sql = "\
+              SELECT\
+                * \
+              FROM\
+                " + this_.activeLayer.get('table_name') + "_deltas\
+            ";
+
+        $('#showDeltasButton').hide();
+        $('#showDeltasWaiting').show();
+        console.log('apps.js showDeltasButton execute sql: ' + sql);
+        this_.db.executeSql(
+          sql,
+          [],
+          function(rs, context) {
+            console.log('apps.js query deltas success result %o:', rs);
+            var numRows = rs.rows.length,
+                item,
+                i;
+
+            $('#showDeltasDiv').html('<b>Deltas</b>');
+            for (i = 0; i < numRows; i++) {
+              item = rs.rows.item(i);
+              $('#showDeltasDiv').append('<br>' + item.version + ': ' + item.sql);
+            }
+            $('#showDeltasWaiting').hide();
+            $('#showDeltasDiv').show();
+            $('#hideDeltasButton').show();
+          },
+          function(error) {
+            console.log('apps.js query deltas Fehler: %o', error);
+            alert('Fehler beim Zugriff auf die Datenbank');
+          }
+        );
+      }
+    );
+
+    $('#hideDeltasButton').on(
+      'click',
+      function() {
+        $('#hideDeltasButton').hide();
+        $('#showDeltasDiv').hide();
+        $('#showDeltasButton').show();
+      }
+    );
 
     $('#saveFeatureButton').on(
       'click',
@@ -233,19 +284,20 @@ var kvm = {
           );
         }
       }
-    ),
+    );
 
     $('#kvwmapServerDataForm > input').on(
       'keyup',
       function() {
         $('#saveServerSettingsButton').css('background', '#f9afaf');
       }
-    ),
+    );
 
     $("#showHaltestelle").mouseover(function() {
       $("#showHaltestelle_button").hide();
       $("#showHaltestelle_button_white").show();
     });
+
     $("#showHaltestelle").mouseleave(function() {
       $("#showHaltestelle_button").show();
       $("#showHaltestelle_button_white").hide();

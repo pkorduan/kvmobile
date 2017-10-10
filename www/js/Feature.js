@@ -37,9 +37,9 @@ function Feature(data = {}) {
         console.log('Feature.update result: %o', rs.rows.item(0));
         var data = rs.rows.item(0);
         kvm.activeLayer.activeFeature.data = (typeof data == 'string' ? $.parseJSON(data) : data);
+        console.log('new data of feature: %o', kvm.activeLayer.activeFeature.data);
+        console.log('replace old with new name in feature list: ' + kvm.activeLayer.activeFeature.get('name'));
         $('#' + kvm.activeLayer.activeFeature.get('uuid')).html(kvm.activeLayer.activeFeature.get('name'));
-        console.log('new data of feature: %o', this.data);
-        // ToDo update feature in FeatureList
       },
       function(error) {
         kvm.log('Fehler bei der Abfrage des Features mit uuid ' + this.get('uuid') + ' aus lokaler Datenbank: ' + error.message);
