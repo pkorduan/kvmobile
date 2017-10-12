@@ -565,7 +565,7 @@ function Layer(stelle, settings = {}) {
       // get all data as new base for deltas
       url += '&' +
         'go=Daten_Export_Exportieren' + '&' +
-        'export_format=GeoJSON' + '&' +
+        'export_format=GeoJSONPlus' + '&' +
         'all=1' + '&' +
         'epsg=4326';
 /*
