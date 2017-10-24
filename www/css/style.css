@@ -2,6 +2,11 @@ a.hover {
   
 }
 
+#featurelist {
+	overflow: scroll;
+	height: 800px;
+}
+
 .feature-item {
   font-size: 18px;
   color: #337ab7;

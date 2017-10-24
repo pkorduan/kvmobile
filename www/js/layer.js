@@ -28,14 +28,14 @@ function Layer(stelle, settings = {}) {
   */
   this.readData = function() {
     this_ = this;
-    console.log('Layer.readData');
+    console.log('Layer.readData from table %', this_.get('table_name'));
     kvm.log('Lese Daten aus lokaler Datenbank');
     kvm.db.executeSql(
       "\
         SELECT\
           *\
         FROM\
-          haltestellen\
+          " + this_.get('table_name') + "\
       ",
       [],
       function(rs) {
@@ -45,7 +45,7 @@ function Layer(stelle, settings = {}) {
             item,
             i;
 
-        kvm.log(numRows + ' Datensaetze gelesen, erzeuge Features neu.');
+        kvm.log(numRows + ' Datensaetze gelesen, erzeuge Featurliste neu.');
         this_.features = {};
         for (i = 0; i < numRows; i++) {
           item = rs.rows.item(i);

@@ -25,7 +25,7 @@ var kvm = {
   },
 
   onDeviceReady: function() {
-    var activeView = 'haltestellen'
+    var activeView = 'featurelist'
     kvm.log('onDeviceReady');
 
     this.store = window.localStorage;
@@ -316,7 +316,7 @@ var kvm = {
     /*** Search Haltestelle ***/
     $("#searchHaltestelle").on("keyup paste", function() {
       var value = $(this).val().toUpperCase();
-      var $rows = $("#haltestellen_table tr");
+      var $rows = $("#featurelistTable tr");
       if(value === ''){
         $rows.show(500);
         return false;
@@ -399,7 +399,7 @@ var kvm = {
 
         layer.readData();
         layer.setActive();
-        kvm.showItem('haltestellen');
+        kvm.showItem('featurelist');
       }
     );
 
@@ -435,13 +435,14 @@ var kvm = {
     console.log('app.createFeatureList');
 
     kvm.log('Erzeuge die Liste der Datensätze neu.');
-    $('#haltestellenBody').html('');
+    $('#featurelistHeading').html(this.activeLayer.get('title'));
+    $('#featurelistBody').html('');
     
     $.each(
       this.activeLayer.features,
       function (key, feature) {
         console.log('append feature: %o', feature);
-        $('#haltestellenBody').append('\
+        $('#featurelistBody').append('\
           <tr>\
             <td>\
               <span class="feature-item" id="' + feature.get('uuid') + '">' + feature.get('name') + '</span>\
@@ -454,6 +455,7 @@ var kvm = {
     $('#numDatasetsText').html(Object.keys(this.activeLayer.features).length);
   },
 
+/*
   checkIfTableExists: function() {
     kvm.log('function checkIfTableExists');
     this.db.executeSql(
@@ -493,38 +495,39 @@ var kvm = {
       }
     );
   },
+*/
 
   showItem: function(item) {
     console.log('showItem: ' + item);
     switch (item) {
       case 'map':
         kvm.showDefaultMenu();
-        $("#haltestellen, #settings, #formular, #loggings").hide();
+        $("#featurelist, #settings, #formular, #loggings").hide();
         $("#map").show();
         break;
-      case "haltestellen":
+      case "featurelist":
         kvm.showDefaultMenu();
         $("#map, #settings, #formular, #loggings").hide();
-        $("#haltestellen").show();
+        $("#featurelist").show();
         break;
       case "loggings":
         kvm.showDefaultMenu();
-        $("#map, #haltestellen, #settings, #formular").hide();
+        $("#map, #featurelist, #settings, #formular").hide();
         $("#loggings").show();
         break;
       case "settings":
         kvm.showDefaultMenu();
-        $("#map, #haltestellen, #formular, #loggings").hide();
+        $("#map, #featurelist, #formular, #loggings").hide();
         $("#settings").show();
         break;
       case "formular":
         kvm.showFormMenu();
-        $("#map, #haltestellen, #settings, #loggings").hide();
+        $("#map, #featurelist, #settings, #loggings").hide();
         $("#formular").show();
         break;
       default:
         kvm.showDefaultMenu();
-        $("#map, #haltestellen, #settings, #loggings, #formular").hide();
+        $("#map, #featurelist, #settings, #loggings, #formular").hide();
         $("#settings").show();
     }
   },
