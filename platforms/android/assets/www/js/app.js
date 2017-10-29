@@ -25,7 +25,7 @@ var kvm = {
   },
 
   onDeviceReady: function() {
-    var activeView = 'haltestellen'
+    var activeView = 'featurelist'
     kvm.log('onDeviceReady');
 
     this.store = window.localStorage;
@@ -237,6 +237,28 @@ var kvm = {
       }
     );
 
+    $('#formOptionButton').on(
+      'click',
+      function() {
+        navigator.notification.confirm(
+          'Datensatz Löschen?',
+          function(buttonIndex) {
+            if (buttonIndex == 1) { // ja
+              console.log('Datensatz löschen');
+              delta = kvm.activeLayer.createDelta('DELETE');
+              kvm.activeLayer.execDelta(delta);
+            }
+
+            if (buttonIndex == 2) { // nein
+              // Do nothing
+            }
+          },
+          '',
+          ['ja', 'nein']
+        );
+      }
+    );
+
     $('#saveFeatureButton').on(
       'click',
       function(evt) {
@@ -254,7 +276,7 @@ var kvm = {
                 console.log('changes: %o', changes);
 
                 delta = kvm.activeLayer.createDelta(
-                  ($('#featureFormular input[id=4]').val() == '' ? 'INSERT' : 'UPDATE'),
+                  (typeof kvm.activeLayer.features['id_' + kvm.activeLayer.activeFeature.get('uuid')] == 'undefined' ? 'INSERT' : 'UPDATE'),
                   changes
                 );
 
@@ -312,11 +334,28 @@ var kvm = {
       }
     });
 
+    $('#newFeatureButton').on(
+      'click',
+      {
+        "context": this
+      },
+      function(evt) {
+        var this_ = evt.data.context;
+
+        this_.activeLayer.loadFeatureToForm(
+          new Feature({ uuid : this_.uuidv4()})
+        );
+
+        this_.showItem('formular');
+        $('#formOptionButton').hide();
+      }
+    );
+
     /* Clientside Filter according to http://stackoverflow.com/questions/12433835/client-side-searching-of-a-table-with-jquery */
     /*** Search Haltestelle ***/
     $("#searchHaltestelle").on("keyup paste", function() {
       var value = $(this).val().toUpperCase();
-      var $rows = $("#haltestellen_table tr");
+      var $rows = $("#featurelistTable tr");
       if(value === ''){
         $rows.show(500);
         return false;
@@ -399,7 +438,7 @@ var kvm = {
 
         layer.readData();
         layer.setActive();
-        kvm.showItem('haltestellen');
+        kvm.showItem('featurelist');
       }
     );
 
@@ -435,25 +474,21 @@ var kvm = {
     console.log('app.createFeatureList');
 
     kvm.log('Erzeuge die Liste der Datensätze neu.');
-    $('#haltestellenBody').html('');
+    $('#featurelistHeading').html(this.activeLayer.get('title'));
+    $('#featurelistBody').html('');
     
     $.each(
       this.activeLayer.features,
       function (key, feature) {
-        console.log('append feature: %o', feature);
-        $('#haltestellenBody').append('\
-          <tr>\
-            <td>\
-              <span class="feature-item" id="' + feature.get('uuid') + '">' + feature.get('name') + '</span>\
-            </td>\
-          </tr>\
-        ');
+        //console.log('append feature: %o', feature);
+        $('#featurelistBody').append(feature.listElement());
       }
     );
     kvm.bindFeatureItemClickEvents();
     $('#numDatasetsText').html(Object.keys(this.activeLayer.features).length);
   },
 
+/*
   checkIfTableExists: function() {
     kvm.log('function checkIfTableExists');
     this.db.executeSql(
@@ -493,50 +528,52 @@ var kvm = {
       }
     );
   },
+*/
 
   showItem: function(item) {
     console.log('showItem: ' + item);
+    
     switch (item) {
       case 'map':
         kvm.showDefaultMenu();
-        $("#haltestellen, #settings, #formular, #loggings").hide();
-        $("#map").show();
+        $("#featurelist, #settings, #formular, #loggings").hide();
+        $("#map, #newFeatureButton").show();
         break;
-      case "haltestellen":
+      case "featurelist":
         kvm.showDefaultMenu();
         $("#map, #settings, #formular, #loggings").hide();
-        $("#haltestellen").show();
+        $("#featurelist, #newFeatureButton").show();
         break;
       case "loggings":
         kvm.showDefaultMenu();
-        $("#map, #haltestellen, #settings, #formular").hide();
+        $("#map, #featurelist, #settings, #formular, #newFeatureButton").hide();
         $("#loggings").show();
         break;
       case "settings":
         kvm.showDefaultMenu();
-        $("#map, #haltestellen, #formular, #loggings").hide();
-        $("#settings").show();
+        $("#map, #featurelist, #formular, #loggings").hide();
+        $("#settings, #newFeatureButton").show();
         break;
       case "formular":
         kvm.showFormMenu();
-        $("#map, #haltestellen, #settings, #loggings").hide();
+        $("#map, #featurelist, #settings, #loggings, #newFeatureButton").hide();
         $("#formular").show();
         break;
       default:
         kvm.showDefaultMenu();
-        $("#map, #haltestellen, #settings, #loggings, #formular").hide();
-        $("#settings").show();
+        $("#map, #featurelist, #settings, #loggings, #formular").hide();
+        $("#settings, #newFeatureButton").show();
     }
   },
   
   showDefaultMenu: function() {
-    $("#backArrow, #saveFeatureButton").hide();
+    $("#backArrow, #saveFeatureButton, #formOptionButton").hide();
     $("#showMap, #showLine, #showHaltestelle, #showSettings").show();
   },
 
   showFormMenu: function() {
     $("#showMap, #showLine, #showHaltestelle, #showSettings").hide();
-    $("#backArrow, #saveFeatureButton").show();
+    $("#backArrow, #saveFeatureButton, #formOptionButton").show();
   },
 
   getGeoLocation: function() {

@@ -61,7 +61,7 @@ function GeometrieFormField(formId, settings) {
           },
           function(error) {
             navigator.notification.confirm(
-              'Die GPS-Funktion muss eingeschaltet werden.' + ' Fehler: ' + error.code + ' ' + error.message,
+              'Es kann keine GPS-Position bestimmt werden. Schalten Sie die GPS Funktion auf Ihrem Gerät ein, suchen Sie einen Ort unter freiem Himmel auf und versuchen Sie es dann noch einmal.',
               function(buttonIndex) {
                 if (buttonIndex == 1) {
                   console.log('Einschalten der GPS-Funktion');

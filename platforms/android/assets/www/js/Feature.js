@@ -1,9 +1,9 @@
 function Feature(data = {}) {
-  console.log('Create Feature with data %o', data);
+  //console.log('Create Feature with data %o', data);
   this.data = (typeof data == 'string' ? $.parseJSON(data) : data);
 
   this.get = function(key) {
-    return this.data[key];
+    return (typeof this.data[key] == 'undefined' ? 'null' : this.data[key]);
   };
 
   this.set = function(key, value) {
@@ -38,12 +38,29 @@ function Feature(data = {}) {
         var data = rs.rows.item(0);
         kvm.activeLayer.activeFeature.data = (typeof data == 'string' ? $.parseJSON(data) : data);
         console.log('new data of feature: %o', kvm.activeLayer.activeFeature.data);
-        console.log('replace old with new name in feature list: ' + kvm.activeLayer.activeFeature.get('name'));
-        $('#' + kvm.activeLayer.activeFeature.get('uuid')).html(kvm.activeLayer.activeFeature.get('name'));
+
+        if (typeof kvm.activeLayer.features['id_' + data.uuid] == 'undefined') {
+          console.log('insert new feature name in feature list: ' + kvm.activeLayer.activeFeature.get('name'));
+          $('#featurelistTable tr:first').before(kvm.activeLayer.activeFeature.listElement);
+        }
+        else {
+          console.log('replace old with new name in feature list: ' + kvm.activeLayer.activeFeature.get('name'));
+          $('#' + kvm.activeLayer.activeFeature.get('uuid')).html(kvm.activeLayer.activeFeature.get('name'));
+        }
       },
       function(error) {
         kvm.log('Fehler bei der Abfrage des Features mit uuid ' + this.get('uuid') + ' aus lokaler Datenbank: ' + error.message);
       }
     );
+  };
+
+  this.listElement = function() {
+    return '\
+      <tr>\
+        <td>\
+          <span class="feature-item" id="' + this.get('uuid') + '">' + this.get('name') + '</span>\
+        </td>\
+      </tr>\
+    ';
   };
 }

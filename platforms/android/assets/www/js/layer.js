@@ -28,14 +28,16 @@ function Layer(stelle, settings = {}) {
   */
   this.readData = function() {
     this_ = this;
-    console.log('Layer.readData');
+    console.log('Layer.readData from table %', this_.get('table_name'));
     kvm.log('Lese Daten aus lokaler Datenbank');
     kvm.db.executeSql(
       "\
         SELECT\
           *\
         FROM\
-          haltestellen\
+          " + this_.get('table_name') + "\
+        ORDER BY \
+          name\
       ",
       [],
       function(rs) {
@@ -45,7 +47,7 @@ function Layer(stelle, settings = {}) {
             item,
             i;
 
-        kvm.log(numRows + ' Datensaetze gelesen, erzeuge Features neu.');
+        kvm.log(numRows + ' Datensaetze gelesen, erzeuge Featurliste neu.');
         this_.features = {};
         for (i = 0; i < numRows; i++) {
           item = rs.rows.item(i);
@@ -341,7 +343,6 @@ function Layer(stelle, settings = {}) {
         var key = attr.get('name'),
             val = feature.get(key);
 
-//        attr.set('value', val);
         attr.formField.setValue(val);
       }
     );
@@ -385,14 +386,14 @@ function Layer(stelle, settings = {}) {
     var delta = '';
 
     if (action == 'INSERT') {
-      change = '\
+      delta = '\
         INSERT INTO ' + this.get('table_name') + '(' +
           $.map(
             changes,
             function(change) {
               return change.key;
             }
-          ).join(', ') + ',\
+          ).join(', ') + ', \
           uuid\
         )\
         VALUES (' +
@@ -401,22 +402,33 @@ function Layer(stelle, settings = {}) {
             function(change) {
               return (change.type == 'TEXT' ? "'" + change.value + "'" : change.value);
             }
-          ).join(', ') + ', ' +
-          kvm.uuidv4() + '\
+          ).join(', ') + ', \
+          \'' + this.activeFeature.get('uuid') + '\'\
         )\
       ';
-    }
-    else {
-      delta = 'UPDATE ' + this.get('table_name') + ' ' +
-              'SET ' +
-                $.map(
-                  changes,
-                  function(change) {
-                    return change.key + ' = ' + (change.type == 'TEXT' ? "'" + change.value + "'" : change.value);
-                  }
-                ).join(', ') + ' ' +
-              'WHERE ' +
-              'uuid = \'' + this.activeFeature.get('uuid') + '\'';
+    };
+
+    if (action == 'UPDATE') {
+      delta = '\
+        UPDATE ' + this.get('table_name') + '\
+        SET ' +
+          $.map(
+            changes,
+            function(change) {
+              return change.key + ' = ' + (change.type == 'TEXT' ? "'" + change.value + "'" : change.value);
+            }
+          ).join(', ') + '\
+        WHERE\
+          uuid = \'' + this.activeFeature.get('uuid') + '\'\
+      ';
+    };
+
+    if (action == 'DELETE') {
+      delta = '\
+        DELETE FROM ' + this.get('table_name') + '\
+        WHERE\
+          uuid = \'' + this.activeFeature.get('uuid') + '\'\
+      ';
     }
     console.log('delta %o', delta);
     return delta;
@@ -451,7 +463,7 @@ function Layer(stelle, settings = {}) {
     console.log('Layer.writeDelta %o', delta);
     console.log('write in table: ' + this.get('table_name') + '_deltas');
     var sql = "\
-          INSERT INTO haltestellen_deltas (\
+          INSERT INTO " + this.get('table_name') + "_deltas (\
             sql,\
             created_at\
           )\
@@ -467,8 +479,10 @@ function Layer(stelle, settings = {}) {
       [],
       function(rs) {
         console.log('Layer.writeDelta Speicherung erfolgreich.');
-        kvm.activeLayer.activeFeature.update(); // currently only the name will be updated in features list.
-        kvm.activeLayer.features['id_' + kvm.activeLayer.activeFeature.get('uuid')] = kvm.activeLayer.activeFeature;
+
+        kvm.activeLayer.readData();
+        kvm.showItem('featurelist');
+
       },
       function(error) {
         navigator.notification.alert(

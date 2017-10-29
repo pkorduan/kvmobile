@@ -237,6 +237,28 @@ var kvm = {
       }
     );
 
+    $('#formOptionButton').on(
+      'click',
+      function() {
+        navigator.notification.confirm(
+          'Datensatz Löschen?',
+          function(buttonIndex) {
+            if (buttonIndex == 1) { // ja
+              console.log('Datensatz löschen');
+              delta = kvm.activeLayer.createDelta('DELETE');
+              kvm.activeLayer.execDelta(delta);
+            }
+
+            if (buttonIndex == 2) { // nein
+              // Do nothing
+            }
+          },
+          '',
+          ['ja', 'nein']
+        );
+      }
+    );
+
     $('#saveFeatureButton').on(
       'click',
       function(evt) {
@@ -254,7 +276,7 @@ var kvm = {
                 console.log('changes: %o', changes);
 
                 delta = kvm.activeLayer.createDelta(
-                  ($('#featureFormular input[id=4]').val() == '' ? 'INSERT' : 'UPDATE'),
+                  (typeof kvm.activeLayer.features['id_' + kvm.activeLayer.activeFeature.get('uuid')] == 'undefined' ? 'INSERT' : 'UPDATE'),
                   changes
                 );
 
@@ -311,6 +333,23 @@ var kvm = {
         $("#searchHaltestelle").show();
       }
     });
+
+    $('#newFeatureButton').on(
+      'click',
+      {
+        "context": this
+      },
+      function(evt) {
+        var this_ = evt.data.context;
+
+        this_.activeLayer.loadFeatureToForm(
+          new Feature({ uuid : this_.uuidv4()})
+        );
+
+        this_.showItem('formular');
+        $('#formOptionButton').hide();
+      }
+    );
 
     /* Clientside Filter according to http://stackoverflow.com/questions/12433835/client-side-searching-of-a-table-with-jquery */
     /*** Search Haltestelle ***/
@@ -441,14 +480,8 @@ var kvm = {
     $.each(
       this.activeLayer.features,
       function (key, feature) {
-        console.log('append feature: %o', feature);
-        $('#featurelistBody').append('\
-          <tr>\
-            <td>\
-              <span class="feature-item" id="' + feature.get('uuid') + '">' + feature.get('name') + '</span>\
-            </td>\
-          </tr>\
-        ');
+        //console.log('append feature: %o', feature);
+        $('#featurelistBody').append(feature.listElement());
       }
     );
     kvm.bindFeatureItemClickEvents();
@@ -499,47 +532,48 @@ var kvm = {
 
   showItem: function(item) {
     console.log('showItem: ' + item);
+    
     switch (item) {
       case 'map':
         kvm.showDefaultMenu();
         $("#featurelist, #settings, #formular, #loggings").hide();
-        $("#map").show();
+        $("#map, #newFeatureButton").show();
         break;
       case "featurelist":
         kvm.showDefaultMenu();
         $("#map, #settings, #formular, #loggings").hide();
-        $("#featurelist").show();
+        $("#featurelist, #newFeatureButton").show();
         break;
       case "loggings":
         kvm.showDefaultMenu();
-        $("#map, #featurelist, #settings, #formular").hide();
+        $("#map, #featurelist, #settings, #formular, #newFeatureButton").hide();
         $("#loggings").show();
         break;
       case "settings":
         kvm.showDefaultMenu();
         $("#map, #featurelist, #formular, #loggings").hide();
-        $("#settings").show();
+        $("#settings, #newFeatureButton").show();
         break;
       case "formular":
         kvm.showFormMenu();
-        $("#map, #featurelist, #settings, #loggings").hide();
+        $("#map, #featurelist, #settings, #loggings, #newFeatureButton").hide();
         $("#formular").show();
         break;
       default:
         kvm.showDefaultMenu();
         $("#map, #featurelist, #settings, #loggings, #formular").hide();
-        $("#settings").show();
+        $("#settings, #newFeatureButton").show();
     }
   },
   
   showDefaultMenu: function() {
-    $("#backArrow, #saveFeatureButton").hide();
+    $("#backArrow, #saveFeatureButton, #formOptionButton").hide();
     $("#showMap, #showLine, #showHaltestelle, #showSettings").show();
   },
 
   showFormMenu: function() {
     $("#showMap, #showLine, #showHaltestelle, #showSettings").hide();
-    $("#backArrow, #saveFeatureButton").show();
+    $("#backArrow, #saveFeatureButton, #formOptionButton").show();
   },
 
   getGeoLocation: function() {

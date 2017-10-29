@@ -23,6 +23,7 @@
     <script type="text/javascript" src="3rdparty/openlayers/en/v3.20.1/build/ol.js"></script>
     <!--script type="text/javascript" src="3rdparty/wkx-0.4.2/dist/wkx.min.js"></script//-->
     <script type="text/javascript" src="js/config.js"></script>
+    <script type="text/javascript" src="js/Layer.js"></script>
     <script type="text/javascript" src="js/CheckboxFormField.js"></script>
     <script type="text/javascript" src="js/SelectFormField.js"></script>
     <script type="text/javascript" src="js/GeometryFormField.js"></script>
@@ -33,7 +34,6 @@
     <script type="text/javascript" src="js/ZahlFormField.js"></script>
     <script type="text/javascript" src="js/Stelle.js"></script>
     <script type="text/javascript" src="js/Stelle.js"></script>
-    <script type="text/javascript" src="js/Layer.js"></script>
     <script type="text/javascript" src="js/Feature.js"></script>
     <script type="text/javascript" src="js/Attribute.js"></script>
     <script type="text/javascript" src="js/syncStatus.js"></script>
@@ -48,12 +48,12 @@
             <a onClick="kvm.showItem('settings')" class="menubutton" id="showSettings">
               <i class="fa fa-bars fa-2x" aria-hidden="true"></i>
             </a>
-            <a onClick="kvm.showItem('haltestellen')" class="menubutton" id="backArrow" style="display:none;">
+            <a onClick="kvm.showItem('featurelist')" class="menubutton" id="backArrow" style="display:none;">
               <i class="fa fa-arrow-left fa-2x" aria-hidden="true"></i>
             </a>
           </div>
           <div class="col-xs-3" style="text-align:center;">
-            <a onClick="kvm.showItem('haltestellen')" class="menubutton" id="showHaltestelle">
+            <a onClick="kvm.showItem('featurelist')" class="menubutton" id="showHaltestelle">
               <img id="showHaltestelle_button" src="img/haltestelle_icon.png" height="32">
               <img id="showHaltestelle_button_white" src="img/haltestelle_weiss_icon.png" height="32" style="display:none;"/img>
             </a>
@@ -64,10 +64,12 @@
             </a>
           </div>
           <div class="col-xs-3" style="text-align:center;">
-            <a onClick="kvm.showItem('formular')" class="menubutton" id="showLine">
+            <!--a onClick="kvm.showItem('formular')" class="menubutton" id="showLine">
               <i id="addHaltestelle" class="fa fa-plus-square fa-2x" aria-hidden="true"></i>
-            </a>
-            <i id="saveFeatureButton" class="fa fa-check-square-o fa-2x inactive-button" aria-hidden="true" style="display:none;"></i>
+            </a //-->
+            <i id="newFeatureButton" class="fa fa-plus-square fa-2x" aria-hidden="true"></i>
+            <i id="saveFeatureButton" class="fa fa-check-square-o fa-2x inactive-button" aria-hidden="true" style="display:none; margin-right: 3px"></i>
+            <i id="formOptionButton" class="fa fa-trash fa-2x" aria-hidden="true" style="display:none;"></i>
           </div>
         </div>
       </div>
@@ -78,21 +80,21 @@
     <div id="map" class="map">
     </div>
 
-    <!-- Haltestellen-->
-    <div id="haltestellen" style="margin-left: 20px; margin-right: 20px;">
+    <!-- featurelist-->
+    <div id="featurelist" style="margin-left: 20px; margin-right: 20px;">
       <div style="float: left">
-        <h1>Haltestellen</h1>
+        <h1 id="featurelistHeading"></h1>
       </div>
       <div style="float: right">
         <h1><i id="showSearch" class="fa fa-search" aria-hidden="true"></i></h1>
       </div>
       <div style="clear: both"></div>
       <input type="text" id="searchHaltestelle" placeholder="Haltestelle suchen" style="display: none">
-      <table id="haltestellen_table">
+      <table id="featurelistTable">
           <thead>
             <!--<tr><th>Haltestelle</th></tr>-->
           </thead>
-          <tbody id="haltestellenBody">
+          <tbody id="featurelistBody">
           </tbody>
         </table>
     </div>
