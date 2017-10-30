@@ -20,6 +20,26 @@ function Feature(data = {}) {
     this.data = (typeof data == 'string' ? $.parseJSON(data) : data);
   };
 
+  this.getCoord = function() {
+    return (
+      this.get('point') != ''
+        ? ol.proj.transform(
+          this.get('point').split(' '),
+          "EPSG:4326",
+          kvm.map.getView().getProjection()
+        )
+        : false
+    );
+  };
+
+  this.getOlFeature = function() {
+    return new ol.Feature({
+      gid: this.get('uuid'),
+      type: 'PointFeature',
+      geometry: new ol.geom.Point(this.getCoord())
+    });
+  };
+
   this.update = function() {
     sql = "\
       SELECT\

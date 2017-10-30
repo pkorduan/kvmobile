@@ -44,6 +44,9 @@ var kvm = {
     kvm.log('Lade Netzwerkstatus');
     NetworkStatus.load();
 
+    kvm.log('initialisiere Karte.');
+    this.initMap();
+
     if (this.store.getItem('activeStelleId')) {
       var activeStelleId = this.store.getItem('activeStelleId'),
           activeStelleSettings = this.store.getItem('stelleSettings_' + activeStelleId),
@@ -77,9 +80,6 @@ var kvm = {
       activeView = 'settings';
     };
 
-    kvm.log('initialisiere Karte.');
-    this.initMap();
-
     // ToDo
     //GpsStatus.load();
     //kvm.log('GPS Position geladen');
@@ -93,29 +93,33 @@ var kvm = {
 
   initMap: function() {
     console.log('initMap');
-    var myProjectionName = "EPSG:25832";
-    proj4.defs(myProjectionName, "+proj=utm +zone=32 +ellps=GRS80 +units=m +no_defs");
-    var myProjection = ol.proj.get(myProjectionName);
+    var utmZone = 33, 
+        myProjectionName = "EPSG:258" + utmZone,
+        myProjection,
+        view,
+        map,
+        orkaMv;
 
-    /*** Set View **/
-    var view = new ol.View({
+    proj4.defs(myProjectionName, "+proj=utm +zone=" + utmZone + " +ellps=GRS80 +units=m +no_defs");
+    myProjection = ol.proj.get(myProjectionName);
+
+    view = new ol.View({
       projection: myProjection,
-      center: ol.proj.transform([12.10,54.10], "EPSG:4326", "EPSG:25832"),
-      extent: [655000.000000000, 5945000.000000000, 750000.000000000, 6030000.000000000],
+      center: ol.proj.transform([12.10,54.10], "EPSG:4326", myProjectionName),
+      extent: [265571.109, 5944912.451, 371562.397, 6016609.056],
       zoom: 12,
       minZoom: 11
     });
 
-    /*** Set the Map***/
-    var map = new ol.Map({
+    map = new ol.Map({
       controls: [],
       layers: [],
-      projection: "EPSG:25832",
+      projection: "EPSG:258" + utmZone,
       target: "map",
       view: view
     });
 
-    var orkaMv= new ol.layer.Tile({
+    orkaMv= new ol.layer.Tile({
       source: new ol.source.TileWMS({
         url: "https://www.orka-mv.de/geodienste/orkamv/wms",
         params: {"LAYERS": "orkamv-gesamt",
@@ -488,6 +492,22 @@ var kvm = {
     $('#numDatasetsText').html(Object.keys(this.activeLayer.features).length);
   },
 
+  drawFeatureMarker: function() {
+    console.log('app.drawFeatureMarker');
+    $.each(
+      this.activeLayer.features,
+      function (key, feature) {
+        console.log('add feature in map: %o', feature);
+
+        if (feature.getCoord()) {
+          kvm.activeLayer.olLayer.getSource().addFeature(
+            feature.getOlFeature()
+          )
+        }
+      }
+    );
+    kvm.activeLayer.olLayer.refresh({force: true});
+  },
 /*
   checkIfTableExists: function() {
     kvm.log('function checkIfTableExists');

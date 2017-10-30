@@ -54,6 +54,7 @@ function Layer(stelle, settings = {}) {
           this_.features['id_' + item.uuid] = new Feature(item);
         }
         kvm.createFeatureList();
+        kvm.drawFeatureMarker();
       },
       function(error) {
         kvm.log('Fehler bei der Abfrage der Daten aus lokaler Datenbank: ' + error.message);
@@ -61,7 +62,6 @@ function Layer(stelle, settings = {}) {
       }
     );
   };
-
 
   this.writeData = function(items) {
     kvm.log('Schreibe die Empfangenen Daten in die lokale Datebbank');
@@ -330,6 +330,53 @@ function Layer(stelle, settings = {}) {
         attr.formField.bindEvents();
       }
     );
+  },
+
+  this.createFeatureLayer = function() {
+    console.log('Layer.createFeatureLayer');
+    this.olLayer = new ol.layer.Vector({
+      name: this.get('title'),
+      opacity: 1,
+      source: new ol.source.Vector({
+        attributions: [
+          new ol.Attribution({
+            html: this.get('kvwmap Server')
+          })
+        ],
+        projection: kvm.map.getView().getProjection(),
+        features: []
+      }),
+      style: this.getStyle,
+      zIndex:100
+    });
+    kvm.map.addLayer(this.olLayer);
+  },
+
+  this.getStyle = function(feature, resolution) {
+    console.log('Feature.getStyle for resolution:' + resolution);
+    var radius = Math.round(24 - 0.45 * resolution);
+      style = new ol.style.Style({
+      image: new ol.style.Circle({
+        radius: radius,
+        stroke: new ol.style.Stroke({
+          color: 'green',
+          width: 2
+        }),
+        fill: new ol.style.Fill({
+          color: 'yellow'
+        })
+      }),
+      text: new ol.style.Text({
+        font: (radius - 2) + 'px arial-bold',
+        text: 'H',
+        textBaseline: 'alphabetic',
+        offsetY: Math.round(radius/2),
+        fill: new ol.style.Fill({
+          color: 'green'
+        })
+      })
+    });
+    return [style];
   },
 
   this.loadFeatureToForm = function(feature) {
@@ -621,6 +668,7 @@ function Layer(stelle, settings = {}) {
     kvm.activeLayer = this;
     kvm.store.setItem('activeLayerId', this.get('id'));
     this.createFeatureForm();
+    this.createFeatureLayer();
     $('input[name=activeLayerId]').checked = false
     $('input[value=' + this.getGlobalId() + ']')[0].checked = true;
     $('.sync-layer-button').hide();
