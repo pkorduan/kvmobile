@@ -4,6 +4,7 @@ function Layer(stelle, settings = {}) {
   this.stelle = stelle;
   this.settings = (typeof settings == 'string' ? $.parseJSON(settings) : settings);
   this.attributes = [];
+  this.runningSyncVersion = 0;
   if (this.settings.attributes) {
     this.attributes = $.map(
       this.settings.attributes,
@@ -21,6 +22,10 @@ function Layer(stelle, settings = {}) {
   this.set = function(key, value) {
     this.settings[key] = value;
     return this.settings[key];
+  };
+
+  this.isEmpty = function() {
+    return (typeof this.get('syncVersion') == 'undefined' || this.get('syncVersion') == '' || this.get('syncVersion') == 0);
   };
 
   /*
@@ -109,15 +114,15 @@ function Layer(stelle, settings = {}) {
       [],
       function(rs) {
         kvm.log('Daten erfolgreich in Datenbank geschrieben');
-        // ToDo setze hier die vom Server gelieferte letzte syncVersion und Zeit
         var layer = kvm.activeLayer;
-        layer.set('syncVersion', 1);
+        layer.set('syncVersion', layer.runningSyncVersion);
         layer.set('syncLastLocalTimestamp', Date());
         layer.saveToStore();
         layer.setActive();
         layer.readData();
       },
       function(error) {
+        layer.set('syncVersion', 0);
         alert('Fehler beim Zugriff auf die Datenbank: ' + error.message);
       }
     );
@@ -152,7 +157,7 @@ function Layer(stelle, settings = {}) {
         $.map(
           this.attributes,
           function(attr) {
-            return attr.get('name') + ' ' + attr.getSqliteType();
+            return attr.get('name') + ' ' + attr.getSqliteType() + (attr.get('nullable') == '0 ' ? ' NOT NULL' : '');
           }
         ).join(', ') + '\
       )\
@@ -227,6 +232,7 @@ function Layer(stelle, settings = {}) {
               if (collection.features.length > 0) {
                 kvm.log('Mindestens 1 Datensatz empfangen.');
                 var layer = kvm.activeLayer;
+                layer.runningSyncVersion = collection.features[0].properties.version;
                 layer.writeData(collection.features);
               }
               else {
@@ -247,6 +253,184 @@ function Layer(stelle, settings = {}) {
       true
     );
   },
+
+  this.syncData = function() {
+    window.requestFileSystem(window.TEMPORARY, 5 * 1024 * 1024,
+      function (fs) {
+        console.log('file system open: ' + fs.name);
+        var fileName = "uploadSource.txt";
+        var dirEntry = fs.root;
+
+        dirEntry.getFile(fileName, { create: true, exclusive: false },
+          function (fileEntry) {
+
+            // Write something to the file before uploading it.
+            kvm.activeLayer.writeFile(fileEntry);
+
+          },
+          function(err) {
+            console.log('onErrorCreateFile');
+          }
+        );
+      },
+      function(err) {
+        console.log('onErrorLoadFs');
+      }
+    );
+  },
+
+  this.writeFile = function(fileEntry, dataObj) {
+    // Create a FileWriter object for our FileEntry (log.txt).
+    fileEntry.createWriter(
+      function (fileWriter) {
+        fileWriter.onwriteend = function () {
+          console.log("Successful file write...");
+          kvm.activeLayer.upload(fileEntry);
+        };
+
+        fileWriter.onerror = function (e) {
+          console.log("Failed file write: " + e.toString());
+        };
+
+        if (!dataObj) {
+          dataObj = new Blob(['file data to upload'], { type: 'text/plain' });
+        }
+
+        fileWriter.write(dataObj);
+      }
+    );
+  },
+
+  this.upload = function(fileEntry) {
+    // !! Assumes variable fileURL contains a valid URL to a text file on the device,
+    var fileURL = fileEntry.toURL();
+    var success = function (r) {
+      console.log("Successful upload...");
+      console.log("Code = " + r.responseCode);
+      // displayFileData(fileEntry.fullPath + " (content uploaded to server)");
+    }
+
+    var fail = function (error) {
+      alert("An error has occurred: Code = " + error.code);
+    }
+
+    var layer = kvm.activeLayer,
+        stelle = layer.stelle,
+        url = stelle.get('url'),
+        file = layer.getUrlFile(url),
+        server = url + file,
+        params = {},
+        options = new FileUploadOptions();
+
+    params.Stelle_ID = stelle.get('Stelle_ID');
+    params.username = stelle.get('username');
+    params.passwort = stelle.get('passwort');
+    params.selected_layer_id = layer.get('id');
+    params.go = 'mobile_sync';
+    params.pullVersionFrom = layer.get('syncVersion');
+
+    options.params = params;
+    options.fileKey = "file";
+    options.fileName = fileURL.substr(fileURL.lastIndexOf('/') + 1);
+    options.mimeType = "text/plain";
+
+    var ft = new FileTransfer();
+    console.log('upload to url: ' + server)
+    ft.upload(fileURL, encodeURI(server), success, fail, options);
+  },
+
+/*
+  this.syncData = function() {
+    console.log('Layer.syncData');
+
+
+    var fileTransfer = new FileTransfer(),
+        filename = 'data_layer_' + this.getGlobalId() + '.json',
+        url = this.getSyncUrl();
+
+
+
+    //
+    // - Frage Deltas ab und schreibe sie in eine Datei
+    // - Schicke die Datei an den Server
+    //   - Bei Erfolg:
+    //     - Führe die Deltas vom Server aus
+    //     - Lösche die Deltas, die weggeschickt wurden
+    //     - Setze die neue syncVersion des Layers
+    //   - Bei Fehler:
+    //     - Zeige Fehlermeldung an
+    //
+
+    sql = "\
+      SELECT\
+        * \
+      FROM\
+        " + this_.activeLayer.get('table_name') + "_deltas\
+    ";
+    console.log('Layer.syncData: query deltas with sql: ' + sql);
+    kvm.db.executeSql(
+      sql,
+      [],
+      function(rs) {
+        console.log('Layer.syncData query deltas success result %o:', rs);
+        var numRows = rs.rows.length,
+            item,
+            i;
+
+        for (i = 0; i < numRows; i++) {
+          item = rs.rows.item(i);
+
+          $('#showDeltasDiv').append('<br>' + item.version + ': ' + item.sql);
+        }
+        $('#showDeltasWaiting').hide();
+        $('#showDeltasDiv').show();
+        $('#hideDeltasButton').show();
+      },
+      function(error) {
+        console.log('apps.js query deltas Fehler: %o', error);
+        alert('Fehler beim Zugriff auf die Datenbank');
+      }
+    );
+
+   kvm.log('Schicke die Daten in Datei: ' + cordova.file.dataDirectory + filename);
+    fileTransfer.download(
+      url,
+      cordova.file.dataDirectory + filename,
+      function (fileEntry) {
+        fileEntry.file(
+          function (file) {
+            var reader = new FileReader();
+
+            reader.onloadend = function() {
+              kvm.log('Download der Daten ist abgeschlossen.');
+              var items = [];
+              kvm.log('Download result: ' + this.result)
+              collection = $.parseJSON(this.result);
+              if (collection.features.length > 0) {
+                kvm.log('Mindestens 1 Datensatz empfangen.');
+                var layer = kvm.activeLayer;
+                layer.runningSyncVersion = collection.features[0].properties.version;
+                layer.writeData(collection.features);
+              }
+              else {
+                alert('Abfrage liefert keine Daten vom Server. Entweder sind noch keine auf dem Server vorhanden oder die URL der Anfrage ist nicht korrekt. Prüfen Sie die Parameter unter Einstellungen.');
+              }
+            };
+
+            reader.readAsText(file);
+          },
+          function(error) {
+            alert('Fehler beim Einlesen der heruntergeladenen Datei. Prüfen Sie die URL und Parameter, die für die Synchronisation verwendet werden.');
+            kvm.log('Fehler beim lesen der Datei: ' + error.code);
+          }
+        );
+        console.log('mach was mit der Datei: %o', fileEntry);
+      },
+      this.downloadError,
+      true
+    );
+  },
+*/
 
   /*
   * Request all layers from active serversetting
@@ -616,14 +800,7 @@ function Layer(stelle, settings = {}) {
       'passwort=' + stelle.get('passwort') + '&' +
       'selected_layer_id=' + this.get('id');
 
-    if (this.get('syncVersion')) {
-      // sync deltas
-      url += '&' +
-        'go=Syncronize' + '&' +
-        'pullVersionFrom=1';
-      kvm.log('Hole Deltas mit Url: ' + url);
-    }
-    else {
+    if (this.isEmpty()) {
       // get all data as new base for deltas
       url += '&' +
         'go=Daten_Export_Exportieren' + '&' +
@@ -646,6 +823,14 @@ function Layer(stelle, settings = {}) {
 */
       kvm.log('Hole initial alle Daten mit Url: ' +  url);
     }
+    else {
+      // sync deltas
+      url += '&' +
+      'go=mobile_sync' + '&' +
+      'pullVersionFrom=1';
+      kvm.log('Hole Deltas mit Url: ' + url);
+    }
+
     return url;
   };
 

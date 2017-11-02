@@ -209,7 +209,7 @@ var kvm = {
         this_.db.executeSql(
           sql,
           [],
-          function(rs, context) {
+          function(rs) {
             console.log('apps.js query deltas success result %o:', rs);
             var numRows = rs.rows.length,
                 item,
@@ -452,9 +452,14 @@ var kvm = {
         var id = evt.target.value,
             layer = kvm.activeLayer;
 
-        layer.requestData();
+        if (layer.isEmpty()) {
+          layer.requestData();
+        }
+        else {
+          layer.syncData();
+        }
       }
-    )
+    );
 
   },
 
