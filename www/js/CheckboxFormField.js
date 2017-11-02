@@ -44,7 +44,7 @@ function CheckboxFormField(formId, settings) {
   };
 
   this.withLabel = function() {
-    return $('<div>').append(
+    return $('<div class="form-field">').append(
       $('<label for="' + this.get('name') + '"/>')
         .append(
           this.element

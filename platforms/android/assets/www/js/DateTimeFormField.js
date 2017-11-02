@@ -52,7 +52,7 @@ function DateTimeFormField(formId, settings) {
   };
 
   this.withLabel = function() {
-    return $('<div>').append(
+    return $('<div class="form-field">').append(
       $('<label for="' + this.get('name') + '"/>')
         .html(
           (this.get('alias') ? this.get('alias') : this.get('name')) + '<br>' 

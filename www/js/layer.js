@@ -354,23 +354,23 @@ function Layer(stelle, settings = {}) {
 
   this.getStyle = function(feature, resolution) {
     console.log('Feature.getStyle for resolution:' + resolution);
-    var radius = Math.round(24 - 0.25 * resolution);
+    var radius = Math.round((6/Math.sqrt(resolution))+3);
       style = new ol.style.Style({
       image: new ol.style.Circle({
         radius: radius,
         stroke: new ol.style.Stroke({
           color: 'green',
-          width: 2
+          width: (radius/10 < 2 ? 2 : radius/10)
         }),
         fill: new ol.style.Fill({
           color: 'yellow'
         })
       }),
       text: new ol.style.Text({
-        font: (radius - 2) + 'px arial-bold',
+        font: (radius * 1.5) + 'px arial-bold',
         text: 'H',
         textBaseline: 'alphabetic',
-        offsetY: Math.round(radius/2),
+        offsetY: Math.round(radius/1.7),
         fill: new ol.style.Fill({
           color: 'green'
         })
@@ -412,6 +412,7 @@ function Layer(stelle, settings = {}) {
 
         if (typeof oldVal == 'string') oldVal = oldVal.trim();
         if (typeof newVal == 'string') newVal = newVal.trim();
+        if (oldVal == null) oldVal = '';
 
         console.log('Vergleiche ' + attr.get('form_element_type') + ' Attribut: ' + key + '(' + oldVal + ' (' + typeof oldVal + ') == ' + newVal + '(' + typeof newVal + '))');
         if (oldVal != newVal) {

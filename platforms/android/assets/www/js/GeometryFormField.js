@@ -81,7 +81,7 @@ function GeometrieFormField(formId, settings) {
   };
 
   this.withLabel = function() {
-    return $('<div>').append(
+    return $('<div class="form-field">').append(
       $('<label for="Koordinaten" />')
         .html(
           '<i id="saveGpsPositionButton" class="fa fa-map-marker fa-2x" aria-hidden="true" style="margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>'

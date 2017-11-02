@@ -359,14 +359,14 @@ var kvm = {
     /*** Search Haltestelle ***/
     $("#searchHaltestelle").on("keyup paste", function() {
       var value = $(this).val().toUpperCase();
-      var $rows = $("#featurelistTable tr");
+      var $rows = $(".feature-item");
       if(value === ''){
         $rows.show(500);
         return false;
       }
       $rows.each(function(index) {
         $row = $(this);
-        var column = $row.find("td span").html().toUpperCase();
+        var column = $row.html().toUpperCase();
         if (column.indexOf(value) > -1) {
           $row.show(500);
         }

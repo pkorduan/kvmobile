@@ -91,7 +91,7 @@ function BilderFormField(formId, settings) {
 
   this.withLabel = function() {
     return $('\
-      <div>\
+      <div class="form-field">\
         <i id="takePictureButton_' + this.get('index') + '" class="fa fa-camera fa-2x" style="color: rgb(38, 50, 134)"/>\
         <div id="previews"></div>\
       <div/>\

@@ -76,11 +76,7 @@ function Feature(data = {}) {
 
   this.listElement = function() {
     return '\
-      <tr>\
-        <td>\
-          <span class="feature-item" id="' + this.get('uuid') + '">' + this.get('name') + '</span>\
-        </td>\
-      </tr>\
+      <div class="feature-item" id="' + this.get('uuid') + '">' + this.get('name') + '</div>\
     ';
   };
 }
