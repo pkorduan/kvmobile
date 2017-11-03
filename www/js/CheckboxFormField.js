@@ -26,8 +26,7 @@ function CheckboxFormField(formId, settings) {
 
   this.getValue = function() {
     console.log('CheckboxFormField.getValue');
-
-    return (this.element.prop('checked') ? 1 : this.element.val());
+    return (this.element.prop('checked') ? 1 : (this.element.val() == '' ? null : 0));
   };
 
   this.bindEvents = function() {

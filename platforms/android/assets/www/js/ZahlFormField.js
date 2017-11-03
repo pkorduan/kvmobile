@@ -28,7 +28,7 @@ function ZahlFormField(formId, settings) {
     var val = this.element.val();
 
     if (typeof val === "undefined" || val == '') {
-      val = 'null';
+      val = null;
     }
     return val;
   };

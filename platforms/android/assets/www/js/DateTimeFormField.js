@@ -26,15 +26,13 @@ function DateTimeFormField(formId, settings) {
   };
 
   this.getValue = function() {
-    console.log('TextFormField.getValue');
+    console.log('DateTimeFormField.getValue');
     var val = this.element.val();
 
     if (typeof val === "undefined" || val == '') {
-      val = 'null';
+      val = null;
     }
-    else {
-      
-    }
+
     return this.fromISO(val);
   };
 
@@ -68,7 +66,7 @@ function DateTimeFormField(formId, settings) {
   }
 
   this.fromISO = function(datetime) {
-    return datetime.replace(/-/g, '/').replace('T', ' ');
+    return (typeof datetime == 'string' ? datetime.replace(/-/g, '/').replace('T', ' ') : null);
   }
 
   return this;

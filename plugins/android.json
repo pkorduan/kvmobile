@@ -1,46 +1,46 @@
 {
-    "prepare_queue": {
-        "installed": [],
-        "uninstalled": []
+  "prepare_queue": {
+    "installed": [],
+    "uninstalled": []
+  },
+  "config_munge": {
+    "files": {}
+  },
+  "installed_plugins": {
+    "cordova-plugin-whitelist": {
+      "PACKAGE_NAME": "com.example.hello"
     },
-    "config_munge": {
-        "files": {}
+    "cordova-plugin-camera": {
+      "PACKAGE_NAME": "com.example.hello"
     },
-    "installed_plugins": {
-        "cordova-plugin-whitelist": {
-            "PACKAGE_NAME": "com.example.hello"
-        },
-        "cordova-plugin-camera": {
-            "PACKAGE_NAME": "com.example.hello"
-        },
-        "cordova-plugin-compat": {
-            "PACKAGE_NAME": "com.example.hello"
-        },
-        "cordova-plugin-device": {
-            "PACKAGE_NAME": "com.example.hello"
-        },
-        "cordova-plugin-geolocation": {
-            "PACKAGE_NAME": "com.example.hello"
-        },
-        "cordova-plugin-network-information": {
-            "PACKAGE_NAME": "com.example.hello"
-        },
-        "cordova-plugin-file-transfer": {
-            "PACKAGE_NAME": "com.example.hello"
-        },
-        "cordova-sqlite-storage": {
-            "PACKAGE_NAME": "com.example.hello"
-        },
-        "cordova-plugin-keyboard": {
-            "PACKAGE_NAME": "de.gdiservice.kvmobile"
-        },
-        "cordova-plugin-dialogs": {
-            "PACKAGE_NAME": "de.gdiservice.kvmobile"
-        }
+    "cordova-plugin-compat": {
+      "PACKAGE_NAME": "com.example.hello"
     },
-    "dependent_plugins": {
-        "cordova-plugin-file": {
-            "PACKAGE_NAME": "com.example.hello"
-        }
+    "cordova-plugin-device": {
+      "PACKAGE_NAME": "com.example.hello"
+    },
+    "cordova-plugin-geolocation": {
+      "PACKAGE_NAME": "com.example.hello"
+    },
+    "cordova-plugin-network-information": {
+      "PACKAGE_NAME": "com.example.hello"
+    },
+    "cordova-plugin-file-transfer": {
+      "PACKAGE_NAME": "com.example.hello"
+    },
+    "cordova-plugin-keyboard": {
+      "PACKAGE_NAME": "de.gdiservice.kvmobile"
+    },
+    "cordova-plugin-dialogs": {
+      "PACKAGE_NAME": "de.gdiservice.kvmobile"
+    },
+    "cordova-sqlite-evplus-legacy-attach-detach-free": {
+      "PACKAGE_NAME": "de.gdiservice.kvmobile"
     }
+  },
+  "dependent_plugins": {
+    "cordova-plugin-file": {
+      "PACKAGE_NAME": "com.example.hello"
+    }
+  }
 }
