@@ -26,6 +26,10 @@ function GeometrieFormField(formId, settings) {
     console.log('GeometrieFormField.getValue');
     var val = this.element.val();
 
+    if (typeof val === "undefined" || val == '') {
+      val = null;
+    }
+
     return val;
   };
 

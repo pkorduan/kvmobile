@@ -261,14 +261,6 @@ module.exports = [
         ]
     },
     {
-        "id": "cordova-sqlite-storage.SQLitePlugin",
-        "file": "plugins/cordova-sqlite-storage/www/SQLitePlugin.js",
-        "pluginId": "cordova-sqlite-storage",
-        "clobbers": [
-            "SQLitePlugin"
-        ]
-    },
-    {
         "id": "cordova-plugin-keyboard.keyboard",
         "file": "plugins/cordova-plugin-keyboard/www/keyboard.js",
         "pluginId": "cordova-plugin-keyboard",
@@ -291,6 +283,14 @@ module.exports = [
         "merges": [
             "navigator.notification"
         ]
+    },
+    {
+        "id": "cordova-sqlite-evplus-legacy-attach-detach-free.SQLitePlugin",
+        "file": "plugins/cordova-sqlite-evplus-legacy-attach-detach-free/www/SQLitePlugin.js",
+        "pluginId": "cordova-sqlite-evplus-legacy-attach-detach-free",
+        "clobbers": [
+            "SQLitePlugin"
+        ]
     }
 ];
 module.exports.metadata = 
@@ -304,9 +304,9 @@ module.exports.metadata =
     "cordova-plugin-network-information": "1.3.3",
     "cordova-plugin-file": "4.3.3",
     "cordova-plugin-file-transfer": "1.6.3",
-    "cordova-sqlite-storage": "2.0.4",
     "cordova-plugin-keyboard": "1.1.5",
-    "cordova-plugin-dialogs": "1.3.3"
+    "cordova-plugin-dialogs": "1.3.3",
+    "cordova-sqlite-evplus-legacy-attach-detach-free": "0.8.3-pre5"
 };
 // BOTTOM OF METADATA
 });

@@ -34,6 +34,10 @@ function BilderFormField(formId, settings) {
     console.log('BilderFormField.getValue');
     var val = this.element.val();
 
+    if (typeof val === "undefined" || val == '') {
+      val = null;
+    }
+
     return val;
   };
 

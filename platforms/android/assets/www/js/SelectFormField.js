@@ -31,8 +31,8 @@ function SelectFormField(formId, settings) {
     console.log('SelectFormField.getValue');
     var val = this.element.val();
 
-    if (val == null || typeof val === "undefined" || val == '') {
-      val = 'null';
+    if (typeof val === "undefined" || val == '') {
+      val = null;
     }
     return val;
   };

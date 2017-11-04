@@ -21,7 +21,7 @@
     "cordova-plugin-keyboard": "^1.1.5",
     "cordova-plugin-network-information": "^1.3.3",
     "cordova-plugin-whitelist": "^1.3.2",
-    "cordova-sqlite-storage": "^2.0.4"
+    "cordova-sqlite-evplus-legacy-attach-detach-free": "git+https://github.com/litehelpers/Cordova-sqlite-evplus-legacy-attach-detach-free.git#evplus-legacy-attach-detach-master"
   },
   "cordova": {
     "plugins": {
@@ -32,9 +32,9 @@
       "cordova-plugin-geolocation": {},
       "cordova-plugin-network-information": {},
       "cordova-plugin-file-transfer": {},
-      "cordova-sqlite-storage": {},
       "cordova-plugin-keyboard": {},
-      "cordova-plugin-dialogs": {}
+      "cordova-plugin-dialogs": {},
+      "cordova-sqlite-evplus-legacy-attach-detach-free": {}
     },
     "platforms": [
       "android"

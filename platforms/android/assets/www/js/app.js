@@ -31,7 +31,11 @@ var kvm = {
     this.store = window.localStorage;
     kvm.log('Lokaler Speicher verfügbar');
 
-    this.db = window.sqlitePlugin.openDatabase({name: config.dbname + '.db', location: 'default'});
+    this.db = window.sqlitePlugin.openDatabase({
+      name: config.dbname + '.db',
+      location: 'default',
+      androidDatabaseImplementation: 2
+    });
     kvm.log('Lokale Datenbank geöffnet.');
     $('#dbnameText').html(config.dbname + '.db');
 
@@ -64,9 +68,18 @@ var kvm = {
 
         kvm.log('Aktiven Layer ' +  activeLayerId + ' gefunden.');
 
-        layer.createLayerList();
-        layer.setActive();
-        layer.readData(); // load from loacl db to feature list
+        // ToDo do not createTable instead attach schema database for layer if not exists
+        // before create LayerList();
+        layer.createTable();
+        layer_ = layer;
+        setTimeout(
+          function() {
+            layer_.createLayerList();
+            layer_.setActive();
+            layer_.readData(); // load from loacl db to feature list
+          },
+          2000
+        );
       }
       else {
         kvm.msg('Laden Sie die Layer vom Server.');
@@ -200,7 +213,7 @@ var kvm = {
               SELECT\
                 * \
               FROM\
-                " + this_.activeLayer.get('table_name') + "_deltas\
+                " + this_.activeLayer.get('schema_name') + '.' + this_.activeLayer.get('table_name') + "_deltas\
             ";
 
         $('#showDeltasButton').hide();
@@ -489,7 +502,7 @@ var kvm = {
     $.each(
       this.activeLayer.features,
       function (key, feature) {
-        //console.log('append feature: %o', feature);
+        console.log('append feature: %o', feature);
         $('#featurelistBody').append(feature.listElement());
       }
     );
@@ -502,7 +515,7 @@ var kvm = {
     $.each(
       this.activeLayer.features,
       function (key, feature) {
-        console.log('add feature in map: %o', feature);
+        //console.log('add feature in map: %o', feature);
 
         if (feature.getCoord()) {
           kvm.activeLayer.olLayer.getSource().addFeature(
@@ -512,6 +525,7 @@ var kvm = {
       }
     );
     kvm.activeLayer.olLayer.refresh({force: true});
+    console.log('app.drawFeatureMarker added ' + this.activeLayer.features.length + ' feature in map');
   },
 /*
   checkIfTableExists: function() {
@@ -682,7 +696,13 @@ var kvm = {
   },
 
   msg: function(msg) {
-    alert(msg);
+    navigator.notification.confirm(
+      msg,
+      function(buttonIndex) {
+      },
+      '',
+      ['ok']
+    );
     console.log('Output msg: ' + msg);
   },
 
