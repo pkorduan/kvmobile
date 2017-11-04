@@ -8,6 +8,11 @@ a.hover {
 	background-color: lightgray;
 }
 
+#layer_list{
+	margin-top: 10px;
+	
+}
+
 .form-field {
 	font-size: 18px;
 }
