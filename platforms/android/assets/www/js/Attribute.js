@@ -62,7 +62,8 @@ function Attribute(layer, settings = {}) {
       case ($.inArray(pgType, [
           'character varying',
           'text',
-          'character'
+          'character',
+          'bool'
         ]) > -1) :
         slType = 'TEXT';
         break;
@@ -73,7 +74,6 @@ function Attribute(layer, settings = {}) {
           'int16',
           'bigint',
           'integer',
-          'bool'
         ]) > -1) :
         slType = 'INTEGER';
         break;

@@ -69,19 +69,53 @@ function Layer(stelle, settings = {}) {
   };
 
   this.writeData = function(items) {
-    kvm.log('Schreibe die Empfangenen Daten in die lokale Datebbank');
+    kvm.log('Schreibe die Empfangenen Daten in die lokale Datebank');
     var tableName = this.get('schema_name') + '.' + this.get('table_name'),
         keys = $.map(
-          items[0].properties,
-          function(value, key) {
-            return key;
+          this.attributes,
+          function(attr) {
+            return attr.get('name');
           }
-        ).join(', ') + ', ' +
-        'point',
+        ).join(', '),
         values = '(' +
           $.map(
             items,
             function(item) {
+              return $.map(
+                kvm.activeLayer.attributes,
+                (
+                  function(attr) {
+                    var type = attr.get('type'),
+                        value = (type == 'geometry' ? this.item.geometry : this.item.properties[attr.get('name')]);
+
+                    switch (true) {
+                      case (value == null) :
+                        v = 'null';
+                        break;
+                      case (type == 'bool' && value == '1') :
+                        v = "'t'";
+                        break;
+                      case (type == 'bool' && value == '0') :
+                        v = "'f'";
+                        break;
+                      case (type == 'geometry') :
+                        v = "'" + kvm.wkx.Geometry.parse('SRID=4326;POINT(' + value.coordinates.toString().replace(',', ' ') + ')').toEwkb().inspect().replace(/<|Buffer| |>/g, '') + "'";
+                        break;
+                      case (attr.getSqliteType() == 'INTEGER') :
+                        v = value;
+                        break;
+                      default:
+                        v = "'" + value + "'";
+                    }
+                    return v;
+                  }
+                ).bind({'item' : item})
+              ).join(', ')
+            }
+          ).join('), (') +
+        ')';
+
+/*
               return $.map(
                 item.properties,
                 function(value, key) {
@@ -98,12 +132,13 @@ function Layer(stelle, settings = {}) {
                   }
                   return v;
                 }
-              ).join(', ') + ', ' +
-              "'" + (item.geometry == null ? '' : item.geometry.coordinates.join(' ')) + "'";
+              ).join(', ') + ', ' + (item.geometry == null ? null :
+              "'" + wkx.Geometry.parseGeoJSON(item.geometry).toWkb().inspect().replace(/<|Buffer| |>/g, '') + "'"
+              );
             }
           ).join('), (') +
         ')';
-
+*/
     sql = "\
       INSERT INTO " + this.get('schema_name') + '.' + this.get('table_name') +" (\
         " + keys + ")\
@@ -750,6 +785,9 @@ function Layer(stelle, settings = {}) {
       <div id="layer_' + this.getGlobalId()  + '">\
         <input type="radio" name="activeLayerId" value="' + this.getGlobalId() + '"/> ' +
         this.get('title') + '\
+        <button id="clearLayerButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="clear-layer-button" style="border-radius: 5px; background: #afffaf; float: right; display: none;">\
+          <i class="fa fa-trash" aria-hidden="true"></i>\
+        </button>\
         <button id="syncLayerButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="sync-layer-button" style="border-radius: 5px; background: #afffaf; float: right; display: none;">\
           <i class="fa fa-refresh" aria-hidden="true"></i>\
         </button>\

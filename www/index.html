@@ -8,7 +8,9 @@
     <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width" /-->
     <!-- This is a wide open CSP declaration. To lock this down for production, see below. -->
     <!--meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline'; style-src 'self' 'unsafe-inline'; media-src *"-->
-    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline'; style-src * 'unsafe-inline'; media-src *; img-src * data:" />
+    <!--meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline'; img-src * filesystem://com.android.providers.media.documents/document/ content://com.android.providers.media.documents/document/ data://com.android.providers.media.documents/document/ blob://com.android.providers.media.documents/document/ android-webview-video-poster:content://com.android.providers.media.documents/document/ gap: https://ssl.gstatic.com content://com.android.providers.media.documents/document/ unsafe-eval'; style-src * 'unsafe-inline'; media-src *"-->
+
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline'; style-src * 'unsafe-inline'; media-src *; img-src * data: content://com.android.providers.media.documents 'unsafe-inline' 'unsafe-eval';"/>
 
     <link rel="stylesheet" type="text/css" href="3rdparty/font-awesome-4.7.0/css/font-awesome.min.css">
     <link rel="stylesheet" type="text/css" href="3rdparty/bootstrap-3.3.7/css/bootstrap.min.css">
@@ -24,7 +26,7 @@
     <!--script type="text/javascript" src="3rdparty/openlayers/en/v3.20.1/build/ol.js"></script//-->
     <script type="text/javascript" src="3rdparty/openlayers/v4.4.2/ol-debug.js"></script>
 
-    <!--script type="text/javascript" src="3rdparty/wkx-0.4.2/dist/wkx.min.js"></script//-->
+    <script type="text/javascript" src="3rdparty/wkx-0.4.2/dist/wkx.min.js"></script>
     <script type="text/javascript" src="js/config.js"></script>
     <script type="text/javascript" src="js/Layer.js"></script>
     <script type="text/javascript" src="js/CheckboxFormField.js"></script>
@@ -98,7 +100,7 @@
 
 
     <!-- Settings -->
-    <div id="settings" style="margin-left: 20px; margin-right: 20px; display: none">
+    <div id="settings" style="margin-left: 20px; margin-right: 20px; font-size: 24; display: none">
       <h1>Einstellungen</h1>
       <input type="checkbox" style="vertical-align: top;" />
       Automatisches Öffnen von Formular, wenn in der Nähe von Haltestellen

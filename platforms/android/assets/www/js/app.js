@@ -18,6 +18,8 @@
  */
 var kvm = {
   debug: true,
+  Buffer: require('buffer').Buffer,
+  wkx: require('wkx'),
 
   init: function() {
     console.log('init');
@@ -502,7 +504,7 @@ var kvm = {
     $.each(
       this.activeLayer.features,
       function (key, feature) {
-        console.log('append feature: %o', feature);
+        //console.log('append feature: %o', feature);
         $('#featurelistBody').append(feature.listElement());
       }
     );

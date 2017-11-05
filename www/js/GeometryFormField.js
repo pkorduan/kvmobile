@@ -1,5 +1,7 @@
 function GeometrieFormField(formId, settings) {
-  this.settings = settings,
+  this.Buffer = require('buffer').Buffer;
+  this.wkx = require('wkx');
+  this.settings = settings;
 
   this.get = function(key) {
     return this.settings[key];
@@ -19,7 +21,14 @@ function GeometrieFormField(formId, settings) {
 
   this.setValue = function(val) {
     console.log('GeometrieFormField.setValue with value: %o', val);
-    this.element.val(val == 'null' ? '' : val);
+    if (val == null || val == 'null') {
+      val = '';
+    }
+    else {
+      var geom = this.wkx.Geometry.parse(new this.Buffer(val, 'hex'));
+      val = geom.x + ' ' + geom.y;
+    }
+    this.element.val(val);
   };
 
   this.getValue = function() {
@@ -28,6 +37,9 @@ function GeometrieFormField(formId, settings) {
 
     if (typeof val === "undefined" || val == '') {
       val = null;
+    }
+    else {
+      val = this.wkx.Geometry.parse('SRID=4326;POINT(' + val + ')').toEwkb().inspect().replace(/<|Buffer| |>/g, '');
     }
 
     return val;
@@ -56,7 +68,7 @@ function GeometrieFormField(formId, settings) {
               function(buttonIndex) {
                 if (buttonIndex == 1) {
                   console.log('set new Position ' + geoLocation.coords.latitude + ' ' + geoLocation.coords.longitude);
-                  $('#featureFormular input[id=0]').val(geoLocation.coords.latitude + ' ' + geoLocation.coords.longitude).trigger('change');
+                  $('#featureFormular input[id=0]').val(geoLocation.coords.longitude + ' ' + geoLocation.coords.latitude).trigger('change');
                 }
               },
               'GPS-Position',

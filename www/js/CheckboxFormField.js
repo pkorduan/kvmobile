@@ -19,14 +19,15 @@ function CheckboxFormField(formId, settings) {
   this.setValue = function(val) {
     console.log('CheckboxFormField.setValue with value: ' + val);
     this.element.val(val);
-    if (val == 1) {
+    this.element.prop('checked', false);
+    if (val == 't') {
       this.element.prop('checked', true);
     }
   };
 
   this.getValue = function() {
     console.log('CheckboxFormField.getValue');
-    return (this.element.prop('checked') ? 1 : (this.element.val() == '' ? null : 0));
+    return (this.element.prop('checked') ? 't' : (this.element.val() == '' ? null : 'f'));
   };
 
   this.bindEvents = function() {
