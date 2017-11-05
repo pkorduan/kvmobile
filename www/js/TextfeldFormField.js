@@ -36,7 +36,7 @@ function TextfeldFormField(formId, settings) {
   this.bindEvents = function() {
     console.log('TextfeldFormField.bindEvents');
     $('#featureFormular textarea[id=' + this.get('index') + ']').on(
-      'change',
+      'keyup',
       function() {
         console.log('event on saveFeatureButton');
         if (!$('#saveFeatureButton').hasClass('active-button')) {

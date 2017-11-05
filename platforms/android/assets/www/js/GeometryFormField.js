@@ -39,7 +39,7 @@ function GeometrieFormField(formId, settings) {
       val = null;
     }
     else {
-      val = this.wkx.Geometry.parse('SRID=4326;POINT(' + val + ')').toEWkb().inspect().replace(/<|Buffer| |>/g, '');
+      val = this.wkx.Geometry.parse('SRID=4326;POINT(' + val + ')').toEwkb().inspect().replace(/<|Buffer| |>/g, '');
     }
 
     return val;

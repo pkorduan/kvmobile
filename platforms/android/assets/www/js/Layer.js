@@ -362,7 +362,7 @@ function Layer(stelle, settings = {}) {
     var success = function (r) {
       console.log("Successful upload...");
       console.log("Code = " + r.responseCode);
-      console.log('Response: ' + r.response);
+      console.log('Response: %o', r.response);
       response = $.parseJSON(r.response);
       if (response.success) {
         kvm.msg('Syncronisierung erfolgreich durchgeführt.');
@@ -401,7 +401,9 @@ function Layer(stelle, settings = {}) {
     options.mimeType = "application/json";
 
     var ft = new FileTransfer();
-    console.log('upload to url: ' + server)
+    console.log('upload to url: ' + server);
+    console.log('with params: %o', params);
+    console.log('with options: %o', options);
     ft.upload(fileURL, encodeURI(server), success, fail, options);
   },
 
