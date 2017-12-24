@@ -17,7 +17,7 @@ function CheckboxFormField(formId, settings) {
   );
 
   this.setValue = function(val) {
-    console.log('CheckboxFormField.setValue with value: ' + val);
+    //console.log('CheckboxFormField.setValue with value: ' + val);
     this.element.val(val);
     this.element.prop('checked', false);
     if (val == 't') {
@@ -25,13 +25,13 @@ function CheckboxFormField(formId, settings) {
     }
   };
 
-  this.getValue = function() {
-    console.log('CheckboxFormField.getValue');
+  this.getValue = function(action = '') {
+   // console.log('CheckboxFormField.getValue');
     return (this.element.prop('checked') ? 't' : (this.element.val() == '' ? null : 'f'));
   };
 
   this.bindEvents = function() {
-    console.log('CheckboxFormField.bindEvents');
+    //console.log('CheckboxFormField.bindEvents');
     $('#featureFormular input[id=' + this.get('index') + ']').on(
       'change',
       function() {

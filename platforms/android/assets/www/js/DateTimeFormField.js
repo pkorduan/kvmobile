@@ -1,5 +1,5 @@
 function DateTimeFormField(formId, settings) {
-  console.log('Erzeuge DateTimeFormField with settings %o', settings);
+  //console.log('Erzeuge DateTimeFormField with settings %o', settings);
   this.settings = settings,
 
   this.get = function(key) {
@@ -20,24 +20,35 @@ function DateTimeFormField(formId, settings) {
 
   this.setValue = function(val) {
     var val = kvm.coalesce(val, '');
-    if (val != '') val = this.toISO(val);
-    console.log('DateTimeFormField ' + this.get('name') + ' setValue with value: %o', val);
+    if (val != '') val = this.toISO(val);    
+    //console.log('DateTimeFormField ' + this.get('name') + ' setValue with value: %o', val);
     this.element.val(val);
   };
 
-  this.getValue = function() {
-    console.log('DateTimeFormField.getValue');
+  this.getValue = function(action = '') {
+   // console.log('DateTimeFormField.getValue');
     var val = this.element.val();
 
     if (typeof val === "undefined" || val == '') {
       val = null;
     }
 
+    // return current time if attribut type is Time and (action is empty or equal to option)
+    if (
+      this.get('form_element_type') == 'Time' &&
+      (
+        action == '' ||
+        action.toLowerCase() == this.get('option').toLowerCase()
+      )
+    ) {
+      val = (new Date()).toISOString()
+    }
+
     return this.fromISO(val);
   };
 
   this.bindEvents = function() {
-    console.log('DateTimeFormField.bindEvents');
+    //console.log('DateTimeFormField.bindEvents');
     $('#featureFormular input[id=' + this.get('index') + ']').on(
       'change',
       function() {

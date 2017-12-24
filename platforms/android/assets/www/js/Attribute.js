@@ -1,5 +1,5 @@
 function Attribute(layer, settings = {}) {
-  console.log('Erzeuge Attributeobjekt with settings %o', settings);
+  //console.log('Erzeuge Attributeobjekt with settings %o', settings);
   this.layer = layer;
   this.settings = settings;
 
@@ -13,7 +13,7 @@ function Attribute(layer, settings = {}) {
   };
 
   this.getFormField = function() {
-    console.log('Attribute.getFormField(' + this.get('form_element_type') + ')');
+    //console.log('Attribute.getFormField(' + this.get('form_element_type') + ')');
     var field = '';
 
     switch (this.get('form_element_type')) {

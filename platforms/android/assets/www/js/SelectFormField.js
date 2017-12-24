@@ -23,12 +23,12 @@ function SelectFormField(formId, settings) {
   );
 
   this.setValue = function(val) {
-    console.log('SelectFormField.setValue with value: ' + val);
+    //console.log('SelectFormField.setValue with value: ' + val);
     this.element.val(val == 'null' ? '' : val);
   };
 
-  this.getValue = function() {
-    console.log('SelectFormField.getValue');
+  this.getValue = function(action = '') {
+    //console.log('SelectFormField.getValue');
     var val = this.element.val();
 
     if (typeof val === "undefined" || val == '') {
@@ -38,7 +38,7 @@ function SelectFormField(formId, settings) {
   };
 
   this.bindEvents = function() {
-    console.log('SelectFormField.bindEvents');
+    //console.log('SelectFormField.bindEvents');
     $('#featureFormular select[id=' + this.get('index') + ']').on(
       'change',
       function() {

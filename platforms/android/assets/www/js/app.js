@@ -16,10 +16,29 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-var kvm = {
+kvm = {
   debug: true,
   Buffer: require('buffer').Buffer,
   wkx: require('wkx'),
+  controls: {},
+  controller: {},
+  views: {},
+
+  loadHeadFile: function(filename, filetype) {
+    if (filetype=="js"){ //if filename is a external JavaScript file
+      var fileref=document.createElement('script')
+      fileref.setAttribute("type","text/javascript")
+      fileref.setAttribute("src", filename)
+    }
+    else if (filetype=="css"){ //if filename is an external CSS file
+      var fileref=document.createElement("link")
+      fileref.setAttribute("rel", "stylesheet")
+      fileref.setAttribute("type", "text/css")
+      fileref.setAttribute("href", filename)
+    }
+    if (typeof fileref!="undefined")
+      document.getElementsByTagName("head")[0].appendChild(fileref)
+  },
 
   init: function() {
     console.log('init');
@@ -73,12 +92,12 @@ var kvm = {
         // ToDo do not createTable instead attach schema database for layer if not exists
         // before create LayerList();
         layer.createTable();
-        layer_ = layer;
         setTimeout(
           function() {
-            layer_.createLayerList();
-            layer_.setActive();
-            layer_.readData(); // load from loacl db to feature list
+            kvm.controller.mapper.createLayerList(stelle);
+            console.log('set layer to active %o', layer);
+            layer.setActive();
+            layer.readData(); // load from loacl db to feature list
           },
           2000
         );
@@ -108,7 +127,7 @@ var kvm = {
 
   initMap: function() {
     console.log('initMap');
-    var utmZone = 33, 
+    var utmZone = config.projZone,
         myProjectionName = "EPSG:258" + utmZone,
         myProjection,
         view,
@@ -120,14 +139,25 @@ var kvm = {
 
     view = new ol.View({
       projection: myProjection,
-      center: ol.proj.transform([12.10,54.10], "EPSG:4326", myProjectionName),
-      extent: [265571.109, 5944912.451, 371562.397, 6016609.056],
-      zoom: 12,
-      minZoom: 11
+      center: ol.proj.transform(config.startPosition, "EPSG:4326", myProjectionName),
+      extent: config.maxExtent,
+      zoom: config.startZoom,
+      minZoom: 8
     });
 
     map = new ol.Map({
-      controls: [],
+      controls: ol.control.defaults({
+        attribution: true,
+        attributionOptions: {
+          label: "kvmobile"
+        }
+      }).extend([
+        new ol.control.ScaleLine({
+          className: 'ol-scale-line',
+          title: 'Maßstabsbalken'
+        }),
+        new kvm.controls.gpsControl()
+      ]),
       layers: [],
       projection: "EPSG:258" + utmZone,
       target: "map",
@@ -142,6 +172,30 @@ var kvm = {
       })
     });
     map.addLayer(orkaMv);
+
+    helpLayer = new ol.layer.Vector({
+      name: 'Hilslayer',
+      opacity: 0.3,
+      source: new ol.source.Vector({
+        projection: map.getView().getProjection(),
+        features: []
+      }),
+      style: new ol.style.Style({
+        image: new ol.style.Circle({
+          radius: 10,
+          stroke: new ol.style.Stroke({
+            color: 'blue',
+            width:2
+          }),
+          fill: new ol.style.Fill({
+            color: 'blue'
+          })
+        })
+      }),
+      zIndex: 200
+    });
+    map.addLayer(helpLayer);
+
     this.map = map;
   },
 
@@ -173,6 +227,46 @@ var kvm = {
       }
     );
 */
+
+    this.map.on(
+      'click',
+      (function(evt) {
+        console.log('app click event on map');
+        var selectedFeatures = {};
+
+        this.map.forEachFeatureAtPixel(
+          evt.pixel,
+          (function(feature, layer) {
+            if (layer) {
+              console.log('Click on layer %o', layer);
+              if (layer.get('name') == 'Hilfslayer') {
+                console.log('Click on Feature %o', feature);
+                layer.getSource().clear();
+              }
+              else {
+                console.log('app click on feature %o', feature);
+                this.activeLayer.loadFeatureToForm(
+                  this.activeLayer.features['id_' + feature.get('gid')]
+                );
+              }
+              this.showItem('formular');
+            }
+          }).bind(this)
+        );
+      }).bind(this)
+    );
+
+    this.map.on(
+      'pointerdrag',
+      function(evt) {
+        var gpsControlButton = $('#gpsControlButton');
+        if (gpsControlButton.hasClass('kvm-gps-track')) {
+          console.log('switch of gps-track');
+          gpsControlButton.toggleClass('kvm-gps-on kvm-gps-track');
+        }
+      }
+    );
+
     $('#requestLayersButton').on(
       'click',
       function () {
@@ -233,7 +327,7 @@ var kvm = {
             $('#showDeltasDiv').html('<b>Deltas</b>');
             for (i = 0; i < numRows; i++) {
               item = rs.rows.item(i);
-              $('#showDeltasDiv').append('<br>' + item.version + ': ' + item.sql);
+              $('#showDeltasDiv').append('<br>' + item.version + ': ' + (item.type == 'sql' ? item.delta : item.change + ' ' + item.delta));
             }
             $('#showDeltasWaiting').hide();
             $('#showDeltasDiv').show();
@@ -264,8 +358,18 @@ var kvm = {
           function(buttonIndex) {
             if (buttonIndex == 1) { // ja
               console.log('Datensatz löschen');
-              delta = kvm.activeLayer.createDelta('DELETE');
-              kvm.activeLayer.execDelta(delta);
+              kvm.activeLayer.createDeltas('DELETE', []);
+              kvm.activeLayer.createImgDeltas('DELETE',
+                $.map(
+                  kvm.activeLayer.getDokumentAttributeNames(),
+                  function(name) {
+                    return {
+                      "key" : name,
+                      "value" : ''
+                    }
+                  }
+                )
+              );
             }
 
             if (buttonIndex == 2) { // nein
@@ -290,16 +394,18 @@ var kvm = {
           navigator.notification.confirm(
             'Datensatz Speichern?',
             function(buttonIndex) {
+              var action = (typeof kvm.activeLayer.features['id_' + kvm.activeLayer.activeFeature.get('uuid')] == 'undefined' ? 'INSERT' : 'UPDATE');
               if (buttonIndex == 1) { // ja
-                changes = kvm.activeLayer.collectChanges();
+                changes = kvm.activeLayer.collectChanges(action);
                 console.log('changes: %o', changes);
+                kvm.activeLayer.createDeltas(action, changes);
 
-                delta = kvm.activeLayer.createDelta(
-                  (typeof kvm.activeLayer.features['id_' + kvm.activeLayer.activeFeature.get('uuid')] == 'undefined' ? 'INSERT' : 'UPDATE'),
-                  changes
+                imgChanges = changes.filter(
+                  function(change) {;
+                    return ($.inArray(change.key, kvm.activeLayer.getDokumentAttributeNames()) > -1);
+                  }
                 );
-
-                kvm.activeLayer.execDelta(delta);
+                if (imgChanges.length > 0) kvm.activeLayer.createImgDeltas(action, imgChanges);
 
                 //  waitingDiv.hide();
 
@@ -372,25 +478,21 @@ var kvm = {
 
     /* Clientside Filter according to http://stackoverflow.com/questions/12433835/client-side-searching-of-a-table-with-jquery */
     /*** Search Haltestelle ***/
-    $("#searchHaltestelle").on("keyup paste", function() {
-      var value = $(this).val().toUpperCase();
-      var $rows = $(".feature-item");
-      if(value === ''){
-        $rows.show(500);
-        return false;
+    $("#searchHaltestelle").on(
+      "keyup paste",
+      function() {
+        console.log('app keyup paste on searchHaltestelle');
+        var needle = $(this).val().toLowerCase(),
+            haystack = $(".feature-item");
+
+        haystack.each(
+          function(index) {
+            $(this).html().toLowerCase().indexOf(needle) > -1 ? $(this).show() : $(this).hide();
+          }
+        );
       }
-      $rows.each(function(index) {
-        $row = $(this);
-        var column = $row.html().toUpperCase();
-        if (column.indexOf(value) > -1) {
-          $row.show(500);
-        }
-        else {
-          $row.hide(500);
-        }
-      });
-    });
-    
+    );
+
     $("#geoLocationButton").on(
       'click',
       kvm.getGeoLocation
@@ -467,11 +569,36 @@ var kvm = {
         var id = evt.target.value,
             layer = kvm.activeLayer;
 
+        $('#syncLayerButton_' + layer.getGlobalId()).hide();
+        $('#syncLayerWaiter_' + layer.getGlobalId()).show();
+
         if (layer.isEmpty()) {
           layer.requestData();
         }
         else {
           layer.syncData();
+        }
+      }
+    );
+
+    $('.sync-images-button').on(
+      'click',
+      function(evt) {
+        var id = evt.target.value,
+            layer = kvm.activeLayer;
+
+        layer.syncImages();
+      }
+    );
+
+    $('.clear-layer-button').on(
+      'click',
+      function(evt) {
+        var id = evt.target.value,
+            layer = kvm.activeLayer;
+
+        if (!layer.isEmpty()) {
+          layer.clearData();
         }
       }
     );
@@ -505,7 +632,13 @@ var kvm = {
       this.activeLayer.features,
       function (key, feature) {
         //console.log('append feature: %o', feature);
-        $('#featurelistBody').append(feature.listElement());
+        var needle = $('#searchHaltestelle').val().toLowerCase(),
+            element = $(feature.listElement()),
+            haystack = element.html().toLowerCase();
+
+        $('#featurelistBody').append(
+          haystack.indexOf(needle) > -1 ? element.show() : element.hide()
+        );
       }
     );
     kvm.bindFeatureItemClickEvents();
@@ -513,11 +646,11 @@ var kvm = {
   },
 
   drawFeatureMarker: function() {
-    console.log('app.drawFeatureMarker');
+    //console.log('app.drawFeatureMarker');
     $.each(
       this.activeLayer.features,
       function (key, feature) {
-        //console.log('add feature in map: %o', feature);
+        //console.log('app.drawFeatureMarker: add feature in map: %o', feature);
 
         if (feature.getCoord()) {
           kvm.activeLayer.olLayer.getSource().addFeature(
@@ -578,7 +711,7 @@ var kvm = {
       case 'map':
         kvm.showDefaultMenu();
         $("#featurelist, #settings, #formular, #loggings").hide();
-        $("#map, #newFeatureButton").show();
+        $("#map, #newFeatureButton, .ol-unselectable").show();
         break;
       case "featurelist":
         kvm.showDefaultMenu();
@@ -727,3 +860,6 @@ var kvm = {
     return null;
   }
 };
+
+kvm.loadHeadFile('js/controls/gpsControl.js', 'js');
+kvm.loadHeadFile('js/controller/mapper.js', 'js');

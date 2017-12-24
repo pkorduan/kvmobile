@@ -19,11 +19,16 @@ function BilderFormField(formId, settings) {
   );
 
   this.setValue = function(val) {
+    console.log('BilderFormField.setValue with value: ' +  val);
     var val = kvm.coalesce(val, ''),
+        images,
         i;
 
-    console.log('BilderFormField.setValue with value: %o', val);
-    this.element.val(this.removeBraces(val));
+    val = this.removeBraces(val.trim());
+    this.element.val(val);
+
+    // remove images from preview div
+    $('#' + this.images_div_id).html('');
 
     if (val == '') {
       $('#' + this.images_div_id).html('').hide();
@@ -48,11 +53,11 @@ function BilderFormField(formId, settings) {
     
 
     $('#large_image_1').attr("src", val).show();
-    console.log('Add click handler on preview div' + val);
+    //console.log('Add click handler on preview div' + val);
   };
 
-  this.getValue = function() {
-    console.log('BilderFormField.getValue');
+  this.getValue = function(action = '') {
+    //console.log('BilderFormField.getValue');
     var val = this.element.val();
 
     if (typeof val === "undefined" || val == '') {
@@ -70,6 +75,7 @@ function BilderFormField(formId, settings) {
   * Return the first part before & delimiter
   */
   this.removeOriginalName = function(val) {
+    console.log('BilderFormField.removeOriginalName: ' + val);
     return val.split('&').shift();
   }
 
@@ -79,40 +85,50 @@ function BilderFormField(formId, settings) {
   * but can be used also for all other enclosing character
   */
   this.removeBraces = function(val) {
-    return val.substring(1, val.length-1)
+    console.log('BilderFormField.removeBraces ' + val);
+    var result = val.substring(1, val.length-1)
+    console.log('result: ' + result);
+    return result;
   }
 
   /*
   * Add braces around the value to make an array
   */
   this.addBraces = function(val) {
-    console.log('BilderformField.addBraces');
-    return '{' + val + '}';
+    console.log('BilderformField.addBraces ' + val);
+    var result = '{' + val + '}';
+    console.log('Result: ' + result);
+    return result
   }
 
   /*
   * Replace server image path by local image path
   */
   this.serverToLocalPath = function(src) {
-    return config.localImgPath + src.substring(src.lastIndexOf('/') + 1);
+    console.log('BilderFormField.serverToLocalPath ' + src);
+    var result = config.localImgPath + src.substring(src.lastIndexOf('/') + 1);
+    console.log('Result: ' + result);
+    return result
   };
 
   /*
   * Replace local image path by servers image path
   */
   this.localToServerPath = function(src) {
-    return kvm.activeLayer.get('document_path') + src.substring(src.lastIndexOf('/') + 1);
+    console.log('BilerFormField.localToServerPath src: %o',  src);
+    var result = kvm.activeLayer.get('document_path') + src.substring(src.lastIndexOf('/') + 1);
+    console.log('Result: ' + result);
+    return result
   };
 
   this.addImage = function(src) {
-    console.log('Add Image to FormField');
-    $('#' + this.images_div_id).append($('\
-      <img\
-        src="' + src + '"\
-        style="margin-bottom: 2px; width: 100%;"\
-        onclick=".msg(this.src)"\
-      />\
-    ')).show();
+    console.log('BilderFormField: Add Image to FormField');
+    var img_div = $('<div>');
+
+    img_div.append($('<img src="' + src + '" field_id="' + this.get('index') + '" style="margin-bottom: 2px; width: 100%;"/>'));
+    img_div.append($('<br>'));
+    img_div.append($('<input type="text"\ name="' + src + '"/>'));
+    $('#' + this.images_div_id).append(img_div).show();
 
     $('#dropAllPictureButton_' + this.get('index')).show();
 
@@ -123,8 +139,10 @@ function BilderFormField(formId, settings) {
           'Bild Löschen?',
           function(buttonIndex) {
             if (buttonIndex == 1) { // ja
-              kvm.msg('Einzelne Bilder Löschen ist noch nicht implementiert.');
-              console.log('Bild löschen');
+              var src = evt.target.src;
+                  field = kvm.activeLayer.attributes[evt.target.getAttribute('field_id')].formField;
+
+              field.dropImage(evt.target);
             }
 
             if (buttonIndex == 2) { // nein
@@ -143,16 +161,36 @@ function BilderFormField(formId, settings) {
   * Remove the image tag witch have this src and
   * the corresponding path from hidden formfield
   */
-  this.dropImage = function(src) {
+  this.dropImage = function(img) {
+    console.log('BilderFormField.dropImage img: %o', img);
+    debug_img = img;
+    var imageField = this.element,
+        activeLayer = kvm.activeLayer,
+        sql = '';
+
     // ToDo implement this function and bind to delte choice of after dialog from image click
+    // remove image string from field value
+    imageField.val(
+      $.map(
+        imageField.val().split(','),
+        function(path) {
+          if (path.indexOf(img.src.substring(img.src.lastIndexOf('/') + 1)) < 0) {
+            return path;
+          }
+        }
+      ).join(',')
+    );
+
+    imageField.trigger('change');
+    $(img).parent().remove();
   };
 
   this.bindEvents = function() {
-    console.log('SelectFormField.bindEvents');
+    //console.log('SelectFormField.bindEvents');
     $('#featureFormular input[id=' + this.get('index') + ']').on(
       'change',
       function() {
-        console.log('event on saveFeatureButton');
+       // console.log('event on saveFeatureButton');
         if (!$('#saveFeatureButton').hasClass('active-button')) {
           $('#saveFeatureButton').toggleClass('active-button inactive-button');
         }
@@ -181,20 +219,21 @@ function BilderFormField(formId, settings) {
 
   this.dropAllPictures = function(evt) {
     var context = evt.data.context;
-    console.log('BilderformField.dropAllPictures');
+    //console.log('BilderformField.dropAllPictures');
     context.setValue('');
     context.element.trigger('change');
   };
 
   this.takePicture = function(evt) {
-    console.log('BilderFormField.takePicture %o', evt);
+   // console.log('BilderFormField.takePicture %o', evt);
     formField = evt.data.context;
 
     navigator.camera.getPicture(
       function(imageData) {
-        console.log("BilderFormField.takePicture success with imageData %o", imageData);
-        console.log('Get Element of BilderFormField %o', formField);
-        var files = $('#featureFormular input[id=1]').val(); 
+       // console.log("BilderFormField.takePicture success with imageData %o", imageData);
+       // console.log('Get Element of BilderFormField %o', formField);
+        var files = $('#featureFormular input[id=1]').val(),
+            newImg = formField.localToServerPath(imageData);
 
         formField.addImage(
           imageData
@@ -203,7 +242,7 @@ function BilderFormField(formId, settings) {
         if (files != '') {
           files += ',';
         }
-        $('#featureFormular input[id=1]').val(files + formField.localToServerPath(imageData)).trigger('change');
+        $('#featureFormular input[id=1]').val(files + newImg).trigger('change');
         $('#featureFormular input[id=2]').val((new Date()).toISOString().replace('Z', '')).show();
         formField.element.trigger('change');
       },
