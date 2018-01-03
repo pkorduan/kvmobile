@@ -1,12 +1,4 @@
 {
-  "cordova-plugin-whitelist": {
-    "source": {
-      "type": "registry",
-      "id": "cordova-plugin-whitelist@^1.3.2"
-    },
-    "is_top_level": true,
-    "variables": {}
-  },
   "cordova-plugin-camera": {
     "source": {
       "type": "registry",
@@ -83,6 +75,14 @@
     "source": {
       "type": "registry",
       "id": "https://github.com/litehelpers/Cordova-sqlite-evplus-legacy-attach-detach-free#evplus-legacy-attach-detach-master"
+    },
+    "is_top_level": true,
+    "variables": {}
+  },
+  "cordova-plugin-whitelist": {
+    "source": {
+      "type": "registry",
+      "id": "cordova-plugin-whitelist@^1.3.3"
     },
     "is_top_level": true,
     "variables": {}

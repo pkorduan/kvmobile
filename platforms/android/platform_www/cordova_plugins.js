@@ -296,7 +296,6 @@ module.exports = [
 module.exports.metadata = 
 // TOP OF METADATA
 {
-    "cordova-plugin-whitelist": "1.3.2",
     "cordova-plugin-compat": "1.1.0",
     "cordova-plugin-camera": "2.4.1",
     "cordova-plugin-device": "1.1.6",
@@ -306,7 +305,8 @@ module.exports.metadata =
     "cordova-plugin-file-transfer": "1.6.3",
     "cordova-plugin-keyboard": "1.1.5",
     "cordova-plugin-dialogs": "1.3.3",
-    "cordova-sqlite-evplus-legacy-attach-detach-free": "0.8.3-pre5"
+    "cordova-sqlite-evplus-legacy-attach-detach-free": "0.8.3-pre5",
+    "cordova-plugin-whitelist": "1.3.3"
 };
 // BOTTOM OF METADATA
 });

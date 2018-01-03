@@ -440,11 +440,14 @@ function Layer(stelle, settings = {}) {
             i;
 
         if (numRows > 0) {
+          console.log(numRows + ' deltas gefunden.');
           for (i = 0; i < numRows; i++) {
-            if (rs.rows.item(i).change == 'create') {
+            if (rs.rows.item(i).change == 'insert') {
+              console.log(i + '. insert');
               this.sendNewImage(rs.rows.item(i).delta);
             }
-            else {
+            if (rs.rows.item(i).change == 'delete') {
+              console.log(i + '. delete');
               this.sendDropImage(rs.rows.item(i).delta);
             }
           }
@@ -468,6 +471,7 @@ function Layer(stelle, settings = {}) {
     if (button.hasClass('fa-upload')) button.toggle('fa-upload fa-spinner');
 
     // do the upload
+    console.log('Bild ' + img + ' wird hochgeladen.');
 
     // when the upload has been finished
     if (button.hasClass('fa-spinner')) button.toggle('fa-upload fa-spinner');
@@ -475,6 +479,43 @@ function Layer(stelle, settings = {}) {
 
   this.sendDropImage = function(img) {
     console.log('Layer.sendDropImage');
+    var url = this.stelle.get('url');
+        file = this.getUrlFile(url),
+        data = {
+          device_id : device.uuid,
+          Stelle_ID : this.stelle.get('Stelle_ID'),
+          username : this.stelle.get('username'),
+          passwort : this.stelle.get('passwort'),
+          selected_layer_id : this.get('id'),
+          go : 'mobile_delete_images',
+          images : img
+        };
+    console.log('Send ' + url + file + $.param(data) + ' to drop image');
+
+//    $.support.cors = true;
+
+    $.ajax({
+      url: url + file,
+      data: data,
+      context: {
+        layer: this,
+        img: img
+      },
+      success: function (r) {
+        //console.log('Response: %o', r);
+        var data = $.parseJSON(r);
+        if (data.success) {
+          kvm.log(data.msg);
+          debug_img = this;
+          console.log('Bild: ' + this.img + ' erfolgreich gelöscht.');
+          this.layer.deleteDeltas(this.img);
+        }
+      },
+      error: function (e) {
+        kvw.msg("An error has occurred: Code = " + e.msg);
+      }
+    });
+    console.log('after ajax request');
   };
 
   /*
@@ -568,22 +609,29 @@ function Layer(stelle, settings = {}) {
     this.setEmpty();
   };
 
-  this.deleteDeltas = function() {
+  this.deleteDeltas = function(delta) {
+    if (typeof delta === 'undefined') delta = '';
     console.log('Layer.deleteDeltas');
     var sql = '\
       DELETE FROM ' + this.get('schema_name') + '.' + this.get('table_name') + '_deltas\
     ';
+    if (delta != '') {
+      sql += " WHERE delta = '" + delta + "'";
+    }
+    console.log('with sql: ' + sql);
     kvm.db.executeSql(
       sql,
       [],
-      function(rs) {
-        navigator.notification.confirm(
-          'Alle Änderungsversionen des Layers in lokaler Datenbank gelöscht.',
-          function(buttonIndex) {},
-          'Datenbank',
-          ['Verstanden']
-        );
-      },
+      (function(rs) {
+        if (this != '') {
+          navigator.notification.confirm(
+            'Alle Änderungsversionen des Layers in lokaler Datenbank gelöscht.',
+            function(buttonIndex) {},
+            'Datenbank',
+            ['Verstanden']
+          );
+        }
+      }).bind(delta),
       function(error) {
         navigator.notification.confirm(
           'Fehler bei Löschen der Änderungsdaten des Layers!\nFehlercode: ' + error.code + '\nMeldung: ' + error.message,

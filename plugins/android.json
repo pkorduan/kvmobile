@@ -7,9 +7,6 @@
     "files": {}
   },
   "installed_plugins": {
-    "cordova-plugin-whitelist": {
-      "PACKAGE_NAME": "com.example.hello"
-    },
     "cordova-plugin-camera": {
       "PACKAGE_NAME": "com.example.hello"
     },
@@ -35,6 +32,9 @@
       "PACKAGE_NAME": "de.gdiservice.kvmobile"
     },
     "cordova-sqlite-evplus-legacy-attach-detach-free": {
+      "PACKAGE_NAME": "de.gdiservice.kvmobile"
+    },
+    "cordova-plugin-whitelist": {
       "PACKAGE_NAME": "de.gdiservice.kvmobile"
     }
   },
