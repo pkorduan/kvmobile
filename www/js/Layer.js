@@ -69,6 +69,7 @@ function Layer(stelle, settings = {}) {
       [],
       (function(rs) {
         console.log('Layer.readData result: %o', rs);
+        debug_rs = rs;
 
         var numRows = rs.rows.length,
             item,
@@ -80,8 +81,9 @@ function Layer(stelle, settings = {}) {
           item = rs.rows.item(i);
           this.features['id_' + item.uuid] = new Feature(item);
         }
-        $('#syncLayerWaiter_' + this.getGlobalId()).hide();
-        $('#syncLayerButton_' + this.getGlobalId()).show();
+        if ($('#syncLayerIcon_' + this.getGlobalId()).hasClass('fa-spinner')) {
+          $('#syncLayerIcon_' + this.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
+        }
         kvm.createFeatureList();
         this.olLayer.getSource().clear();
         kvm.drawFeatureMarker();
@@ -108,33 +110,15 @@ function Layer(stelle, settings = {}) {
             function(item) {
               return $.map(
                 kvm.activeLayer.attributes,
-                (
-                  function(attr) {
+                (function(attr) {
                     var type = attr.get('type'),
                         value = (type == 'geometry' ? this.item.geometry : this.item.properties[attr.get('name')]);
 
-                    switch (true) {
-                      case (value == null) :
-                        v = 'null';
-                        break;
-                      case (type == 'bool' && value == '1') :
-                        v = "'t'";
-                        break;
-                      case (type == 'bool' && value == '0') :
-                        v = "'f'";
-                        break;
-                      case (type == 'geometry') :
-                        v = "'" + kvm.wkx.Geometry.parse('SRID=4326;POINT(' + value.coordinates.toString().replace(',', ' ') + ')').toEwkb().inspect().replace(/<|Buffer| |>/g, '') + "'";
-                        break;
-                      case (attr.getSqliteType() == 'INTEGER') :
-                        v = value;
-                        break;
-                      default:
-                        v = "'" + value + "'";
-                    }
+                    v = attr.toSqliteValue(type, value);
                     return v;
-                  }
-                ).bind({'item' : item})
+                }).bind({
+                  item : item
+                })
               ).join(', ')
             }
           ).join('), (') +
@@ -258,17 +242,23 @@ function Layer(stelle, settings = {}) {
 
             reader.onloadend = function() {
               kvm.log('Download der Daten ist abgeschlossen.');
-              var items = [];
+              var items = [],
+                  collection = {};
+
               console.log('Download result: %o', { result: this.result })
-              collection = $.parseJSON(this.result);
-              if (collection.features.length > 0) {
-                kvm.log('Mindestens 1 Datensatz empfangen.');
-                var layer = kvm.activeLayer;
-                layer.runningSyncVersion = collection.features[0].properties.version;
-                layer.writeData(collection.features);
-              }
-              else {
-                alert('Abfrage liefert keine Daten vom Server. Entweder sind noch keine auf dem Server vorhanden oder die URL der Anfrage ist nicht korrekt. Prüfen Sie die Parameter unter Einstellungen.');
+              try {
+                collection = $.parseJSON(this.result);
+                if (collection.features.length > 0) {
+                  kvm.log('Mindestens 1 Datensatz empfangen.');
+                  var layer = kvm.activeLayer;
+                  layer.runningSyncVersion = collection.features[0].properties.version;
+                  layer.writeData(collection.features);
+                }
+                else {
+                  alert('Abfrage liefert keine Daten vom Server. Entweder sind noch keine auf dem Server vorhanden oder die URL der Anfrage ist nicht korrekt. Prüfen Sie die Parameter unter Einstellungen.');
+                }
+              } catch (e) {
+                kvm.msg('Es konnten keine Daten empfangen werden.' + this.result);
               }
             };
 
@@ -296,7 +286,6 @@ function Layer(stelle, settings = {}) {
         console.log('file system open: ' + fs.name);
         var fileName = 'delta_layer_' + kvm.activeLayer.getGlobalId() + '.json';
         var dirEntry = fs.root;
-
 
         dirEntry.getFile(
           fileName,
@@ -342,7 +331,6 @@ function Layer(stelle, settings = {}) {
   };
 
   this.upload = function(fileEntry) {
-    // !! Assumes variable fileURL contains a valid URL to a text file on the device,
     var fileURL = fileEntry.toURL();
     var success = (function (r) {
       console.log("Successful upload...");
@@ -352,6 +340,7 @@ function Layer(stelle, settings = {}) {
 
       if (response.success) {
         kvm.log('Syncronisierung erfolgreich auf dem Server durchgeführt.');
+        console.log('Antwort vom Server: %o', response);
         $.each(
           response.deltas,
           (function(index, value) {
@@ -359,21 +348,20 @@ function Layer(stelle, settings = {}) {
           }).bind(this)
         );
         // ToDo delete deltas and set new Version at the end of a transaction in which all deltas has been executed
-        this.deleteDeltas();
+        this.deleteDeltas('sql');
         this.set('syncVersion', parseInt(response.syncData[0].push_to_version));
-        $('#syncLayerWaiter_' + this.getGlobalId()).hide();
-        $('#syncLayerButton_' + this.getGlobalId()).show();
       }
       else {
-        $('#syncLayerWaiter_' + this.getGlobalId()).hide();
-        $('#syncLayerButton_' + this.getGlobalId()).show();
         kvm.msg(response.err_msg);
+      }
+      if ($('#syncLayerIcon_' + this.getGlobalId()).hasClass('fa-spinner')) {
+        $('#syncLayerIcon_' + this.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
       }
       // displayFileData(fileEntry.fullPath + " (content uploaded to server)");
     }).bind(this);
 
     var fail = function (error) {
-      alert("An error has occurred: Code = " + error.code);
+      kvm.msg("Fehler beim Hochladen der Sync-Datei! Fehler " + error.code);
     }
 
     var layer = kvm.activeLayer,
@@ -437,6 +425,7 @@ function Layer(stelle, settings = {}) {
       (function(rs) {
         console.log('Layer.syncImages query deltas success result %o:', rs);
         var numRows = rs.rows.length,
+            icon,
             i;
 
         if (numRows > 0) {
@@ -454,6 +443,8 @@ function Layer(stelle, settings = {}) {
         }
         else {
           kvm.msg('Keine neuen Bilder zum Hochladen vorhanden.');
+          icon = $('#syncImagesIcon_' + this.getGlobalId());
+          if (icon.hasClass('fa-spinner')) icon.toggleClass('fa-upload fa-spinner fa-spin');
         }
       }).bind(this),
       function(error) {
@@ -465,16 +456,54 @@ function Layer(stelle, settings = {}) {
 
   this.sendNewImage = function(img) {
     console.log('Layer.sendNewImage');
-    var button = $('#syncImagesButton_' + this.getGlobalId());
+    console.log('Bild ' + img + ' wird hochgeladen.');
+    var icon = $('#syncImagesIcon_' + this.getGlobalId()),
+        ft = new FileTransfer(),
+        fileURL = 'file://' + config.localImgPath + img.substring(img.lastIndexOf('/') + 1),
+        url = this.stelle.get('url'),
+        file = this.getUrlFile(url),
+        server = url + file,
+        win = (function (r) {
+            console.log("Code = " + r.responseCode);
+            console.log("Response = " + r.response);
+            console.log("Sent = " + r.bytesSent);
+            this.layer.deleteDeltas('img', this.img);
+        }).bind({
+          layer : this,
+          img : img
+        }),
+        fail = (function (error) {
+          if (this.hasClass('fa-spinner')) this.toggleClass('fa-upload fa-spinner fa-spin');
+
+          kvm.msg("An error has occurred: Code = " + error.code);
+          console.log("upload error source " + error.source);
+          console.log("upload error target " + error.target);
+
+        }).bind(icon),
+        options = new FileUploadOptions();
 
     // when the upload begin
-    if (button.hasClass('fa-upload')) button.toggle('fa-upload fa-spinner');
+    if (icon.hasClass('fa-upload')) icon.toggleClass('fa-upload fa-spinner fa-spin');
 
-    // do the upload
-    console.log('Bild ' + img + ' wird hochgeladen.');
+    options.fileKey = "image";
+    options.fileName = fileURL.substr(fileURL.lastIndexOf('/') + 1);
+    options.mimeType = "image/jpeg";
+    options.params = {
+      device_id : device.uuid,
+      Stelle_ID : this.stelle.get('Stelle_ID'),
+      username : this.stelle.get('username'),
+      passwort : this.stelle.get('passwort'),
+      selected_layer_id : this.get('id'),
+      go : 'mobile_upload_image'
+    };
+
+    console.log('upload to url: ' + server);
+    console.log('with params: %o', options.params);
+    console.log('with options: %o', options);
+    ft.upload(fileURL, encodeURI(server), win, fail, options);
 
     // when the upload has been finished
-    if (button.hasClass('fa-spinner')) button.toggle('fa-upload fa-spinner');
+    if (icon.hasClass('fa-spinner')) icon.toggleClass('fa-upload fa-spinner fa-spin');
   };
 
   this.sendDropImage = function(img) {
@@ -508,7 +537,7 @@ function Layer(stelle, settings = {}) {
           kvm.log(data.msg);
           debug_img = this;
           console.log('Bild: ' + this.img + ' erfolgreich gelöscht.');
-          this.layer.deleteDeltas(this.img);
+          this.layer.deleteDeltas('img', this.img);
         }
       },
       error: function (e) {
@@ -561,11 +590,15 @@ function Layer(stelle, settings = {}) {
         }
         else {
           kvm.msg('Keine Änderungen zum Syncronisieren vorhanden.');
+          if ($('#syncLayerIcon_' + this.getGlobalId()).hasClass('fa-spinner'))
+            $('#syncLayerIcon_' + this.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
         }
       }).bind(this),
       function(error) {
         console.log('Layer.syncData query deltas Fehler: %o', error);
         kvm.msg('Fehler beim Zugriff auf die Datenbank');
+        if ($('#syncLayerIcon_' + this.getGlobalId()).hasClass('fa-spinner'))
+          $('#syncLayerIcon_' + this.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
       }
     );
   };
@@ -602,28 +635,36 @@ function Layer(stelle, settings = {}) {
       }
     );
 
-    this.deleteDeltas();
+    this.deleteDeltas('all');
     this.features = [];
     $('#featurelistBody').html('');
     this.olLayer.getSource().clear();
     this.setEmpty();
   };
 
-  this.deleteDeltas = function(delta) {
+  this.deleteDeltas = function(type, delta) {
     if (typeof delta === 'undefined') delta = '';
     console.log('Layer.deleteDeltas');
     var sql = '\
       DELETE FROM ' + this.get('schema_name') + '.' + this.get('table_name') + '_deltas\
     ';
-    if (delta != '') {
-      sql += " WHERE delta = '" + delta + "'";
+    if (type != 'all') {
+      sql += " WHERE type = '" + type + "'";
+      if (delta != '') {
+        sql += " AND delta = '" + delta + "'";
+      }
     }
     console.log('with sql: ' + sql);
     kvm.db.executeSql(
       sql,
       [],
       (function(rs) {
-        if (this != '') {
+        var icon = $('#clearLayerIcon_' + this.getGlobalId());
+        if (icon.hasClass('fa-spinner')) icon.toggleClass('fa-ban fa-spinner fa-spin');
+        icon = $('#syncImagesIcon_' + this.getGlobalId());
+        if (icon.hasClass('fa-spinner')) icon.toggleClass('fa-upload fa-spinner fa-spin');
+        
+        if (this.delta == '') {
           navigator.notification.confirm(
             'Alle Änderungsversionen des Layers in lokaler Datenbank gelöscht.',
             function(buttonIndex) {},
@@ -631,8 +672,13 @@ function Layer(stelle, settings = {}) {
             ['Verstanden']
           );
         }
-      }).bind(delta),
+      }).bind({
+        layer : this,
+        delta : delta
+      }),
       function(error) {
+        var icon = $('#clearLayerIcon_' + this.getGlobalId());
+        if (icon.hasClass('fa-spinner')) icon.toggleClass('fa-ban fa-spinner fa-spin');
         navigator.notification.confirm(
           'Fehler bei Löschen der Änderungsdaten des Layers!\nFehlercode: ' + error.code + '\nMeldung: ' + error.message,
           function(buttonIndex) {
@@ -805,7 +851,7 @@ function Layer(stelle, settings = {}) {
         if (typeof oldVal == 'string') oldVal = oldVal.trim();
         if (typeof newVal == 'string') newVal = newVal.trim();
 
-        console.log('Vergleiche ' + attr.get('form_element_type') + ' Attribut: ' + key + '(' + oldVal + ' (' + typeof oldVal + ') == ' + newVal + '(' + typeof newVal + '))');
+        console.log('Vergleiche ' + attr.get('form_element_type') + ' Attribut: ' + key + '(' + oldVal + ' (' + typeof oldVal + ') vs. ' + newVal + '(' + typeof newVal + '))');
         if (oldVal != newVal) {
           kvm.log('Änderung in Attribut ' + key + ' gefunden');
           return {
@@ -873,7 +919,12 @@ function Layer(stelle, settings = {}) {
             $.map(
               changes,
               function(change) {
-                return change.key + ' = ' + (change.type == 'TEXT' ? "'" + change.value + "'" : change.value);
+                if (change.value == null)
+                  return change.key + " = null";
+                if (change.type == 'TEXT')
+                  return change.key + " = '" + change.value + "'";
+                else
+                  return change.key + " = " + change.value;
               }
             ).join(', ') + '\
           WHERE\
@@ -1071,15 +1122,14 @@ function Layer(stelle, settings = {}) {
       <div id="layer_' + this.getGlobalId()  + '">\
         <input type="radio" name="activeLayerId" value="' + this.getGlobalId() + '"/> ' +
         this.get('title') + '\
-        <i id="syncLayerWaiter_' + this.getGlobalId() + '" class="fa fa-spinner fa-pulse fa-2x fa-fw" style="float: right; display: none;"></i>\
         <button id="syncLayerButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="sync-layer-button" style="border-radius: 5px; background: #afffaf; float: right; display: none;">\
-          <i class="fa fa-refresh" aria-hidden="true"></i>\
+          <i id="syncLayerIcon_' + this.getGlobalId() + '" class="fa fa-refresh" aria-hidden="true"></i>\
         </button>\
         <button id="syncImagesButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="sync-images-button" style="border-radius: 5px; background: #afffaf; float: right; margin-right: 10px; display: none;">\
-          <i class="fa fa-upload" aria-hidden="true"></i>\
+          <i id="syncImagesIcon_' + this.getGlobalId() + '" class="fa fa-upload" aria-hidden="true"></i>\
         </button>\
         <button id="clearLayerButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="clear-layer-button" style="border-radius: 5px; background: #afffaf; float: right; margin-right: 10px; display: none;">\
-          <i class="fa fa-ban" aria-hidden="true"></i>\
+          <i id="clearLayerIcon_' + this.getGlobalId() + '" class="fa fa-ban" aria-hidden="true"></i>\
         </button>\
       </div>\
       <div style="clear: both"></div>';

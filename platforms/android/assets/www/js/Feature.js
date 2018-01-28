@@ -1,7 +1,17 @@
 function Feature(data = {}) {
-  //console.log('Create Feature with data %o', data);
+  console.log('Create Feature with data %o', data);
   this.data = (typeof data == 'string' ? $.parseJSON(data) : data);
 
+/*
+  $.each(
+    this.data,
+    (function(i, v) {
+      this.data[i] = (typeof v == 'string' && v.indexOf('{') == 0 ? v.slice(1, -1).split(',') : v);
+    }).bind({
+      data: this.data
+    })
+  );
+*/
   this.get = function(key) {
     return (typeof this.data[key] == 'undefined' ? 'null' : this.data[key]);
   };

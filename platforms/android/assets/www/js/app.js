@@ -112,6 +112,7 @@ kvm = {
       var stelle = new Stelle('{}');
       stelle.viewDefaultSettings();
       activeView = 'settings';
+      $(document).scrollTop($('#serverSettingHeader').offset().top);
     };
 
     // ToDo
@@ -324,14 +325,20 @@ kvm = {
                 item,
                 i;
 
-            $('#showDeltasDiv').html('<b>Deltas</b>');
-            for (i = 0; i < numRows; i++) {
-              item = rs.rows.item(i);
-              $('#showDeltasDiv').append('<br>' + item.version + ': ' + (item.type == 'sql' ? item.delta : item.change + ' ' + item.delta));
+            if (numRows > 0) {
+              $('#showDeltasDiv').html('<b>Deltas</b>');
+              for (i = 0; i < numRows; i++) {
+                item = rs.rows.item(i);
+                $('#showDeltasDiv').append('<br>' + item.version + ': ' + (item.type == 'sql' ? item.delta : item.change + ' ' + item.delta));
+              }
+              $('#showDeltasDiv').show();
+              $('#hideDeltasButton').show();
+            }
+            else {
+              kvm.msg('Keine Änderungen vorhanden');
+              $('#showDeltasButton').show();
             }
             $('#showDeltasWaiting').hide();
-            $('#showDeltasDiv').show();
-            $('#hideDeltasButton').show();
           },
           function(error) {
             console.log('apps.js query deltas Fehler: %o', error);
@@ -559,7 +566,7 @@ kvm = {
 
         layer.readData();
         layer.setActive();
-        kvm.showItem('featurelist');
+//        kvm.showItem('featurelist');
       }
     );
 
@@ -569,8 +576,7 @@ kvm = {
         var id = evt.target.value,
             layer = kvm.activeLayer;
 
-        $('#syncLayerButton_' + layer.getGlobalId()).hide();
-        $('#syncLayerWaiter_' + layer.getGlobalId()).show();
+        $('#syncLayerIcon_' + layer.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
 
         if (layer.isEmpty()) {
           layer.requestData();
@@ -587,6 +593,8 @@ kvm = {
         var id = evt.target.value,
             layer = kvm.activeLayer;
 
+        $('#syncImageIcon_' + layer.getGlobalId()).toggleClass('fa-upload fa-spinner fa-spin');
+
         layer.syncImages();
       }
     );
@@ -596,6 +604,8 @@ kvm = {
       function(evt) {
         var id = evt.target.value,
             layer = kvm.activeLayer;
+
+        $('#clearLayerIcon_' + layer.getGlobalId()).toggleClass('fa-ban fa-spinner fa-spin');
 
         if (!layer.isEmpty()) {
           layer.clearData();

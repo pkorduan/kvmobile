@@ -84,7 +84,46 @@ function Attribute(layer, settings = {}) {
         default : slType = 'TEXT';
     }
     return slType;
-  }
+  };
+
+  /*
+  * Return true if the Postgres attribute type is an array
+  * Postgres Array Types starting with underline
+  * Return false elsewise
+  */
+  this.isArrayType = function() {
+    return (this.get('type').indexOf('_') == 0);
+  };
+
+  this.toSqliteValue = function(pgType, pgValue) {
+    console.log('Attribute.toSqliteValue pgType: ' + pgType + ' pgValue: %o', pgValue);
+    var slType = this.getSqliteType();
+
+    switch (true) {
+      case (pgValue == null) :
+        slValue = 'null';
+        break;
+      case (pgType == 'bool' && pgValue == '1') :
+        slValue = "'t'";
+        break;
+      case (pgType == 'bool' && pgValue == '0') :
+        slValue = "'f'";
+        break;
+      case (pgType == 'geometry') :
+        slValue = "'" + kvm.wkx.Geometry.parse('SRID=4326;POINT(' + pgValue.coordinates.toString().replace(',', ' ') + ')').toEwkb().inspect().replace(/<|Buffer| |>/g, '') + "'";
+        break;
+      case (this.isArrayType()) :
+        console.log('value of arraytype: %o', pgValue);
+        slValue = "'{" + pgValue + "}'";
+        break;
+      case (slType == 'INTEGER') :
+        slValue = pgValue;
+        break;
+      default:
+        slValue = "'" + pgValue + "'";
+    }
+    return slValue;
+  };
 
   this.formField = this.getFormField();
 
