@@ -96,7 +96,7 @@ function Attribute(layer, settings = {}) {
   };
 
   this.toSqliteValue = function(pgType, pgValue) {
-    console.log('Attribute.toSqliteValue pgType: ' + pgType + ' pgValue: %o', pgValue);
+    //console.log('Attribute.toSqliteValue pgType: ' + pgType + ' pgValue: %o', pgValue);
     var slType = this.getSqliteType();
 
     switch (true) {

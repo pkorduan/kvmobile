@@ -605,9 +605,17 @@ kvm = {
         var id = evt.target.value,
             layer = kvm.activeLayer;
 
-        $('#clearLayerIcon_' + layer.getGlobalId()).toggleClass('fa-ban fa-spinner fa-spin');
-
-        if (!layer.isEmpty()) {
+        if (layer.isEmpty()) {
+          navigator.notification.confirm(
+            'Layer ist schon geleert!',
+            function(buttonIndex) {              
+            },
+            'Datenbank',
+            ['OK']
+          );
+        }
+        else {
+          $('#clearLayerIcon_' + layer.getGlobalId()).toggleClass('fa-ban fa-spinner fa-spin');
           layer.clearData();
         }
       }

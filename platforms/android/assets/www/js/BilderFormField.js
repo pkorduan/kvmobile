@@ -23,7 +23,6 @@ function BilderFormField(formId, settings) {
   * @params any set to '' if val is undefined, null, 'null' or NAN 
   */
   this.setValue = function(val) {
-    debug_val = val;
     console.log('BilderFormField.setValue with value: ' +  val);
     var val = kvm.coalesce(val, ''),
         images,
@@ -155,7 +154,18 @@ function BilderFormField(formId, settings) {
             'Bild herunterladen?',
             function(buttonIndex) {
               if (buttonIndex == 1) { // ja
-                console.log('Download Image: ' + evt.target.name);
+                var target = evt.target, 
+                    fieldId = $(target).attr('field_id'),
+                    localFile = target.name,
+                    remoteFile = kvm.activeLayer.attributes[fieldId].formField.localToServerPath(localFile),
+                    data = {
+                      target: target,
+                      localFile: localFile,
+                      remoteFile: remoteFile
+                    };
+
+                console.log('Download Image mit data: %o', data);
+                kvm.activeLayer.downloadImage(data);
               }
               if (buttonIndex == 2) { // nein
                 // Do nothing

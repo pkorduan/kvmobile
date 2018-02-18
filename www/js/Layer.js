@@ -252,6 +252,7 @@ function Layer(stelle, settings = {}) {
                   kvm.log('Mindestens 1 Datensatz empfangen.');
                   var layer = kvm.activeLayer;
                   layer.runningSyncVersion = collection.features[0].properties.version;
+                  kvm.log('Version der Daten: ' + layer.runningSyncVersion);
                   layer.writeData(collection.features);
                 }
                 else {
@@ -659,15 +660,16 @@ function Layer(stelle, settings = {}) {
       sql,
       [],
       (function(rs) {
-        var icon = $('#clearLayerIcon_' + this.getGlobalId());
+        console.log('Deltas in Tabelle erfolgreich gelöscht.');
+        var icon = $('#clearLayerIcon_' + this.layer.getGlobalId());
         if (icon.hasClass('fa-spinner')) icon.toggleClass('fa-ban fa-spinner fa-spin');
-        icon = $('#syncImagesIcon_' + this.getGlobalId());
-        if (icon.hasClass('fa-spinner')) icon.toggleClass('fa-upload fa-spinner fa-spin');
-        
+        icon = $('#syncImagesIcon_' + this.layer.getGlobalId());
+        if (icon.hasClass('fa-spinner')) icon.toggleClass('fa-upload fa-spinner fa-spin');        
         if (this.delta == '') {
           navigator.notification.confirm(
             'Alle Änderungsversionen des Layers in lokaler Datenbank gelöscht.',
-            function(buttonIndex) {},
+            function(buttonIndex) {
+            },
             'Datenbank',
             ['Verstanden']
           );
@@ -677,6 +679,7 @@ function Layer(stelle, settings = {}) {
         delta : delta
       }),
       function(error) {
+        console.log('Fehler beim Löschen der Deltas');
         var icon = $('#clearLayerIcon_' + this.getGlobalId());
         if (icon.hasClass('fa-spinner')) icon.toggleClass('fa-ban fa-spinner fa-spin');
         navigator.notification.confirm(
@@ -716,7 +719,6 @@ function Layer(stelle, settings = {}) {
               kvm.log('Download Result: ' + this.result);
               resultObj = $.parseJSON(this.result);
               if (resultObj.success) {
-                debug_res = this.result;
                 kvm.log('Download erfolgreich');
                 console.log('resultObj: %o', resultObj);
                 $('#layer_list').html('');
@@ -749,6 +751,84 @@ function Layer(stelle, settings = {}) {
       this.downloadError,
       true
     );
+  };
+
+  this.downloadImage = function(data) {
+    console.log('Layer.downloadImage with data: %o', data);
+    var fileTransfer = new FileTransfer(),
+    filename = data.localFile,
+    url = this.getImgDownloadUrl(data.remoteFile);
+    kvm.log('Download Image von Url: ' + url);
+    kvm.log('Speicher die Datei auf dem Gerät in Datei: ' + filename);
+    fileTransfer.download(
+      url,
+      filename,
+      (function (fileEntry) {
+        console.log('Download des Bildes abgeschlossen: ' + fileEntry.fullPath);
+        this.target.src = this.localFile;
+        $(this.target).width('100%');
+      }).bind(data),
+      function (error) {
+        console.log("download error source " + error.source);
+        console.log("download error target " + error.target);
+        console.log("upload error code" + error.code);
+      },
+      true
+    );
+
+/*{
+    this.data = data;
+
+    window.requestFileSystem(
+      LocalFileSystem.PERSISTENT,
+      0,
+      (function (fs) {
+        console.log('file system open: ' + fs.name);
+        console.log('getFile with this: %o', this.data);
+        fs.root.getFile(
+          this.data.localFile,
+          {
+            create: true,
+            exclusive: false
+          },
+          (function (fileEntry) {
+            var url = this.getImgDownloadUrl(this.data.remoteFile);
+            console.log('fileEntry is file? ' + fileEntry.isFile.toString());
+            console.log('xhr request on url: ' + url);
+            var oReq = new XMLHttpRequest();
+            // Make sure you add the domain name to the Content-Security-Policy <meta> element.
+            oReq.open("GET", url, true);
+            // Define how you want the XHR data to come back
+            oReq.responseType = "blob";
+            oReq.onload = (function (oEvent) {
+              debug_oe = oEvent;
+              var blob = oReq.response; // Note: not oReq.responseText
+              if (blob) {
+                  // Create a URL based on the blob, and set an <img> tag's src to it.
+                  //var url = window.URL.createObjectURL(blob);
+                  console.log('Setze url auf src: ' + this.data.localFile);
+                  this.data.target.src = this.data.localFile;
+                  // Or read the data with a FileReader
+
+              }
+              else {
+                console.error('we didnt get an XHR response!');
+              }
+            }).bind(this);
+            oReq.send(null);
+          }).bind(this),
+          (function (err) {
+            debug_err = err;
+            console.error('error getting file! %o', err);
+            console.error('url: ' + "http://gdi-service.de/kvwmap_pet_dev/index.php?go=mobile_download_image&image=" + this.data.remoteFile);
+          }).bind(this)
+        );
+      }).bind(this),
+      function (err) {
+        console.error('error getting persistent fs! ' + err);
+      }
+    );
+}*/
   };
 
   this.createFeatureForm = function() {
@@ -1205,6 +1285,20 @@ function Layer(stelle, settings = {}) {
       kvm.log('Hole Deltas mit Url: ' + url);
     }
 
+    return url;
+  };
+
+  this.getImgDownloadUrl = function(image) {
+    console.log('Layer.getImgDownloadUrl');
+    var url = this.stelle.get('url'),
+        file = this.getUrlFile(url);
+
+    url += file +
+        'Stelle_ID=' + stelle.get('Stelle_ID') + '&' +
+        'username=' + stelle.get('username') + '&' +
+        'passwort=' + stelle.get('passwort') + '&' +
+        'go=mobile_download_image' + '&' +
+        'image=' + image;
     return url;
   };
 
