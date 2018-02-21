@@ -1,5 +1,5 @@
 function ZahlFormField(formId, settings) {
-  console.log('Erzeuge ZahlFormField with settings %o', settings);
+  //console.log('Erzeuge ZahlFormField with settings %o', settings);
   this.settings = settings,
 
   this.get = function(key) {
@@ -19,12 +19,12 @@ function ZahlFormField(formId, settings) {
   );
 
   this.setValue = function(val) {
-    console.log('ZahlFormField.setValue with value: ' + val);
+    //console.log('ZahlFormField.setValue with value: ' + val);
     this.element.val(val == 'null' ? '' : val);
   };
 
-  this.getValue = function() {
-    console.log('ZahlFormField.getValue');
+  this.getValue = function(action = '') {
+    //console.log('ZahlFormField.getValue');
     var val = this.element.val();
 
     if (typeof val === "undefined" || val == '') {
@@ -34,7 +34,7 @@ function ZahlFormField(formId, settings) {
   };
 
   this.bindEvents = function() {
-    console.log('ZahlFormField.bindEvents');
+   // console.log('ZahlFormField.bindEvents');
     $('#featureFormular input[id=' + this.get('index') + ']').on(
       'keyup',
       function() {

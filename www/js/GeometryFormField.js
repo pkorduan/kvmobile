@@ -1,6 +1,4 @@
 function GeometrieFormField(formId, settings) {
-  this.Buffer = require('buffer').Buffer;
-  this.wkx = require('wkx');
   this.settings = settings;
 
   this.get = function(key) {
@@ -20,33 +18,33 @@ function GeometrieFormField(formId, settings) {
   );
 
   this.setValue = function(val) {
-    console.log('GeometrieFormField.setValue with value: %o', val);
+    //console.log('GeometrieFormField.setValue with value: %o', val);
     if (val == null || val == 'null') {
       val = '';
     }
     else {
-      var geom = this.wkx.Geometry.parse(new this.Buffer(val, 'hex'));
+      var geom = kvm.wkx.Geometry.parse(new kvm.Buffer(val, 'hex'));
       val = geom.x + ' ' + geom.y;
     }
     this.element.val(val);
   };
 
-  this.getValue = function() {
-    console.log('GeometrieFormField.getValue');
+  this.getValue = function(action = '') {
+    //console.log('GeometrieFormField.getValue');
     var val = this.element.val();
 
     if (typeof val === "undefined" || val == '') {
       val = null;
     }
     else {
-      val = this.wkx.Geometry.parse('SRID=4326;POINT(' + val + ')').toEwkb().inspect().replace(/<|Buffer| |>/g, '');
+      val = kvm.wkx.Geometry.parse('SRID=4326;POINT(' + val + ')').toEwkb().inspect().replace(/<|Buffer| |>/g, '');
     }
 
     return val;
   };
 
   this.bindEvents = function() {
-    console.log('SelectFormField.bindEvents');
+    //console.log('SelectFormField.bindEvents');
     $('#featureFormular input[id=' + this.get('index') + ']').on(
       'change',
       function() {
@@ -54,6 +52,38 @@ function GeometrieFormField(formId, settings) {
         if (!$('#saveFeatureButton').hasClass('active-button')) {
           $('#saveFeatureButton').toggleClass('active-button inactive-button');
         }
+      }
+    );
+
+    $('#goToGpsPositionButton').on(
+      'click',
+      function() {
+        console.log('click on goToGpsPositionButton');
+        var lnglat = $('#featureFormular input[name=point]').val().split(' ');
+            coord = ol.proj.transform(
+              [lnglat[0], lnglat[1]],
+              "EPSG:4326",
+              kvm.map.getView().getProjection()
+            ),
+            point = new ol.geom.Point(coord),
+            feature = new ol.Feature({
+              geometry: point
+            }),
+            view = kvm.map.getView(),
+            source = kvm.map.getLayers().item(1).getSource();
+
+        source.clear();
+        source.addFeature(feature);
+
+//        helpLayer.refresh({force: true});
+
+        view.setCenter(
+          feature.getGeometry().getCoordinates()
+        );
+
+        view.setZoom(17);
+
+        kvm.showItem('map');
       }
     );
 
@@ -100,7 +130,8 @@ function GeometrieFormField(formId, settings) {
     return $('<div class="form-field">').append(
       $('<label for="Koordinaten" />')
         .html(
-          '<i id="saveGpsPositionButton" class="fa fa-map-marker fa-2x" aria-hidden="true" style="margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>'
+          '<i id="saveGpsPositionButton" class="fa fa-map-marker fa-2x" aria-hidden="true" style="margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>\
+          <i id="goToGpsPositionButton" class="fa fa-globe fa-2x" aria-hidden="true" style="margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>'
         )
         .append(
           this.element

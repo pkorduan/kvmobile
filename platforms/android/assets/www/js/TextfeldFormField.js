@@ -19,12 +19,12 @@ function TextfeldFormField(formId, settings) {
   );
 
   this.setValue = function(val) {
-    console.log('TextFormField.setValue with value: ' + val);
+    //console.log('TextFormField.setValue with value: ' + val);
     this.element.val(val == 'null' ? '' : val);
   };
 
-  this.getValue = function() {
-    console.log('TextFormField.getValue');
+  this.getValue = function(action = '') {
+    //console.log('TextFormField.getValue');
     var val = this.element.val();
 
     if (typeof val === "undefined" || val == '') {
@@ -34,9 +34,9 @@ function TextfeldFormField(formId, settings) {
   };
 
   this.bindEvents = function() {
-    console.log('TextfeldFormField.bindEvents');
+    //console.log('TextfeldFormField.bindEvents');
     $('#featureFormular textarea[id=' + this.get('index') + ']').on(
-      'change',
+      'keyup',
       function() {
         console.log('event on saveFeatureButton');
         if (!$('#saveFeatureButton').hasClass('active-button')) {

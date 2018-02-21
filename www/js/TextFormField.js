@@ -1,5 +1,5 @@
 function TextFormField(formId, settings) {
-  console.log('Erzeuge TextformField with settings %o', settings);
+  //console.log('Erzeuge TextformField with settings %o', settings);
   this.settings = settings,
 
   this.get = function(key) {
@@ -19,12 +19,12 @@ function TextFormField(formId, settings) {
   );
 
   this.setValue = function(val) {
-    console.log('TextFormField ' + this.get('name') + ' setValue with value: %o', val);
-    this.element.val(val == 'null' ? '' : val);
+    //console.log('TextFormField ' + this.get('name') + ' setValue with value: %o', val);
+    this.element.val(val == null || val == 'null' ? '' : val);
   };
 
-  this.getValue = function() {
-    console.log('TextFormField.getValue');
+  this.getValue = function(action = '') {
+    //console.log('TextFormField.getValue');
     var val = this.element.val();
 
     if (typeof val === "undefined" || val == '') {
@@ -35,7 +35,7 @@ function TextFormField(formId, settings) {
   };
 
   this.bindEvents = function() {
-    console.log('TextFormField.bindEvents');
+    //console.log('TextFormField.bindEvents');
     $('#featureFormular input[id=' + this.get('index') + ']').on(
       'keyup',
       function() {

@@ -1,9 +1,23 @@
 function Feature(data = {}) {
-  //console.log('Create Feature with data %o', data);
+  console.log('Create Feature with data %o', data);
   this.data = (typeof data == 'string' ? $.parseJSON(data) : data);
 
+/*
+  $.each(
+    this.data,
+    (function(i, v) {
+      this.data[i] = (typeof v == 'string' && v.indexOf('{') == 0 ? v.slice(1, -1).split(',') : v);
+    }).bind({
+      data: this.data
+    })
+  );
+*/
   this.get = function(key) {
     return (typeof this.data[key] == 'undefined' ? 'null' : this.data[key]);
+  };
+
+  this.getAsArray = function(key) {
+    return (this.data[key] ? this.data[key].slice(1, -1).split(',') : []);
   };
 
   this.set = function(key, value) {
@@ -21,22 +35,27 @@ function Feature(data = {}) {
   };
 
   this.getCoord = function() {
-    return (
-      this.get('point') != ''
-        ? ol.proj.transform(
-          this.get('point').split(' '),
-          "EPSG:4326",
-          kvm.map.getView().getProjection()
-        )
-        : false
-    );
+    //console.log('Feature.getCoord');
+    var coord = false;
+
+    if (this.get('point') != '') {
+      var geom = kvm.wkx.Geometry.parse(new kvm.Buffer(this.get('point'), 'hex')),
+          coord = ol.proj.transform(
+            [geom.x, geom.y],
+            "EPSG:4326",
+            kvm.map.getView().getProjection()
+          );
+    }
+
+    return coord;
   };
 
   this.getOlFeature = function() {
+    //console.log('set feature with coord: ', this.getCoord());
     return new ol.Feature({
       gid: this.get('uuid'),
       type: 'PointFeature',
-      geometry: new ol.geom.Point(this.getCoord())
+      geometry: new ol.geom.Point(this.getCoord()),
     });
   };
 
@@ -76,7 +95,7 @@ function Feature(data = {}) {
 
   this.listElement = function() {
     return '\
-      <div class="feature-item" id="' + this.get('uuid') + '">' + this.get('name') + '</div>\
+      <div class="feature-item" id="' + this.get('uuid') + '">' + kvm.coalesce(this.get('name'), this.get('uuid')) + '</div>\
     ';
   };
 }
