@@ -48,7 +48,6 @@ function GeometrieFormField(formId, settings) {
     $('#featureFormular input[id=' + this.get('index') + ']').on(
       'change',
       function() {
-        console.log('event for saveFeatureButton');
         if (!$('#saveFeatureButton').hasClass('active-button')) {
           $('#saveFeatureButton').toggleClass('active-button inactive-button');
         }
@@ -58,7 +57,7 @@ function GeometrieFormField(formId, settings) {
     $('#goToGpsPositionButton').on(
       'click',
       function() {
-        console.log('click on goToGpsPositionButton');
+        kvm.log('Gehe zu Gps Position.', 3);
         var lnglat = $('#featureFormular input[name=point]').val().split(' ');
             coord = ol.proj.transform(
               [lnglat[0], lnglat[1]],
@@ -90,7 +89,7 @@ function GeometrieFormField(formId, settings) {
     $('#saveGpsPositionButton').on(
       'click',
       function() {
-        console.log('click on saveGpsPositionButton');
+        //console.log('click on saveGpsPositionButton');
         navigator.geolocation.getCurrentPosition(
           function(geoLocation) {
             navigator.notification.confirm(
@@ -110,7 +109,7 @@ function GeometrieFormField(formId, settings) {
               'Es kann keine GPS-Position bestimmt werden. Schalten Sie die GPS Funktion auf Ihrem Gerät ein, suchen Sie einen Ort unter freiem Himmel auf und versuchen Sie es dann noch einmal.',
               function(buttonIndex) {
                 if (buttonIndex == 1) {
-                  console.log('Einschalten der GPS-Funktion');
+                  kvm.log('Einschalten der GPS-Funktion.', 3);
                 }
               },
               'GPS-Position',
@@ -133,7 +132,7 @@ function GeometrieFormField(formId, settings) {
           '<i id="saveGpsPositionButton" class="fa fa-map-marker fa-2x" aria-hidden="true" style="margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>\
           <i id="goToGpsPositionButton" class="fa fa-globe fa-2x" aria-hidden="true" style="margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>\
           <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="28" height="28" version="1.1">\
-            <g id="gps-signal-icon" class="gps-signal-level-3" transform="scale(1 -1) translate(0 -28)">\
+            <g id="gps-signal-icon" class="gps-signal-level-0" transform="scale(1 -1) translate(0 -28)">\
               <rect class="bar-1" x="0" y="0" width="4" height="4" />\
               <rect class="bar-2" x="6" y="0" width="4" height="10" />\
               <rect class="bar-3" x="12" y="0" width="4" height="16" />\

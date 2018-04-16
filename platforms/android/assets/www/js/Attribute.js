@@ -116,7 +116,7 @@ function Attribute(layer, settings = {}) {
         slValue = "'" + kvm.wkx.Geometry.parse('SRID=4326;POINT(' + pgValue.coordinates.toString().replace(',', ' ') + ')').toEwkb().inspect().replace(/<|Buffer| |>/g, '') + "'";
         break;
       case (this.isArrayType()) :
-        console.log('value of arraytype: %o', pgValue);
+        //console.log('value of arraytype: %o', pgValue);
         slValue = "'{" + pgValue + "}'";
         break;
       case (slType == 'INTEGER') :

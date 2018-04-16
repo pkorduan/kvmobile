@@ -13,8 +13,8 @@ config = {
 
   kvwmapServerUrl: 'https://geoportal.lkros.de/kvwmap_dev',
   kvwmapServerUsername: 'pkorduan',
-  kvwmapServerPasswort: 'StupfKo-1',
-  kvwmapServerStelleId: 610010
+  kvwmapServerPasswort: '',
+  kvwmapServerStelleId: 610011
 
 /*
   kvwmapServerUrl: 'https://gdi-service.de/kvwmap_pet_dev',

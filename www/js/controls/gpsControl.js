@@ -11,12 +11,11 @@ kvm.controls.gpsControl = function(opt_options) {
   button.on(
     'click',
     function() {
-      console.log('gpsControl button on click');
       var gpsControlButton = $('#gpsControlButton');
 
       switch (true) {
         case gpsControlButton.hasClass('kvm-gps-off') : {
-          console.log('switch from off to track');
+          kvm.log('GPS-Tracking ausschalten.', 3);
           // watch GPS-Position
           // track
           // show button as active
@@ -26,7 +25,7 @@ kvm.controls.gpsControl = function(opt_options) {
         }
 
         case gpsControlButton.hasClass('kvm-gps-on') : {
-          console.log('switch from on to track');
+          kvm.log('GPS-Tracking Wechel von an zu track.', 3);
           // track
           // show button as active
           gpsControlButton.toggleClass('kvm-gps-on kvm-gps-track');
@@ -34,7 +33,7 @@ kvm.controls.gpsControl = function(opt_options) {
         }
 
         case gpsControlButton.hasClass('kvm-gps-track') : {
-          console.log('switch from track to off');
+          kvm.log('GPS-Tracking Wechsel von track nach aus.', 3);
           // clearWatch
           gpsControlButton.toggleClass('kvm-gps-off kvm-gps-track');
           kvm.controller.mapper.clearWatch();

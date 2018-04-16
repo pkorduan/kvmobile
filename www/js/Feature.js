@@ -30,7 +30,7 @@ function Feature(data = {}) {
   };
 
   this.setData = function(data) {
-    console.log('Feature.setData %o', data);
+    //console.log('Feature.setData %o', data);
     this.data = (typeof data == 'string' ? $.parseJSON(data) : data);
   };
 
@@ -73,17 +73,17 @@ function Feature(data = {}) {
       sql,
       [],
       function(rs) {
-        console.log('Feature.update result: %o', rs.rows.item(0));
+        kvm.log('Objekt aktualisiert.', 3);
+        kvm.log('Feature.update result: ' + JSON.stringify(rs.rows.item(0)));
         var data = rs.rows.item(0);
         kvm.activeLayer.activeFeature.data = (typeof data == 'string' ? $.parseJSON(data) : data);
-        console.log('new data of feature: %o', kvm.activeLayer.activeFeature.data);
 
         if (typeof kvm.activeLayer.features['id_' + data.uuid] == 'undefined') {
-          console.log('insert new feature name in feature list: ' + kvm.activeLayer.activeFeature.get('name'));
+          //console.log('insert new feature name in feature list: ' + kvm.activeLayer.activeFeature.get('name'));
           $('#featurelistTable tr:first').before(kvm.activeLayer.activeFeature.listElement);
         }
         else {
-          console.log('replace old with new name in feature list: ' + kvm.activeLayer.activeFeature.get('name'));
+          //console.log('replace old with new name in feature list: ' + kvm.activeLayer.activeFeature.get('name'));
           $('#' + kvm.activeLayer.activeFeature.get('uuid')).html(kvm.activeLayer.activeFeature.get('name'));
         }
       },

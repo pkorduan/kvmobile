@@ -94,7 +94,7 @@ kvm = {
         setTimeout(
           function() {
             kvm.controller.mapper.createLayerList(stelle);
-            console.log('set layer to active %o', layer);
+            kvm.log('Setze Layer: ' + layer.get('schema_name') + '.' + layer.get('table_name'), 3);
             layer.setActive();
             layer.readData(); // load from loacl db to feature list
           },
@@ -261,7 +261,7 @@ kvm = {
       function(evt) {
         var gpsControlButton = $('#gpsControlButton');
         if (gpsControlButton.hasClass('kvm-gps-track')) {
-          console.log('switch of gps-track');
+          kvm.log('GPS Verfolgung ausschalten.', 3);
           gpsControlButton.toggleClass('kvm-gps-on kvm-gps-track');
         }
       }
@@ -645,10 +645,8 @@ kvm = {
   * create the list of features of active layer in list view
   */
   createFeatureList: function() {
-    kvm.log('app.createFeatureList', 4);
-
-    kvm.log('Erzeuge die Liste der Datensätze neu.');
-    $('#featurelistHeading').html(this.activeLayer.get('title'));
+    kvm.log('Erzeuge die Liste der Datensätze neu.', 3);
+    $('#featurelistHeading').html(this.activeLayer.get('alias') ? this.activeLayer.get('alias') : this.activeLayer.get('title'));
     $('#featurelistBody').html('');
     
     $.each(
@@ -862,7 +860,6 @@ kvm = {
       '',
       ['ok']
     );
-    console.log('Output msg: ' + msg);
   },
 
   coalesce: function() {

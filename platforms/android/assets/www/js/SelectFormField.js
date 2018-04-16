@@ -14,10 +14,10 @@ function SelectFormField(formId, settings) {
       (this.get('privilege') == '0' ? ' disabled' : '') + '>\
       <option value=""></option>' +
       $.map(
-        this.get('options').split(','),
+        this.get('options'),
         function(option) {
-          option = option.replace(/(^')|('$)/g, '')
-          return '<option value="' + option + '">' + option + '</option>';
+//          option = option.replace(/(^')|('$)/g, '')
+          return '<option value="' + option['value'] + '">' + option['output'] + '</option>';
         }
       ).join('\n') + '\
     </select>'
@@ -25,6 +25,9 @@ function SelectFormField(formId, settings) {
 
   this.setValue = function(val) {
     //console.log('SelectFormField.setValue with value: ' + val);
+    if (!val && this.get('default')) {
+      val = this.get('default');
+    }
     this.element.val(val == 'null' ? '' : val);
   };
 
@@ -43,7 +46,6 @@ function SelectFormField(formId, settings) {
     $('#featureFormular select[id=' + this.get('index') + ']').on(
       'change',
       function() {
-        console.log('event on saveFeatureButton');
         if (!$('#saveFeatureButton').hasClass('active-button')) {
           $('#saveFeatureButton').toggleClass('active-button inactive-button');
         }
@@ -52,15 +54,15 @@ function SelectFormField(formId, settings) {
   };
 
   this.withLabel = function() {
-    return $('<div class="form-field">').append(
-      $('<label for="' + this.get('name') + '"/>')
-        .html(
-          (this.get('alias') ? this.get('alias') : this.get('name')) + '<br>'
-        )
-        .append(
-          this.element
-        )
-    )
+    var label = $('<label for="' + this.get('name') + '"/>');
+
+    label.append((this.get('alias') ? this.get('alias') : this.get('name')));
+
+    if (this.get('tooltip')) {
+      label.append('&nbsp;<i class="fa fa-exclamation-circle" style="color: #f57802" onclick="kvm.msg(\'' + this.get('tooltip') + '\');"></i>');
+    }
+
+    return $('<div class="form-field">').append(label).append('<br>').append(this.element);
   };
 
   return this;

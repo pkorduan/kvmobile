@@ -17,8 +17,6 @@ kvm.views.mapper = {};
 kvm.controller.mapper = {
   watchGpsPosition: function() {
     kvm.log('mapper controller: watchGpsPosition');
-    console.log('mapper controller: watchGpsPosition');
-    debug_t = this;
     this.watchId = navigator.geolocation.watchPosition(
       function(geoLocation) {
         var pos = geoLocation.coords,
@@ -31,24 +29,36 @@ kvm.controller.mapper = {
             source = layer.getSource(),
             features = layer.getSource().getFeatures(),
             view = kvm.map.getView(),
-            radius = pos.accuracy;
+            radius = pos.accuracy
+            signalLevel;
 
-        console.log('controller.mapper new pos: ' + pos.latitude + ' ' + pos.longitude + ' ' + pos.accuracy);
+        //console.log('controller.mapper new pos: ' + pos.latitude + ' ' + pos.longitude + ' ' + pos.accuracy);
 
-        console.log('mapper watchGpsPosition');
         if (features.length == 0) {
-          console.log('create new feature');
+          //console.log('create new feature');
           feature = new ol.Feature({
             geometry: new ol.geom.Point(utm),
           });
           source.addFeature(feature);
         }
         else {
-          console.log('set new position to feature');
+          //console.log('set new position to feature');
           feature = features[0];
           feature.getGeometry().setCoordinates(utm);
         }
         layer.getStyle().getImage().setRadius((radius > 50 ? 50 : radius));
+
+        console.log(radius);
+
+        switch (true) {
+          case radius > 40 : signalLevel = 1; break;
+          case radius > 20 : signalLevel = 2; break;
+          case radius > 8 : signalLevel = 3; break;
+          case radius > 5 : signalLevel = 4; break;
+          default : signalLevel = 5;
+        }
+
+        $('#gps-signal-icon').attr('class', 'gps-signal-level-' + signalLevel);
 
         if ($('#gpsControlButton').hasClass('kvm-gps-track')) {
           console.log('recenter map');
@@ -64,17 +74,15 @@ kvm.controller.mapper = {
         enableHighAccuracy: true // take position from gps not network-based method
       }
     );
-    debug_w = this.watchId;
   },
 
   clearWatch: function() {
-    console.log('mapper clearWatch');
     kvm.map.getLayers().item(1).getSource().clear();
     navigator.geolocation.clearWatch(this.watchId);
   },
 
   createLayerList: function(stelle) {
-    console.log('mapper.createLayerList');
+    kvm.log('Erzeuge Layerliste.', 3);
     var layerIds = $.parseJSON(kvm.store.getItem('layerIds_' + stelle.get('id'))),
         i,
         layer;
@@ -92,7 +100,7 @@ kvm.controller.mapper = {
   },
 
   goToGpsPosition: function() {
-    console.log('controller mapper: goToGpsPosition');
+    //console.log('controller mapper: goToGpsPosition');
     navigator.geolocation.getCurrentPosition(
       function(geoLocation) {
         console.log('controller mapper goToGpsPosition');
@@ -117,6 +125,7 @@ kvm.controller.mapper = {
   },
 
   gpsError: function(error) {
+    $('#gps-signal-icon').attr('class', 'gps-signal-level-0');
     navigator.notification.confirm(
       'Es kann keine GPS-Position bestimmt werden. Schalten Sie die GPS Funktion auf Ihrem Gerät ein, suchen Sie einen Ort unter freiem Himmel auf und versuchen Sie es dann noch einmal. Fehler: ' + error.message,
       function(buttonIndex) {

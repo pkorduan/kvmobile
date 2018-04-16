@@ -75,7 +75,7 @@ function Layer(stelle, settings = {}) {
             item,
             i;
 
-        kvm.log(numRows + ' Datensaetze gelesen, erzeuge Featurliste neu.');
+        kvm.log(numRows + ' Datensaetze gelesen, erzeuge Featurliste neu.', 3);
         this.numFeatures = numRows;
         this.features = {};
         for (i = 0; i < numRows; i++) {
@@ -150,8 +150,7 @@ function Layer(stelle, settings = {}) {
       }).bind(this)
     );
   };
-  
-<<<<<<< HEAD
+
   this.createTables = function() {
     console.log('Layer.createTables');
     var layerIds = $.parseJSON(kvm.store.getItem('layerIds_' + this.stelle.get('id'))),
@@ -173,14 +172,13 @@ function Layer(stelle, settings = {}) {
   };
 
   this.createTable = function(layer) {
-    console.log('Layer.createTable with settings: %o', this.settings);
+    kvm.log('Layer.createTable with settings: ' + JSON.stringify(this.settings), 4);
     layer_ = this;
 
     kvm.db.attach(
       this.get('schema_name'),
       config.dbname + '.db',
       (function() {
-        console.log('settings: %o', this);
         var layer_ = this;
         kvm.log('Erzeuge Tabelle ' + layer_.get('schema_name') + '.' + layer_.get('table_name') +' in lokaler Datenbank.');
         sql = '\
@@ -207,7 +205,7 @@ function Layer(stelle, settings = {}) {
         );
 
         layer_.createDeltaTable();
-      }).bind(layer),
+      }).bind(layer_),
       function(err) {
         console.log('err: %o', err);
       }
@@ -761,13 +759,14 @@ function Layer(stelle, settings = {}) {
               kvm.log('Download Result: ' + this.result);
               resultObj = $.parseJSON(this.result);
               if (resultObj.success) {
-                kvm.log('Download erfolgreich');
-                console.log('resultObj: %o', resultObj);
+                kvm.log('Download erfolgreich.', 3);
+                //console.log('resultObj: %o', resultObj);
                 $('#layer_list').html('');
                 $.each(
                   resultObj.layers,
                   function(index, layerSetting) {
-                    console.log('Layer.requestLayers create layer with settings: %o', layerSetting);
+                    //console.log('Layer.requestLayers create layer with settings: %o', layerSetting);
+                    kvm.log('Erzeuge Layerliste.', 3);
                     layer = new Layer(kvm.activeStelle, layerSetting);
                     layer.saveToStore();
                     layer.createTable();
@@ -775,7 +774,7 @@ function Layer(stelle, settings = {}) {
                   }
                 );
                 kvm.bindLayerEvents();
-                console.log('Store after save layer: %o', kvm.store);
+                //console.log('Store after save layer: %o', kvm.store);
               }
               else {
                 alert('Abfrage liefert keine Daten vom Server. Entweder sind keine auf dem Server vorhanden oder die URL der Anfrage ist nicht korrekt. Prüfen Sie die Parameter unter Einstellungen.');
@@ -885,6 +884,7 @@ function Layer(stelle, settings = {}) {
         $('#featureFormular').append(
           attr.formField.withLabel()
         );
+
         attr.formField.bindEvents();
       }
     );
@@ -1230,8 +1230,7 @@ function Layer(stelle, settings = {}) {
   };
 
   this.appendToList = function() {
-    console.log('Layer.appendToList');
-    kvm.log('Füge Layer ' + this.get('title') + ' zur Layerliste hinzu.');
+    kvm.log('Füge Layer ' + this.get('title') + ' zur Layerliste hinzu.', 3);
     $('#layer_list').append(this.getListItem());
   };
 
@@ -1243,14 +1242,14 @@ function Layer(stelle, settings = {}) {
     var html = '\
       <div id="layer_' + this.getGlobalId()  + '">\
         <input type="radio" name="activeLayerId" value="' + this.getGlobalId() + '"/> ' +
-        this.get('title') + '\
+        (this.get('alias') ? this.get('alias') : this.get('title')) + '\
         <button id="syncLayerButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="sync-layer-button" style="border-radius: 5px; background: #afffaf; float: right; display: none;">\
           <i id="syncLayerIcon_' + this.getGlobalId() + '" class="fa fa-refresh" aria-hidden="true"></i>\
         </button>\
-        <button id="syncImagesButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="sync-images-button" style="border-radius: 5px; background: #afffaf; float: right; margin-right: 10px; display: none;">\
+        <button id="syncImagesButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="sync-images-button" style="border-radius: 5px; background: #afffaf; float: right; margin-right: 5px; display: none;">\
           <i id="syncImagesIcon_' + this.getGlobalId() + '" class="fa fa-upload" aria-hidden="true"></i>\
         </button>\
-        <button id="clearLayerButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="clear-layer-button" style="border-radius: 5px; background: #afffaf; float: right; margin-right: 10px; display: none;">\
+        <button id="clearLayerButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="clear-layer-button" style="border-radius: 5px; background: #afffaf; float: right; margin-right: 5px; display: none;">\
           <i id="clearLayerIcon_' + this.getGlobalId() + '" class="fa fa-ban" aria-hidden="true"></i>\
         </button>\
       </div>\

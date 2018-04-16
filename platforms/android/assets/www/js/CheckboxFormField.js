@@ -18,6 +18,10 @@ function CheckboxFormField(formId, settings) {
 
   this.setValue = function(val) {
     //console.log('CheckboxFormField.setValue with value: ' + val);
+    if (!val && this.get('default')) {
+      val = this.get('default');
+    }
+
     this.element.val(val);
     this.element.prop('checked', false);
     if (val == 't') {
@@ -35,7 +39,6 @@ function CheckboxFormField(formId, settings) {
     $('#featureFormular input[id=' + this.get('index') + ']').on(
       'change',
       function() {
-        console.log('event on saveFeatureButton');
         if (!$('#saveFeatureButton').hasClass('active-button')) {
           $('#saveFeatureButton').toggleClass('active-button inactive-button');
         }
@@ -44,16 +47,15 @@ function CheckboxFormField(formId, settings) {
   };
 
   this.withLabel = function() {
-    return $('<div class="form-field">').append(
-      $('<label for="' + this.get('name') + '"/>')
-        .append(
-          this.element
-        )
-        .append('&nbsp;')
-        .append(
-          this.get('alias')
-        )
-    )
+    var label = $('<label for="' + this.get('name') + '"/>');
+
+    label.append((this.get('alias') ? this.get('alias') : this.get('name')));
+
+    if (this.get('tooltip')) {
+      label.append('&nbsp;<i class="fa fa-exclamation-circle" style="color: #f57802" onclick="kvm.msg(\'' + this.get('tooltip') + '\');"></i>');
+    }
+
+    return $('<div class="form-field">').append(this.element).append('&nbsp;').append(label);
   };
 
   return this;

@@ -139,6 +139,10 @@ label: {
 	fill: rgb(236, 236, 236);
 }
 
+.gps-signal-level-0 > .bar-1, .gps-signal-level-0 > .bar-2, .gps-signal-level-0 > .bar-3, .gps-signal-level-0 > .bar-4, .gps-signal-level-0 > .bar-5 {
+	fill: rgb(236, 236, 236);
+}
+
 .gps-signal-level-1 > .bar-1 {
 	fill: rgb(38, 50, 134);
 }
