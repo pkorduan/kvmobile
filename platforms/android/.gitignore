@@ -11,5 +11,9 @@ ant-gen
 gen
 out
 # Gradle builds
-/build
-!/build/outputs/apk/*.apk
+/build/*
+!/build/outputs
+/build/outputs/*
+!/build/outputs/apk
+/build/outputs/apk/*
+!/build/outputs/apk/android-debug.apk
