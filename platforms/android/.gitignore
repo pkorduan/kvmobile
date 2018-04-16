@@ -16,4 +16,4 @@ out
 /build/outputs/*
 !/build/outputs/apk
 /build/outputs/apk/*
-!/build/outputs/apk/android-debug.apk
+!/build/outputs/apk/kvmobile-*.apk
