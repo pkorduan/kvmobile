@@ -151,15 +151,38 @@ function Layer(stelle, settings = {}) {
     );
   };
   
-  this.createTable = function() {
+<<<<<<< HEAD
+  this.createTables = function() {
+    console.log('Layer.createTables');
+    var layerIds = $.parseJSON(kvm.store.getItem('layerIds_' + this.stelle.get('id'))),
+        layer_ = this,
+        i;
+
+    for (i = 0; i < layerIds.length; i++) {
+      this.set('id', layerIds[i]);
+      this.settings = $.parseJSON(kvm.store.getItem('layerSettings_' + this.getGlobalId()));
+      console.log('settings aus store: %o', this.settings);
+      this.attributes = $.map(
+        this.settings.attributes,
+        function(attribute) {
+          return new Attribute(layer_, attribute);
+        }
+      );
+      this.createTable(this);
+    };
+  };
+
+  this.createTable = function(layer) {
     console.log('Layer.createTable with settings: %o', this.settings);
     layer_ = this;
 
     kvm.db.attach(
       this.get('schema_name'),
       config.dbname + '.db',
-      function() {
-        kvm.log('Erzeuge Tabelle in lokaler Datenbank.');
+      (function() {
+        console.log('settings: %o', this);
+        var layer_ = this;
+        kvm.log('Erzeuge Tabelle ' + layer_.get('schema_name') + '.' + layer_.get('table_name') +' in lokaler Datenbank.');
         sql = '\
           CREATE TABLE IF NOT EXISTS ' + layer_.get('schema_name') + '.' + layer_.get('table_name') + ' (' +
             $.map(
@@ -184,7 +207,7 @@ function Layer(stelle, settings = {}) {
         );
 
         layer_.createDeltaTable();
-      },
+      }).bind(layer),
       function(err) {
         console.log('err: %o', err);
       }
