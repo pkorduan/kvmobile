@@ -24,6 +24,9 @@ function Attribute(layer, settings = {}) {
         if (this.get('type') == 'timestamp') {
           field = new DateTimeFormField('featureFormular', this.settings);
         }
+        else if (this.get('type').substr(0, 3) == 'int') {
+          field = new ZahlFormField('featureFormular', this.settings);
+        }
         else {
           field = new TextFormField('featureFormular', this.settings);
         }

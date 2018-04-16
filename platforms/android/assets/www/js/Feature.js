@@ -1,5 +1,5 @@
 function Feature(data = {}) {
-  console.log('Create Feature with data %o', data);
+  kvm.log('Create Feature with data %o', data);
   this.data = (typeof data == 'string' ? $.parseJSON(data) : data);
 
 /*
@@ -95,7 +95,7 @@ function Feature(data = {}) {
 
   this.listElement = function() {
     return '\
-      <div class="feature-item" id="' + this.get('uuid') + '">' + kvm.coalesce(this.get('name'), this.get('uuid')) + '</div>\
+      <div class="feature-item" id="' + this.get('uuid') + '">' + kvm.coalesce(this.get(kvm.activeLayer.get('name_attribute')), 'Datensatz ' + this.get(kvm.activeLayer.get('id_attribute'))) + '</div>\
     ';
   };
 }

@@ -11,7 +11,8 @@ function SelectFormField(formId, settings) {
     <select\
       id="' + this.get('index') + '"\
       name="' + this.get('name') + '"' +
-      (this.get('privilege') == '0' ? ' disabled' : '') + '>' +
+      (this.get('privilege') == '0' ? ' disabled' : '') + '>\
+      <option value=""></option>' +
       $.map(
         this.get('options').split(','),
         function(option) {

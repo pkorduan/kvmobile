@@ -17,7 +17,6 @@
  * under the License.
  */
 kvm = {
-  debug: true,
   Buffer: require('buffer').Buffer,
   wkx: require('wkx'),
   controls: {},
@@ -41,35 +40,35 @@ kvm = {
   },
 
   init: function() {
-    console.log('init');
+    kvm.log('init', 4);
     document.addEventListener('deviceready', this.onDeviceReady.bind(this), false);
   },
 
   onDeviceReady: function() {
     var activeView = 'featurelist'
-    kvm.log('onDeviceReady');
+    kvm.log('onDeviceReady', 4);
 
     this.store = window.localStorage;
-    kvm.log('Lokaler Speicher verfügbar');
+    kvm.log('Lokaler Speicher verfügbar', 3);
 
     this.db = window.sqlitePlugin.openDatabase({
       name: config.dbname + '.db',
       location: 'default',
       androidDatabaseImplementation: 2
     });
-    kvm.log('Lokale Datenbank geöffnet.');
+    kvm.log('Lokale Datenbank geöffnet.', 3);
     $('#dbnameText').html(config.dbname + '.db');
 
-    kvm.log('Lade Gerätedaten.');
+    kvm.log('Lade Gerätedaten.', 3);
     this.loadDeviceData();
 
-    kvm.log('Lade Sync Status.');
+    kvm.log('Lade Sync Status.', 3);
     SyncStatus.load(this.store);
 
-    kvm.log('Lade Netzwerkstatus');
+    kvm.log('Lade Netzwerkstatus', 3);
     NetworkStatus.load();
 
-    kvm.log('initialisiere Karte.');
+    kvm.log('initialisiere Karte.', 3);
     this.initMap();
 
     if (this.store.getItem('activeStelleId')) {
@@ -77,7 +76,7 @@ kvm = {
           activeStelleSettings = this.store.getItem('stelleSettings_' + activeStelleId),
           stelle = new Stelle(activeStelleSettings);
 
-      kvm.log('Aktive Stelle ' + activeStelleId + ' gefunden');
+      kvm.log('Aktive Stelle ' + activeStelleId + ' gefunden.', 3);
 
       stelle.viewSettings();
       stelle.setActive();
@@ -87,7 +86,7 @@ kvm = {
             activeLayerSettings = this.store.getItem('layerSettings_' + activeStelleId + '_' + activeLayerId),
             layer = new Layer(stelle, activeLayerSettings);
 
-        kvm.log('Aktiven Layer ' +  activeLayerId + ' gefunden.');
+        kvm.log('Aktiven Layer ' +  activeLayerId + ' gefunden.', 3);
 
         // ToDo do not createTable instead attach schema database for layer if not exists
         // before create LayerList();
@@ -119,10 +118,10 @@ kvm = {
     //GpsStatus.load();
     //kvm.log('GPS Position geladen');
 
-    kvm.log('richte Ereignisüberwachung ein.');
+    kvm.log('richte Ereignisüberwachung ein.', 4);
     this.bindEvents();
 
-    kvm.log('zeige Liste der Datensätze');
+    kvm.log('zeige Liste der Datensätze', 4);
     this.showItem(activeView);
   },
 
@@ -357,6 +356,13 @@ kvm = {
       }
     );
 
+    $('#showLoggingsButton').on(
+      'click',
+      function() {
+        kvm.showItem('loggings');
+      }
+    )
+
     $('#formOptionButton').on(
       'click',
       function() {
@@ -511,41 +517,40 @@ kvm = {
         "context": this
       },
       function(evt) {
-        kvm.log('Syncronisation aufgerufen.');
+        kvm.log('Syncronisation aufgerufen.', 3);
         var _this = evt.data.context,
             syncVersion = _this.store.getItem('syncVersion');
 
         if (navigator.onLine) {
-          kvm.log('Gerät ist onLine.');
+          kvm.log('Gerät ist onLine.', 3);
           if (_this.serverSettingsExists()) {
-            kvm.log('Alle Verbindungseinstellungen sind gesetzt.');
+            kvm.log('Alle Verbindungseinstellungen sind gesetzt.', 3);
             if (syncVersion) {
-              kvm.log('Es existiert eine Version der letzten Syncronisation.');
+              kvm.log('Es existiert eine Version der letzten Syncronisation.', 3);
               _this.syncronize(evt.data.context);
             }
             else {
-              kvm.log('Keine letzte Version gefunden. Starte Download aller Daten.');
+              kvm.log('Keine letzte Version gefunden. Starte Download aller Daten.', 2);
               _this.downloadData(evt.data.context);
             }
           }
           else {
-            alert('Es fehlen Einstellungen!');
+            alert('Es fehlen Einstellungen!', 1);
           }
         }
         else {
-          alert('Keine Netzverbindung!');
+          alert('Keine Netzverbindung!', 1);
         }
       }
     );
-
   },
 
   bindFeatureItemClickEvents: function() {
-    console.log('bindFeatureItemClickEvents');
+    kvm.log('bindFeatureItemClickEvents', 4);
     $(".feature-item").on(
       'click',
       function(evt) {
-        console.log('event click on feature item');
+        kvm.log('event click on feature item', 4);
 
         var id = evt.target.getAttribute('id'),
             feature = kvm.activeLayer.features['id_' + id];
@@ -608,7 +613,7 @@ kvm = {
         if (layer.isEmpty()) {
           navigator.notification.confirm(
             'Layer ist schon geleert!',
-            function(buttonIndex) {              
+            function (buttonIndex) {
             },
             'Datenbank',
             ['OK']
@@ -624,7 +629,7 @@ kvm = {
   },
 
   loadDeviceData: function() {
-    console.log('loadDeviceData');
+    kvm.log('loadDeviceData', 4);
     $('#deviceDataText').html(
       'Cordova Version: ' + device.cordova + '<br>' +
       'Modell: ' + device.model + '<br>' +
@@ -640,7 +645,7 @@ kvm = {
   * create the list of features of active layer in list view
   */
   createFeatureList: function() {
-    console.log('app.createFeatureList');
+    kvm.log('app.createFeatureList', 4);
 
     kvm.log('Erzeuge die Liste der Datensätze neu.');
     $('#featurelistHeading').html(this.activeLayer.get('title'));
@@ -678,7 +683,7 @@ kvm = {
       }
     );
     kvm.activeLayer.olLayer.refresh({force: true});
-    console.log('app.drawFeatureMarker added ' + this.activeLayer.features.length + ' feature in map');
+    kvm.log(this.activeLayer.features.length + ' Objekte in Karte eingefügt.', 3);
   },
 /*
   checkIfTableExists: function() {
@@ -723,7 +728,7 @@ kvm = {
 */
 
   showItem: function(item) {
-    console.log('showItem: ' + item);
+    kvm.log('showItem: ' + item, 4);
     
     switch (item) {
       case 'map':
@@ -827,7 +832,6 @@ kvm = {
             kvm.log('Fehler beim lesen der Datei: ' + error.code);
           }
         );
-        console.log('mach was mit der Datei: %o', fileEntry);
       },
       kvm.downloadError,
       true
@@ -841,9 +845,11 @@ kvm = {
     });
   },
 
-  log: function(msg) {
-    if (this.debug) {
+  log: function(msg, level) {
+    if (level <= config.logLevel) {
       $('#logText').append('<br>' + msg);
+    }
+    if (config.debug) {
       console.log('Log msg: ' + msg);
     }
   },

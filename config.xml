@@ -9,6 +9,7 @@
     </author>
     <content src="index.html" />
     <access origin="https://gdi-service.de/kvwmap_pet_dev/*" />
+    <access origin="https://geoportal.lkros.de/kvwmap_dev/*" />
     <access origin="https://www.orka-mv.de/*" />
     <allow-intent href="http://*/*" />
     <allow-intent href="https://*/*" />

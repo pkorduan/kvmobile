@@ -42,7 +42,8 @@ function Layer(stelle, settings = {}) {
       typeof this.get('syncVersion') == 'undefined' ||
       this.get('syncVersion') == null ||
       this.get('syncVersion') == '' ||
-      this.get('syncVersion') == 0
+      this.get('syncVersion') == 0 ||
+      (this.get('syncVersion') != '' && this.numFeatures == 0)
     );
   };
 
@@ -54,28 +55,28 @@ function Layer(stelle, settings = {}) {
   * Load data from local db, create feature objects and show in list view
   */
   this.readData = function() {
-    console.log('Layer.readData from table: ' + this.get('schema_name') + '.' + this.get('table_name'));
-    kvm.log('Lese Daten aus lokaler Datenbank');
+    kvm.log('Layer.readData from table: ' + this.get('schema_name') + '.' + this.get('table_name'), 3);
+    kvm.log('Lese Daten aus lokaler Datenbank.', 4);
     sql = "\
       SELECT\
         *\
       FROM\
         " + this.get('schema_name') + '.' + this.get('table_name') + "\
       ORDER BY \
-        name\
+        " + (this.get('name_attribute') != '' ? this.get('name_attribute') : this.get('id_attribute')) + "\
     ";
     kvm.db.executeSql(
       sql,
       [],
       (function(rs) {
         console.log('Layer.readData result: %o', rs);
-        debug_rs = rs;
 
         var numRows = rs.rows.length,
             item,
             i;
 
         kvm.log(numRows + ' Datensaetze gelesen, erzeuge Featurliste neu.');
+        this.numFeatures = numRows;
         this.features = {};
         for (i = 0; i < numRows; i++) {
           item = rs.rows.item(i);
@@ -232,6 +233,7 @@ function Layer(stelle, settings = {}) {
         url = this.getSyncUrl();
 
     kvm.log('Speicher die Daten in Datei: ' + cordova.file.dataDirectory + filename);
+
     fileTransfer.download(
       url,
       cordova.file.dataDirectory + filename,
@@ -700,14 +702,31 @@ function Layer(stelle, settings = {}) {
   this.requestLayers = function() {
     console.log('Layer.requestLayers for stelle: %o', this.stelle);
     var fileTransfer = new FileTransfer(),
-        filename = 'layers_stelle_' + this.stelle.get('id') + '.json',
+        filename = cordova.file.dataDirectory + 'layers_stelle_' + this.stelle.get('id') + '.json',
+        //filename = 'temp_file.json',
         url = this.getLayerUrl();
 
     kvm.log('Download Layerdaten von Url: ' + url);
-    kvm.log('Speicher die Datei auf dem Gerät in Datei: ' + cordova.file.dataDirectory + filename);
+    kvm.log('Speicher die Datei auf dem Gerät in Datei: ' + filename);
+/*
     fileTransfer.download(
       url,
-      cordova.file.dataDirectory + filename,
+      'tmp_layer_data.json',
+      function (fileEntry) {
+        console.log('Download der Layerdaten abgeschlossen: ' + fileEntry.fullPath);
+      },
+      function (error) {
+        console.log("download error source " + error.source);
+        console.log("download error target " + error.target);
+        console.log("download error code" + error.code);
+      },
+      true
+    );
+*/
+
+    fileTransfer.download(
+      url,
+      filename,
       function (fileEntry) {
         fileEntry.file(
           function (file) {
@@ -1306,8 +1325,8 @@ function Layer(stelle, settings = {}) {
     kvm.log("download error source " + error.source);
     kvm.log("download error target " + error.target);
     kvm.log("download error code: " + error.code);
-    kvm.log("download error message: " + error.code);
-    alert('Fehler beim herunterladen der Datei von der Url: . Prüfen Sie ob die Netzverbidnung besteht und versuchen Sie es später noch einmal, wenn Sie wieder Netz haben. ' + error.message);
+    kvm.log("download error http_status: " + error.http_status);
+    alert('Fehler beim herunterladen der Datei von der Url: ' + error.source + '! Error code: ' + error.code + ' http_status: ' + error.http_status);
   };
 
   this.saveToStore = function() {

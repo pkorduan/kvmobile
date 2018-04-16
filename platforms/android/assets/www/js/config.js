@@ -6,10 +6,20 @@ config = {
   maxExtent: [154300, 5836054.721, 360500, 6023975.279],
   startPosition: [12.20896, 53.095876],
   startZoom: 8,
+  logLevel: 3,
+  debug: false,
   kvwmapServerId: 1,
   kvwmapServerName: 'kvwmap Server',
+
+  kvwmapServerUrl: 'https://geoportal.lkros.de/kvwmap_dev',
+  kvwmapServerUsername: 'pkorduan',
+  kvwmapServerPasswort: 'StupfKo-1',
+  kvwmapServerStelleId: 610010
+
+/*
   kvwmapServerUrl: 'https://gdi-service.de/kvwmap_pet_dev',
   kvwmapServerUsername: 'korduan',
   kvwmapServerPasswort: 'LarusCanus2',
-  kvwmapServerStelleId: 58,
+  kvwmapServerStelleId: 58
+*/
 }
