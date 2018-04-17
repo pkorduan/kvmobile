@@ -1,5 +1,5 @@
 function Feature(data = {}) {
-  kvm.log('Create Feature with data %o', data);
+  kvm.log('Create Feature with data: ' + JSON.stringify(data), 4);
   this.data = (typeof data == 'string' ? $.parseJSON(data) : data);
 
 /*
@@ -68,7 +68,7 @@ function Feature(data = {}) {
       WHERE\
         uuid = '" + this.get('uuid') + "'\
     ";
-    console.log('Frage feature uuid: ' + this.get('uuid') + ' mit sql: ' + sql + ' ab.');
+    kvm.log('Frage feature uuid: ' + this.get('uuid') + ' mit sql: ' + sql + ' ab.', 3);
     kvm.db.executeSql(
       sql,
       [],

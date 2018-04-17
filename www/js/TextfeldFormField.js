@@ -10,7 +10,6 @@ function TextfeldFormField(formId, settings) {
   this.element = $('\
     <textarea\
       id="' + this.get('index') + '"\
-      placeholder="' + (this.get('alias') ? this.get('alias') : this.get('name')) + '"\
       name="' + this.get('name') + '"\
       style="width: 100%;"' +
       (this.get('privilege') == '0' ? ' disabled' : '') + '\

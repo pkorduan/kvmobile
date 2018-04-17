@@ -132,7 +132,7 @@ function Layer(stelle, settings = {}) {
         " + values + "\
     ";
 
-    console.log('Schreibe Daten in lokale Datenbank mit Sql: %o', { sql: sql});
+    kvm.log('Schreibe Daten in lokale Datenbank mit Sql: ' + sql, 3);
     kvm.db.executeSql(
       sql,
       [],
@@ -146,13 +146,14 @@ function Layer(stelle, settings = {}) {
       }).bind(this),
       (function(error) {
         this.set('syncVersion', 0);
+        kvm.log('Fehler beim Zugriff auf die Datenbank: ' + error.message, 1);
         alert('Fehler beim Zugriff auf die Datenbank: ' + error.message);
       }).bind(this)
     );
   };
 
   this.createTables = function() {
-    console.log('Layer.createTables');
+    kvm.log('Tabelle anlegen.', 3);
     var layerIds = $.parseJSON(kvm.store.getItem('layerIds_' + this.stelle.get('id'))),
         layer_ = this,
         i;
@@ -160,7 +161,6 @@ function Layer(stelle, settings = {}) {
     for (i = 0; i < layerIds.length; i++) {
       this.set('id', layerIds[i]);
       this.settings = $.parseJSON(kvm.store.getItem('layerSettings_' + this.getGlobalId()));
-      console.log('settings aus store: %o', this.settings);
       this.attributes = $.map(
         this.settings.attributes,
         function(attribute) {
@@ -213,7 +213,6 @@ function Layer(stelle, settings = {}) {
   };
 
   this.createDeltaTable = function() {
-    console.log('Layer.createDeltaTable with settings: %o', this.settings);
     kvm.log('Erzeuge Tabelle für deltas in lokaler Datenbank.');
     sql = '\
       CREATE TABLE IF NOT EXISTS ' + this.get('schema_name') + '.' + this.get('table_name') + '_deltas (\
@@ -224,7 +223,7 @@ function Layer(stelle, settings = {}) {
         created_at text\
       )\
     ';
-    console.log('Erzeuge Deltas Tabelle mit Statement sql: ' + sql);
+    kvm.log('Erzeuge Deltas Tabelle mit Statement sql: ' + sql, 3);
 
     kvm.db.executeSql(
       sql,
@@ -248,7 +247,7 @@ function Layer(stelle, settings = {}) {
 */
 
   this.requestData = function() {
-    console.log('Layer.requestData');
+    kvm.log('Frage Daten ab.' , 3);
     var fileTransfer = new FileTransfer(),
         filename = 'data_layer_' + this.getGlobalId() + '.json',
         url = this.getSyncUrl();
@@ -268,7 +267,7 @@ function Layer(stelle, settings = {}) {
               var items = [],
                   collection = {};
 
-              console.log('Download result: %o', { result: this.result })
+              kvm.log('Download Ergebnis:' + JSON.stringify(this.result), 3);
               try {
                 collection = $.parseJSON(this.result);
                 if (collection.features.length > 0) {
@@ -290,10 +289,9 @@ function Layer(stelle, settings = {}) {
           },
           function(error) {
             alert('Fehler beim Einlesen der heruntergeladenen Datei. Prüfen Sie die URL und Parameter, die für die Synchronisation verwendet werden.');
-            kvm.log('Fehler beim lesen der Datei: ' + error.code);
+            kvm.log('Fehler beim lesen der Datei: ' + error.code, 1);
           }
         );
-        console.log('mach was mit der Datei: %o', fileEntry);
       },
       this.downloadError,
       true
@@ -721,7 +719,7 @@ function Layer(stelle, settings = {}) {
   * Request all layers from active serversetting
   */
   this.requestLayers = function() {
-    console.log('Layer.requestLayers for stelle: %o', this.stelle);
+    //console.log('Layer.requestLayers for stelle: %o', this.stelle);
     var fileTransfer = new FileTransfer(),
         filename = cordova.file.dataDirectory + 'layers_stelle_' + this.stelle.get('id') + '.json',
         //filename = 'temp_file.json',
@@ -756,28 +754,34 @@ function Layer(stelle, settings = {}) {
             reader.onloadend = function() {
               kvm.log('Download der Layerdaten abgeschlossen.');
               var items = [];
-              kvm.log('Download Result: ' + this.result);
-              resultObj = $.parseJSON(this.result);
-              if (resultObj.success) {
-                kvm.log('Download erfolgreich.', 3);
-                //console.log('resultObj: %o', resultObj);
-                $('#layer_list').html('');
-                $.each(
-                  resultObj.layers,
-                  function(index, layerSetting) {
-                    //console.log('Layer.requestLayers create layer with settings: %o', layerSetting);
-                    kvm.log('Erzeuge Layerliste.', 3);
-                    layer = new Layer(kvm.activeStelle, layerSetting);
-                    layer.saveToStore();
-                    layer.createTable();
-                    layer.appendToList();
-                  }
-                );
-                kvm.bindLayerEvents();
-                //console.log('Store after save layer: %o', kvm.store);
+              kvm.log('Download Result: ' + this.result, 3);
+              if (this.result.indexOf('form name="login"') > -1) {
+                kvm.msg('Zugang zum Server verweigert! Prüfen Sie Ihre Zugangsdaten unter Einstellungen.');
               }
               else {
-                alert('Abfrage liefert keine Daten vom Server. Entweder sind keine auf dem Server vorhanden oder die URL der Anfrage ist nicht korrekt. Prüfen Sie die Parameter unter Einstellungen.');
+                resultObj = $.parseJSON(this.result);
+                if (resultObj.success) {
+                  kvm.log('Download erfolgreich.', 3);
+                  //console.log('resultObj: %o', resultObj);
+                  $('#layer_list').html('');
+                  $.each(
+                    resultObj.layers,
+                    function(index, layerSetting) {
+                      //console.log('Layer.requestLayers create layer with settings: %o', layerSetting);
+                      kvm.log('Erzeuge Layerliste.', 3);
+                      layer = new Layer(kvm.activeStelle, layerSetting);
+                      layer.saveToStore();
+                      layer.createTable();
+                      layer.appendToList();
+                    }
+                  );
+                  kvm.bindLayerEvents();
+                  //console.log('Store after save layer: %o', kvm.store);
+                }
+                else {
+                  kvm.log('Fehler beim Abfragen der Layerdaten. Falsche Serverparameter oder Fehler auf dem Server.', 2);
+                  alert('Abfrage liefert keine Daten vom Server. Entweder sind keine auf dem Server vorhanden oder die URL der Anfrage ist nicht korrekt. Prüfen Sie die Parameter unter Einstellungen.');
+                }
               }
             };
 
@@ -891,14 +895,14 @@ function Layer(stelle, settings = {}) {
   };
 
   this.createFeatureLayer = function() {
-    console.log('Layer.createFeatureLayer');
+    kvm.log('Erzeuge Objekt-Layer', 3);
     this.olLayer = new ol.layer.Vector({
       name: this.get('title'),
       opacity: 1,
       source: new ol.source.Vector({
         attributions: [
           new ol.Attribution({
-            html: this.get('kvwmap Server')
+            html: 'kvwmap Server'
           })
         ],
         projection: kvm.map.getView().getProjection(),
@@ -940,7 +944,7 @@ function Layer(stelle, settings = {}) {
   };
 
   this.loadFeatureToForm = function(feature) {
-    console.log('Layer.loadFeatureToForm %o', feature);
+    kvm.log('Lade Feature in Formular.', 3);
     this.activeFeature = feature;
     layer = this;
 
@@ -956,7 +960,7 @@ function Layer(stelle, settings = {}) {
   };
 
   this.collectChanges = function(action) {
-    console.log('Layer.collectChanges');
+    kvm.log('Layer.collectChanges', 4);
     var activeFeature = this.activeFeature,
         changes = [];
 
@@ -965,24 +969,24 @@ function Layer(stelle, settings = {}) {
     changes = $.map(
       this.attributes,
       (function(attr) {
-        console.log('Vergleiche Werte von Attribut: ' + attr.get('name'));
+        kvm.log('Vergleiche Werte von Attribut: ' + attr.get('name'), 3);
         var key = attr.get('name'),
             oldVal = activeFeature.get(key);
-            newVal = attr.formField.getValue(this.layer.action);
+            newVal = attr.formField.getValue(this.action);
 
         if (typeof oldVal == 'string') oldVal = oldVal.trim();
         if (typeof newVal == 'string') newVal = newVal.trim();
 
-        console.log('Vergleiche ' + attr.get('form_element_type') + ' Attribut: ' + key + '(' + oldVal + ' (' + typeof oldVal + ') vs. ' + newVal + '(' + typeof newVal + '))');
+        kvm.log('Vergleiche ' + attr.get('form_element_type') + ' Attribut: ' + key + '(' + oldVal + ' (' + typeof oldVal + ') vs. ' + newVal + '(' + typeof newVal + '))', 3);
         if (oldVal != newVal) {
-          kvm.log('Änderung in Attribut ' + key + ' gefunden');
+          kvm.log('Änderung in Attribut ' + key + ' gefunden.', 3);
           return {
             'key': key,
             'value': newVal,
             'type' : attr.getSqliteType()
           }
         }
-      }).bind({ layer: this})
+      }).bind({ action: action})
     );
 
     return changes;
@@ -993,7 +997,7 @@ function Layer(stelle, settings = {}) {
   * create also deltas for image updates for all document attributes
   */
   this.createDeltas = function(action, changes) {
-    console.log('Layer.createDeltas ' + action + ' %o', changes);
+    kvm.log('Erzeuge SQL für Änderung.', 3);
     var deltas = [];
 
     if (action == 'INSERT') {
@@ -1066,7 +1070,7 @@ function Layer(stelle, settings = {}) {
         '
       });
     }
-    console.log('created deltas: %o', deltas);
+    kvm.log('Änderung sql: ' + JSON.stringify(deltas), 3);
     this.writeDeltas(deltas);
   };
 
@@ -1352,17 +1356,14 @@ function Layer(stelle, settings = {}) {
   };
 
   this.saveToStore = function() {
-    console.log('Layer.saveToStore: %o', this.settings);
+    kvm.log('Einstellungen speichern.', 3);
     var layerIds = $.parseJSON(kvm.store.getItem('layerIds_' + this.stelle.get('id'))),
         settings = JSON.stringify(this.settings);
 
-    if (layerIds == null) { layerIds = []; } 
-    console.log('save settings %o', { settings: settings });
+    if (layerIds == null) { layerIds = []; }
     kvm.store.setItem('layerSettings_' + this.getGlobalId(), settings);
 
-    console.log('try to add layerId: ' + this.get('id') + ' to layerIds: ' + JSON.stringify(layerIds));
     if ($.inArray(this.get('id'), layerIds) < 0) {
-      console.log('add layerId ' + this.get('id') + ' to layerIds in store');
       layerIds.push(this.get('id'));
       kvm.store.setItem(
         'layerIds_' + this.stelle.get('id'),
@@ -1372,7 +1373,7 @@ function Layer(stelle, settings = {}) {
   };
 
   this.setActive = function() {
-    console.log('Layer.setActive layer: %o', this);
+    kvm.log('Setze Layer ' + this.get('title') + ' (' + this.get('alias') + ') auf aktiv.', 3);
     kvm.activeLayer = this;
     kvm.store.setItem('activeLayerId', this.get('id'));
     this.createFeatureForm();

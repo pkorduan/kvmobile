@@ -118,15 +118,15 @@ kvm = {
     //GpsStatus.load();
     //kvm.log('GPS Position geladen');
 
-    kvm.log('richte Ereignisüberwachung ein.', 4);
+    kvm.log('Ereignisüberwachung eingerichtet.', 4);
     this.bindEvents();
 
-    kvm.log('zeige Liste der Datensätze', 4);
+    kvm.log('Liste der Datensätze angezeigt.', 4);
     this.showItem(activeView);
   },
 
   initMap: function() {
-    console.log('initMap');
+    kvm.log('Karte initialisieren.', 3);
     var utmZone = config.projZone,
         myProjectionName = "EPSG:258" + utmZone,
         myProjection,
@@ -200,8 +200,6 @@ kvm = {
   },
 
   bindEvents: function() {
-    console.log('bindEvents');
-
     document.addEventListener(
       "offline",
       this.setConnectionStatus,
@@ -231,20 +229,19 @@ kvm = {
     this.map.on(
       'click',
       (function(evt) {
-        console.log('app click event on map');
         var selectedFeatures = {};
 
         this.map.forEachFeatureAtPixel(
           evt.pixel,
           (function(feature, layer) {
             if (layer) {
-              console.log('Click on layer %o', layer);
+              kvm.log('Layer mit folgenden Daten ausgewählt: ' + JSON.stringify(layer), 3);
               if (layer.get('name') == 'Hilfslayer') {
-                console.log('Click on Feature %o', feature);
+                kvm.log('Feature im Hilfslayer ausgewählt mit folgenden Daten: ' + JSON.stringify(feature), 3);
                 layer.getSource().clear();
               }
               else {
-                console.log('app click on feature %o', feature);
+                kvm.log('Feature ausgewählt mit folgenden Daten: ' + JSON.stringify(feature), 3);
                 this.activeLayer.loadFeatureToForm(
                   this.activeLayer.features['id_' + feature.get('gid')]
                 );
@@ -303,7 +300,7 @@ kvm = {
       'click',
       { context: this},
       function(evt) {
-        console.log('Klick on showDeltasButton');
+        kvm.log('Delta anzeigen.', 3);
         var this_ = evt.data.context,
             sql = "\
               SELECT\
@@ -314,12 +311,10 @@ kvm = {
 
         $('#showDeltasButton').hide();
         $('#showDeltasWaiting').show();
-        console.log('apps.js showDeltasButton execute sql: ' + sql);
         this_.db.executeSql(
           sql,
           [],
           function(rs) {
-            console.log('apps.js query deltas success result %o:', rs);
             var numRows = rs.rows.length,
                 item,
                 i;
@@ -340,7 +335,7 @@ kvm = {
             $('#showDeltasWaiting').hide();
           },
           function(error) {
-            console.log('apps.js query deltas Fehler: %o', error);
+            kvm.log('Fehler in bei Abfrage der Deltas: ' + JSON.stringify(error), 1);
             alert('Fehler beim Zugriff auf die Datenbank');
           }
         );
@@ -370,7 +365,7 @@ kvm = {
           'Datensatz Löschen?',
           function(buttonIndex) {
             if (buttonIndex == 1) { // ja
-              console.log('Datensatz löschen');
+              kvm.log('Datensatz löschen.', 3);
               kvm.activeLayer.createDeltas('DELETE', []);
               kvm.activeLayer.createImgDeltas('DELETE',
                 $.map(
@@ -395,6 +390,31 @@ kvm = {
       }
     );
 
+    $('#backArrow').on(
+      'click',
+      function(evt) {
+        if ($('#saveFeatureButton').hasClass('active-button')) {
+          navigator.notification.confirm(
+            'Änderungen verwerfen?',
+            function(buttonIndex) {
+              if (buttonIndex == 1) { // ja
+                kvm.showItem('featurelist');
+                $('#saveFeatureButton').toggleClass('active-button inactive-button');
+              }
+              if (buttonIndex == 2) { // nein
+                // Do nothing
+              }
+            },
+            'Formular',
+            ['ja', 'nein']
+          );
+        }
+        else {
+          kvm.showItem('featurelist');
+        }
+      }
+    );
+
     $('#saveFeatureButton').on(
       'click',
       function(evt) {
@@ -410,15 +430,22 @@ kvm = {
               var action = (typeof kvm.activeLayer.features['id_' + kvm.activeLayer.activeFeature.get('uuid')] == 'undefined' ? 'INSERT' : 'UPDATE');
               if (buttonIndex == 1) { // ja
                 changes = kvm.activeLayer.collectChanges(action);
-                console.log('changes: %o', changes);
-                kvm.activeLayer.createDeltas(action, changes);
+                kvm.log('Änderungen: ' + JSON.stringify(changes), 3);
 
-                imgChanges = changes.filter(
-                  function(change) {;
-                    return ($.inArray(change.key, kvm.activeLayer.getDokumentAttributeNames()) > -1);
-                  }
-                );
-                if (imgChanges.length > 0) kvm.activeLayer.createImgDeltas(action, imgChanges);
+                if (changes.length > 1) {
+                  // more than created_at or updated_at_client
+                  kvm.activeLayer.createDeltas(action, changes);
+                  imgChanges = changes.filter(
+                    function(change) {
+                      return ($.inArray(change.key, kvm.activeLayer.getDokumentAttributeNames()) > -1);
+                    }
+                  );
+                  if (imgChanges.length > 0) kvm.activeLayer.createImgDeltas(action, imgChanges);
+                }
+                else {
+                  kvm.log('Keine Änderungen.', 2);
+                  kvm.msg('Keine Änderungen!');
+                }
 
                 //  waitingDiv.hide();
 
@@ -494,7 +521,6 @@ kvm = {
     $("#searchHaltestelle").on(
       "keyup paste",
       function() {
-        console.log('app keyup paste on searchHaltestelle');
         var needle = $(this).val().toLowerCase(),
             haystack = $(".feature-item");
 
@@ -535,10 +561,12 @@ kvm = {
             }
           }
           else {
+            kvm.log('Es fehlen Einstellungen', 2);
             alert('Es fehlen Einstellungen!', 1);
           }
         }
         else {
+          kvm.log('Keine Netzverbindung', 2);
           alert('Keine Netzverbindung!', 1);
         }
       }
@@ -550,7 +578,7 @@ kvm = {
     $(".feature-item").on(
       'click',
       function(evt) {
-        kvm.log('event click on feature item', 4);
+        kvm.log('Öffne Formular mit Objektdaten.', 4);
 
         var id = evt.target.getAttribute('id'),
             feature = kvm.activeLayer.features['id_' + id];
@@ -843,12 +871,12 @@ kvm = {
     });
   },
 
-  log: function(msg, level) {
+  log: function(msg, level = 3) {
     if (level <= config.logLevel) {
       $('#logText').append('<br>' + msg);
-    }
-    if (config.debug) {
-      console.log('Log msg: ' + msg);
+      if (config.debug) {
+        console.log('Log msg: ' + msg);
+      }
     }
   },
 

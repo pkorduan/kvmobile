@@ -12,7 +12,7 @@ function SelectFormField(formId, settings) {
       id="' + this.get('index') + '"\
       name="' + this.get('name') + '"' +
       (this.get('privilege') == '0' ? ' disabled' : '') + '>\
-      <option value=""></option>' +
+      <option value="">Bitte wählen</option>' +
       $.map(
         this.get('options'),
         function(option) {

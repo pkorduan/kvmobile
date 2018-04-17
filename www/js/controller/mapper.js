@@ -17,6 +17,7 @@ kvm.views.mapper = {};
 kvm.controller.mapper = {
   watchGpsPosition: function() {
     kvm.log('mapper controller: watchGpsPosition');
+
     this.watchId = navigator.geolocation.watchPosition(
       function(geoLocation) {
         var pos = geoLocation.coords,
@@ -29,8 +30,7 @@ kvm.controller.mapper = {
             source = layer.getSource(),
             features = layer.getSource().getFeatures(),
             view = kvm.map.getView(),
-            radius = pos.accuracy
-            signalLevel;
+            radius = pos.accuracy;
 
         //console.log('controller.mapper new pos: ' + pos.latitude + ' ' + pos.longitude + ' ' + pos.accuracy);
 
@@ -51,29 +51,45 @@ kvm.controller.mapper = {
         console.log(radius);
 
         switch (true) {
-          case radius > 40 : signalLevel = 1; break;
-          case radius > 20 : signalLevel = 2; break;
-          case radius > 8 : signalLevel = 3; break;
-          case radius > 5 : signalLevel = 4; break;
+          case radius > 50 : this.signalLevel = 1; break;
+          case radius > 25 : this.signalLevel = 2; break;
+          case radius > 15 : this.signalLevel = 3; break;
+          case radius > 11 : this.signalLevel = 4; break;
           default : signalLevel = 5;
         }
 
         $('#gps-signal-icon').attr('class', 'gps-signal-level-' + signalLevel);
 
         if ($('#gpsControlButton').hasClass('kvm-gps-track')) {
-          console.log('recenter map');
+          //console.log('recenter map');
           view.setCenter(utm);
         }
       },
       function(error) {
-        console.log('Fehler bei der Positionsabfrage code: ' + error.code + ' message: ' + error.message);
+        kvm.controller.mapper.clearWatch();
+        navigator.notification.confirm(
+          'Fehler bei der Positionsabfrage code: ' + error.code + ' message: ' + error.message + ' ' +
+          'Es kann keine GPS-Position bestimmt werden. Schalten Sie die GPS Funktion auf Ihrem Gerät ein, suchen Sie einen Ort unter freiem Himmel auf und versuchen Sie es dann noch einmal.',
+          function(buttonIndex) {
+            if (buttonIndex == 1) {
+              kvm.log('Einschalten der GPS-Funktion.', 3);
+            }
+          },
+          'GPS-Position',
+          ['ok', 'abbrechen']
+        );
+        $('#gpsControlButton').toggleClass('kvm-gps-off kvm-gps-track');
       },
       {
-        maximumAge: 2, // duration to cache current position
-        timeout: 10, // timeout for try to call successFunction, else call errorFunction 
+        maximumAge: 2000, // duration to cache current position
+        timeout: 5000, // timeout for try to call successFunction, else call errorFunction 
         enableHighAccuracy: true // take position from gps not network-based method
       }
     );
+  },
+
+  getSignalLevel: function() {
+    return (typeof this.signalLevel === "undefined" ? 0 : this.signalLevel);
   },
 
   clearWatch: function() {

@@ -131,7 +131,7 @@ function GeometrieFormField(formId, settings) {
         .html(
           '<i id="saveGpsPositionButton" class="fa fa-map-marker fa-2x" aria-hidden="true" style="margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>\
           <i id="goToGpsPositionButton" class="fa fa-globe fa-2x" aria-hidden="true" style="margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>\
-          <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="28" height="28" version="1.1">\
+          <svg onclick="kvm.msg(\'Die GPS-Genauigkeit ist ' + kvm.controller.mapper.getSignalLevel() + ' auf einer Skala von 0-5.\')" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="28" height="28" version="1.1">\
             <g id="gps-signal-icon" class="gps-signal-level-0" transform="scale(1 -1) translate(0 -28)">\
               <rect class="bar-1" x="0" y="0" width="4" height="4" />\
               <rect class="bar-2" x="6" y="0" width="4" height="10" />\

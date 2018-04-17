@@ -7,7 +7,7 @@ config = {
   startPosition: [12.20896, 53.095876],
   startZoom: 8,
   logLevel: 3,
-  debug: false,
+  debug: true,
   kvwmapServerId: 1,
   kvwmapServerName: 'kvwmap Server',
 
