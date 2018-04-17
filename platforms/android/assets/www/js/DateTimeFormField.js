@@ -21,7 +21,7 @@ function DateTimeFormField(formId, settings) {
   this.setValue = function(val) {
     var val = kvm.coalesce(val, '');
     if (val != '') val = this.toISO(val);
-    console.log('Feature: ' + this.get('id') + ' DateTimeFormField ' + this.get('name') + ' setValue with value: %o', val);
+    console.log('DateTimeFormField ' + this.get('name') + ' setValue with value: %o', val);
     this.element.val(val);
   };
 

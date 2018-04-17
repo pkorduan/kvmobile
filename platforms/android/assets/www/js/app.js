@@ -167,7 +167,7 @@ kvm = {
     orkaMv= new ol.layer.Tile({
       source: new ol.source.TileWMS({
         url: "https://www.orka-mv.de/geodienste/orkamv/wms",
-        params: {"LAYERS": "orkamv-gesamt",
+        params: {"LAYERS": "orkamv",
                         "VERSION": "1.3.0"}
       })
     });
@@ -235,13 +235,13 @@ kvm = {
           evt.pixel,
           (function(feature, layer) {
             if (layer) {
-              kvm.log('Layer mit folgenden Daten ausgewählt: ' + JSON.stringify(layer), 3);
+              kvm.log('Layer ausgewählt.', 3);
               if (layer.get('name') == 'Hilfslayer') {
                 kvm.log('Feature im Hilfslayer ausgewählt mit folgenden Daten: ' + JSON.stringify(feature), 3);
                 layer.getSource().clear();
               }
               else {
-                kvm.log('Feature ausgewählt mit folgenden Daten: ' + JSON.stringify(feature), 3);
+                kvm.log('Feature ausgewählt.', 3);
                 this.activeLayer.loadFeatureToForm(
                   this.activeLayer.features['id_' + feature.get('gid')]
                 );
