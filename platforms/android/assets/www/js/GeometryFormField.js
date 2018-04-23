@@ -69,12 +69,13 @@ function GeometrieFormField(formId, settings) {
               geometry: point
             }),
             view = kvm.map.getView(),
-            source = kvm.map.getLayers().item(1).getSource();
+            helpLayer = kvm.map.getLayers().item(1),
+            source = helpLayer.getSource();
 
         source.clear();
         source.addFeature(feature);
 
-//        helpLayer.refresh({force: true});
+        source.refresh({force: true});
 
         view.setCenter(
           feature.getGeometry().getCoordinates()
@@ -82,9 +83,16 @@ function GeometrieFormField(formId, settings) {
 
         view.setZoom(17);
 
-        kvm.showItem('map');
+        kvm.showItem('mapFormular');
       }
     );
+
+    $('#backToFormButton').on(
+      'click',
+      function() {
+        kvm.showItem('formular');
+      }
+    )
 
     $('#saveGpsPositionButton').on(
       'click',
@@ -93,10 +101,10 @@ function GeometrieFormField(formId, settings) {
         navigator.geolocation.getCurrentPosition(
           function(geoLocation) {
             navigator.notification.confirm(
-              'Neue Position:\n' + geoLocation.coords.latitude + ' ' + geoLocation.coords.longitude + '\nübernehmen?',
+              'Neue Position:\n' + geoLocation.coords.longitude + ' ' + geoLocation.coords.latitude + '\nübernehmen?',
               function(buttonIndex) {
                 if (buttonIndex == 1) {
-                  console.log('set new Position ' + geoLocation.coords.latitude + ' ' + geoLocation.coords.longitude);
+                  kvm.log('set new Position ' + geoLocation.coords.latitude + ' ' + geoLocation.coords.longitude, 4);
                   $('#featureFormular input[id=0]').val(geoLocation.coords.longitude + ' ' + geoLocation.coords.latitude).trigger('change');
                 }
               },

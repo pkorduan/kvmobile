@@ -69,7 +69,7 @@ function Layer(stelle, settings = {}) {
       sql,
       [],
       (function(rs) {
-        console.log('Layer.readData result: %o', rs);
+        kvm.log('Layer.readData result: ' + JSON.stringify(rs), 4);
 
         var numRows = rs.rows.length,
             item,
@@ -77,8 +77,10 @@ function Layer(stelle, settings = {}) {
 
         kvm.log(numRows + ' Datensaetze gelesen, erzeuge Featurliste neu.', 3);
         this.numFeatures = numRows;
+
         this.features = {};
         for (i = 0; i < numRows; i++) {
+
           item = rs.rows.item(i);
           this.features['id_' + item.uuid] = new Feature(item);
         }
@@ -909,7 +911,8 @@ function Layer(stelle, settings = {}) {
         features: []
       }),
       style: this.getStyle,
-      zIndex:100
+      zIndex:100,
+      renderMode: 'image'
     });
     kvm.map.addLayer(this.olLayer);
   };
@@ -946,16 +949,15 @@ function Layer(stelle, settings = {}) {
   this.loadFeatureToForm = function(feature) {
     kvm.log('Lade Feature in Formular.', 3);
     this.activeFeature = feature;
-    layer = this;
 
     $.map(
       this.attributes,
-      function(attr) {
+      (function(attr) {
         var key = attr.get('name'),
-            val = feature.get(key);
+            val = this.get(key);
 
         attr.formField.setValue(val);
-      }
+      }).bind(feature)
     );
   };
 
@@ -1075,15 +1077,12 @@ function Layer(stelle, settings = {}) {
   };
 
   this.createImgDeltas = function(action, changes) {
-    console.log('Layer.createImgDeltas action: ' + action + ' changes: %o', changes);
+    kvm.log('Layer.createImgDeltas action: ' + action + ' changes: ' + JSON.stringify(changes), 4);
     $.each(
       changes,
       (function(index, change) {
         img_old = this.activeFeature.getAsArray(change.key);
         img_new = (change.value ? change.value.slice(1, -1).split(',') : []);
-
-        console.log('img_old %o', img_old);
-        console.log('img_new %o', img_new);
 
         $.map(
           img_new,
@@ -1170,12 +1169,12 @@ function Layer(stelle, settings = {}) {
   * exec sql in layer table and if success write delta in deltas table
   */
   this.execDelta = function(delta) {
-    console.log('Layer.execDelta %o', delta);
+    kvm.log('Layer.execDelta: ' + JSON.stringify(delta), 4);
     kvm.db.executeSql(
       delta,
       [],
       (function(rs) {
-        console.log('Layer.execDelta Sql ausgeführt.');
+        kvm.log('Layer.execDelta Sql ausgeführt.', 4);
         this.readData();
         kvm.showItem('featurelist');
       }).bind(this),
@@ -1193,8 +1192,7 @@ function Layer(stelle, settings = {}) {
   };
 
   this.writeDeltas = function(deltas) {
-    console.log('Layer.writeDeltas %o', deltas);
-    debug_deltas = deltas;
+    kvm.log('Layer.writeDeltas: ' + JSON.stringify(deltas), 4);
 
     $.each(
       deltas,
@@ -1214,13 +1212,13 @@ function Layer(stelle, settings = {}) {
               )\
             ";
 
-        console.log('Layer.writeDeltas to table ' + this.get('schema_name') + '.' + this.get('table_name') + '_deltas sql: ' + sql);
+        kvm.log('Layer.writeDeltas to table ' + this.get('schema_name') + '.' + this.get('table_name') + '_deltas sql: ' + sql, 3);
 
         kvm.db.executeSql(
           sql,
           [],
           (function(rs) {
-            console.log('Layer.writeDeltas Speicherung erfolgreich.');
+            kvm.log('Layer.writeDeltas Speicherung erfolgreich.', 4);
             if (delta.type == 'sql') this.execDelta(delta.delta);
           }).bind(this),
           function(error) {

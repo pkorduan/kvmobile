@@ -20,6 +20,8 @@ kvm.controller.mapper = {
 
     this.watchId = navigator.geolocation.watchPosition(
       function(geoLocation) {
+        kvm.log('Set new geo location position', 4);
+
         var pos = geoLocation.coords,
             utm = ol.proj.transform(
               [pos.longitude, pos.latitude],
@@ -64,6 +66,7 @@ kvm.controller.mapper = {
           //console.log('recenter map');
           view.setCenter(utm);
         }
+
       },
       function(error) {
         kvm.controller.mapper.clearWatch();
@@ -116,7 +119,7 @@ kvm.controller.mapper = {
   },
 
   goToGpsPosition: function() {
-    //console.log('controller mapper: goToGpsPosition');
+    console.log('controller mapper: goToGpsPosition');
     navigator.geolocation.getCurrentPosition(
       function(geoLocation) {
         console.log('controller mapper goToGpsPosition');

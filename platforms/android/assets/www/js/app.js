@@ -17,6 +17,7 @@
  * under the License.
  */
 kvm = {
+  version: '1.0.1',
   Buffer: require('buffer').Buffer,
   wkx: require('wkx'),
   controls: {},
@@ -127,6 +128,18 @@ kvm = {
 
   initMap: function() {
     kvm.log('Karte initialisieren.', 3);
+/*
+    var map = L.map('map').setView([54, 12], 13);
+
+    L.tileLayer('https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png', {
+        attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
+    }).addTo(map);
+
+    L.marker([54, 12]).addTo(map)
+        .bindPopup('A pretty CSS3 popup.<br> Easily customizable.')
+        .openPopup();
+*/
+
     var utmZone = config.projZone,
         myProjectionName = "EPSG:258" + utmZone,
         myProjection,
@@ -167,8 +180,7 @@ kvm = {
     orkaMv= new ol.layer.Tile({
       source: new ol.source.TileWMS({
         url: "https://www.orka-mv.de/geodienste/orkamv/wms",
-        params: {"LAYERS": "orkamv",
-                        "VERSION": "1.3.0"}
+        params: {"LAYERS": "orkamv", "VERSION": "1.3.0"}
       })
     });
     map.addLayer(orkaMv);
@@ -229,24 +241,54 @@ kvm = {
     this.map.on(
       'click',
       (function(evt) {
+        console.log('click in map');
         var selectedFeatures = {};
 
         this.map.forEachFeatureAtPixel(
           evt.pixel,
           (function(feature, layer) {
             if (layer) {
-              kvm.log('Layer ausgewählt.', 3);
+              kvm.log('Layer ' + layer.get('name') + ' ausgewählt.', 3);
               if (layer.get('name') == 'Hilfslayer') {
                 kvm.log('Feature im Hilfslayer ausgewählt mit folgenden Daten: ' + JSON.stringify(feature), 3);
                 layer.getSource().clear();
+                this.showItem('formular');
               }
               else {
                 kvm.log('Feature ausgewählt.', 3);
-                this.activeLayer.loadFeatureToForm(
-                  this.activeLayer.features['id_' + feature.get('gid')]
-                );
+                if (
+                  kvm.activeLayer.activeFeature &&
+                  kvm.activeLayer.activeFeature.get('id') != feature.get('gid') &&
+                  $('#saveFeatureButton').hasClass('active-button')
+                ) {
+                  // frage nach ob verwerfen oder zurück zum formular uns speichern oder abbrechen
+                  navigator.notification.confirm(
+                    'Es gibt nicht gespeicherte Änderungen?',
+                    function(buttonIndex) {
+                      if (buttonIndex == 1) { // Abbrechen
+                        // Do nothing
+                      }
+                      if (buttonIndex == 2) { // Verwerfen
+                        this.activeLayer.loadFeatureToForm(
+                          this.activeLayer.features['id_' + feature.get('gid')]
+                        );
+                        this.showItem('formular');
+                      }
+                      if (buttonIndex == 3) { // zurück zum Formular
+                        this.showItem('formular');
+                      }
+                    },
+                    'Formular',
+                    ['Abbrechen', 'Verwerfen', 'zurück zum Formular']
+                  );
+                }
+                else {
+                  this.activeLayer.loadFeatureToForm(
+                    this.activeLayer.features['id_' + feature.get('gid')]
+                  );
+                  this.showItem('formular');
+                }
               }
-              this.showItem('formular');
             }
           }).bind(this)
         );
@@ -256,6 +298,7 @@ kvm = {
     this.map.on(
       'pointerdrag',
       function(evt) {
+        kvm.log('Pointer Drag', 4);
         var gpsControlButton = $('#gpsControlButton');
         if (gpsControlButton.hasClass('kvm-gps-track')) {
           kvm.log('GPS Verfolgung ausschalten.', 3);
@@ -659,11 +702,12 @@ kvm = {
   loadDeviceData: function() {
     kvm.log('loadDeviceData', 4);
     $('#deviceDataText').html(
+      'kvmobile Version: ' + kvm.version + '<br>' +
       'Cordova Version: ' + device.cordova + '<br>' +
       'Modell: ' + device.model + '<br>' +
       'Platform: ' + device.platform + '<br>' +
       'Uuid: ' + device.uuid + '<br>' +
-      'Version: ' + device.version + '<br>' +
+      'Android Version: ' + device.version + '<br>' +
       'Hersteller: ' + device.manufacturer + '<br>' +
       'Seriennummer: ' + device.serial
     );
@@ -762,6 +806,12 @@ kvm = {
         $("#featurelist, #settings, #formular, #loggings").hide();
         $("#map, #newFeatureButton, .ol-unselectable").show();
         break;
+      case 'mapFormular':
+        $('.menubutton').hide()
+        $("#backArrow, #saveFeatureButton, #deleteFeatureButton").hide();
+        $("#featurelist, #settings, #formular, #loggings").hide();
+        $("#map, #backToFormButton, .ol-unselectable").show();
+        break;
       case "featurelist":
         kvm.showDefaultMenu();
         $("#map, #settings, #formular, #loggings").hide();
@@ -779,7 +829,7 @@ kvm = {
         break;
       case "formular":
         kvm.showFormMenu();
-        $("#map, #featurelist, #settings, #loggings, #newFeatureButton").hide();
+        $("#map, #featurelist, #settings, #loggings, #newFeatureButton, #backToFormButton").hide();
         $("#formular").show();
         break;
       default:
@@ -790,13 +840,13 @@ kvm = {
   },
   
   showDefaultMenu: function() {
-    $("#backArrow, #saveFeatureButton, #formOptionButton").hide();
+    $("#backArrow, #saveFeatureButton, #deleteFeatureButton, #backToFormButton").hide();
     $("#showMap, #showLine, #showHaltestelle, #showSettings").show();
   },
 
   showFormMenu: function() {
     $("#showMap, #showLine, #showHaltestelle, #showSettings").hide();
-    $("#backArrow, #saveFeatureButton, #formOptionButton").show();
+    $("#backArrow, #saveFeatureButton, #deleteFeatureButton").show();
   },
 
   getGeoLocation: function() {

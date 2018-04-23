@@ -41,24 +41,24 @@ function BilderFormField(formId, settings) {
       $('#dropAllPictureButton_' + this.get('index')).hide();
     }
     else {
-      console.log('Add images to previews div: ' + val);
+      kvm.log('Add images to previews div: ' + val, 4);
       images = this.removeBraces(val).split(',');
-      console.log('images: %o', images);
+      kvm.log('images: ' + JSON.stringify(images), 4);
       for (i = 0; i < images.length; i++) {
         image = images[i],
         local_image = this.removeOriginalName(this.serverToLocalPath(image))
         // ToDo check if image exists, if not show placeholder and try to download it
         // else addImage in form
-        console.log('images[' + i + ']: ' + image);
+        kvm.log('images[' + i + ']: ' + image, 4);
 
         window.resolveLocalFileSystemURL(
           local_image,
           (function(fileEntry) {
-            console.log('File ' + fileEntry.toURL() + ' exists');
+            kvm.log('Datei ' + fileEntry.toURL() + ' existiert.', 4);
             this.addImage(fileEntry.toURL());
           }).bind(this),
           (function() {
-            console.log('File ' + this.image + ' existiert nicht.');
+            kvm.log('Datei ' + this.image + ' existiert nicht!', 2);
             this.context.addImage('img/no_image.png', this.image);
           }).bind({
             context : this,
@@ -86,7 +86,7 @@ function BilderFormField(formId, settings) {
   * Return the first part before & delimiter
   */
   this.removeOriginalName = function(val) {
-    console.log('BilderFormField.removeOriginalName: ' + val);
+    kvm.log('BilderFormField.removeOriginalName: ' + val, 4);
     return val.split('&').shift();
   }
 
@@ -96,9 +96,8 @@ function BilderFormField(formId, settings) {
   * but can be used also for all other enclosing character
   */
   this.removeBraces = function(val) {
-    console.log('BilderFormField.removeBraces ' + val);
+    kvm.log('BilderFormField.removeBraces ' + val, 4);
     var result = val.substring(1, val.length-1)
-    console.log('result: ' + result);
     return result;
   }
 
@@ -106,9 +105,8 @@ function BilderFormField(formId, settings) {
   * Add braces around the value to make an array
   */
   this.addBraces = function(val) {
-    console.log('BilderformField.addBraces ' + val);
+    kvm.log('BilderformField.addBraces ' + val, 4);
     var result = '{' + val + '}';
-    console.log('Result: ' + result);
     return result
   }
 
@@ -116,9 +114,8 @@ function BilderFormField(formId, settings) {
   * Replace server image path by local image path
   */
   this.serverToLocalPath = function(src) {
-    console.log('BilderFormField.serverToLocalPath ' + src);
+    kvm.log('BilderFormField.serverToLocalPath ' + src, 4);
     var result = config.localImgPath + src.substring(src.lastIndexOf('/') + 1);
-    console.log('Result: ' + result);
     return result
   };
 
@@ -126,21 +123,23 @@ function BilderFormField(formId, settings) {
   * Replace local image path by servers image path
   */
   this.localToServerPath = function(src) {
-    console.log('BilerFormField.localToServerPath src: %o',  src);
+    kvm.log('BilerFormField.localToServerPath src: ' + src, 4);
     var result = kvm.activeLayer.get('document_path') + src.substring(src.lastIndexOf('/') + 1);
-    console.log('Result: ' + result);
+    kvm.log('Result: ' + result,4);
     return result
   };
 
   this.addImage = function(src, name = '') {
-    console.log('BilderFormField: Add Image to FormField');
+    kvm.log('BilderFormField: Add Image to FormField', 4);
     var img_div = $('<div>'),
         width = (src == 'img/no_image.png' ? '25%' : '100%')
         name = (name == '' ? src : name);
 
     img_div.append($('<img src="' + src + '" field_id="' + this.get('index') + '" style="margin-bottom: 2px; width: ' + width + ';" name="' + name + '"/>'));
+/*  ToDo: Ein Kommentarfeld einfügen. Realisieren über Datentyp, der dann aber auch das Datum des Bildes beinhaltet.
     img_div.append($('<br>'));
     img_div.append($('<input type="text"\ name="' + src + '"/>'));
+*/
     $('#' + this.images_div_id).append(img_div).show();
 
     $('#dropAllPictureButton_' + this.get('index')).show();
@@ -216,7 +215,7 @@ function BilderFormField(formId, settings) {
   * the corresponding path from hidden formfield
   */
   this.dropImage = function(img) {
-    console.log('BilderFormField.dropImage img: %o', img);
+    kvm.log('BilderFormField.dropImage img: ' + JSON.stringify(img), 4);
     debug_img = img;
     var imageField = this.element,
         activeLayer = kvm.activeLayer,
@@ -279,7 +278,7 @@ function BilderFormField(formId, settings) {
   };
 
   this.takePicture = function(evt) {
-    console.log('BilderFormField.takePicture %o', evt);
+    kvm.log('BilderFormField.takePicture: ' + JSON.stringify(evt), 4);
 
     navigator.camera.getPicture(
       (function(imageData) {
