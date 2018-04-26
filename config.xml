@@ -7,7 +7,7 @@
     <author email="peter.korduan@gdi-service.de" href="http://kvwmap.de/index.php/kvmobile">
         GDI-Service Dr. Peter Korduan
     </author>
-    <content src="index.html" />
+    <content src="index_leaflet.html" />
     <access origin="https://gdi-service.de/kvwmap_pet_dev/*" />
     <access origin="https://geoportal.lkros.de/kvwmap_dev/*" />
     <access origin="https://www.orka-mv.de/*" />

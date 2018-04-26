@@ -194,13 +194,13 @@ kvm = {
       }),
       style: new ol.style.Style({
         image: new ol.style.Circle({
-          radius: 10,
+          radius: 15,
           stroke: new ol.style.Stroke({
-            color: 'blue',
-            width:2
+            color: 'orange',
+            width: 4
           }),
           fill: new ol.style.Fill({
-            color: 'blue'
+            color: 'orange'
           })
         })
       }),
@@ -232,7 +232,7 @@ kvm = {
         console.log('Fehler bei der Positionsabfrage code: ' + error.code + ' message: ' + error.message);
       }, {
         maximumAge: 2000, // duration to cache current position
-        timeout: 30000, // timeout for try to call successFunction, else call errorFunction 
+        timeout: 30000, // timeout for try to call successFunction, else call errorFunction
         enableHighAccuracy: true // take position from gps not network-based method
       }
     );
@@ -534,7 +534,7 @@ kvm = {
     });
 
     $("#showSearch").click(function() {
-      if ($("#searchHaltestelle").is(':visible')) { 
+      if ($("#searchHaltestelle").is(':visible')) {
         $("#searchHaltestelle").hide();
       }
       else {
@@ -720,7 +720,7 @@ kvm = {
     kvm.log('Erzeuge die Liste der Datensätze neu.', 3);
     $('#featurelistHeading').html(this.activeLayer.get('alias') ? this.activeLayer.get('alias') : this.activeLayer.get('title'));
     $('#featurelistBody').html('');
-    
+
     $.each(
       this.activeLayer.features,
       function (key, feature) {
@@ -799,7 +799,7 @@ kvm = {
 
   showItem: function(item) {
     kvm.log('showItem: ' + item, 4);
-    
+
     switch (item) {
       case 'map':
         kvm.showDefaultMenu();
@@ -838,7 +838,7 @@ kvm = {
         $("#settings, #newFeatureButton").show();
     }
   },
-  
+
   showDefaultMenu: function() {
     $("#backArrow, #saveFeatureButton, #deleteFeatureButton, #backToFormButton").hide();
     $("#showMap, #showLine, #showHaltestelle, #showSettings").show();
@@ -855,13 +855,13 @@ kvm = {
       kvm.getGeoLocationOnError
     );
   },
-  
+
   getGeoLocationOnSuccess: function(geoLocation) {
     $('#geoLocation').val(geoLocation.coords.latitude + ' ' + geoLocation.coords.longitude);
   },
-  
+
   getGeoLocationOnError: function(error) {
-    alert('Fehler: ' + error.code + ' ' + error.message); 
+    alert('Fehler: ' + error.code + ' ' + error.message);
   },
 
   syncronize: function(context) {
