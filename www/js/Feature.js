@@ -1,5 +1,5 @@
 function Feature(data = {}) {
-  kvm.log('Create Feature with data: ' + JSON.stringify(data), 4);
+  //kvm.log('Create Feature with data: ' + JSON.stringify(data), 4);
   this.data = (typeof data == 'string' ? $.parseJSON(data) : data);
 
 /*
@@ -35,19 +35,22 @@ function Feature(data = {}) {
   };
 
   this.getCoord = function() {
-    //console.log('Feature.getCoord');
+    kvm.log('Feature.getCoord', 4);
     var coord = false;
 
     if (this.get('point') != '') {
-      var geom = kvm.wkx.Geometry.parse(new kvm.Buffer(this.get('point'), 'hex')),
+      var geom = kvm.wkx.Geometry.parse(new kvm.Buffer(this.get('point'), 'hex'));
+/*
+      ,
           coord = ol.proj.transform(
             [geom.x, geom.y],
             "EPSG:4326",
             kvm.map.getView().getProjection()
           );
+          */
     }
 
-    return coord;
+    return [geom.y, geom.x];
   };
 
   this.getOlFeature = function() {

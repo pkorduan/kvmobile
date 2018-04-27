@@ -35,7 +35,7 @@ function Layer(stelle, settings = {}) {
         }
       }
     );
-  }
+  };
 
   this.isEmpty = function() {
     return (
@@ -88,7 +88,9 @@ function Layer(stelle, settings = {}) {
           $('#syncLayerIcon_' + this.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
         }
         kvm.createFeatureList();
-        this.olLayer.getSource().clear();
+//        this.olLayer.getSource().clear();
+//
+
         kvm.drawFeatureMarker();
       }).bind(this),
       function(error) {
@@ -396,7 +398,7 @@ function Layer(stelle, settings = {}) {
         params = {},
         options = new FileUploadOptions();
 
-    params.device_id = device.uuid; 
+    params.device_id = device.uuid;
     params.Stelle_ID = stelle.get('Stelle_ID');
     params.username = stelle.get('username');
     params.passwort = stelle.get('passwort');
@@ -687,7 +689,7 @@ function Layer(stelle, settings = {}) {
         var icon = $('#clearLayerIcon_' + this.layer.getGlobalId());
         if (icon.hasClass('fa-spinner')) icon.toggleClass('fa-ban fa-spinner fa-spin');
         icon = $('#syncImagesIcon_' + this.layer.getGlobalId());
-        if (icon.hasClass('fa-spinner')) icon.toggleClass('fa-upload fa-spinner fa-spin');        
+        if (icon.hasClass('fa-spinner')) icon.toggleClass('fa-upload fa-spinner fa-spin');
         if (this.delta == '') {
           navigator.notification.confirm(
             'Alle Änderungsversionen des Layers in lokaler Datenbank gelöscht.',
@@ -779,6 +781,7 @@ function Layer(stelle, settings = {}) {
                   );
                   kvm.bindLayerEvents();
                   //console.log('Store after save layer: %o', kvm.store);
+                  $('#requestLayersButton').hide();
                 }
                 else {
                   kvm.log('Fehler beim Abfragen der Layerdaten. Falsche Serverparameter oder Fehler auf dem Server.', 2);
@@ -898,6 +901,7 @@ function Layer(stelle, settings = {}) {
 
   this.createFeatureLayer = function() {
     kvm.log('Erzeuge Objekt-Layer', 3);
+/*
     this.olLayer = new ol.layer.Vector({
       name: this.get('title'),
       opacity: 1,
@@ -915,6 +919,20 @@ function Layer(stelle, settings = {}) {
       renderMode: 'image'
     });
     kvm.map.addLayer(this.olLayer);
+*/
+  };
+
+  this.getIcon = function() {
+    return L.icon({
+//        iconUrl: 'leaf-green.png',
+//        shadowUrl: 'leaf-shadow.png',
+
+        iconSize:     [5, 5], // size of the icon
+//        shadowSize:   [50, 64], // size of the shadow
+        iconAnchor:   [2, 2], // point of the icon which will correspond to marker's location
+//        shadowAnchor: [4, 62],  // the same for the shadow
+        popupAnchor:  [2, 2] // point from which the popup should open relative to the iconAnchor
+    });
   };
 
   this.getStyle = function(feature, resolution) {
@@ -967,7 +985,7 @@ function Layer(stelle, settings = {}) {
         changes = [];
 
     // loop over all elements of the form or over all attributes of the layer respectively
-    // compare form element content with old values and if changes exists assign 
+    // compare form element content with old values and if changes exists assign
     changes = $.map(
       this.attributes,
       (function(attr) {
@@ -1245,13 +1263,13 @@ function Layer(stelle, settings = {}) {
       <div id="layer_' + this.getGlobalId()  + '">\
         <input type="radio" name="activeLayerId" value="' + this.getGlobalId() + '"/> ' +
         (this.get('alias') ? this.get('alias') : this.get('title')) + '\
-        <button id="syncLayerButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="sync-layer-button" style="border-radius: 5px; background: #afffaf; float: right; display: none;">\
+        <button id="syncLayerButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="settings-button sync-layer-button" style="float: right; display: none;">\
           <i id="syncLayerIcon_' + this.getGlobalId() + '" class="fa fa-refresh" aria-hidden="true"></i>\
         </button>\
-        <button id="syncImagesButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="sync-images-button" style="border-radius: 5px; background: #afffaf; float: right; margin-right: 5px; display: none;">\
+        <button id="syncImagesButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="settings-button sync-images-button" style="float: right; margin-right: 5px; display: none;">\
           <i id="syncImagesIcon_' + this.getGlobalId() + '" class="fa fa-upload" aria-hidden="true"></i>\
         </button>\
-        <button id="clearLayerButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="clear-layer-button" style="border-radius: 5px; background: #afffaf; float: right; margin-right: 5px; display: none;">\
+        <button id="clearLayerButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="settings-button clear-layer-button" style="float: right; margin-right: 5px; display: none;">\
           <i id="clearLayerIcon_' + this.getGlobalId() + '" class="fa fa-ban" aria-hidden="true"></i>\
         </button>\
       </div>\

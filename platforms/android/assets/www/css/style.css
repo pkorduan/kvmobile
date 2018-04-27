@@ -1,124 +1,131 @@
-.kvm-gps-control {
-	top: 6px;
-	right: 6px;
-	z-index: 3;
-}
-
-button#gpsControlButton.kvm-gps-off {
-	background-color: gray;
-	color: white;
-}
-
-button#gpsControlButton.kvm-gps-on {
-	background-color: lightgray;
-	color: blue;
-	border-color: lightgray;
-}
-
-button#gpsControlButton.kvm-gps-track {
-	background-color: blue;
-	color: white;
-}
-
-a.hover {
-  
-}
-
-#featurelist {
-	overflow: scroll;
-	height: 800px;
-	background-color: lightgray;
-}
-
-#settings {
-	margin-left: 20px;
-	margin-right: 20px;
-	font-size: 19px;
-}
-
-#layer_list{
-	margin-top: 10px;
-	
-}
-
-.form-field {
-	font-size: 18px;
-}
-
-.feature-item {
-	font-size: 24px;
-	color: #263286;
-	background-color: #ffffff;
-	margin-left: 5px;
-	margin-right: 5px;
-	margin-bottom: 5px;
-	padding: 5px;
-	border: gray;
-}
-
-/*** Open Layers Styles ***/
-/* Map */
-.map {
-	clear: both;
-	height: 100%;
-	position:fixed;
-	width: 100%;
-	margin: auto;
-	/*position: relative;*/
-}
-
-.jumbotron {
-	background-color:rgb(150, 188, 31);
-	margin:0;
-	border:0;
-	box-shadow:10px 10px 50px 5px rgba(38,50,134,0.2) inset;
-}
-
-.menubutton {
-	color: rgb(38, 50, 134);
-}
-
-.menubutton:hover {
-	color: #FFFFFF;
-	text-decoration: none;
-	cursor: pointer;
+* {
+  margin:0;
+  padding:0;
 }
 
 body {
-	font-size: 14px;
-}
-
-h1 {
-	font-size: 18px;
-}
-
-input[type="checkbox"]{
-	cursor: pointer;
-}
-
-input[type="radio"]{
-/*	width: 56px;
-	height: 56px; */
-	cursor: pointer;
-}
-
-input[type=text], input[type=password], select {
-	width: 100%;
-	padding: 4px;
-	margin: 4px;
-	display: inline-block;
-	border: 1px solid rgb(38, 50, 134);
-	border-radius: 4px;
-	box-sizing: border-box;
-}
-
-#geoLocationButton {
-  color: #337ab7;
-  cursor: pointer;
+  font: 100.01% Verdana, Arial, Helvetica, sans-serif;
+  font-size: 20px;
 }
 
 label: {
   display: inline-block;
+}
+
+h1 {
+  margin-top: 9px;
+  margin-bottom: 7px;
+  font-size: 26px;
+}
+
+h2 {
+  margin-top: 10px;
+  margin-bottom: 5px;
+  font-size: 22px;
+}
+
+input[type="checkbox"]{
+  cursor: pointer;
+}
+
+input[type="radio"]{
+/*  width: 56px;
+  height: 56px; */
+  cursor: pointer;
+}
+
+input[type=text], input[type=password], select {
+  width: 100%;
+  padding: 4px;
+  margin-top: 2px;
+  margin-bottom: 11px;
+  display: inline-block;
+  border: 1px solid rgb(38, 50, 134);
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 20px
+}
+
+button#gpsControlButton.kvm-gps-off {
+  background-color: gray;
+  color: white;
+}
+
+button#gpsControlButton.kvm-gps-on {
+  background-color: lightgray;
+  color: blue;
+  border-color: lightgray;
+}
+
+button#gpsControlButton.kvm-gps-track {
+  background-color: blue;
+  color: white;
+}
+
+a.hover {
+
+}
+.col-xs-3 {
+  width: 25%;
+}
+
+.clear {
+  clear: both;
+}
+
+.form-field {
+  width: 99%;
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+.feature-item {
+  font-size: 24px;
+  color: #263286;
+  background-color: #ffffff;
+  margin-left: 5px;
+  margin-right: 5px;
+  margin-bottom: 5px;
+  padding: 5px;
+  border: gray;
+}
+
+.kvm-gps-control {
+  top: 6px;
+  right: 6px;
+  z-index: 3;
+}
+
+.settings-button {
+  padding-left: 6px;
+  padding-right: 6px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-radius: 5px;
+  color: #263286;
+  background: #e6ffb2;
+  margin-bottom: 5px;
+}
+
+.settings-button-active {
+  padding-left: 6px;
+  padding-right: 6px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-radius: 5px;
+  color: #263286;
+  background: #afffaf;
+  margin-bottom: 5px;
+}
+
+.menubutton {
+  color: #263286;
+}
+
+.menubutton:hover {
+  color: #FFFFFF;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 .inactive-button {
@@ -132,33 +139,82 @@ label: {
 }
 
 .form-div {
-	border: 1px solid rgb(38, 50, 134);
+  border: 1px solid rgb(38, 50, 134);
 }
-
-#gps-signal-icon {
-	fill: rgb(236, 236, 236);
-}
-
 .gps-signal-level-0 > .bar-1, .gps-signal-level-0 > .bar-2, .gps-signal-level-0 > .bar-3, .gps-signal-level-0 > .bar-4, .gps-signal-level-0 > .bar-5 {
-	fill: rgb(236, 236, 236);
+  fill: rgb(236, 236, 236);
 }
 
 .gps-signal-level-1 > .bar-1 {
-	fill: rgb(38, 50, 134);
+  fill: #263286;
 }
 
 .gps-signal-level-2 > .bar-1, .gps-signal-level-2 > .bar-2 {
-	fill: rgb(38, 50, 134);
+  fill: #263286;
 }
 
 .gps-signal-level-3 > .bar-1, .gps-signal-level-3 > .bar-2, .gps-signal-level-3 > .bar-3 {
-	fill: rgb(38, 50, 134);
+  fill: #263286;
 }
 
 .gps-signal-level-4 > .bar-1, .gps-signal-level-4 > .bar-2, .gps-signal-level-4 > .bar-3, .gps-signal-level-4 > .bar-4 {
-	fill: rgb(38, 50, 134);
+  fill: #263286;
 }
 
 .gps-signal-level-5 > .bar-1, .gps-signal-level-5 > .bar-2, .gps-signal-level-5 > .bar-3, .gps-signal-level-5 > .bar-4, .gps-signal-level-5 > .bar-5 {
-	fill: rgb(38, 50, 134);
+  fill: #263286;
+}
+
+.v-scroll-div {
+  clear: both;
+  height: 543px;
+  overflow: auto;
+  display: none;
+}
+
+#geoLocationButton {
+  color: #263286;
+  cursor: pointer;
+}
+
+#kopfbereich {
+  display: flex;
+  background-color: #7c9b3b;
+  padding: 8px;
+}
+
+#settings {
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+#layer_list{
+  margin-top: 10px;
+}
+
+#loggings {
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+#featurelist {
+  background-color: lightgray;
+}
+
+#map {
+  clear: both;
+  position:fixed;
+  height: 100%;
+  width: 100%;
+  margin: auto;
+}
+
+#formular {
+  margin-top: 8px;
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+#gps-signal-icon {
+  fill: rgb(236, 236, 236);
 }

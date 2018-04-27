@@ -10,6 +10,7 @@
   "author": "Peter Korduan",
   "license": "GPL 3.0",
   "dependencies": {
+    "com.ionic.keyboard": "https://github.com/Telerik-Verified-Plugins/Keyboard",
     "cordova-android": "^6.2.3",
     "cordova-plugin-camera": "^2.4.1",
     "cordova-plugin-compat": "^1.1.0",
@@ -18,10 +19,10 @@
     "cordova-plugin-file": "^4.3.3",
     "cordova-plugin-file-transfer": "^1.6.3",
     "cordova-plugin-geolocation": "^2.4.3",
-    "cordova-plugin-keyboard": "^1.1.5",
     "cordova-plugin-network-information": "^1.3.3",
     "cordova-plugin-whitelist": "^1.3.3",
-    "cordova-sqlite-evplus-legacy-attach-detach-free": "git+https://github.com/litehelpers/Cordova-sqlite-evplus-legacy-attach-detach-free.git#evplus-legacy-attach-detach-master"
+    "cordova-sqlite-evplus-legacy-attach-detach-free": "git+https://github.com/litehelpers/Cordova-sqlite-evplus-legacy-attach-detach-free.git#evplus-legacy-attach-detach-master",
+    "ionic-plugin-keyboard": "git+https://github.com/Telerik-Verified-Plugins/Keyboard.git"
   },
   "cordova": {
     "plugins": {
@@ -31,10 +32,10 @@
       "cordova-plugin-geolocation": {},
       "cordova-plugin-network-information": {},
       "cordova-plugin-file-transfer": {},
-      "cordova-plugin-keyboard": {},
       "cordova-plugin-dialogs": {},
       "cordova-sqlite-evplus-legacy-attach-detach-free": {},
-      "cordova-plugin-whitelist": {}
+      "cordova-plugin-whitelist": {},
+      "com.ionic.keyboard": {}
     },
     "platforms": [
       "android"

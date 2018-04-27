@@ -128,18 +128,14 @@ kvm = {
 
   initMap: function() {
     kvm.log('Karte initialisieren.', 3);
-/*
-    var map = L.map('map').setView([54, 12], 13);
+
+    var map = L.map('map').setView([54, 12.2], 8);
 
     L.tileLayer('https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png', {
         attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
     }).addTo(map);
 
-    L.marker([54, 12]).addTo(map)
-        .bindPopup('A pretty CSS3 popup.<br> Easily customizable.')
-        .openPopup();
-*/
-
+/*
     var utmZone = config.projZone,
         myProjectionName = "EPSG:258" + utmZone,
         myProjection,
@@ -207,7 +203,7 @@ kvm = {
       zIndex: 200
     });
     map.addLayer(helpLayer);
-
+*/
     this.map = map;
   },
 
@@ -312,7 +308,6 @@ kvm = {
       function () {
         var layer = new Layer(kvm.activeStelle);
         layer.requestLayers();
-        $('#requestLayersButton').hide();
       }
     );
 
@@ -329,7 +324,9 @@ kvm = {
         });
         stelle.saveToStore();
         stelle.setActive();
-        $('#saveServerSettingsButton').css('background', '#afffaf');
+        if ($('#saveServerSettingsButton').hasClass('settings-button-active')) {
+          $('#saveServerSettingsButton').toggleClass('settings-button settings-button-active');
+        }
         if (navigator.onLine) {
           $('#requestLayersButton').show();
         }
@@ -519,7 +516,9 @@ kvm = {
     $('#kvwmapServerDataForm > input').on(
       'keyup',
       function() {
-        $('#saveServerSettingsButton').css('background', '#f9afaf');
+        if ($('#saveServerSettingsButton').hasClass('settings-button')) {
+          $('#saveServerSettingsButton').toggleClass('settings-button settings-button-active');
+        }
       }
     );
 
@@ -735,25 +734,29 @@ kvm = {
       }
     );
     kvm.bindFeatureItemClickEvents();
-    $('#numDatasetsText').html(Object.keys(this.activeLayer.features).length);
+    $('#numDatasetsText').html(Object.keys(this.activeLayer.features).length).show();
   },
 
   drawFeatureMarker: function() {
-    //console.log('app.drawFeatureMarker');
+    kvm.log('app.drawFeatureMarker', 4);
     $.each(
       this.activeLayer.features,
       function (key, feature) {
         //console.log('app.drawFeatureMarker: add feature in map: %o', feature);
+        var latlng = feature.getCoord();
 
-        if (feature.getCoord()) {
+        if (latlng) {
+          L.marker(latlng, {icon: kvm.activeLayer.getIcon()}).addTo(kvm.map).bindPopup(feature.get('hst_name'));
+/*
           kvm.activeLayer.olLayer.getSource().addFeature(
             feature.getOlFeature()
           )
+          */
         }
       }
     );
-    kvm.activeLayer.olLayer.refresh({force: true});
-    kvm.log(this.activeLayer.features.length + ' Objekte in Karte eingefügt.', 3);
+//    kvm.activeLayer.olLayer.refresh({force: true});
+    kvm.log(Object.keys(this.activeLayer.features).length + ' Objekte in Karte eingefügt.', 3);
   },
 /*
   checkIfTableExists: function() {
@@ -805,12 +808,14 @@ kvm = {
         kvm.showDefaultMenu();
         $("#featurelist, #settings, #formular, #loggings").hide();
         $("#map, #newFeatureButton, .ol-unselectable").show();
+        kvm.map.invalidateSize();
         break;
       case 'mapFormular':
         $('.menubutton').hide()
         $("#backArrow, #saveFeatureButton, #deleteFeatureButton").hide();
         $("#featurelist, #settings, #formular, #loggings").hide();
         $("#map, #backToFormButton, .ol-unselectable").show();
+        kvm.map.invalidateSize();
         break;
       case "featurelist":
         kvm.showDefaultMenu();

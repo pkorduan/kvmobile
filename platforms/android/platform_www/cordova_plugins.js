@@ -261,14 +261,6 @@ module.exports = [
         ]
     },
     {
-        "id": "cordova-plugin-keyboard.keyboard",
-        "file": "plugins/cordova-plugin-keyboard/www/keyboard.js",
-        "pluginId": "cordova-plugin-keyboard",
-        "clobbers": [
-            "window.Keyboard"
-        ]
-    },
-    {
         "id": "cordova-plugin-dialogs.notification",
         "file": "plugins/cordova-plugin-dialogs/www/notification.js",
         "pluginId": "cordova-plugin-dialogs",
@@ -291,6 +283,15 @@ module.exports = [
         "clobbers": [
             "SQLitePlugin"
         ]
+    },
+    {
+        "id": "com.ionic.keyboard.keyboard",
+        "file": "plugins/com.ionic.keyboard/www/android/keyboard.js",
+        "pluginId": "com.ionic.keyboard",
+        "clobbers": [
+            "cordova.plugins.Keyboard"
+        ],
+        "runs": true
     }
 ];
 module.exports.metadata = 
@@ -303,10 +304,10 @@ module.exports.metadata =
     "cordova-plugin-network-information": "1.3.3",
     "cordova-plugin-file": "4.3.3",
     "cordova-plugin-file-transfer": "1.6.3",
-    "cordova-plugin-keyboard": "1.1.5",
     "cordova-plugin-dialogs": "1.3.3",
     "cordova-sqlite-evplus-legacy-attach-detach-free": "0.8.3-pre5",
-    "cordova-plugin-whitelist": "1.3.3"
+    "cordova-plugin-whitelist": "1.3.3",
+    "com.ionic.keyboard": "2.0.1"
 };
 // BOTTOM OF METADATA
 });
