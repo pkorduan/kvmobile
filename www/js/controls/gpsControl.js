@@ -48,7 +48,9 @@ kvm.controls.gpsControl = function(opt_options) {
     title: 'Anzeige aktueller GPS-Position'
   });
   element.append(button);
-  
+
+//  return new L.control
+
   return new ol.control.Control({
     element: element.get(0),
     target: options.target

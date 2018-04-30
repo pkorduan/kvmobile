@@ -35,7 +35,6 @@ function Feature(data = {}) {
   };
 
   this.getCoord = function() {
-    kvm.log('Feature.getCoord', 4);
     var coord = false;
 
     if (this.get('point') != '') {

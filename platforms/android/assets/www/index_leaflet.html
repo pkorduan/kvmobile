@@ -16,10 +16,20 @@
 
     <link rel="stylesheet" type="text/css" href="3rdparty/font-awesome-4.7.0/css/font-awesome.min.css"/>
     <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-1.3.1/leaflet.css"/>
+    <link rel="stylesheet" type="text/css" href="3rdparty/Leaflet.markercluster-1.3.0/dist/MarkerCluster.css"/>
+    <link rel="stylesheet" type="text/css" href="3rdparty/Leaflet.markercluster-1.3.0/dist/MarkerCluster.Default.css"/>
+    <!--link rel="stylesheet" type="text/css" href="3rdparty/leaflet-gps-master/dist/leaflet-gps.min.css"/-->
+    <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-locatecontrol-gh-pages/dist/L.Control.Locate.min.css"/>
+    <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-betterscale-master/L.Control.BetterScale.css"/>
+
     <link rel="stylesheet" type="text/css" href="css/style.css"/>
     <script src="cordova.js"></script>
     <script src="3rdparty/jquery/3.2.1/jquery.min.js"></script>
     <script src="3rdparty/leaflet-1.3.1/leaflet.js"></script>
+    <script src="3rdparty/Leaflet.markercluster-1.3.0/dist/leaflet.markercluster.js"></script>
+    <!--script src="3rdparty/leaflet-gps-master/dist/leaflet-gps.min.js"></script-->
+    <script src="3rdparty/leaflet-locatecontrol-gh-pages/dist/L.Control.Locate.min.js"></script>
+    <script src="3rdparty/leaflet-betterscale-master/L.Control.BetterScale.js"></script>
     <script src="3rdparty/wkx-0.4.2/dist/wkx.min.js"></script>
     <script src="js/config.js"></script>
     <script src="js/Layer.js"></script>
@@ -158,7 +168,7 @@
     </div>
     <div style="clear: both;"></div>
     <input type="text" id="searchHaltestelle" placeholder="Haltestelle suchen" style="margin-left: 4px; margin-bottom: 4px; font-size: 24px; width: 98%; border-radius: 0px; display: none;">
-    <div id="featurelistBody"></div>
+    <div id="featurelistBody"><i class="fa fa-spinner fa-spin fa-2x" style="margin-left: 20px"></i> Lade Datensätze ...</div>
   </div>
   <div class="clear"></div>
 

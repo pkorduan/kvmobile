@@ -91,7 +91,7 @@ function Layer(stelle, settings = {}) {
 //        this.olLayer.getSource().clear();
 //
 
-        kvm.drawFeatureMarker();
+        this.drawFeatureMarker();
       }).bind(this),
       function(error) {
         kvm.log('Fehler bei der Abfrage der Daten aus lokaler Datenbank: ' + error.message);
@@ -924,14 +924,14 @@ function Layer(stelle, settings = {}) {
 
   this.getIcon = function() {
     return L.icon({
-//        iconUrl: 'leaf-green.png',
+        iconUrl: 'img/hst24.png',
 //        shadowUrl: 'leaf-shadow.png',
 
-        iconSize:     [5, 5], // size of the icon
+        iconSize:     [24, 24], // size of the icon
 //        shadowSize:   [50, 64], // size of the shadow
-        iconAnchor:   [2, 2], // point of the icon which will correspond to marker's location
-//        shadowAnchor: [4, 62],  // the same for the shadow
-        popupAnchor:  [2, 2] // point from which the popup should open relative to the iconAnchor
+        iconAnchor:   [12, 12], // point of the icon which will correspond to marker's location
+        shadowAnchor: [16, 8],  // the same for the shadow
+        popupAnchor:  [0, -12] // point from which the popup should open relative to the iconAnchor
     });
   };
 
@@ -977,6 +977,40 @@ function Layer(stelle, settings = {}) {
         attr.formField.setValue(val);
       }).bind(feature)
     );
+
+    kvm.controller.mapper.watchGpsAccuracy();
+  };
+
+  this.drawFeatureMarker = function() {
+    kvm.log('layer.drawFeatureMarker: ', 4);
+    this.markerClusters = L.markerClusterGroup({
+      maxClusterRadius: function(zoom) {
+        return (zoom == 18 ? 5 : 50)
+      }
+    });
+    $.each(
+      this.features,
+      (function (key, feature) {
+        var latlng = feature.getCoord();
+        //kvm.log('layer.drawFeatureMarker: add feature in map to latlng: ' + JSON.stringify(latlng), 4);
+
+        if (latlng) {
+          feature.marker = L.marker(latlng, {icon: this.getIcon()}).bindPopup(this.getPopup(feature));
+          this.markerClusters.addLayer(feature.marker);
+        }
+      }).bind(this)
+    );
+    kvm.map.addLayer(this.markerClusters);
+    kvm.log(Object.keys(this.features).length + ' Objekte in Karte eingefügt.', 3);
+  };
+
+  this.getPopup = function(feature) {
+    var html;
+
+    html = feature.get('hst_name') + '<br>\
+        <a href="#" onclick="kvm.activeLayer.loadFeatureToForm(kvm.activeLayer.features[\'id_' + feature.get('uuid') + '\']); kvm.showItem(\'formular\')">Ändern</a>\
+    ';
+    return html;
   };
 
   this.collectChanges = function(action) {

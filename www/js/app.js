@@ -135,6 +135,18 @@ kvm = {
         attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
     }).addTo(map);
 
+    map.addControl(new L.control.betterscale({metric: true}));
+    map.addControl(new L.control.locate({
+      position: 'topright',
+      strings: {
+        title: "Zeig mir wo ich bin.",
+        flyTo: true,
+        metersUnit: "Meter",
+        popup: "Sie befinden sich im Umkreis von {distance} {unit}.",
+        outsideMapBoundsMsg: "Sie sind außerhalb des darstellbaren Bereiches der Karte."
+      }
+    }));
+
 /*
     var utmZone = config.projZone,
         myProjectionName = "EPSG:258" + utmZone,
@@ -219,10 +231,11 @@ kvm = {
       this.setConnectionStatus,
       false
     );
+
 /*
     navigator.geolocation.watchPosition(
       function(geoLocation) {
-        console.log(Date() + ' Neue Position: ' + geoLocation.coords.latitude + ' ' + geoLocation.coords.longitude);
+        kvm.log(Date() + ' Neue Position: ' + geoLocation.coords.latitude + ' ' + geoLocation.coords.longitude, 4);
       },
       function(error) {
         console.log('Fehler bei der Positionsabfrage code: ' + error.code + ' message: ' + error.message);
@@ -233,8 +246,7 @@ kvm = {
       }
     );
 */
-
-    this.map.on(
+/*    this.map.on(
       'click',
       (function(evt) {
         console.log('click in map');
@@ -290,7 +302,8 @@ kvm = {
         );
       }).bind(this)
     );
-
+*/
+/*
     this.map.on(
       'pointerdrag',
       function(evt) {
@@ -302,7 +315,7 @@ kvm = {
         }
       }
     );
-
+*/
     $('#requestLayersButton').on(
       'click',
       function () {
@@ -440,6 +453,7 @@ kvm = {
               if (buttonIndex == 1) { // ja
                 kvm.showItem('featurelist');
                 $('#saveFeatureButton').toggleClass('active-button inactive-button');
+                kvm.controller.mapper.clearWatch();
               }
               if (buttonIndex == 2) { // nein
                 // Do nothing
@@ -490,6 +504,7 @@ kvm = {
                 //  waitingDiv.hide();
 
                 saveButton.toggleClass('active-button inactive-button');
+                kvm.controller.mapper.clearWatch();
               }
 
               if (buttonIndex == 2) { // nein
@@ -498,6 +513,7 @@ kvm = {
 
               if (buttonIndex == 3) { // Abbrechen
                 // dont save form values and switch to feature list
+                kvm.controller.mapper.clearWatch();
               }
 
             },
@@ -737,27 +753,6 @@ kvm = {
     $('#numDatasetsText').html(Object.keys(this.activeLayer.features).length).show();
   },
 
-  drawFeatureMarker: function() {
-    kvm.log('app.drawFeatureMarker', 4);
-    $.each(
-      this.activeLayer.features,
-      function (key, feature) {
-        //console.log('app.drawFeatureMarker: add feature in map: %o', feature);
-        var latlng = feature.getCoord();
-
-        if (latlng) {
-          L.marker(latlng, {icon: kvm.activeLayer.getIcon()}).addTo(kvm.map).bindPopup(feature.get('hst_name'));
-/*
-          kvm.activeLayer.olLayer.getSource().addFeature(
-            feature.getOlFeature()
-          )
-          */
-        }
-      }
-    );
-//    kvm.activeLayer.olLayer.refresh({force: true});
-    kvm.log(Object.keys(this.activeLayer.features).length + ' Objekte in Karte eingefügt.', 3);
-  },
 /*
   checkIfTableExists: function() {
     kvm.log('function checkIfTableExists');

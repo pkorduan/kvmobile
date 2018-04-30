@@ -11,6 +11,7 @@ function TextfeldFormField(formId, settings) {
     <textarea\
       id="' + this.get('index') + '"\
       name="' + this.get('name') + '"\
+      rows="3"\
       style="width: 100%;"' +
       (this.get('privilege') == '0' ? ' disabled' : '') + '\
     >\

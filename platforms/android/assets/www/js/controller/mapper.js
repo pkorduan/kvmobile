@@ -15,6 +15,26 @@ kvm.views.mapper = {};
 */
 
 kvm.controller.mapper = {
+  watchGpsAccuracy: function() {
+    kvm.log('mapper controller: watchGpsAccuracy');
+    this.watchId = navigator.geolocation.watchPosition(
+      (function(geoLocation) {
+        kvm.log('Set new geo location accuracy', 4);
+        this.accuracy = geoLocation.coords.accuracy;
+
+        switch (true) {
+          case this.accuracy > 50 : this.signalLevel = 1; break;
+          case this.accuracy > 25 : this.signalLevel = 2; break;
+          case this.accuracy > 15 : this.signalLevel = 3; break;
+          case this.accuracy > 11 : this.signalLevel = 4; break;
+          default : this.signalLevel = 5;
+        }
+
+        $('#gps-signal-icon').attr('class', 'gps-signal-level-' + this.signalLevel);
+      }).bind(this)
+    );
+  },
+
   watchGpsPosition: function() {
     kvm.log('mapper controller: watchGpsPosition');
 
@@ -85,7 +105,7 @@ kvm.controller.mapper = {
       },
       {
         maximumAge: 2000, // duration to cache current position
-        timeout: 5000, // timeout for try to call successFunction, else call errorFunction 
+        timeout: 5000, // timeout for try to call successFunction, else call errorFunction
         enableHighAccuracy: true // take position from gps not network-based method
       }
     );
@@ -95,8 +115,11 @@ kvm.controller.mapper = {
     return (typeof this.signalLevel === "undefined" ? 0 : this.signalLevel);
   },
 
+  getGPSAccuracy: function() {
+    return (typeof this.accuracy === "undefined" ? 0 : this.accuracy);
+  },
+
   clearWatch: function() {
-    kvm.map.getLayers().item(1).getSource().clear();
     navigator.geolocation.clearWatch(this.watchId);
   },
 
@@ -116,31 +139,6 @@ kvm.controller.mapper = {
     };
 
     kvm.bindLayerEvents();
-  },
-
-  goToGpsPosition: function() {
-    console.log('controller mapper: goToGpsPosition');
-    navigator.geolocation.getCurrentPosition(
-      function(geoLocation) {
-        console.log('controller mapper goToGpsPosition');
-        var view = kvm.map.getView();
-
-        view.setCenter(
-          ol.proj.transform(
-            [geoLocation.coords.longitude, geoLocation.coords.latitude],
-            "EPSG:4326",
-            view.getProjection()
-          )
-        );
-        view.setZoom(17);
-      },
-      kvm.controller.mapper.gpsError,
-      {
-        maximumAge: 2000, // duration to cache current position
-        timeout: 5000, // timeout for try to call successFunction, else call errorFunction 
-        enableHighAccuracy: true // take position from gps not network-based method
-      }
-    );
   },
 
   gpsError: function(error) {
