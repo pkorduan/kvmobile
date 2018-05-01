@@ -21,7 +21,7 @@ function DateTimeFormField(formId, settings) {
   this.setValue = function(val) {
     var val = kvm.coalesce(val, '');
     if (val != '') val = this.toISO(val);
-    console.log('DateTimeFormField ' + this.get('name') + ' setValue with value: %o', val);
+    kvm.log('DateTimeFormField ' + this.get('name') + ' setValue with value: ' + JSON.stringify(val), 4);
     this.element.val(val);
   };
 
@@ -34,7 +34,7 @@ function DateTimeFormField(formId, settings) {
     }
 
     // return current time if attribut type is Time and (action is empty or equal to option)
-    console.log('name: ' + this.get('name') + ' formtype: ' + this.get('form_element_type') + ' action: ' + action + ' option: ' + this.get('options') + ' value: ' + this.element.val());
+    kvm.log('name: ' + this.get('name') + ' formtype: ' + this.get('form_element_type') + ' action: ' + action + ' option: ' + this.get('options') + ' value: ' + this.element.val(), 4);
     if (
       this.get('form_element_type') == 'Time' &&
       (
