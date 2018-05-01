@@ -817,7 +817,7 @@ function Layer(stelle, settings = {}) {
         var imageDiv = $('div[name$="' + this.localFile + '"]');
 
         imageDiv.attr('src', this.localFile);
-        imageDiv.target.css('background-image', "url('" + this.localFile + "')");
+        imageDiv.css('background-image', "url('" + this.localFile + "')");
       }).bind({
         localFile: localFile
       }),
