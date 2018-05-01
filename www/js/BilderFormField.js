@@ -26,8 +26,8 @@ function BilderFormField(formId, settings) {
     kvm.log('BilderFormField.setValue with value: ' +  val, 4);
     var val = kvm.coalesce(val, ''),
         images,
-        image,
-        local_image,
+        localFile,
+        remoteFile,
         i;
 
     this.element.val(val);
@@ -45,22 +45,24 @@ function BilderFormField(formId, settings) {
       images = this.removeBraces(val).split(',');
       kvm.log('images: ' + JSON.stringify(images), 4);
       for (i = 0; i < images.length; i++) {
-        image = images[i],
-        local_image = this.removeOriginalName(this.serverToLocalPath(image))
-        kvm.log('images[' + i + ']: ' + image, 4);
+        remoteFile = images[i];
+        localFile = this.removeOriginalName(this.serverToLocalPath(remoteFile));
+        kvm.log('images[' + i + ']: ' + remoteFile, 4);
 
         window.resolveLocalFileSystemURL(
-          local_image,
+          localFile,
           (function(fileEntry) {
             kvm.log('Datei ' + fileEntry.toURL() + ' existiert.', 4);
             this.addImage(fileEntry.toURL());
           }).bind(this),
           (function() {
-            kvm.log('Datei ' + this.image + ' existiert nicht!', 2);
-            this.context.addImage('img/no_image.png', this.image);
+            kvm.log('Datei ' + this.localFile + ' existiert nicht!', 2);
+            this.context.addImage('img/no_image.png', this.remoteFile);
+            kvm.activeLayer.downloadImage(this.localFile, this.remoteFile);
           }).bind({
             context : this,
-            image : local_image
+            localFile : localFile,
+            remoteFile : remoteFile
           })
         );
       }
@@ -150,21 +152,15 @@ function BilderFormField(formId, settings) {
         var target = $(evt.target),
             src = target.attr('src'),
             fieldId = target.attr('field_id');
-        if ('src' == 'file:///android_asset/www/img/no_image.png') {
+        if (src == 'img/no_image.png') {
           navigator.notification.confirm(
             'Bild herunterladen?',
             function(buttonIndex) {
               if (buttonIndex == 1) { // ja
                 var localFile = target.attr('name'),
-                    remoteFile = kvm.activeLayer.attributes[fieldId].formField.localToServerPath(localFile),
-                    data = {
-                      target: target,
-                      localFile: localFile,
-                      remoteFile: remoteFile
-                    };
+                    remoteFile = kvm.activeLayer.attributes[fieldId].formField.localToServerPath(localFile);
 
-                kvm.log('Download Bild von URL: ' + JSON.stringify(data), 3);
-                kvm.activeLayer.downloadImage(data);
+                kvm.activeLayer.downloadImage(localFile, remoteFile);
               }
               if (buttonIndex == 2) { // nein
                 // Do nothing

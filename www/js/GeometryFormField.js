@@ -23,8 +23,9 @@ function GeometrieFormField(formId, settings) {
       val = '';
     }
     else {
-      var geom = kvm.wkx.Geometry.parse(new kvm.Buffer(val, 'hex'));
-      val = geom.x + ' ' + geom.y;
+      var geom = kvm.wkx.Geometry.parse(new kvm.Buffer(val, 'hex')),
+          faktor = Math.pow(10, 6),
+          val = Math.round(geom.x * faktor) / faktor + ' ' + Math.round(geom.y * faktor) / faktor;
     }
     this.element.val(val);
   };

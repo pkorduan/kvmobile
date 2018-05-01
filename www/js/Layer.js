@@ -802,21 +802,25 @@ function Layer(stelle, settings = {}) {
     );
   };
 
-  this.downloadImage = function(data) {
-    kvm.log('Layer.downloadImage with data: ' + JSON.stringify(data), 3);
+  this.downloadImage = function(localFile, remoteFile) {
     var fileTransfer = new FileTransfer(),
-    filename = data.localFile,
-    url = this.getImgDownloadUrl(data.remoteFile);
-    kvm.log('Download Image von Url: ' + url);
-    kvm.log('Speicher die Datei auf dem Gerät in Datei: ' + filename);
+        downloadURL = this.getImgDownloadUrl(remoteFile);
+
+    kvm.log('Download Datei von URL: ' + downloadURL, 3);
+    kvm.log('Speicher die Datei auf dem Gerät in Datei: ' + localFile, 3);
+
     fileTransfer.download(
-      url,
-      filename,
+      downloadURL,
+      localFile,
       (function (fileEntry) {
         kvm.log('Download des Bildes abgeschlossen: ' + fileEntry.fullPath, 4);
-        this.target.attr('src', this.localFile);
-        this.target.css('background-image', "url('" + this.localFile + "')");
-      }).bind(data),
+        var imageDiv = $('div[name$="' + this.localFile + '"]');
+
+        imageDiv.attr('src', this.localFile);
+        imageDiv.css('background-image', "url('" + this.localFile + "')");
+      }).bind({
+        localFile: localFile
+      }),
       function (error) {
         kvm.log("download error source " + error.source, 1);
         kvm.log("download error target " + error.target, 1);
@@ -824,60 +828,6 @@ function Layer(stelle, settings = {}) {
       },
       true
     );
-
-/*{
-    this.data = data;
-
-    window.requestFileSystem(
-      LocalFileSystem.PERSISTENT,
-      0,
-      (function (fs) {
-        console.log('file system open: ' + fs.name);
-        console.log('getFile with this: %o', this.data);
-        fs.root.getFile(
-          this.data.localFile,
-          {
-            create: true,
-            exclusive: false
-          },
-          (function (fileEntry) {
-            var url = this.getImgDownloadUrl(this.data.remoteFile);
-            console.log('fileEntry is file? ' + fileEntry.isFile.toString());
-            console.log('xhr request on url: ' + url);
-            var oReq = new XMLHttpRequest();
-            // Make sure you add the domain name to the Content-Security-Policy <meta> element.
-            oReq.open("GET", url, true);
-            // Define how you want the XHR data to come back
-            oReq.responseType = "blob";
-            oReq.onload = (function (oEvent) {
-              debug_oe = oEvent;
-              var blob = oReq.response; // Note: not oReq.responseText
-              if (blob) {
-                  // Create a URL based on the blob, and set an <img> tag's src to it.
-                  //var url = window.URL.createObjectURL(blob);
-                  console.log('Setze url auf src: ' + this.data.localFile);
-                  this.data.target.src = this.data.localFile;
-                  // Or read the data with a FileReader
-
-              }
-              else {
-                console.error('we didnt get an XHR response!');
-              }
-            }).bind(this);
-            oReq.send(null);
-          }).bind(this),
-          (function (err) {
-            debug_err = err;
-            console.error('error getting file! %o', err);
-            console.error('url: ' + "http://gdi-service.de/kvwmap_pet_dev/index.php?go=mobile_download_image&image=" + this.data.remoteFile);
-          }).bind(this)
-        );
-      }).bind(this),
-      function (err) {
-        console.error('error getting persistent fs! ' + err);
-      }
-    );
-}*/
   };
 
   this.createFeatureForm = function() {
