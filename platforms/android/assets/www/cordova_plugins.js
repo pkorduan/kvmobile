@@ -292,6 +292,14 @@ module.exports = [
             "cordova.plugins.Keyboard"
         ],
         "runs": true
+    },
+    {
+        "id": "cordova-plugin-file-opener2.FileOpener2",
+        "file": "plugins/cordova-plugin-file-opener2/www/plugins.FileOpener2.js",
+        "pluginId": "cordova-plugin-file-opener2",
+        "clobbers": [
+            "cordova.plugins.fileOpener2"
+        ]
     }
 ];
 module.exports.metadata = 
@@ -307,7 +315,8 @@ module.exports.metadata =
     "cordova-plugin-dialogs": "1.3.3",
     "cordova-sqlite-evplus-legacy-attach-detach-free": "0.8.3-pre5",
     "cordova-plugin-whitelist": "1.3.3",
-    "com.ionic.keyboard": "2.0.1"
+    "com.ionic.keyboard": "2.0.1",
+    "cordova-plugin-file-opener2": "2.0.19"
 };
 // BOTTOM OF METADATA
 });

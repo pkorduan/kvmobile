@@ -2,16 +2,6 @@ function Feature(data = {}) {
   //kvm.log('Create Feature with data: ' + JSON.stringify(data), 4);
   this.data = (typeof data == 'string' ? $.parseJSON(data) : data);
 
-/*
-  $.each(
-    this.data,
-    (function(i, v) {
-      this.data[i] = (typeof v == 'string' && v.indexOf('{') == 0 ? v.slice(1, -1).split(',') : v);
-    }).bind({
-      data: this.data
-    })
-  );
-*/
   this.get = function(key) {
     return (typeof this.data[key] == 'undefined' ? 'null' : this.data[key]);
   };
@@ -52,15 +42,6 @@ function Feature(data = {}) {
     return [geom.y, geom.x];
   };
 
-  this.getOlFeature = function() {
-    //console.log('set feature with coord: ', this.getCoord());
-    return new ol.Feature({
-      gid: this.get('uuid'),
-      type: 'PointFeature',
-      geometry: new ol.geom.Point(this.getCoord()),
-    });
-  };
-
   this.update = function() {
     sql = "\
       SELECT\
@@ -97,7 +78,7 @@ function Feature(data = {}) {
 
   this.listElement = function() {
     return '\
-      <div class="feature-item" id="' + this.get('uuid') + '">' + kvm.coalesce(this.get(kvm.activeLayer.get('name_attribute')), 'Datensatz ' + this.get(kvm.activeLayer.get('id_attribute'))) + '</div>\
+      <div class="feature-item feature-status-' + this.get('status') + '" id="' + this.get('uuid') + '">' + kvm.coalesce(this.get(kvm.activeLayer.get('name_attribute')), 'Datensatz ' + this.get(kvm.activeLayer.get('id_attribute'))) + '</div>\
     ';
   };
 }

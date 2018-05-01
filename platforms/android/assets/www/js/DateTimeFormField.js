@@ -54,7 +54,6 @@ function DateTimeFormField(formId, settings) {
     $('#featureFormular input[id=' + this.get('index') + ']').on(
       'change',
       function() {
-        console.log('event on saveFeatureButton');
         if (!$('#saveFeatureButton').hasClass('active-button')) {
           $('#saveFeatureButton').toggleClass('active-button inactive-button');
         }

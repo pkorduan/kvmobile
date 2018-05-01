@@ -23,7 +23,7 @@ function BilderFormField(formId, settings) {
   * @params any set to '' if val is undefined, null, 'null' or NAN 
   */
   this.setValue = function(val) {
-    console.log('BilderFormField.setValue with value: ' +  val);
+    kvm.log('BilderFormField.setValue with value: ' +  val, 4);
     var val = kvm.coalesce(val, ''),
         images,
         image,
@@ -47,8 +47,6 @@ function BilderFormField(formId, settings) {
       for (i = 0; i < images.length; i++) {
         image = images[i],
         local_image = this.removeOriginalName(this.serverToLocalPath(image))
-        // ToDo check if image exists, if not show placeholder and try to download it
-        // else addImage in form
         kvm.log('images[' + i + ']: ' + image, 4);
 
         window.resolveLocalFileSystemURL(
@@ -67,7 +65,6 @@ function BilderFormField(formId, settings) {
         );
       }
     }
-    $('#large_image_1').attr("src", val).show();
   };
 
   this.getValue = function(action = '') {
@@ -129,13 +126,16 @@ function BilderFormField(formId, settings) {
     return result
   };
 
+  /*
+  * src is the file shown in view
+  * name is the file stored in database
+  * Images not downloaded yet to the device are default no_image.png
+  * otherwise src is equal to name
+  */
   this.addImage = function(src, name = '') {
     kvm.log('BilderFormField: Add Image to FormField', 4);
-    var img_div = $('<div>'),
-        width = (src == 'img/no_image.png' ? '25%' : '100%')
-        name = (name == '' ? src : name);
-
-    img_div.append($('<img src="' + src + '" field_id="' + this.get('index') + '" style="margin-bottom: 2px; width: ' + width + ';" name="' + name + '"/>'));
+    var name = (name == '' ? src : name),
+    img_div = $('<div class="img" src="' + src + '" style="background-image: url(' + src + ');" field_id="' + this.get('index') + '"name="' + name + '"></div>');
 /*  ToDo: Ein Kommentarfeld einfügen. Realisieren über Datentyp, der dann aber auch das Datum des Bildes beinhaltet.
     img_div.append($('<br>'));
     img_div.append($('<input type="text"\ name="' + src + '"/>'));
@@ -144,18 +144,18 @@ function BilderFormField(formId, settings) {
 
     $('#dropAllPictureButton_' + this.get('index')).show();
 
-    $('img[name$="' + name + '"]').on(
+    $('div[name$="' + name + '"]').on(
       'click',
       function(evt) {
-        debug_evt = evt;
-        if (evt.target.src == 'file:///android_asset/www/img/no_image.png') {
+        var target = $(evt.target),
+            src = target.attr('src'),
+            fieldId = target.attr('field_id');
+        if ('src' == 'file:///android_asset/www/img/no_image.png') {
           navigator.notification.confirm(
             'Bild herunterladen?',
             function(buttonIndex) {
               if (buttonIndex == 1) { // ja
-                var target = evt.target, 
-                    fieldId = $(target).attr('field_id'),
-                    localFile = target.name,
+                var localFile = target.attr('name'),
                     remoteFile = kvm.activeLayer.attributes[fieldId].formField.localToServerPath(localFile),
                     data = {
                       target: target,
@@ -163,7 +163,7 @@ function BilderFormField(formId, settings) {
                       remoteFile: remoteFile
                     };
 
-                console.log('Download Image mit data: %o', data);
+                kvm.log('Download Bild von URL: ' + JSON.stringify(data), 3);
                 kvm.activeLayer.downloadImage(data);
               }
               if (buttonIndex == 2) { // nein
@@ -175,22 +175,34 @@ function BilderFormField(formId, settings) {
           );
         }
         else {
-          navigator.notification.confirm(
-            'Bild Löschen?',
-            function(buttonIndex) {
-              if (buttonIndex == 1) { // ja
-                var src = evt.target.src;
-                    field = kvm.activeLayer.attributes[evt.target.getAttribute('field_id')].formField;
+          kvm.log('Versuche das Bild zu öffnen: ' + src, 4);
+          cordova.plugins.fileOpener2.open(
+            src,
+            'image/jpeg',
+            {
+              error : function(e) {
+                alert('Fehler beim laden der Datei: ' + e.message + ' Status: ' + e.status);
+              },
+              success : function() {
+                kvm.log('Datei ' + src + ' erfolgreich geöffnet.', 4);
+                navigator.notification.confirm(
+                  'Bild Löschen?',
+                  function(buttonIndex) {
+                    if (buttonIndex == 1) { // nein
+                      // Do nothing
+                    }
 
-                field.dropImage(evt.target);
-              }
+                    if (buttonIndex == 2) { // ja
+                      var field = kvm.activeLayer.attributes[fieldId].formField;
 
-              if (buttonIndex == 2) { // nein
-                // Do nothing
+                      field.dropImage(target);
+                    }
+                  },
+                  '',
+                  ['nein', 'ja']
+                );
               }
-            },
-            '',
-            ['ja', 'nein']
+            }
           );
         }
       }
@@ -214,20 +226,20 @@ function BilderFormField(formId, settings) {
   * Remove the image tag witch have this src and
   * the corresponding path from hidden formfield
   */
-  this.dropImage = function(img) {
-    kvm.log('BilderFormField.dropImage img: ' + JSON.stringify(img), 4);
-    debug_img = img;
+  this.dropImage = function(imgDiv) {
     var imageField = this.element,
+        src = imgDiv.attr('src'),
         activeLayer = kvm.activeLayer,
         sql = '';
 
+    kvm.log('BilderFormField.dropImage img: ' + src, 4);
     // ToDo implement this function and bind to delte choice of after dialog from image click
     // remove image string from field value
     imageField.val(
       this.addBraces($.map(
         this.removeBraces(imageField.val()).split(','),
         function(path) {
-          if (path.indexOf(img.src.substring(img.src.lastIndexOf('/') + 1)) < 0) {
+          if (path.indexOf(src.substring(src.lastIndexOf('/') + 1)) < 0) {
             return path;
           }
         }
@@ -235,7 +247,7 @@ function BilderFormField(formId, settings) {
     ));
 
     imageField.trigger('change');
-    $(img).parent().remove();
+    imgDiv.remove();
   };
 
   this.bindEvents = function() {
@@ -273,8 +285,20 @@ function BilderFormField(formId, settings) {
   this.dropAllPictures = function(evt) {
     var context = evt.data.context;
     //console.log('BilderformField.dropAllPictures');
-    context.setValue('');
-    context.element.trigger('change');
+    navigator.notification.confirm(
+      'Wirklich alle Bilder in diesem Datensatz Löschen?',
+      function(buttonIndex) {
+        if (buttonIndex == 1) { // nein
+          // Do nothing
+        }
+        if (buttonIndex == 2) { // ja
+          context.setValue('');
+          context.element.trigger('change');
+        }
+      },
+      '',
+      ['nein', 'ja']
+    );
   };
 
   this.takePicture = function(evt) {
@@ -287,7 +311,7 @@ function BilderFormField(formId, settings) {
         $('#featureFormular input[id=2]').val((new Date()).toISOString().replace('Z', '')).show();
       }).bind(evt.data.context),
       function(message) {
-        alert('Failed because: ' + message);
+        alert('Fehler wegen: ' + message);
       },
       {
         quality: 25,
@@ -357,7 +381,7 @@ function listDir(path){
         <!--i id="selectPictureButton_' + this.get('index') + '" class="fa fa-picture-o fa-2x" style="color: rgb(38, 50, 134)"/-->\
         <i id="dropAllPictureButton_' + this.get('index') + '" class="fa fa-trash fa-2x" style="color: rgb(238, 50, 50); float: right; display: none;"/>\
         <div id="' + this.images_div_id + '"></div>\
-      <div/>\
+      </div><div class="clear"></div>\
     ')
     .append(
       this.element

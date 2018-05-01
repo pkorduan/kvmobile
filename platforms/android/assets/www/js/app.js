@@ -232,90 +232,6 @@ kvm = {
       false
     );
 
-/*
-    navigator.geolocation.watchPosition(
-      function(geoLocation) {
-        kvm.log(Date() + ' Neue Position: ' + geoLocation.coords.latitude + ' ' + geoLocation.coords.longitude, 4);
-      },
-      function(error) {
-        console.log('Fehler bei der Positionsabfrage code: ' + error.code + ' message: ' + error.message);
-      }, {
-        maximumAge: 2000, // duration to cache current position
-        timeout: 30000, // timeout for try to call successFunction, else call errorFunction
-        enableHighAccuracy: true // take position from gps not network-based method
-      }
-    );
-*/
-/*    this.map.on(
-      'click',
-      (function(evt) {
-        console.log('click in map');
-        var selectedFeatures = {};
-
-        this.map.forEachFeatureAtPixel(
-          evt.pixel,
-          (function(feature, layer) {
-            if (layer) {
-              kvm.log('Layer ' + layer.get('name') + ' ausgewählt.', 3);
-              if (layer.get('name') == 'Hilfslayer') {
-                kvm.log('Feature im Hilfslayer ausgewählt mit folgenden Daten: ' + JSON.stringify(feature), 3);
-                layer.getSource().clear();
-                this.showItem('formular');
-              }
-              else {
-                kvm.log('Feature ausgewählt.', 3);
-                if (
-                  kvm.activeLayer.activeFeature &&
-                  kvm.activeLayer.activeFeature.get('id') != feature.get('gid') &&
-                  $('#saveFeatureButton').hasClass('active-button')
-                ) {
-                  // frage nach ob verwerfen oder zurück zum formular uns speichern oder abbrechen
-                  navigator.notification.confirm(
-                    'Es gibt nicht gespeicherte Änderungen?',
-                    function(buttonIndex) {
-                      if (buttonIndex == 1) { // Abbrechen
-                        // Do nothing
-                      }
-                      if (buttonIndex == 2) { // Verwerfen
-                        this.activeLayer.loadFeatureToForm(
-                          this.activeLayer.features['id_' + feature.get('gid')]
-                        );
-                        this.showItem('formular');
-                      }
-                      if (buttonIndex == 3) { // zurück zum Formular
-                        this.showItem('formular');
-                      }
-                    },
-                    'Formular',
-                    ['Abbrechen', 'Verwerfen', 'zurück zum Formular']
-                  );
-                }
-                else {
-                  this.activeLayer.loadFeatureToForm(
-                    this.activeLayer.features['id_' + feature.get('gid')]
-                  );
-                  this.showItem('formular');
-                }
-              }
-            }
-          }).bind(this)
-        );
-      }).bind(this)
-    );
-*/
-/*
-    this.map.on(
-      'pointerdrag',
-      function(evt) {
-        kvm.log('Pointer Drag', 4);
-        var gpsControlButton = $('#gpsControlButton');
-        if (gpsControlButton.hasClass('kvm-gps-track')) {
-          kvm.log('GPS Verfolgung ausschalten.', 3);
-          gpsControlButton.toggleClass('kvm-gps-on kvm-gps-track');
-        }
-      }
-    );
-*/
     $('#requestLayersButton').on(
       'click',
       function () {
@@ -453,6 +369,7 @@ kvm = {
               if (buttonIndex == 1) { // ja
                 kvm.showItem('featurelist');
                 $('#saveFeatureButton').toggleClass('active-button inactive-button');
+                $('.popup-aendern-link').show();
                 kvm.controller.mapper.clearWatch();
               }
               if (buttonIndex == 2) { // nein
@@ -502,7 +419,7 @@ kvm = {
                 }
 
                 //  waitingDiv.hide();
-
+                $('.popup-aendern-link').show();
                 saveButton.toggleClass('active-button inactive-button');
                 kvm.controller.mapper.clearWatch();
               }

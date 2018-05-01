@@ -561,8 +561,7 @@ function Layer(stelle, settings = {}) {
         var data = $.parseJSON(r);
         if (data.success) {
           kvm.log(data.msg);
-          debug_img = this;
-          console.log('Bild: ' + this.img + ' erfolgreich gelöscht.');
+          kvm.log('Bild: ' + this.img + ' erfolgreich gelöscht.', 4);
           this.layer.deleteDeltas('img', this.img);
         }
       },
@@ -584,7 +583,7 @@ function Layer(stelle, settings = {}) {
   *     - Zeige Fehlermeldung an
   */
   this.syncData = function() {
-    console.log('Layer.syncData');
+    kvm.log('Layer.syncData', 3);
 
     sql = "\
       SELECT\
@@ -594,19 +593,19 @@ function Layer(stelle, settings = {}) {
       WHERE\
         type = 'sql'\
     ";
-    console.log('Layer.syncData: query deltas with sql: ' + sql);
+    kvm.log('Layer.syncData: query deltas with sql: ' + sql, 3);
     kvm.db.executeSql(
       sql,
       [],
       (function(rs) {
-        console.log('Layer.syncData query deltas success result %o:', rs);
+        kvm.log('Layer.syncData query deltas success result:' + JSON.stringify(rs), 3);
         var numRows = rs.rows.length,
             deltas = {'rows' : [] },
             i;
 
         if (numRows > 0) {
           for (i = 0; i < numRows; i++) {
-            console.log('Push item ' + i + ' to deltas.');
+            kvm.log('Push item ' + i + ' to deltas.', 4);
             deltas.rows.push({
               'version' : rs.rows.item(i).version,
               'sql' : rs.rows.item(i).delta
@@ -621,7 +620,7 @@ function Layer(stelle, settings = {}) {
         }
       }).bind(this),
       function(error) {
-        console.log('Layer.syncData query deltas Fehler: %o', error);
+        kvm.log('Layer.syncData query deltas Fehler: ' + JSON.stringify(error), 1);
         kvm.msg('Fehler beim Zugriff auf die Datenbank');
         if ($('#syncLayerIcon_' + this.getGlobalId()).hasClass('fa-spinner'))
           $('#syncLayerIcon_' + this.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
@@ -804,7 +803,7 @@ function Layer(stelle, settings = {}) {
   };
 
   this.downloadImage = function(data) {
-    console.log('Layer.downloadImage with data: %o', data);
+    kvm.log('Layer.downloadImage with data: ' + JSON.stringify(data), 3);
     var fileTransfer = new FileTransfer(),
     filename = data.localFile,
     url = this.getImgDownloadUrl(data.remoteFile);
@@ -814,14 +813,14 @@ function Layer(stelle, settings = {}) {
       url,
       filename,
       (function (fileEntry) {
-        console.log('Download des Bildes abgeschlossen: ' + fileEntry.fullPath);
-        this.target.src = this.localFile;
-        $(this.target).width('100%');
+        kvm.log('Download des Bildes abgeschlossen: ' + fileEntry.fullPath, 4);
+        this.target.attr('src', this.localFile);
+        this.target.css('background-image', "url('" + this.localFile + "')");
       }).bind(data),
       function (error) {
-        console.log("download error source " + error.source);
-        console.log("download error target " + error.target);
-        console.log("upload error code" + error.code);
+        kvm.log("download error source " + error.source, 1);
+        kvm.log("download error target " + error.target, 1);
+        kvm.log("upload error code" + error.code, 1);
       },
       true
     );
@@ -1008,9 +1007,19 @@ function Layer(stelle, settings = {}) {
     var html;
 
     html = feature.get('hst_name') + '<br>\
-        <a href="#" onclick="kvm.activeLayer.loadFeatureToForm(kvm.activeLayer.features[\'id_' + feature.get('uuid') + '\']); kvm.showItem(\'formular\')">Ändern</a>\
+        <a class="popup-aendern-link" href="#" onclick="kvm.activeLayer.goToForm(\'' + feature.get('uuid') + '\')">Ändern</a>\
     ';
     return html;
+  };
+
+  this.goToForm = function(uuid) {
+    if ($('#saveFeatureButton').hasClass('active-button')) {
+      kvm.msg('Es gibt nicht gespeicherte Änderungen! Gehen Sie zurück zum Formular und verwerfen Sie die Änderungen um eine neue Änderung zu beginnen.');
+    }
+    else {
+      this.loadFeatureToForm(this.features['id_' + uuid]);
+      kvm.showItem('formular');
+    }
   };
 
   this.collectChanges = function(action) {
