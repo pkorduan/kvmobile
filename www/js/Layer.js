@@ -802,12 +802,13 @@ function Layer(stelle, settings = {}) {
       localFile,
       (function (fileEntry) {
         kvm.log('Download des Bildes abgeschlossen: ' + fileEntry.fullPath, 4);
-        var imageDiv = $('div[name$="' + this.localFile + '"]');
+        var imageDiv = $('div[name$="' + this.remoteFile + '"]');
 
         imageDiv.attr('src', this.localFile);
         imageDiv.css('background-image', "url('" + this.localFile + "')");
       }).bind({
-        localFile: localFile
+        localFile: localFile,
+        remoteFile: remoteFile
       }),
       function (error) {
         kvm.log("download error source " + error.source, 1);

@@ -11,7 +11,8 @@ function CheckboxFormField(formId, settings) {
     <input\
       type="checkbox"\
       id="' + this.get('index') + '"\
-      name="' + this.get('name') + '"\
+      name="' + this.get('name') + '"' +
+      (this.get('privilege') == '0' ? ' disabled' : '') + '\
     />' +
     this.get('alias')
   );

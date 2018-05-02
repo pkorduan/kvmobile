@@ -89,7 +89,7 @@ function GeometrieFormField(formId, settings) {
               'Neue Position:\n' + geoLocation.coords.longitude + ' ' + geoLocation.coords.latitude + '\nübernehmen?',
               function(buttonIndex) {
                 if (buttonIndex == 1) {
-                  kvm.log('set new Position ' + geoLocation.coords.latitude + ' ' + geoLocation.coords.longitude, 4);
+                  //kvm.log('set new Position ' + geoLocation.coords.latitude + ' ' + geoLocation.coords.longitude, 4);
                   $('#featureFormular input[id=0]').val(geoLocation.coords.longitude + ' ' + geoLocation.coords.latitude).trigger('change');
                 }
               },

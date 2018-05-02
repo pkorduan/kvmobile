@@ -122,7 +122,7 @@ function BilderFormField(formId, settings) {
   * Replace local image path by servers image path
   */
   this.localToServerPath = function(src) {
-    kvm.log('BilerFormField.localToServerPath src: ' + src, 4);
+    kvm.log('BilderFormField.localToServerPath src: ' + src, 4);
     var result = kvm.activeLayer.get('document_path') + src.substring(src.lastIndexOf('/') + 1);
     kvm.log('Result: ' + result,4);
     return result
@@ -157,8 +157,8 @@ function BilderFormField(formId, settings) {
             'Bild herunterladen?',
             function(buttonIndex) {
               if (buttonIndex == 1) { // ja
-                var localFile = target.attr('name'),
-                    remoteFile = kvm.activeLayer.attributes[fieldId].formField.localToServerPath(localFile);
+                var remoteFile = target.attr('name'),
+                    localFile = kvm.activeLayer.attributes[fieldId].formField.serverToLocalPath(remoteFile);
 
                 kvm.activeLayer.downloadImage(localFile, remoteFile);
               }
