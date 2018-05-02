@@ -126,14 +126,15 @@ a.hover {
 }
 
 .settings-button-active {
-  padding-left: 6px;
-  padding-right: 6px;
-  padding-top: 4px;
-  padding-bottom: 4px;
+  padding-left: 8px;
+  padding-right: 8px;
+  padding-top: 5px;
+  padding-bottom: 5px;
   border-radius: 5px;
   color: #263286;
   background: #ffc8d0;
   margin-bottom: 5px;
+  font-size: 18px;
 }
 
 .menubutton {
