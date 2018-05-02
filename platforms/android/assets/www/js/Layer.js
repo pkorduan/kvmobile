@@ -85,6 +85,7 @@ function Layer(stelle, settings = {}) {
           this.features['id_' + item.uuid] = new Feature(item);
         }
         if ($('#syncLayerIcon_' + this.getGlobalId()).hasClass('fa-spinner')) {
+          $('#sperr_div').hide();
           $('#syncLayerIcon_' + this.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
         }
         kvm.createFeatureList();
@@ -95,7 +96,7 @@ function Layer(stelle, settings = {}) {
       }).bind(this),
       function(error) {
         kvm.log('Fehler bei der Abfrage der Daten aus lokaler Datenbank: ' + error.message);
-        $('#storeTestDataResult').html('SQL ERROR: ' + error.message);
+        $('#sperr_div').hide();
       }
     );
   };
@@ -288,6 +289,7 @@ function Layer(stelle, settings = {}) {
           function(error) {
             alert('Fehler beim Einlesen der heruntergeladenen Datei. Prüfen Sie die URL und Parameter, die für die Synchronisation verwendet werden.');
             kvm.log('Fehler beim lesen der Datei: ' + error.code, 1);
+            $('sperr_div').hide();
           }
         );
       },
@@ -316,6 +318,7 @@ function Layer(stelle, settings = {}) {
           }).bind(this),
           function(err) {
             kvm.log('Fehler beim Erzeugen der Delta-Datei, die geschickt werden soll.', 1);
+            $('#sperr_div').hide();
           }
         );
       }).bind(this),
@@ -336,6 +339,7 @@ function Layer(stelle, settings = {}) {
 
         fileWriter.onerror = function (e) {
           kvm.log('Fehler beim Schreiben der Datei: ' + e.toString(), 1);
+          $('#sperr_div').hide();
         };
 
         if (!deltas) {
@@ -374,6 +378,7 @@ function Layer(stelle, settings = {}) {
       }
       if ($('#syncLayerIcon_' + this.getGlobalId()).hasClass('fa-spinner')) {
         $('#syncLayerIcon_' + this.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
+        $('#sperr_div').hide();
       }
       // displayFileData(fileEntry.fullPath + " (content uploaded to server)");
     }).bind(this);
@@ -382,6 +387,7 @@ function Layer(stelle, settings = {}) {
       var msg = 'Fehler beim Hochladen der Sync-Datei! Fehler ' + error.code;
       kvm.msg(msg);
       kvm.log(msg, 1);
+      $('#sperr_div').hide();
     }
 
     var layer = kvm.activeLayer,
@@ -608,15 +614,19 @@ function Layer(stelle, settings = {}) {
         }
         else {
           kvm.msg('Keine Änderungen zum Syncronisieren vorhanden.');
-          if ($('#syncLayerIcon_' + this.getGlobalId()).hasClass('fa-spinner'))
+          if ($('#syncLayerIcon_' + this.getGlobalId()).hasClass('fa-spinner')) {
             $('#syncLayerIcon_' + this.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
+            $('#sperr_div').hide();
+          }
         }
       }).bind(this),
       function(error) {
         kvm.log('Layer.syncData query deltas Fehler: ' + JSON.stringify(error), 1);
         kvm.msg('Fehler beim Zugriff auf die Datenbank');
-        if ($('#syncLayerIcon_' + this.getGlobalId()).hasClass('fa-spinner'))
+        if ($('#syncLayerIcon_' + this.getGlobalId()).hasClass('fa-spinner')) {
           $('#syncLayerIcon_' + this.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
+          $('#sperr_div').hide();
+        }
       }
     );
   };
@@ -1293,21 +1303,8 @@ function Layer(stelle, settings = {}) {
         'export_format=GeoJSONPlus' + '&' +
         'all=1' + '&' +
         'epsg=4326';
-/*
-      url += '&' +
-        'go=Layer-Suche_Suchen' + '&' +
-        'anzahl=10000' + '&' +
-        'orderby' + this.get('id') + '=name' + '&' +
-        'mime_type=application/json' + '&' +
-        'format=json' + '&' + 'selectors=' +
-        $.map(
-          this.attributes,
-          function(attr) {
-            return attr.get('name');
-          }
-        ).join(',');
-*/
-      kvm.log('Hole initial alle Daten mit Url: ' +  url);
+
+      kvm.log('Hole initial alle Daten mit Url: ' +  url, 3);
     }
     else {
       // sync deltas

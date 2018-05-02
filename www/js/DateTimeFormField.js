@@ -78,7 +78,7 @@ function DateTimeFormField(formId, settings) {
   }
 
   this.fromISO = function(datetime) {
-    console.log('konvert ' + this.get('name') + ' datetime: %o', datetime);
+    kvm.log('konvert ' + this.get('name') + ' datetime: ' + datetime, 4);
     return (typeof datetime == 'string' ? datetime.replace(/-/g, '/').replace('T', ' ') : null);
   }
 

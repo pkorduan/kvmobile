@@ -395,52 +395,63 @@ kvm = {
             delta = '';
 
         if ((saveButton).hasClass('active-button')) {
-          navigator.notification.confirm(
-            'Datensatz Speichern?',
-            function(buttonIndex) {
-              var action = (typeof kvm.activeLayer.features['id_' + kvm.activeLayer.activeFeature.get('uuid')] == 'undefined' ? 'INSERT' : 'UPDATE');
-              if (buttonIndex == 1) { // ja
-                changes = kvm.activeLayer.collectChanges(action);
-                kvm.log('Änderungen: ' + JSON.stringify(changes), 3);
+          if ($('#featureFormular input[id=0]').val()) {
+            navigator.notification.confirm(
+              'Datensatz Speichern?',
+              function(buttonIndex) {
+                var action = (typeof kvm.activeLayer.features['id_' + kvm.activeLayer.activeFeature.get('uuid')] == 'undefined' ? 'INSERT' : 'UPDATE');
+                if (buttonIndex == 1) { // ja
+                  changes = kvm.activeLayer.collectChanges(action);
+                  kvm.log('Änderungen: ' + JSON.stringify(changes), 3);
 
-                if (changes.length > 1) {
-                  // more than created_at or updated_at_client
-                  kvm.activeLayer.createDeltas(action, changes);
-                  imgChanges = changes.filter(
-                    function(change) {
-                      return ($.inArray(change.key, kvm.activeLayer.getDokumentAttributeNames()) > -1);
-                    }
-                  );
-                  if (imgChanges.length > 0) kvm.activeLayer.createImgDeltas(action, imgChanges);
+                  if (changes.length > 1) {
+                    // more than created_at or updated_at_client
+                    kvm.activeLayer.createDeltas(action, changes);
+                    imgChanges = changes.filter(
+                      function(change) {
+                        return ($.inArray(change.key, kvm.activeLayer.getDokumentAttributeNames()) > -1);
+                      }
+                    );
+                    if (imgChanges.length > 0) kvm.activeLayer.createImgDeltas(action, imgChanges);
+                  }
+                  else {
+                    kvm.log('Keine Änderungen.', 2);
+                    kvm.msg('Keine Änderungen!');
+                  }
+
+                  //  waitingDiv.hide();
+                  $('.popup-aendern-link').show();
+                  saveButton.toggleClass('active-button inactive-button');
+                  kvm.controller.mapper.clearWatch();
                 }
-                else {
-                  kvm.log('Keine Änderungen.', 2);
-                  kvm.msg('Keine Änderungen!');
+
+                if (buttonIndex == 2) { // nein
+                  // Do nothing
                 }
 
-                //  waitingDiv.hide();
-                $('.popup-aendern-link').show();
-                saveButton.toggleClass('active-button inactive-button');
-                kvm.controller.mapper.clearWatch();
-              }
+                if (buttonIndex == 3) { // Abbrechen
+                  // dont save form values and switch to feature list
+                  kvm.controller.mapper.clearWatch();
+                }
 
-              if (buttonIndex == 2) { // nein
-                // Do nothing
-              }
-
-              if (buttonIndex == 3) { // Abbrechen
-                // dont save form values and switch to feature list
-                kvm.controller.mapper.clearWatch();
-              }
-
-            },
-            'Datenbank',
-            ['ja', 'nein', 'Abbrechen']
-          );
+              },
+              'Datenbank',
+              ['ja', 'nein', 'Abbrechen']
+            );
+          }
+          else {
+            navigator.notification.alert(
+              'Sie haben noch keine Koordinaten erfasst!',
+              function(){},
+              'Formular'
+            );
+          }
         }
         else {
           navigator.notification.alert(
-            'Keine Änderungen!'
+            'Keine Änderungen!',
+            function(){},
+            'Formular'
           );
         }
       }
@@ -585,6 +596,7 @@ kvm = {
             layer = kvm.activeLayer;
 
         $('#syncLayerIcon_' + layer.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
+        $('#sperr_div').show();
 
         if (layer.isEmpty()) {
           layer.requestData();
@@ -805,7 +817,6 @@ kvm = {
 
             reader.onloadend = function() {
               kvm.log('downloadData onloadend');
-              console.log('downloadData onloadend this: %o', this);
               var items = [];
               kvm.log('downloadData result: ' + this.result)
               items = $.parseJSON(this.result);

@@ -60,38 +60,15 @@ function GeometrieFormField(formId, settings) {
       function() {
         kvm.log('Gehe zu Gps Position.', 3);
         var uuid = $('#featureFormular input[name=uuid]').val(),
-            m = kvm.activeLayer.features['id_' + uuid].marker;
+            feature = kvm.activeLayer.features['id_' + uuid];
 
-        kvm.activeLayer.markerClusters.zoomToShowLayer(m, function() {
-          m.openPopup();
-        });
-/*
-        var lnglat = $('#featureFormular input[name=point]').val().split(' ');
-            coord = ol.proj.transform(
-              [lnglat[0], lnglat[1]],
-              "EPSG:4326",
-              kvm.map.getView().getProjection()
-            ),
-            point = new ol.geom.Point(coord),
-            feature = new ol.Feature({
-              geometry: point
-            }),
-            view = kvm.map.getView(),
-            helpLayer = kvm.map.getLayers().item(1),
-            source = helpLayer.getSource();
+        if (feature) {
+          kvm.activeLayer.markerClusters.zoomToShowLayer(feature.marker, function() {
+            feature.marker.openPopup();
+          });
 
-        source.clear();
-        source.addFeature(feature);
-
-        source.refresh({force: true});
-
-        view.setCenter(
-          feature.getGeometry().getCoordinates()
-        );
-
-        view.setZoom(17);
-*/
-        kvm.showItem('mapFormular');
+          kvm.showItem('mapFormular');
+        }
       }
     );
 
