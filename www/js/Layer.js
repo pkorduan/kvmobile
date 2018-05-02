@@ -56,15 +56,20 @@ function Layer(stelle, settings = {}) {
   */
   this.readData = function() {
     kvm.log('Layer.readData from table: ' + this.get('schema_name') + '.' + this.get('table_name'), 3);
-    kvm.log('Lese Daten aus lokaler Datenbank.', 4);
-    sql = "\
+    $('#sperr_div').show();
+
+    var filter = $('#anzeigeFilterSelect').val(),
+        sql = "\
       SELECT\
         *\
       FROM\
         " + this.get('schema_name') + '.' + this.get('table_name') + "\
+      WHERE\
+        " + (filter == '' ? "1 = 1" : filter) + "\
       ORDER BY \
         " + (this.get('name_attribute') != '' ? this.get('name_attribute') : this.get('id_attribute')) + "\
     ";
+    kvm.log('Lese Daten aus lokaler Datenbank mit Sql: ' + sql, 3);
     kvm.db.executeSql(
       sql,
       [],
@@ -85,7 +90,6 @@ function Layer(stelle, settings = {}) {
           this.features['id_' + item.uuid] = new Feature(item);
         }
         if ($('#syncLayerIcon_' + this.getGlobalId()).hasClass('fa-spinner')) {
-          $('#sperr_div').hide();
           $('#syncLayerIcon_' + this.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
         }
         kvm.createFeatureList();
@@ -93,6 +97,7 @@ function Layer(stelle, settings = {}) {
 //
 
         this.drawFeatureMarker();
+        $('#sperr_div').hide();
       }).bind(this),
       function(error) {
         kvm.log('Fehler bei der Abfrage der Daten aus lokaler Datenbank: ' + error.message);
@@ -757,6 +762,7 @@ function Layer(stelle, settings = {}) {
               kvm.log('Download Result: ' + this.result, 3);
               if (this.result.indexOf('form name="login"') > -1) {
                 kvm.msg('Zugang zum Server verweigert! Prüfen Sie Ihre Zugangsdaten unter Einstellungen.');
+                $('#sperr_div').hide();
               }
               else {
                 resultObj = $.parseJSON(this.result);
@@ -778,10 +784,12 @@ function Layer(stelle, settings = {}) {
                   kvm.bindLayerEvents();
                   //console.log('Store after save layer: %o', kvm.store);
                   $('#requestLayersButton').hide();
+                  $('#sperr_div').hide();
                 }
                 else {
                   kvm.log('Fehler beim Abfragen der Layerdaten. Falsche Serverparameter oder Fehler auf dem Server.', 2);
                   alert('Abfrage liefert keine Daten vom Server. Entweder sind keine auf dem Server vorhanden oder die URL der Anfrage ist nicht korrekt. Prüfen Sie die Parameter unter Einstellungen.');
+                  $('#sperr_div').hide();
                 }
               }
             };
@@ -791,6 +799,7 @@ function Layer(stelle, settings = {}) {
           function(error) {
             alert('Fehler beim Einlesen der heruntergeladenen Datei. Prüfen Sie die URL und Parameter, die für den Download verwendet werden.');
             kvm.log('Fehler beim lesen der Datei: ' + error.code);
+            $('#sperr_div').hide();
           }
         );
       },
@@ -929,7 +938,9 @@ function Layer(stelle, settings = {}) {
   };
 
   this.drawFeatureMarker = function() {
-    kvm.log('layer.drawFeatureMarker: ', 4);
+    kvm.log('Erzeuge Markercluster in der Karte: ', 3);
+
+    if (this.markerClusters) this.markerClusters.clearLayers();
     this.markerClusters = L.markerClusterGroup({
       maxClusterRadius: function(zoom) {
         return (zoom == 18 ? 5 : 50)

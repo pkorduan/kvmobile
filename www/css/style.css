@@ -100,7 +100,7 @@ a.hover {
 }
 
 .feature-status-1 {
-  background-color: #f4ffde;
+  background-color: #e0f6b5;
 }
 
 .feature-status-2 {
@@ -114,14 +114,15 @@ a.hover {
 }
 
 .settings-button {
-  padding-left: 6px;
-  padding-right: 6px;
-  padding-top: 4px;
-  padding-bottom: 4px;
+  padding-left: 8px;
+  padding-right: 8px;
+  padding-top: 5px;
+  padding-bottom: 5px;
   border-radius: 5px;
   color: #263286;
   background: #e6ffb2;
   margin-bottom: 5px;
+  font-size: 18px;
 }
 
 .settings-button-active {
@@ -207,7 +208,8 @@ a.hover {
   color: lightgray;
   text-align: center;
   vertical-align: middle;
-  line-height: 500px;
+  font-size: 30px;
+  padding-top: 200px;
 }
 
 .v-scroll-div {

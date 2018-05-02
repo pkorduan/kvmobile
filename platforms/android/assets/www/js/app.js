@@ -235,6 +235,7 @@ kvm = {
     $('#requestLayersButton').on(
       'click',
       function () {
+        $('#sperr_div').show();
         var layer = new Layer(kvm.activeStelle);
         layer.requestLayers();
       }
@@ -386,6 +387,13 @@ kvm = {
       }
     );
 
+    $('#anzeigeFilterSelect').on(
+      'change',
+      function(evt) {
+        kvm.activeLayer.readData();
+      }
+    );
+
     $('#saveFeatureButton').on(
       'click',
       function(evt) {
@@ -494,7 +502,9 @@ kvm = {
         var this_ = evt.data.context;
 
         this_.activeLayer.loadFeatureToForm(
-          new Feature({ uuid : this_.uuidv4()})
+          new Feature({
+            uuid : this_.uuidv4()
+          })
         );
 
         this_.showItem('formular');
@@ -695,48 +705,6 @@ kvm = {
     kvm.bindFeatureItemClickEvents();
     $('#numDatasetsText').html(Object.keys(this.activeLayer.features).length).show();
   },
-
-/*
-  checkIfTableExists: function() {
-    kvm.log('function checkIfTableExists');
-    this.db.executeSql(
-      "\
-        SELECT\
-          count(name) n\
-        FROM\
-          sqlite_master\
-        WHERE\
-          type='table' AND\
-          name='haltestellen'\
-      ",
-      [],
-      function(rs, context) {
-        kvm.log('checkIfTableExists success');
-        var numTables = rs.rows.item(0).n;
-        if (numTables == 1) {
-          kvm.log('numTables: 1, Tablle haltestellen existiert.');
-          kvm.loadData();
-        }
-        else {
-          kvm.log('numTables: != 1, Tabelle haltestellen existiert noch nicht');
-          if (tableSettingsExists) {
-            kvm.log('tableSettingsExists: ja, Layereinstellungen zur Tabelle haltestellen liegen vor.');
-            kvm.createTable();
-          }
-          else {
-            kvm.log('tableSettingsExists: nein, Layereinstellungen liegen noch nicht vor');
-            kvm.loadLayer(context);
-          }
-        }
-        $('#numDatasetsText').html(numDatasets);
-      },
-      function(error) {
-        kvm.log('checkIfTableExists error');
-        alert('Fehler beim Zugriff auf die Datenbank');
-      }
-    );
-  },
-*/
 
   showItem: function(item) {
     kvm.log('showItem: ' + item, 4);

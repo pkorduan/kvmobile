@@ -19,6 +19,7 @@ function DateTimeFormField(formId, settings) {
   );
 
   this.setValue = function(val) {
+    kvm.log('val: ' + val, 4);
     var val = kvm.coalesce(val, '');
     if (val != '') val = this.toISO(val);
     kvm.log('DateTimeFormField ' + this.get('name') + ' setValue with value: ' + JSON.stringify(val), 4);
@@ -26,7 +27,7 @@ function DateTimeFormField(formId, settings) {
   };
 
   this.getValue = function(action = '') {
-   // console.log('DateTimeFormField.getValue');
+   kvm.log('DateTimeFormField.getValue', 4);
     var val = this.element.val();
 
     if (typeof val === "undefined" || val == '') {
@@ -79,7 +80,7 @@ function DateTimeFormField(formId, settings) {
 
   this.fromISO = function(datetime) {
     kvm.log('konvert ' + this.get('name') + ' datetime: ' + datetime, 4);
-    return (typeof datetime == 'string' ? datetime.replace(/-/g, '/').replace('T', ' ') : null);
+    return (typeof datetime == 'string' ? datetime.replace(/-/g, '/').replace('T', ' ').replace('Z', '') : null);
   }
 
   return this;

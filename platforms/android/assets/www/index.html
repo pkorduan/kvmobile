@@ -52,7 +52,7 @@
   <body onload="kvm.init()">
 
     <div id="sperr_div" class="modal">
-      <i class="fa fa-spinner fa-spin fa-4x" style="margin-left: 20px"></i>
+      <i class="fa fa-spinner fa-spin fa-2x"></i><p style="margin-top: 20px">Lade Daten ...</p>
     </div>
     <!-- Menue -->
     <div id="kopfbereich">
@@ -95,8 +95,16 @@
     Automatisches Öffnen von Formular, wenn in der Nähe von Haltestellen
     <hr>
 -->
-    <h2>Netzwerk</h2>
-    <div id="networkStatusText">...wird geladen</div>
+
+    <h2>Anzeigefilter</h2>
+    <div id="anzeigeFilterDiv">
+      <select id="anzeigeFilterSelect">
+        <option value="">kein Filter</option>
+        <option value="status = 0">Noch zu prüfen</option>
+        <option value="status = 1">Ist schon geprüft</option>
+        <option value="status = 2">Noch Nachfragen nötig</option>
+      </select>
+    </div>
     <hr>
 
     <span id="serverSettingHeader">
@@ -118,6 +126,10 @@
         <i class="fa fa-floppy-o" aria-hidden="true"></i> Speichern
       </button>
     </div>
+    <hr>
+
+    <h2>Netzwerk</h2>
+    <div id="networkStatusText">...wird geladen</div>
     <hr>
 
     <h2>Layer</h2>
@@ -171,7 +183,7 @@
     </div>
     <div style="clear: both;"></div>
     <input type="text" id="searchHaltestelle" placeholder="Haltestelle suchen" style="margin-left: 4px; margin-bottom: 4px; font-size: 24px; width: 98%; border-radius: 0px; display: none;">
-    <div id="featurelistBody"><i class="fa fa-spinner fa-spin fa-2x" style="margin-left: 20px"></i> Lade Datensätze ...</div>
+    <div id="featurelistBody"></div>
   </div>
   <div class="clear"></div>
 
