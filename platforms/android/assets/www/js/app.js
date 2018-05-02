@@ -613,9 +613,23 @@ kvm = {
         var id = evt.target.value,
             layer = kvm.activeLayer;
 
-        $('#syncImageIcon_' + layer.getGlobalId()).toggleClass('fa-upload fa-spinner fa-spin');
+        navigator.notification.confirm(
+          'Bilder mit Server Syncronisieren?',
+          function(buttonIndex) {
+            if (buttonIndex == 1) { // nein
+              // Do nothing
+            }
 
-        layer.syncImages();
+            if (buttonIndex == 2) { // ja
+              $('#syncImageIcon_' + layer.getGlobalId()).toggleClass('fa-upload fa-spinner fa-spin');
+              $('#sperr_div').show();
+
+              layer.syncImages();
+            }
+          },
+          '',
+          ['nein', 'ja']
+        );
       }
     );
 

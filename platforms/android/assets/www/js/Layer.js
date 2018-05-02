@@ -428,6 +428,7 @@ function Layer(stelle, settings = {}) {
   *    - Wenn es geklappt hat, aus der Liste der hochzuladenen Bilder löschen
   * -- Wenn es welche zu löschen gibt, versucht er die Info an den Server zu schicken.
   *    - Wenn der Server gemeldet hat, dass er das Bild erfolgreich gelöscht hat, aus der Liste der zu löschenden Bilder entfernen.
+  * -- Registrieren wenn alle Bilder syncronisiert wurden, dann sperr_div aus und Erfolgsmeldung.
   * Anforderung von Dirk
   * Metainfos zu einem Bild speichern. Da könnte auch die Info ran ob Bild schon geuploaded oder zu löschen ist. Wenn upload
   * geklappt hat, könnte Status von to_upload zu uploaded geändert werden und wenn löschen auf dem Server geklappt hat,
@@ -471,12 +472,18 @@ function Layer(stelle, settings = {}) {
           kvm.msg('Keine neuen Bilder zum Hochladen vorhanden.');
           icon = $('#syncImagesIcon_' + this.getGlobalId());
           if (icon.hasClass('fa-spinner')) icon.toggleClass('fa-upload fa-spinner fa-spin');
+          $('#sperr_div').hide();
         }
       }).bind(this),
-      function(error) {
+      (function(error) {
+        var icon;
+
         kvm.log('Layer.syncData query deltas Fehler: ' + JSON.stringify(error), 1);
         kvm.msg('Fehler beim Zugriff auf die Datenbank');
-      }
+        icon = $('#syncImagesIcon_' + this.getGlobalId());
+        if (icon.hasClass('fa-spinner')) icon.toggleClass('fa-upload fa-spinner fa-spin');
+        $('#sperr_div').hide();
+      }).bind(this)
     );
   };
 
@@ -500,6 +507,7 @@ function Layer(stelle, settings = {}) {
         }),
         fail = (function (error) {
           if (this.hasClass('fa-spinner')) this.toggleClass('fa-upload fa-spinner fa-spin');
+          $('#sperr_div').hide();
 
           var msg = 'Fehler beim Hochladen der Datei: ' + error.code + ' source: ' + error.code;
           kvm.msg(msg);
@@ -692,6 +700,7 @@ function Layer(stelle, settings = {}) {
         if (icon.hasClass('fa-spinner')) icon.toggleClass('fa-ban fa-spinner fa-spin');
         icon = $('#syncImagesIcon_' + this.layer.getGlobalId());
         if (icon.hasClass('fa-spinner')) icon.toggleClass('fa-upload fa-spinner fa-spin');
+        $('#sperr_div').hide();
         if (this.delta == '') {
           navigator.notification.confirm(
             'Alle Änderungsversionen des Layers in lokaler Datenbank gelöscht.',
