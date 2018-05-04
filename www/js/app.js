@@ -17,7 +17,7 @@
  * under the License.
  */
 kvm = {
-  version: '1.2.2',
+  version: '1.2.1',
   Buffer: require('buffer').Buffer,
   wkx: require('wkx'),
   controls: {},
