@@ -35,82 +35,6 @@ kvm.controller.mapper = {
     );
   },
 
-  watchGpsPosition: function() {
-    kvm.log('mapper controller: watchGpsPosition');
-
-    this.watchId = navigator.geolocation.watchPosition(
-      function(geoLocation) {
-        kvm.log('Set new geo location position', 4);
-
-        var pos = geoLocation.coords,
-            utm = ol.proj.transform(
-              [pos.longitude, pos.latitude],
-              "EPSG:4326",
-              kvm.map.getView().getProjection()
-            ),
-            layer = kvm.map.getLayers().item(1), //gps-position layer
-            source = layer.getSource(),
-            features = layer.getSource().getFeatures(),
-            view = kvm.map.getView(),
-            radius = pos.accuracy;
-
-        //console.log('controller.mapper new pos: ' + pos.latitude + ' ' + pos.longitude + ' ' + pos.accuracy);
-
-        if (features.length == 0) {
-          //console.log('create new feature');
-          feature = new ol.Feature({
-            geometry: new ol.geom.Point(utm),
-          });
-          source.addFeature(feature);
-        }
-        else {
-          //console.log('set new position to feature');
-          feature = features[0];
-          feature.getGeometry().setCoordinates(utm);
-        }
-        layer.getStyle().getImage().setRadius((radius > 50 ? 50 : radius));
-
-        console.log(radius);
-
-        switch (true) {
-          case radius > 50 : this.signalLevel = 1; break;
-          case radius > 25 : this.signalLevel = 2; break;
-          case radius > 15 : this.signalLevel = 3; break;
-          case radius > 11 : this.signalLevel = 4; break;
-          default : signalLevel = 5;
-        }
-
-        $('#gps-signal-icon').attr('class', 'gps-signal-level-' + signalLevel);
-
-        if ($('#gpsControlButton').hasClass('kvm-gps-track')) {
-          //console.log('recenter map');
-          view.setCenter(utm);
-        }
-
-      },
-      function(error) {
-        kvm.controller.mapper.clearWatch();
-        navigator.notification.confirm(
-          'Fehler bei der Positionsabfrage code: ' + error.code + ' message: ' + error.message + ' ' +
-          'Es kann keine GPS-Position bestimmt werden. Schalten Sie die GPS Funktion auf Ihrem Gerät ein, suchen Sie einen Ort unter freiem Himmel auf und versuchen Sie es dann noch einmal.',
-          function(buttonIndex) {
-            if (buttonIndex == 1) {
-              kvm.log('Einschalten der GPS-Funktion.', 3);
-            }
-          },
-          'GPS-Position',
-          ['ok', 'abbrechen']
-        );
-        $('#gpsControlButton').toggleClass('kvm-gps-off kvm-gps-track');
-      },
-      {
-        maximumAge: 2000, // duration to cache current position
-        timeout: 5000, // timeout for try to call successFunction, else call errorFunction
-        enableHighAccuracy: true // take position from gps not network-based method
-      }
-    );
-  },
-
   getSignalLevel: function() {
     return (typeof this.signalLevel === "undefined" ? 0 : this.signalLevel);
   },
@@ -147,7 +71,7 @@ kvm.controller.mapper = {
       'Es kann keine GPS-Position bestimmt werden. Schalten Sie die GPS Funktion auf Ihrem Gerät ein, suchen Sie einen Ort unter freiem Himmel auf und versuchen Sie es dann noch einmal. Fehler: ' + error.message,
       function(buttonIndex) {
         if (buttonIndex == 1) {
-          console.log('Einschalten der GPS-Funktion');
+          kvm.log('Einschalten der GPS-Funktion', 3);
         }
       },
       'GPS-Position',

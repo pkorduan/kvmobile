@@ -93,8 +93,6 @@ function Layer(stelle, settings = {}) {
           $('#syncLayerIcon_' + this.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
         }
         kvm.createFeatureList();
-//        this.olLayer.getSource().clear();
-//
 
         this.drawFeatureMarker();
         $('#sperr_div').hide();
@@ -679,7 +677,7 @@ function Layer(stelle, settings = {}) {
     this.deleteDeltas('all');
     this.features = [];
     $('#featurelistBody').html('');
-    this.olLayer.getSource().clear();
+    if (this.markerClusters) this.markerClusters.clearLayers();
     this.setEmpty();
   };
 
@@ -759,7 +757,7 @@ function Layer(stelle, settings = {}) {
             reader.onloadend = function() {
               kvm.log('Download der Layerdaten abgeschlossen.');
               var items = [];
-              kvm.log('Download Result: ' + this.result, 3);
+              kvm.log('Download Result: ' + this.result, 4);
               if (this.result.indexOf('form name="login"') > -1) {
                 kvm.msg('Zugang zum Server verweigert! Prüfen Sie Ihre Zugangsdaten unter Einstellungen.');
                 $('#sperr_div').hide();
@@ -855,29 +853,6 @@ function Layer(stelle, settings = {}) {
     );
   };
 
-  this.createFeatureLayer = function() {
-    kvm.log('Erzeuge Objekt-Layer', 3);
-/*
-    this.olLayer = new ol.layer.Vector({
-      name: this.get('title'),
-      opacity: 1,
-      source: new ol.source.Vector({
-        attributions: [
-          new ol.Attribution({
-            html: 'kvwmap Server'
-          })
-        ],
-        projection: kvm.map.getView().getProjection(),
-        features: []
-      }),
-      style: this.getStyle,
-      zIndex:100,
-      renderMode: 'image'
-    });
-    kvm.map.addLayer(this.olLayer);
-*/
-  };
-
   this.getIcon = function() {
     return L.icon({
         iconUrl: 'img/hst24.png',
@@ -889,35 +864,6 @@ function Layer(stelle, settings = {}) {
         shadowAnchor: [16, 8],  // the same for the shadow
         popupAnchor:  [0, -12] // point from which the popup should open relative to the iconAnchor
     });
-  };
-
-  this.getStyle = function(feature, resolution) {
-    //console.log('Feature.getStyle for resolution:' + resolution);
-    var radius = Math.round((6/Math.sqrt(resolution)) + 4);
-
-      if (radius > 50) radius = 50;
-      style = new ol.style.Style({
-      image: new ol.style.Circle({
-        radius: radius,
-        stroke: new ol.style.Stroke({
-          color: 'green',
-          width: (radius/10 < 2 ? 2 : radius/10)
-        }),
-        fill: new ol.style.Fill({
-          color: 'yellow'
-        })
-      }),
-      text: new ol.style.Text({
-        font: (radius * 1.5) + 'px arial-bold',
-        text: 'H',
-        textBaseline: 'alphabetic',
-        offsetY: Math.round(radius/1.7),
-        fill: new ol.style.Fill({
-          color: 'green'
-        })
-      })
-    });
-    return [style];
   };
 
   this.loadFeatureToForm = function(feature) {
@@ -933,6 +879,13 @@ function Layer(stelle, settings = {}) {
         attr.formField.setValue(val);
       }).bind(feature)
     );
+
+    if (typeof kvm.activeLayer.features['id_' + kvm.activeLayer.activeFeature.get('uuid')] == 'undefined') {
+      $('#goToGpsPositionButton').hide();
+    }
+    else {
+      $('#goToGpsPositionButton').show();
+    }
 
     kvm.controller.mapper.watchGpsAccuracy();
   };
@@ -1368,7 +1321,6 @@ function Layer(stelle, settings = {}) {
     kvm.activeLayer = this;
     kvm.store.setItem('activeLayerId', this.get('id'));
     this.createFeatureForm();
-    this.createFeatureLayer();
     $('input[name=activeLayerId]').checked = false
     $('input[value=' + this.getGlobalId() + ']')[0].checked = true;
     $('.sync-layer-button').hide();
@@ -1377,6 +1329,22 @@ function Layer(stelle, settings = {}) {
     $('#syncImagesButton_' + this.getGlobalId()).show();
     $('.clear-layer-button').hide();
     $('#clearLayerButton_' + this.getGlobalId()).show();
+    $('#newFeatureButton, #showDeltasButton').show();
+  };
+
+  this.notNullValid = function() {
+    var errMsg = '';
+
+    $.each(
+      kvm.activeLayer.attributes,
+      function(i, v) {
+        if (v.get('nullable') == 0 && v.formField.getValue() == null) {
+          errMsg += 'Das Feld ' + v.get('alias') + ' benötigt eine Eingabe! ';
+        }
+      }
+    )
+
+    return errMsg;
   };
 
   return this;

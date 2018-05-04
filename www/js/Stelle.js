@@ -16,7 +16,6 @@ function Stelle(settings = {}) {
     $('#kvwmapServerUrlField').val(config.kvwmapServerUrl);
     $('#kvwmapServerUsernameField').val(config.kvwmapServerUsername);
     $('#kvwmapServerPasswortField').val(config.kvwmapServerPasswort);
-    $('#kvwmapServerStelleIdField').val(config.kvwmapServerStelleId);
   };
 
   this.viewSettings = function() {
@@ -26,10 +25,19 @@ function Stelle(settings = {}) {
     $('#kvwmapServerUrlField').val(this.get('url'));
     $('#kvwmapServerUsernameField').val(this.get('username'));
     $('#kvwmapServerPasswortField').val(this.get('passwort'));
-    $('#kvwmapServerStelleIdField').val(this.get('Stelle_ID'));
+    $('#kvwmapServerStelleSelectField').find('option').remove();
+    $.each(
+      JSON.parse(this.get('stellen')),
+      function(index, stelle) {
+        $('#kvwmapServerStelleSelectField').append('<option value="' + stelle.ID + '">' + stelle.Bezeichnung + '</option>');
+      }
+    );
+    $('#kvwmapServerStelleSelectField').val(this.get('Stelle_ID'));
+    $('#kvwmapServerStellenField').val(this.get('stellen'));
   };
 
   this.saveToStore = function() {
+    kvm.log('Speicher Stelleneinstellungen in lokalen Speicher: ' + JSON.stringify(this.settings));
     kvm.store.setItem('stelleSettings_' + this.get('id'), JSON.stringify(this.settings));
   };
 
@@ -75,6 +83,7 @@ function Stelle(settings = {}) {
                         $('#kvwmapServerStelleSelectField').append('<option value="' + stelle.ID + '">' + stelle.Bezeichnung + '</option>');
                       }
                     );
+                    $('#kvwmapServerStellenField').val(JSON.stringify(resultObj.stellen));
                     $('#requestStellenButton').hide();
                     if (resultObj.stellen.length == 1) {
                       $('#kvwmapServerStelleSelectField').val(resultObj.stellen[0].ID);

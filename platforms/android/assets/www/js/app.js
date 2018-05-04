@@ -17,7 +17,7 @@
  * under the License.
  */
 kvm = {
-  version: '1.2.2',
+  version: '1.2.1',
   Buffer: require('buffer').Buffer,
   wkx: require('wkx'),
   controls: {},
@@ -104,6 +104,7 @@ kvm = {
       }
       else {
         kvm.msg('Laden Sie die Layer vom Server.');
+        $('#newFeatureButton, #showDeltasButton').hide();
         activeView = 'settings';
       }
     }
@@ -146,76 +147,6 @@ kvm = {
         outsideMapBoundsMsg: "Sie sind außerhalb des darstellbaren Bereiches der Karte."
       }
     }));
-
-/*
-    var utmZone = config.projZone,
-        myProjectionName = "EPSG:258" + utmZone,
-        myProjection,
-        view,
-        map,
-        orkaMv;
-
-    proj4.defs(myProjectionName, "+proj=utm +zone=" + utmZone + " +ellps=GRS80 +units=m +no_defs");
-    myProjection = ol.proj.get(myProjectionName);
-
-    view = new ol.View({
-      projection: myProjection,
-      center: ol.proj.transform(config.startPosition, "EPSG:4326", myProjectionName),
-      extent: config.maxExtent,
-      zoom: config.startZoom,
-      minZoom: 8
-    });
-
-    map = new ol.Map({
-      controls: ol.control.defaults({
-        attribution: true,
-        attributionOptions: {
-          label: "kvmobile"
-        }
-      }).extend([
-        new ol.control.ScaleLine({
-          className: 'ol-scale-line',
-          title: 'Maßstabsbalken'
-        }),
-        new kvm.controls.gpsControl()
-      ]),
-      layers: [],
-      projection: "EPSG:258" + utmZone,
-      target: "map",
-      view: view
-    });
-
-    orkaMv= new ol.layer.Tile({
-      source: new ol.source.TileWMS({
-        url: "https://www.orka-mv.de/geodienste/orkamv/wms",
-        params: {"LAYERS": "orkamv", "VERSION": "1.3.0"}
-      })
-    });
-    map.addLayer(orkaMv);
-
-    helpLayer = new ol.layer.Vector({
-      name: 'Hilslayer',
-      opacity: 0.3,
-      source: new ol.source.Vector({
-        projection: map.getView().getProjection(),
-        features: []
-      }),
-      style: new ol.style.Style({
-        image: new ol.style.Circle({
-          radius: 15,
-          stroke: new ol.style.Stroke({
-            color: 'orange',
-            width: 4
-          }),
-          fill: new ol.style.Fill({
-            color: 'orange'
-          })
-        })
-      }),
-      zIndex: 200
-    });
-    map.addLayer(helpLayer);
-*/
     this.map = map;
   },
 
@@ -276,7 +207,8 @@ kvm = {
           "url": $('#kvwmapServerUrlField').val(),
           "username": $('#kvwmapServerUsernameField').val(),
           "passwort": $('#kvwmapServerPasswortField').val(),
-          "Stelle_ID": $('#kvwmapServerStelleIdField').val(),
+          "Stelle_ID": $('#kvwmapServerStelleSelectField').val(),
+          "stellen": $('#kvwmapServerStellenField').val()
         });
         stelle.saveToStore();
         stelle.setActive();
@@ -424,66 +356,72 @@ kvm = {
       'click',
       function(evt) {
         var saveButton = $(evt.target),
-//            waitingDiv = $('#waitingDiv'),
             changes = {},
-            delta = '';
+            delta = '',
+            errMsg = '';
 
         if ((saveButton).hasClass('active-button')) {
           if ($('#featureFormular input[id=0]').val()) {
-            navigator.notification.confirm(
-              'Datensatz Speichern?',
-              function(buttonIndex) {
-                var action = (typeof kvm.activeLayer.features['id_' + kvm.activeLayer.activeFeature.get('uuid')] == 'undefined' ? 'INSERT' : 'UPDATE');
-                if (buttonIndex == 1) { // ja
-                  changes = kvm.activeLayer.collectChanges(action);
-                  kvm.log('Änderungen: ' + JSON.stringify(changes), 3);
+            var notNullErrMsg = kvm.activeLayer.notNullValid();
+            if (notNullErrMsg == '') {
+              navigator.notification.confirm(
+                'Datensatz Speichern?',
+                function(buttonIndex) {
+                  var action = (typeof kvm.activeLayer.features['id_' + kvm.activeLayer.activeFeature.get('uuid')] == 'undefined' ? 'INSERT' : 'UPDATE');
+                  if (buttonIndex == 1) { // ja
+                    changes = kvm.activeLayer.collectChanges(action);
+                    kvm.log('Änderungen: ' + JSON.stringify(changes), 3);
 
-                  if (changes.length > 1) {
-                    // more than created_at or updated_at_client
-                    kvm.activeLayer.createDeltas(action, changes);
-                    imgChanges = changes.filter(
-                      function(change) {
-                        return ($.inArray(change.key, kvm.activeLayer.getDokumentAttributeNames()) > -1);
-                      }
-                    );
-                    if (imgChanges.length > 0) kvm.activeLayer.createImgDeltas(action, imgChanges);
+                    if (changes.length > 1) {
+                      // more than created_at or updated_at_client
+                      kvm.activeLayer.createDeltas(action, changes);
+                      imgChanges = changes.filter(
+                        function(change) {
+                          return ($.inArray(change.key, kvm.activeLayer.getDokumentAttributeNames()) > -1);
+                        }
+                      );
+                      if (imgChanges.length > 0) kvm.activeLayer.createImgDeltas(action, imgChanges);
+                    }
+                    else {
+                      kvm.log('Keine Änderungen.', 2);
+                      kvm.msg('Keine Änderungen!');
+                    }
+
+                    //  waitingDiv.hide();
+                    $('.popup-aendern-link').show();
+                    saveButton.toggleClass('active-button inactive-button');
+                    kvm.controller.mapper.clearWatch();
                   }
-                  else {
-                    kvm.log('Keine Änderungen.', 2);
-                    kvm.msg('Keine Änderungen!');
+
+                  if (buttonIndex == 2) { // nein
+                    // Do nothing
                   }
 
-                  //  waitingDiv.hide();
-                  $('.popup-aendern-link').show();
-                  saveButton.toggleClass('active-button inactive-button');
-                  kvm.controller.mapper.clearWatch();
-                }
+                  if (buttonIndex == 3) { // Abbrechen
+                    // dont save form values and switch to feature list
+                    kvm.controller.mapper.clearWatch();
+                  }
 
-                if (buttonIndex == 2) { // nein
-                  // Do nothing
-                }
-
-                if (buttonIndex == 3) { // Abbrechen
-                  // dont save form values and switch to feature list
-                  kvm.controller.mapper.clearWatch();
-                }
-
-              },
-              'Datenbank',
-              ['ja', 'nein', 'Abbrechen']
-            );
+                },
+                'Datenbank',
+                ['ja', 'nein', 'Abbrechen']
+              );
+            }
+            else {
+              errMsg = notNullErrMsg;
+            }
           }
           else {
-            navigator.notification.alert(
-              'Sie haben noch keine Koordinaten erfasst!',
-              function(){},
-              'Formular'
-            );
+            errMsg = 'Sie haben noch keine Koordinaten erfasst!';
           }
         }
         else {
+          errMsg = 'Keine Änderungen!';
+        }
+
+        if (errMsg != '') {
           navigator.notification.alert(
-            'Keine Änderungen!',
+            errMsg,
             function(){},
             'Formular'
           );
@@ -739,30 +677,34 @@ kvm = {
       case 'map':
         kvm.showDefaultMenu();
         $("#featurelist, #settings, #formular, #loggings").hide();
-        $("#map, #newFeatureButton, .ol-unselectable").show();
+        $("#map").show();
+        if (kvm.activeLayer) $('#newFeatureButton').show();
         kvm.map.invalidateSize();
         break;
       case 'mapFormular':
         $('.menubutton').hide()
         $("#backArrow, #saveFeatureButton, #deleteFeatureButton").hide();
         $("#featurelist, #settings, #formular, #loggings").hide();
-        $("#map, #backToFormButton, .ol-unselectable").show();
+        $("#map, #backToFormButton").show();
         kvm.map.invalidateSize();
         break;
       case "featurelist":
         kvm.showDefaultMenu();
         $("#map, #settings, #formular, #loggings").hide();
-        $("#featurelist, #newFeatureButton").show();
+        $("#featurelist").show();
+        if (kvm.activeLayer) $('#newFeatureButton').show();
         break;
       case "loggings":
         kvm.showDefaultMenu();
-        $("#map, #featurelist, #settings, #formular, #newFeatureButton").hide();
+        $("#map, #featurelist, #settings, #formular").hide();
+        if (kvm.activeLayer) $('#newFeatureButton').show();
         $("#loggings").show();
         break;
       case "settings":
         kvm.showDefaultMenu();
         $("#map, #featurelist, #formular, #loggings").hide();
-        $("#settings, #newFeatureButton").show();
+        $("#settings").show();
+        if (kvm.activeLayer) $('#newFeatureButton').show();
         break;
       case "formular":
         kvm.showFormMenu();
@@ -772,7 +714,8 @@ kvm = {
       default:
         kvm.showDefaultMenu();
         $("#map, #featurelist, #settings, #loggings, #formular").hide();
-        $("#settings, #newFeatureButton").show();
+        $("#settings").show();
+        if (kvm.activeLayer) $('#newFeatureButton').show();
     }
   },
 
@@ -906,5 +849,4 @@ kvm = {
 
 };
 
-kvm.loadHeadFile('js/controls/gpsControl.js', 'js');
 kvm.loadHeadFile('js/controller/mapper.js', 'js');

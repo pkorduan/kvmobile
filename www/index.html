@@ -79,7 +79,7 @@
           <i id="addHaltestelle" class="fa fa-plus-square fa-2x" aria-hidden="true"></i>
         </a //-->
         <i id="backToFormButton" class="fa fa-arrow-right fa-2x menubutton" aria-hidden="true" style="display:none;"></i>
-        <i id="newFeatureButton" class="fa fa-plus-square fa-2x menubutton" aria-hidden="true"></i>
+        <i id="newFeatureButton" class="fa fa-plus-square fa-2x menubutton" aria-hidden="true" style="display:none;"></i>
         <i id="saveFeatureButton" class="fa fa-check-square-o fa-2x inactive-button" aria-hidden="true" style="display:none; margin-right: 3px"></i>
         <i id="deleteFeatureButton" class="fa fa-trash fa-2x menubutton" aria-hidden="true" style="display:none;"></i>
       </div>
@@ -127,6 +127,7 @@
       <select id="kvwmapServerStelleSelectField" name="kvwmapServerStelleId" style="display: none;">
         <option value="">Stelle Wählen</option>
       </select>
+      <input id="kvwmapServerStellenField" name="kvwmapServerStellen" type="hidden" value="">
 
       <button id="saveServerSettingsButton" class="settings-button" style="display: none;">
         <i class="fa fa-floppy-o" aria-hidden="true"></i> Einstellungen Speichern
@@ -154,7 +155,7 @@
     <h2>Datenbank</h2>
     <b>Datenbankname: </b><span id="dbnameText">...wird geladen</span><br>
     <b>Anzahl Datensätze: </b><span id="numDatasetsText" style="display: none">... wird geladen</span><br>
-    <button id="showDeltasButton" class="settings-button">
+    <button id="showDeltasButton" class="settings-button" style="display: none">
       <i class="fa fa-pencil-square-o" aria-hidden="true"> Zeige Änderungen</i>
     </button>
     <i id="showDeltasWaiting" class="fa fa-spinner fa-pulse fa-3x fa-fw" style="display: none;"></i>
@@ -188,7 +189,7 @@
       <h1><i id="showSearch" class="fa fa-search" aria-hidden="true"></i></h1>
     </div>
     <div style="clear: both;"></div>
-    <input type="text" id="searchHaltestelle" placeholder="Haltestelle suchen" style="margin-left: 4px; margin-bottom: 4px; font-size: 24px; width: 98%; border-radius: 0px; display: none;">
+    <input type="text" id="searchHaltestelle" placeholder="Datensatz suchen" style="margin-left: 4px; margin-bottom: 4px; font-size: 24px; width: 98%; border-radius: 0px; display: none;">
     <div id="featurelistBody"></div>
   </div>
   <div class="clear"></div>
