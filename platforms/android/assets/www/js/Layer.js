@@ -398,7 +398,7 @@ function Layer(stelle, settings = {}) {
     var layer = kvm.activeLayer,
         stelle = layer.stelle,
         url = stelle.get('url'),
-        file = layer.getUrlFile(url),
+        file = stelle.getUrlFile(url),
         server = url + file,
         params = {},
         options = new FileUploadOptions();
@@ -499,7 +499,7 @@ function Layer(stelle, settings = {}) {
         ft = new FileTransfer(),
         fileURL = 'file://' + config.localImgPath + img.substring(img.lastIndexOf('/') + 1),
         url = this.stelle.get('url'),
-        file = this.getUrlFile(url),
+        file = this.stelle.getUrlFile(url),
         server = url + file,
         win = (function (r) {
             kvm.log("Code = " + r.responseCode, 4);
@@ -548,7 +548,7 @@ function Layer(stelle, settings = {}) {
   this.sendDropImage = function(img) {
     kvm.log('Layer.sendDropImage', 4);
     var url = this.stelle.get('url');
-        file = this.getUrlFile(url),
+        file = this.stelle.getUrlFile(url),
         data = {
           device_id : device.uuid,
           Stelle_ID : this.stelle.get('Stelle_ID'),
@@ -1282,7 +1282,7 @@ function Layer(stelle, settings = {}) {
   this.getLayerUrl = function() {
     kvm.log('Layer.getLayerUrl', 4);
     var url = this.stelle.get('url'),
-        file = this.getUrlFile(url);
+        file = this.stelle.getUrlFile(url);
 
     url += file +
       'go=mobile_get_layers' + '&' +
@@ -1292,24 +1292,10 @@ function Layer(stelle, settings = {}) {
     return url;
   };
 
-  /*
-  * get missing parts to url when server.de, server.de/ oder server.de/index.php
-  */
-  this.getUrlFile = function(url) {
-    var file = '';
-
-    if (url.slice(-3) == '.de') file = '/index.php?';
-    if (url.slice(-1) == '/') file = 'index.php?';
-    if (url.slice(-9) == 'index.php') file = '?';
-    if (file == '') file = '/index.php?';
-
-    return file;
-  };
-
   this.getSyncUrl = function() {
     kvm.log('Layer.getSyncUrl', 4);
     var url = this.stelle.get('url'),
-        file = this.getUrlFile(url);
+        file = this.stelle.getUrlFile(url);
 
     url += file +
       'Stelle_ID=' + stelle.get('Stelle_ID') + '&' +
@@ -1341,7 +1327,7 @@ function Layer(stelle, settings = {}) {
   this.getImgDownloadUrl = function(image) {
     kvm.log('Layer.getImgDownloadUrl', 4);
     var url = this.stelle.get('url'),
-        file = this.getUrlFile(url);
+        file = this.stelle.getUrlFile(url);
 
     url += file +
         'Stelle_ID=' + stelle.get('Stelle_ID') + '&' +

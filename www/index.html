@@ -120,25 +120,31 @@
       <input id="kvwmapServerUsernameField" name="kvwmapServerUsername" type="text" value=""><br>
       Password<br>
       <input id="kvwmapServerPasswortField" name="kvwmapServerPasswort" type="password" value=""><br>
-      Stelle Id<br>
-      <input id="kvwmapServerStelleIdField" name="kvwmapServerStelleId" type="text" value=""><br>
-      <button id="saveServerSettingsButton" class="settings-button">
-        <i class="fa fa-floppy-o" aria-hidden="true"></i> Speichern
+      Stelle<br>
+      <button id="requestStellenButton" class="settings-button">
+        <i class="fa fa-key" aria-hidden="true"></i> Stellen abfragen
       </button>
+      <select id="kvwmapServerStelleSelectField" name="kvwmapServerStelleId" style="display: none;">
+        <option value="">Stelle Wählen</option>
+      </select>
+
+      <button id="saveServerSettingsButton" class="settings-button" style="display: none;">
+        <i class="fa fa-floppy-o" aria-hidden="true"></i> Einstellungen Speichern
+      </button>
+    </div>
+    <hr>
+
+    <h2>Layer</h2>
+    <button id="requestLayersButton" class="settings-button" style="display: none;">
+      <i class="fa fa-download" aria-hidden="true"> Layer abfragen</i>
+    </button>
+    <div style="clear: both"></div>
+    <div id="layer_list">
     </div>
     <hr>
 
     <h2>Netzwerk</h2>
     <div id="networkStatusText">...wird geladen</div>
-    <hr>
-
-    <h2>Layer</h2>
-    <button id="requestLayersButton" class="settings-button" style="float: right; display: none;">
-      <i class="fa fa-download" aria-hidden="true"> Lade verfügbare Layer</i>
-    </button>
-    <div style="clear: both"></div>
-    <div id="layer_list">
-    </div>
     <hr>
 
     <h2>Geräteinformationen</h2>

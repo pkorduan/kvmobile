@@ -17,7 +17,7 @@
  * under the License.
  */
 kvm = {
-  version: '1.0.1',
+  version: '1.2.2',
   Buffer: require('buffer').Buffer,
   wkx: require('wkx'),
   controls: {},
@@ -230,6 +230,32 @@ kvm = {
       "online",
       this.setConnectionStatus,
       false
+    );
+
+    $('#requestStellenButton').on(
+      'click',
+      function() {
+        if ($('#kvwmapServerUrlField').val() != '' && $('#kvwmapServerUsernameField').val() != '' && $('#kvwmapServerPasswortField').val() != '') {
+          $('#sperr_div').show();
+          var stelle = new Stelle({
+            url : $('#kvwmapServerUrlField').val(),
+            username : $('#kvwmapServerUsernameField').val(),
+            passwort : $('#kvwmapServerPasswortField').val()
+          });
+          kvm.log('Stellenobjekt erzeugt um Stellen abfragen zu können: ' + JSON.stringify(stelle), 4);
+          stelle.requestStellen();
+        }
+        else {
+          kvm.msg('Sie müssen erst die Server URL, Nutzername und Password angeben!');
+        }
+      }
+    );
+
+    $('#kvwmapServerStelleSelectField').on(
+      'change',
+      function() {
+        $('#saveServerSettingsButton').show();
+      }
     );
 
     $('#requestLayersButton').on(
@@ -867,7 +893,17 @@ kvm = {
       }
     }
     return null;
+  },
+
+  isValidJsonString: function(str) {
+    try {
+      JSON.parse(str);
+    } catch (e) {
+      return false;
+    }
+    return true;
   }
+
 };
 
 kvm.loadHeadFile('js/controls/gpsControl.js', 'js');

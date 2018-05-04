@@ -302,6 +302,14 @@ function BilderFormField(formId, settings) {
 
     navigator.camera.getPicture(
       (function(imageData) {
+        kvm.log('this.addImage(' + imageData + ');', 4);
+
+        var localImgPath = this.getLocalImgPath(imageData);
+        if (localImgPath != config.localImgPath) {
+          kvm.msg('Der Speicherort für Bilder in dieser Anwendung wird von der Kameraeinstellung übernommen.');
+          config.localImgPath = localImgPath;
+          // call a function to save the config Settings permanently for this app.
+        }
         this.addImage(imageData);
         this.addImgNameToVal(this.localToServerPath(imageData));
         $('#featureFormular input[id=2]').val((new Date()).toISOString().replace('Z', '')).show();
@@ -320,56 +328,15 @@ function BilderFormField(formId, settings) {
     );
   };
 
-/*
-function listDir(path){
-  window.resolveLocalFileSystemURL(path,
-    function (fileSystem) {
-      var reader = fileSystem.createReader();
-      reader.readEntries(
-        function (entries) {
-          console.log(entries);
-        },
-        function (err) {
-          console.log(err);
-        }
-      );
-    }, function (err) {
-      console.log(err);
-    }
-  );
-}
-*/
-/*
-  this.selectPicture = function(evt) {
-    console.log('BilderFormField.takePicture %o', evt);
-    formField = evt.data.context;
-
-    navigator.camera.getPicture(
-      function(imageData) {
-        console.log("BilderFormField.takePicture success with imageData %o", imageData);
-        console.log('Get Element of BilderFormField %o', formField);
-        var files = $('#featureFormular input[id=1]').val(); 
-
-        formField.addImage(imageData);
-
-        if (files != '') {
-          files += ',';
-        }
-        $('#featureFormular input[id=1]').val(files + imageData).trigger('change');
-        $('#featureFormular input[id=2]').val((new Date()).toISOString().replace('Z', '')).show();
-      },
-      function(message) {
-        alert('Failed because: ' + message);
-      },
-      {
-        quality: 25,
-        sourceType: Camera.PictureSourceType.PHOTOLIBRARY,
-        destinationType: Camera.DestinationType.FILE_URI
-      }
-    );
+  /*
+  * Extract the local image path from an local image file string
+  * eg. file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/1525249567531.jpg
+  * extract between file:///storage/ and /Android/data/Android/data/de.gdiservice.kvmobile/cache/
+  */
+  this.getLocalImgPath = function(imageData) {
+    return 'file:///storage/' + imageData.split('file:///storage/')[1].split('/Android/data/de.gdiservice.kvmobile/cache/')[0] + '/Android/data/de.gdiservice.kvmobile/cache/';
   };
 
-*/
   this.withLabel = function() {
     return $('\
       <div class="form-field">\
