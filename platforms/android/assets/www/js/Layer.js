@@ -266,24 +266,26 @@ function Layer(stelle, settings = {}) {
             reader.onloadend = function() {
               kvm.log('Download der Daten ist abgeschlossen.', 3);
               var items = [],
-                  collection = {};
+                  collection = {},
+                  errMsg = '';
 
               kvm.log('Download Ergebnis:' + JSON.stringify(this.result), 4);
               try {
                 collection = $.parseJSON(this.result);
                 if (collection.features.length > 0) {
-                  kvm.log('Mindestens 1 Datensatz empfangen.');
+                  kvm.log('Mindestens 1 Datensatz empfangen.', 3);
                   var layer = kvm.activeLayer;
                   layer.runningSyncVersion = collection.features[0].properties.version;
                   kvm.log('Version der Daten: ' + layer.runningSyncVersion, 3);
                   layer.writeData(collection.features);
                 }
                 else {
-                  alert('Abfrage liefert keine Daten vom Server. Entweder sind noch keine auf dem Server vorhanden oder die URL der Anfrage ist nicht korrekt. Prüfen Sie die Parameter unter Einstellungen.');
+                  kvm.msg('Abfrage liefert keine Daten vom Server. Entweder sind noch keine auf dem Server vorhanden oder die URL der Anfrage ist nicht korrekt. Prüfen Sie die Parameter unter Einstellungen.', 'Fehler');
                 }
               } catch (e) {
-                kvm.log('Es konnten keine Daten empfangen werden.' + this.result, 1);
-                kvm.msg('Es konnten keine Daten empfangen werden.' + this.result);
+                errMsg = 'Es konnten keine Daten empfangen werden.' + this.result;
+                kvm.msg(errMsg, 'Fehler');
+                kvm.log(errMsg, 1);
               }
             };
 
@@ -1195,9 +1197,7 @@ function Layer(stelle, settings = {}) {
             if (delta.type == 'sql') this.execDelta(delta.delta);
           }).bind(this),
           function(error) {
-            navigator.notification.alert(
-              'Fehler bei der Speicherung der Änderungsdaten in delta-Tabelle!\nFehlercode: ' + error.code + '\nMeldung: ' + error.message,
-            );
+            kvm.msg('Fehler bei der Speicherung der Änderungsdaten in delta-Tabelle!\nFehlercode: ' + error.code + '\nMeldung: ' + error.message, 'Fehler');
           }
         );
       }).bind(this)

@@ -352,6 +352,31 @@ kvm = {
       }
     );
 
+
+    $('#deleteFeatureButton').on(
+      'click',
+      function(evt) {
+        kvm.log('Klick auf deleteFeatureButton.', 4);
+        navigator.notification.confirm(
+          'Datensatz wirklich Löschen?',
+          function(buttonIndex) {
+            if (buttonIndex == 1) { // ja
+              kvm.log('Lösche Feature uuid: ' + kvm.activeLayer.activeFeature.get('uuid'), 3);
+              kvm.controller.mapper.clearWatch();
+              kvm.activeLayer.createDeltas('DELETE', []);
+            }
+
+            if (buttonIndex == 2) { // nein
+              // do nothing
+            }
+
+          },
+          'Datenbank',
+          ['ja', 'nein']
+        );
+      }
+    );
+
     $('#saveFeatureButton').on(
       'click',
       function(evt) {
@@ -387,7 +412,6 @@ kvm = {
                       kvm.msg('Keine Änderungen!');
                     }
 
-                    //  waitingDiv.hide();
                     $('.popup-aendern-link').show();
                     saveButton.toggleClass('active-button inactive-button');
                     kvm.controller.mapper.clearWatch();
@@ -397,14 +421,9 @@ kvm = {
                     // Do nothing
                   }
 
-                  if (buttonIndex == 3) { // Abbrechen
-                    // dont save form values and switch to feature list
-                    kvm.controller.mapper.clearWatch();
-                  }
-
                 },
                 'Datenbank',
-                ['ja', 'nein', 'Abbrechen']
+                ['ja', 'nein']
               );
             }
             else {
@@ -420,11 +439,7 @@ kvm = {
         }
 
         if (errMsg != '') {
-          navigator.notification.alert(
-            errMsg,
-            function(){},
-            'Formular'
-          );
+          kvm.msg(errMsg, 'Formular');
         }
       }
     );
@@ -667,7 +682,10 @@ kvm = {
       }
     );
     kvm.bindFeatureItemClickEvents();
-    $('#numDatasetsText').html(Object.keys(this.activeLayer.features).length).show();
+    if (Object.keys(this.activeLayer.features).length > 0) {
+      kvm.showItem('featurelist');
+      $('#numDatasetsText').html(Object.keys(this.activeLayer.features).length).show();
+    }
   },
 
   showItem: function(item) {
@@ -809,12 +827,12 @@ kvm = {
     }
   },
 
-  msg: function(msg) {
+  msg: function(msg, title = '') {
     navigator.notification.confirm(
       msg,
       function(buttonIndex) {
       },
-      '',
+      title,
       ['ok']
     );
   },

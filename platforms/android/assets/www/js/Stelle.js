@@ -25,6 +25,7 @@ function Stelle(settings = {}) {
     $('#kvwmapServerUrlField').val(this.get('url'));
     $('#kvwmapServerUsernameField').val(this.get('username'));
     $('#kvwmapServerPasswortField').val(this.get('passwort'));
+
     $('#kvwmapServerStelleSelectField').find('option').remove();
     $.each(
       JSON.parse(this.get('stellen')),
@@ -77,6 +78,8 @@ function Stelle(settings = {}) {
                   if (resultObj.success) {
                     validResult = true;
                     kvm.log('Download erfolgreich.', 3);
+
+                    $('#kvwmapServerStelleSelectField').find('option').remove();
                     $.each(
                       resultObj.stellen,
                       function(index, stelle) {
