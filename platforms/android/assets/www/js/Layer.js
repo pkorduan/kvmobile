@@ -1329,7 +1329,10 @@ function Layer(stelle, settings = {}) {
     $('#syncImagesButton_' + this.getGlobalId()).show();
     $('.clear-layer-button').hide();
     $('#clearLayerButton_' + this.getGlobalId()).show();
-    $('#newFeatureButton, #showDeltasButton').show();
+    $('#showDeltasButton').show();
+    if (parseInt(this.get('privileg')) > 0) {
+      $('#newFeatureButton').show();
+    }
   };
 
   this.notNullValid = function() {

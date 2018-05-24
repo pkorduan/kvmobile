@@ -17,7 +17,7 @@
  * under the License.
  */
 kvm = {
-  version: '1.2.1',
+  version: '1.2.2',
   Buffer: require('buffer').Buffer,
   wkx: require('wkx'),
   controls: {},
@@ -352,28 +352,38 @@ kvm = {
       }
     );
 
-
     $('#deleteFeatureButton').on(
       'click',
       function(evt) {
         kvm.log('Klick auf deleteFeatureButton.', 4);
-        navigator.notification.confirm(
-          'Datensatz wirklich Löschen?',
-          function(buttonIndex) {
-            if (buttonIndex == 1) { // ja
-              kvm.log('Lösche Feature uuid: ' + kvm.activeLayer.activeFeature.get('uuid'), 3);
-              kvm.controller.mapper.clearWatch();
-              kvm.activeLayer.createDeltas('DELETE', []);
-            }
+        if (kvm.activeLayer && parseInt(kvm.activeLayer.get('privileg')) == 2) {
+          navigator.notification.confirm(
+            'Datensatz wirklich Löschen?',
+            function(buttonIndex) {
+              if (buttonIndex == 1) { // ja
+                kvm.log('Lösche Feature uuid: ' + kvm.activeLayer.activeFeature.get('uuid'), 3);
+                kvm.controller.mapper.clearWatch();
+                kvm.activeLayer.createDeltas('DELETE', []);
+              }
 
-            if (buttonIndex == 2) { // nein
-              // do nothing
-            }
+              if (buttonIndex == 2) { // nein
+                // do nothing
+              }
 
-          },
-          'Datenbank',
-          ['ja', 'nein']
-        );
+            },
+            'Datenbank',
+            ['ja', 'nein']
+          );
+        }
+        else {
+          navigator.notification.confirm(
+            'Sie haben nicht das Recht zum Löschen von Datensätzen in diesem Layer!',
+            function(buttonIndex) {
+            },
+            'Datenbank',
+            ['habe Verstanden']
+          );
+        }
       }
     );
 
@@ -696,7 +706,7 @@ kvm = {
         kvm.showDefaultMenu();
         $("#featurelist, #settings, #formular, #loggings").hide();
         $("#map").show();
-        if (kvm.activeLayer) $('#newFeatureButton').show();
+        if (kvm.activeLayer && parseInt(kvm.activeLayer.get('privileg')) > 0) $('#newFeatureButton').show();
         kvm.map.invalidateSize();
         break;
       case 'mapFormular':
@@ -710,19 +720,19 @@ kvm = {
         kvm.showDefaultMenu();
         $("#map, #settings, #formular, #loggings").hide();
         $("#featurelist").show();
-        if (kvm.activeLayer) $('#newFeatureButton').show();
+        if (kvm.activeLayer && parseInt(kvm.activeLayer.get('privileg')) > 0) $('#newFeatureButton').show();
         break;
       case "loggings":
         kvm.showDefaultMenu();
         $("#map, #featurelist, #settings, #formular").hide();
-        if (kvm.activeLayer) $('#newFeatureButton').show();
+        if (kvm.activeLayer && parseInt(kvm.activeLayer.get('privileg')) > 0) $('#newFeatureButton').show();
         $("#loggings").show();
         break;
       case "settings":
         kvm.showDefaultMenu();
         $("#map, #featurelist, #formular, #loggings").hide();
         $("#settings").show();
-        if (kvm.activeLayer) $('#newFeatureButton').show();
+        if (kvm.activeLayer && parseInt(kvm.activeLayer.get('privileg')) > 0) $('#newFeatureButton').show();
         break;
       case "formular":
         kvm.showFormMenu();
@@ -733,7 +743,7 @@ kvm = {
         kvm.showDefaultMenu();
         $("#map, #featurelist, #settings, #loggings, #formular").hide();
         $("#settings").show();
-        if (kvm.activeLayer) $('#newFeatureButton').show();
+        if (kvm.activeLayer && parseInt(kvm.activeLayer.get('privileg')) > 0) $('#newFeatureButton').show();
     }
   },
 
@@ -744,7 +754,8 @@ kvm = {
 
   showFormMenu: function() {
     $("#showMap, #showLine, #showHaltestelle, #showSettings").hide();
-    $("#backArrow, #saveFeatureButton, #deleteFeatureButton").show();
+    $("#backArrow, #saveFeatureButton").show();
+    if (kvm.activeLayer && parseInt(kvm.activeLayer.get('privileg')) == 2) $('#deleteFeatureButton').show();
   },
 
   getGeoLocation: function() {
