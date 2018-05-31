@@ -648,8 +648,21 @@ kvm = {
           );
         }
         else {
-          $('#clearLayerIcon_' + layer.getGlobalId()).toggleClass('fa-ban fa-spinner fa-spin');
-          layer.clearData();
+          navigator.notification.confirm(
+            'Alle lokale Daten und nicht hochgeladene Änderungen wirklich Löschen?',
+            function(buttonIndex) {
+              if (buttonIndex == 1) { // nein
+                // Do nothing
+              }
+
+              if (buttonIndex == 2) { // ja
+                $('#clearLayerIcon_' + layer.getGlobalId()).toggleClass('fa-ban fa-spinner fa-spin');
+                layer.clearData();
+              }
+            },
+            '',
+            ['nein', 'ja']
+          );
         }
       }
     );

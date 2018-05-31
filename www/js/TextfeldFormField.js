@@ -28,12 +28,23 @@ function TextfeldFormField(formId, settings) {
   };
 
   this.getValue = function(action = '') {
-    //console.log('TextFormField.getValue');
     var val = this.element.val();
 
     if (typeof val === "undefined" || val == '') {
       val = null;
     }
+
+
+    if (
+      this.get('form_element_type') == 'UserID' &&
+      (
+        action == '' ||
+        action.toLowerCase() == this.get('options').toLowerCase()
+      )
+    ) {
+      val = kvm.store.getItem('userId')
+    }
+
     return val;
   };
 
