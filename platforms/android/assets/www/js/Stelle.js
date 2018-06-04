@@ -80,7 +80,7 @@ function Stelle(settings = {}) {
                     kvm.log('Download erfolgreich.', 3);
 
                     $('#kvwmapServerStelleSelectField').find('option').remove();
-                    
+                    kvm.store.setItem('userId', resultObj.user_id);
                     $.each(
                       resultObj.stellen,
                       function(index, stelle) {

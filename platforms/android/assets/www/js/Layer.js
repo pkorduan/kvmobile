@@ -946,7 +946,7 @@ function Layer(stelle, settings = {}) {
     changes = $.map(
       this.attributes,
       (function(attr) {
-        kvm.log('Vergleiche Werte von Attribut: ' + attr.get('name'), 3);
+        kvm.log('Vergleiche Werte von Attribut: ' + attr.get('name') + ' action: ' + action, 3);
         var key = attr.get('name'),
             oldVal = activeFeature.get(key);
             newVal = attr.formField.getValue(this.action);

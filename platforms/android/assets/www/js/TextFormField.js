@@ -27,12 +27,29 @@ function TextFormField(formId, settings) {
     this.element.val(val == null || val == 'null' ? '' : val);
   };
 
+  /*
+  * get the value from form field expect
+  * form_element_type UserID, here get the value from store
+  * when no action is given in options specified or
+  * action == option
+  */
   this.getValue = function(action = '') {
     //console.log('TextFormField.getValue');
     var val = this.element.val();
 
     if (typeof val === "undefined" || val == '') {
       val = null;
+    }
+
+    if (
+      this.get('form_element_type') == 'UserID' &&
+      (
+        action == '' ||
+        this.get('options') == '' ||
+        action.toLowerCase() == this.get('options').toLowerCase()
+      )
+    ) {
+      val = kvm.store.getItem('userId')
     }
 
     return val;

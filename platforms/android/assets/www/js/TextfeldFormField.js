@@ -28,12 +28,12 @@ function TextfeldFormField(formId, settings) {
   };
 
   this.getValue = function(action = '') {
-    //console.log('TextFormField.getValue');
     var val = this.element.val();
 
     if (typeof val === "undefined" || val == '') {
       val = null;
     }
+
     return val;
   };
 

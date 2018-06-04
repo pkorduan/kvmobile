@@ -17,7 +17,6 @@
     "cordova-plugin-device": "^1.1.6",
     "cordova-plugin-dialogs": "^1.3.3",
     "cordova-plugin-file": "^4.3.3",
-    "cordova-plugin-file-opener2": "^2.0.19",
     "cordova-plugin-file-transfer": "^1.6.3",
     "cordova-plugin-geolocation": "^2.4.3",
     "cordova-plugin-network-information": "^1.3.3",
@@ -36,8 +35,7 @@
       "cordova-plugin-dialogs": {},
       "cordova-sqlite-evplus-legacy-attach-detach-free": {},
       "cordova-plugin-whitelist": {},
-      "com.ionic.keyboard": {},
-      "cordova-plugin-file-opener2": {}
+      "com.ionic.keyboard": {}
     },
     "platforms": [
       "android"

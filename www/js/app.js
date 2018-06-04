@@ -473,15 +473,6 @@ kvm = {
       $("#showHaltestelle_button_white").hide();
     });
 
-    $("#showSearch").click(function() {
-      if ($("#searchHaltestelle").is(':visible')) {
-        $("#searchHaltestelle").hide();
-      }
-      else {
-        $("#searchHaltestelle").show();
-      }
-    });
-
     $('#newFeatureButton').on(
       'click',
       {
@@ -504,7 +495,7 @@ kvm = {
     /* Clientside Filter according to http://stackoverflow.com/questions/12433835/client-side-searching-of-a-table-with-jquery */
     /*** Search Haltestelle ***/
     $("#searchHaltestelle").on(
-      "keyup paste",
+      "keyup paste change search",
       function() {
         var needle = $(this).val().toLowerCase(),
             haystack = $(".feature-item");
@@ -598,10 +589,28 @@ kvm = {
         $('#sperr_div').show();
 
         if (layer.isEmpty()) {
-          layer.requestData();
+          navigator.notification.confirm(
+            'Daten vom Server holen und lokal speichern?',
+            function(buttonIndex) {
+              if (buttonIndex == 2) { // ja
+                layer.requestData();
+              }
+            },
+            '',
+            ['nein', 'ja']
+          );
         }
         else {
-          layer.syncData();
+          navigator.notification.confirm(
+            'Jetzt lokale Änderungen zum Server schicken und Änderungen vom Server holen und lokal einspielen?',
+            function(buttonIndex) {
+              if (buttonIndex == 2) { // ja
+                layer.syncData();
+              }
+            },
+            '',
+            ['nein', 'ja']
+          );
         }
       }
     );

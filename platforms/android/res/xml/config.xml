@@ -34,9 +34,6 @@
         <param name="android-package" value="io.ionic.keyboard.IonicKeyboard" />
         <param name="onload" value="true" />
     </feature>
-    <feature name="FileOpener2">
-        <param name="android-package" value="io.github.pwlin.cordova.plugins.fileopener2.FileOpener2" />
-    </feature>
     <name>kvwmobile</name>
     <description>
       Anwendung zur Erfassung von Geodaten und zum synchronisieren mit dem Web-GIS kvwmap.

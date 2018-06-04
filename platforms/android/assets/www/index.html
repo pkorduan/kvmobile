@@ -186,10 +186,10 @@
       <h1 id="featurelistHeading" style="font-size: 24px"></h1>
     </div>
     <div style="float: right; margin-right: 5px">
-      <h1><i id="showSearch" class="fa fa-search" aria-hidden="true"></i></h1>
+      <h1><i id="showSearch" class="fa fa-search" aria-hidden="true" onclick="$('#searchHaltestelle').toggle()"></i></h1>
     </div>
     <div style="clear: both;"></div>
-    <input type="text" id="searchHaltestelle" placeholder="Datensatz suchen" style="margin-left: 4px; margin-bottom: 4px; font-size: 24px; width: 98%; border-radius: 0px; display: none;">
+    <input type="search" id="searchHaltestelle" placeholder="Datensatz suchen" aria-label"Liste der Datensätze durchsuchen" autocomplete="off" style="margin-left: 6px; margin-bottom: 4px; padding-left: 4px; padding-top: 2px; padding-bottom: 2px; font-size: 24px; width: 97%; border-radius: 5px; display: none">
     <div id="featurelistBody"></div>
   </div>
   <div class="clear"></div>

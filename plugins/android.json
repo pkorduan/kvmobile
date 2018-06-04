@@ -36,9 +36,6 @@
     },
     "com.ionic.keyboard": {
       "PACKAGE_NAME": "de.gdiservice.kvmobile"
-    },
-    "cordova-plugin-file-opener2": {
-      "PACKAGE_NAME": "de.gdiservice.kvmobile"
     }
   },
   "dependent_plugins": {

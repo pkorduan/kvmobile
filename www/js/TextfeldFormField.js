@@ -34,17 +34,6 @@ function TextfeldFormField(formId, settings) {
       val = null;
     }
 
-
-    if (
-      this.get('form_element_type') == 'UserID' &&
-      (
-        action == '' ||
-        action.toLowerCase() == this.get('options').toLowerCase()
-      )
-    ) {
-      val = kvm.store.getItem('userId')
-    }
-
     return val;
   };
 
