@@ -130,11 +130,25 @@ kvm = {
   initMap: function() {
     kvm.log('Karte initialisieren.', 3);
 
-    var map = L.map('map').setView([54, 12.2], 8);
-
-    L.tileLayer('https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png', {
-        attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
-    }).addTo(map);
+    var orka_online = L.tileLayer('https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png', {
+          attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
+        }),
+        orka_offline = L.tileLayer('file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/orka_lkros/{z}/{x}/{y}.png', {
+          attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
+        }),
+        map = L.map(
+          'map', {
+            center: [54, 12.2],
+            zoom: 8,
+            minZoom: config.minZoom,
+            maxZoom: config.maxZoom,
+            layers: [orka_online, orka_offline]
+          }
+        ),
+        baseMaps = {
+          'Straßenkarte online': orka_online,
+          'Straßenkarte offline': orka_offline
+        };
 
     map.addControl(new L.control.betterscale({metric: true}));
     map.addControl(new L.control.locate({
@@ -147,6 +161,7 @@ kvm = {
         outsideMapBoundsMsg: "Sie sind außerhalb des darstellbaren Bereiches der Karte."
       }
     }));
+    L.control.layers(baseMaps).addTo(map);
     this.map = map;
   },
 

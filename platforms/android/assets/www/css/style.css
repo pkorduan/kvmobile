@@ -62,6 +62,12 @@ button#gpsControlButton.kvm-gps-track {
   color: white;
 }
 
+.leaflet-control-layers-toggle {
+  width:  30px !important;
+  height: 30px !important;
+  background-size: 20px 20px !important;
+}
+
 a.hover {
 
 }
