@@ -774,7 +774,7 @@ kvm = {
       case "formular":
         kvm.showFormMenu();
         $("#map, #featurelist, #settings, #loggings, #newFeatureButton, #backToFormButton").hide();
-        $("#formular").scrollTop(0).show();
+        $("#formular").show().scrollTop(0);
         break;
       default:
         kvm.showDefaultMenu();
