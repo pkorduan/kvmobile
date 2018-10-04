@@ -133,7 +133,7 @@ kvm = {
     var orka_online = L.tileLayer('https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png', {
           attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
         }),
-        orka_offline = L.tileLayer('file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/orka_lkros/{z}/{x}/{y}.png', {
+        orka_offline = L.tileLayer(config.localImgPath + 'orka_lkros/{z}/{x}/{y}.png', {
           attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
         }),
         map = L.map(
@@ -297,6 +297,14 @@ kvm = {
     $('#showLoggingsButton').on(
       'click',
       function() {
+        kvm.showItem('loggings');
+      }
+    )
+
+    $('#clearLoggingsButton').on(
+      'click',
+      function() {
+        $('#logText').html('Log geleert: ' + new Date().toUTCString());
         kvm.showItem('loggings');
       }
     )

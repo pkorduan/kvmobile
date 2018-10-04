@@ -330,11 +330,11 @@ function BilderFormField(formId, settings) {
 
   /*
   * Extract the local image path from an local image file string
-  * eg. file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/1525249567531.jpg
-  * extract between file:///storage/ and /Android/data/Android/data/de.gdiservice.kvmobile/cache/
+  * eg. file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/1525249567531.jpg
+  * extract between file:///storage/ and /Android/data/Android/data/de.gdiservice.kvmobile/files/
   */
   this.getLocalImgPath = function(imageData) {
-    return 'file:///storage/' + imageData.split('file:///storage/')[1].split('/Android/data/de.gdiservice.kvmobile/cache/')[0] + '/Android/data/de.gdiservice.kvmobile/cache/';
+    return 'file:///storage/' + imageData.split('file:///storage/')[1].split('/Android/data/de.gdiservice.kvmobile/files/')[0] + '/Android/data/de.gdiservice.kvmobile/files/';
   };
 
   this.withLabel = function() {

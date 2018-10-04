@@ -2,16 +2,16 @@ config = {
   dbname: 'kvmobile',
 /*
 * Beispiele für Pfade in denen Bilder gespeichert werden
-* file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/
-* file:///storage/BA82-4AA9/Android/data/de.gdiservice.kvmobile/cache/
+* file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/
+* file:///storage/BA82-4AA9/Android/data/de.gdiservice.kvmobile/files/
 * emulated/0 wird als default in den Einstellungen gesetzt
 * der Nutzer kann die Angabe unter Einstellungen setzen
 * wenn das erste Foto gespeichert wird mit dem Camera Plugin, wird
 * der verwendete Pfad ermittelt und die Einstellung überschrieben.
 */
 
-//  localImgPath: 'file:///storage/' + 'BAB2-4AA9' + '/Android/data/de.gdiservice.kvmobile/cache/',
-  localImgPath: 'file:///storage/' + 'emulated/0' + '/Android/data/de.gdiservice.kvmobile/cache/',
+//  localImgPath: 'file:///storage/' + 'BAB2-4AA9' + '/Android/data/de.gdiservice.kvmobile/files/',
+  localImgPath: 'file:///storage/' + 'emulated/0' + '/Android/data/de.gdiservice.kvmobile/files/',
 
   projZone: 33,
 //  maxExtent: [274300, 5936054.721, 360500, 6023975.279],
