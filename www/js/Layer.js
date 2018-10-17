@@ -405,7 +405,7 @@ function Layer(stelle, settings = {}) {
 
     params.device_id = device.uuid;
     params.Stelle_ID = stelle.get('Stelle_ID');
-    params.username = stelle.get('username');
+    params.login_name = stelle.get('login_name');
     params.passwort = stelle.get('passwort');
     params.selected_layer_id = layer.get('id');
     params.table_name = layer.get('table_name');
@@ -530,7 +530,7 @@ function Layer(stelle, settings = {}) {
     options.params = {
       device_id : device.uuid,
       Stelle_ID : this.stelle.get('Stelle_ID'),
-      username : this.stelle.get('username'),
+      login_name : this.stelle.get('login_name'),
       passwort : this.stelle.get('passwort'),
       selected_layer_id : this.get('id'),
       go : 'mobile_upload_image'
@@ -552,7 +552,7 @@ function Layer(stelle, settings = {}) {
         data = {
           device_id : device.uuid,
           Stelle_ID : this.stelle.get('Stelle_ID'),
-          username : this.stelle.get('username'),
+          login_name : this.stelle.get('login_name'),
           passwort : this.stelle.get('passwort'),
           selected_layer_id : this.get('id'),
           go : 'mobile_delete_images',
@@ -1239,7 +1239,7 @@ function Layer(stelle, settings = {}) {
 
     url += file +
       'go=mobile_get_layers' + '&' +
-      'username=' + stelle.get('username') + '&' +
+      'login_name=' + stelle.get('login_name') + '&' +
       'passwort=' + stelle.get('passwort') + '&' +
       'Stelle_ID=' + stelle.get('Stelle_ID');
     return url;
@@ -1252,7 +1252,7 @@ function Layer(stelle, settings = {}) {
 
     url += file +
       'Stelle_ID=' + stelle.get('Stelle_ID') + '&' +
-      'username=' + stelle.get('username') + '&' +
+      'login_name=' + stelle.get('login_name') + '&' +
       'passwort=' + stelle.get('passwort') + '&' +
       'selected_layer_id=' + this.get('id');
 
@@ -1284,7 +1284,7 @@ function Layer(stelle, settings = {}) {
 
     url += file +
         'Stelle_ID=' + stelle.get('Stelle_ID') + '&' +
-        'username=' + stelle.get('username') + '&' +
+        'login_name=' + stelle.get('login_name') + '&' +
         'passwort=' + stelle.get('passwort') + '&' +
         'go=mobile_download_image' + '&' +
         'image=' + image;

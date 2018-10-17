@@ -24,7 +24,7 @@ config = {
   kvwmapServerName: 'kvwmap Server',
 
   kvwmapServerUrl: 'https://geoportal.lkros.de/kvwmap_dev',
-  kvwmapServerUsername: '',
+  kvwmapServerLoginName: '',
   kvwmapServerPasswort: '',
   kvwmapServerStelleId: 610011
 }

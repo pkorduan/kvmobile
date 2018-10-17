@@ -17,7 +17,7 @@
  * under the License.
  */
 kvm = {
-  version: '1.2.2',
+  version: '1.4.0',
   Buffer: require('buffer').Buffer,
   wkx: require('wkx'),
   controls: {},
@@ -181,11 +181,11 @@ kvm = {
     $('#requestStellenButton').on(
       'click',
       function() {
-        if ($('#kvwmapServerUrlField').val() != '' && $('#kvwmapServerUsernameField').val() != '' && $('#kvwmapServerPasswortField').val() != '') {
+        if ($('#kvwmapServerUrlField').val() != '' && $('#kvwmapServerLoginNameField').val() != '' && $('#kvwmapServerPasswortField').val() != '') {
           $('#sperr_div').show();
           var stelle = new Stelle({
             url : $('#kvwmapServerUrlField').val(),
-            username : $('#kvwmapServerUsernameField').val(),
+            login_name : $('#kvwmapServerLoginNameField').val(),
             passwort : $('#kvwmapServerPasswortField').val()
           });
           kvm.log('Stellenobjekt erzeugt um Stellen abfragen zu können: ' + JSON.stringify(stelle), 4);
@@ -220,7 +220,7 @@ kvm = {
           "id": $('#kvwmapServerIdField').val(),
           "name": $('#kvwmapServerNameField').val(),
           "url": $('#kvwmapServerUrlField').val(),
-          "username": $('#kvwmapServerUsernameField').val(),
+          "login_name": $('#kvwmapServerLoginNameField').val(),
           "passwort": $('#kvwmapServerPasswortField').val(),
           "Stelle_ID": $('#kvwmapServerStelleSelectField').val(),
           "stellen": $('#kvwmapServerStellenField').val()

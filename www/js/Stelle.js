@@ -14,7 +14,7 @@ function Stelle(settings = {}) {
     $('#kvwmapServerIdField').val(config.kvwmapServerId);
     $('#kvwmapServerNameField').val(config.kvwmapServerName);
     $('#kvwmapServerUrlField').val(config.kvwmapServerUrl);
-    $('#kvwmapServerUsernameField').val(config.kvwmapServerUsername);
+    $('#kvwmapServerLoginNameField').val(config.kvwmapServerLoginName);
     $('#kvwmapServerPasswortField').val(config.kvwmapServerPasswort);
   };
 
@@ -23,7 +23,7 @@ function Stelle(settings = {}) {
     $('#kvwmapServerIdField').val(this.get('id'));
     $('#kvwmapServerNameField').val(this.get('name'));
     $('#kvwmapServerUrlField').val(this.get('url'));
-    $('#kvwmapServerUsernameField').val(this.get('username'));
+    $('#kvwmapServerLoginNameField').val(this.get('login_name'));
     $('#kvwmapServerPasswortField').val(this.get('passwort'));
 
     $('#kvwmapServerStelleSelectField').find('option').remove();
@@ -140,7 +140,7 @@ function Stelle(settings = {}) {
 
     url += file +
       'go=mobile_get_stellen' + '&' +
-      'username=' + this.get('username') + '&' +
+      'login_name=' + this.get('login_name') + '&' +
       'passwort=' + this.get('passwort');
     return url;
   };
