@@ -303,20 +303,12 @@ function BilderFormField(formId, settings) {
     navigator.camera.getPicture(
       (function(cameraPicture) {
         kvm.log('this.addImage(' + cameraPicture + ');', 4);
-
-        cameraPicture = this.moveFile(cameraPicture, config.localImgPath);
-
-        this.addImage(cameraPicture);
-
-        this.addImgNameToVal(this.localToServerPath(cameraPicture));
-
+        this.moveFile(cameraPicture, config.localImgPath);
         $('#featureFormular input[id=2]').val((new Date()).toISOString().replace('Z', '')).show();
-
       }).bind(evt.data.context),
       function(message) {
         alert('Fehler wegen: ' + message);
-      },
-      {
+      }, {
         quality: 25,
         correctOrientation: true,
         allowEdit: true,
@@ -333,8 +325,9 @@ function BilderFormField(formId, settings) {
   * @param String dstDir, Path of the destination directory
   * @return String Path and name of the file at destination directory
   */
-  this.moveFile = function(srcFile, dstDir) {
-    var dstDirEntry;
+  this.moveFile = (function(srcFile, dstDir) {
+    var dstFile = dstDir + srcFile.substring(srcFile.lastIndexOf('/') + 1),
+        dstDirEntry;
 
     window.resolveLocalFileSystemURL(
       dstDir,
@@ -349,26 +342,26 @@ function BilderFormField(formId, settings) {
 
     window.resolveLocalFileSystemURL(
       srcFile,
-      function success(fileEntry) {
+      (function success(fileEntry) {
         fileEntry.moveTo(
           dstDirEntry,
           fileEntry.name,
-          function() {
-            kvm.log('Datei: ' + fileEntry.name + ' nach: ' + dstDirEntry.name + ' verschoben.');
-          },
+          (function() {
+            kvm.log('Datei: ' + fileEntry.name + ' nach: ' + dstDirEntry.toURL() + ' verschoben.');
+            this.addImage(dstFile);
+            this.addImgNameToVal(this.localToServerPath(dstFile));
+          }).bind(this),
           function() {
             console.log('copying FAILED');
           }
         );
-      },
+      }).bind(this),
       function (e) {
         console.log('could not resolveLocalFileSystemURL: ' + srcFile);
         console.log(JSON.stringify(e));
       }
     );
-
-    return dstDir + srcFile.substring(srcFile.lastIndexOf('/') + 1);
-  };
+  }).bind(this);
 
   /*
   * Extract the local image path from an local image file string
