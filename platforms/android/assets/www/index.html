@@ -118,7 +118,7 @@
       <input id="kvwmapServerUrlField" name="kvwmapServerUrl" type="text" value="https://"><br>
       Nutzername<br>
       <input id="kvwmapServerLoginNameField" name="kvwmapServerLoginName" type="text" value=""><br>
-      Password<br>
+      Password <i class="fa fa-eye-slash" aria-hidden="true" onclick="$(this).toggleClass('fa-eye fa-eye-slash'); if ($('#kvwmapServerPasswortField').attr('type') == 'text') { $('#kvwmapServerPasswortField').attr('type', 'password') } else { $('#kvwmapServerPasswortField').attr('type', 'text'); }"></i><br>
       <input id="kvwmapServerPasswortField" name="kvwmapServerPasswort" type="password" value=""><br>
       Stelle<br>
       <button id="requestStellenButton" class="settings-button">

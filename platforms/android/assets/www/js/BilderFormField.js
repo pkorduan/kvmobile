@@ -301,18 +301,17 @@ function BilderFormField(formId, settings) {
     kvm.log('BilderFormField.takePicture: ' + JSON.stringify(evt), 4);
 
     navigator.camera.getPicture(
-      (function(imageData) {
-        kvm.log('this.addImage(' + imageData + ');', 4);
+      (function(cameraPicture) {
+        kvm.log('this.addImage(' + cameraPicture + ');', 4);
 
-        var localImgPath = this.getLocalImgPath(imageData);
-        if (localImgPath != config.localImgPath) {
-          kvm.msg('Der Speicherort für Bilder in dieser Anwendung wird von der Kameraeinstellung übernommen.');
-          config.localImgPath = localImgPath;
-          // call a function to save the config Settings permanently for this app.
-        }
-        this.addImage(imageData);
-        this.addImgNameToVal(this.localToServerPath(imageData));
+        cameraPicture = this.moveFile(cameraPicture, config.localImgPath);
+
+        this.addImage(cameraPicture);
+
+        this.addImgNameToVal(this.localToServerPath(cameraPicture));
+
         $('#featureFormular input[id=2]').val((new Date()).toISOString().replace('Z', '')).show();
+
       }).bind(evt.data.context),
       function(message) {
         alert('Fehler wegen: ' + message);
@@ -329,12 +328,58 @@ function BilderFormField(formId, settings) {
   };
 
   /*
+  * Move the srcFile to dstDir and return dstFile
+  * @param String srcFile, Path and name of the file to move
+  * @param String dstDir, Path of the destination directory
+  * @return String Path and name of the file at destination directory
+  */
+  this.moveFile = function(srcFile, dstDir) {
+    var dstDirEntry;
+
+    window.resolveLocalFileSystemURL(
+      dstDir,
+      function success(dirEntry) {
+        dstDirEntry = dirEntry;
+      },
+      function (e) {
+        console.log('could not resolveLocalFileSystemURL: ' + dstDir);
+        console.log(JSON.stringify(e));
+      }
+    );
+
+    window.resolveLocalFileSystemURL(
+      srcFile,
+      function success(fileEntry) {
+        fileEntry.moveTo(
+          dstDirEntry,
+          fileEntry.name,
+          function() {
+            kvm.log('Datei: ' + fileEntry.name + ' nach: ' + dstDirEntry.name + ' verschoben.');
+          },
+          function() {
+            console.log('copying FAILED');
+          }
+        );
+      },
+      function (e) {
+        console.log('could not resolveLocalFileSystemURL: ' + srcFile);
+        console.log(JSON.stringify(e));
+      }
+    );
+
+    return dstDir + srcFile.substring(srcFile.lastIndexOf('/') + 1);
+  };
+
+  /*
   * Extract the local image path from an local image file string
   * eg. file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/1525249567531.jpg
-  * extract between file:///storage/ and /Android/data/Android/data/de.gdiservice.kvmobile/files/
+  * extract between file:///storage/ and /Android/data/de.gdiservice.kvmobile/files/
   */
   this.getLocalImgPath = function(imageData) {
-    return 'file:///storage/' + imageData.split('file:///storage/')[1].split('/Android/data/de.gdiservice.kvmobile/files/')[0] + '/Android/data/de.gdiservice.kvmobile/files/';
+    var result;
+    kvm.log('getLocalImgPath for imageData: ' + imageData);
+    result = 'file:///storage/' + imageData.split('file:///storage/')[1].split('/Android/data/de.gdiservice.kvmobile/files/')[0] + '/Android/data/de.gdiservice.kvmobile/files/';
+    kvm.log('getLocalImgPath returning: ' + result);
   };
 
   this.withLabel = function() {

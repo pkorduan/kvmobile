@@ -17,6 +17,5 @@ All contributions (feature or bug fix) should start with an issue first.
 - Push to the branch (`git push -u origin issue-nnn`)
 - Open a [Pull Request][pull-request]
 
-
 [issue-tracker]: https://github.com/pkorduan/kvmobile/issues
 [pull-request]: https://github.com/pkorduan/kvmobile/pulls

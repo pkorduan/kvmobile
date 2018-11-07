@@ -8,6 +8,11 @@ https://github.com/srahn/kvwmap/
 http://kvwmap.de
 
 # Change log
+## 1.4.1
+	* Fix destination path of images taken with the camera. New images now will be strored allways to the directory specified in config.js parameter localImgPath.
+	* Eye Button to show and hide the password text in settings view.
+	* Remove note about apache Licence in app.js because the software ist under GNU Licence as defined in LICENSE file
+
 ## 1.4.0
 	* Change username to login_name
 	* Add change log to Readme
