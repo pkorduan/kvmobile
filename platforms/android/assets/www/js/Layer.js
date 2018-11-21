@@ -92,6 +92,7 @@ function Layer(stelle, settings = {}) {
         if ($('#syncLayerIcon_' + this.getGlobalId()).hasClass('fa-spinner')) {
           $('#syncLayerIcon_' + this.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
         }
+        kvm.setConnectionStatus();
         kvm.createFeatureList();
 
         this.drawFeatureMarker();
@@ -782,6 +783,7 @@ function Layer(stelle, settings = {}) {
                     }
                   );
                   kvm.bindLayerEvents();
+                  kvm.setConnectionStatus();
                   //console.log('Store after save layer: %o', kvm.store);
                   $('#requestLayersButton').hide();
                   $('#sperr_div').hide();
@@ -1218,10 +1220,10 @@ function Layer(stelle, settings = {}) {
       <div id="layer_' + this.getGlobalId()  + '">\
         <input type="radio" name="activeLayerId" value="' + this.getGlobalId() + '"/> ' +
         (this.get('alias') ? this.get('alias') : this.get('title')) + '\
-        <button id="syncLayerButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="settings-button sync-layer-button" style="float: right; display: none;">\
+        <button id="syncLayerButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="settings-button sync-layer-button inactive-button" style="float: right; display: none;">\
           <i id="syncLayerIcon_' + this.getGlobalId() + '" class="fa fa-refresh" aria-hidden="true"></i>\
         </button>\
-        <button id="syncImagesButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="settings-button sync-images-button" style="float: right; margin-right: 5px; display: none;">\
+        <button id="syncImagesButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="settings-button sync-images-button inactive-button" style="float: right; margin-right: 5px; display: none;">\
           <i id="syncImagesIcon_' + this.getGlobalId() + '" class="fa fa-upload" aria-hidden="true"></i>\
         </button>\
         <button id="clearLayerButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="settings-button clear-layer-button" style="float: right; margin-right: 5px; display: none;">\

@@ -8,14 +8,17 @@ NetworkStatus = {
 
   view: function(status) {
     $('#networkStatusText').html(status);
+    console.log
     if (navigator.onLine) {
-      if ($('#startSyncButton').hasClass('inactive-button')) {
-        $('#startSyncButton').toggleClass('active-button', 'inactive-button');
+      if ($('.sync-images-button').hasClass('inactive-button')) {
+        $('.sync-images-button').toggleClass('active-button inactive-button');
+        $('.sync-layer-button').toggleClass('active-button inactive-button');
       }
     }
     else {
-      if ($('#startSyncButton').hasClass('active-button')) {
-        $('#startSyncButton').toggleClass('active-button', 'inactive-button');
+      if ($('.sync-images-button').hasClass('active-button')) {
+        $('.sync-images-button').toggleClass('active-button inactive-button');
+        $('.sync-layer-button').toggleClass('active-button inactive-button');
       }
     }
   },

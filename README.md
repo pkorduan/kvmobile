@@ -8,6 +8,10 @@ https://github.com/srahn/kvwmap/
 http://kvwmap.de
 
 # Change log
+## 1.4.2
+	* Toggle style and function of sync Buttons pending from networkstatus
+	* Send also layer sync request with no deltas on client side
+	
 ## 1.4.1
 	* Fix destination path of images taken with the camera. New images now will be strored allways to the directory specified in config.js parameter localImgPath.
 	* Eye Button to show and hide the password text in settings view.

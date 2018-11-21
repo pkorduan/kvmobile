@@ -92,6 +92,7 @@ function Layer(stelle, settings = {}) {
         if ($('#syncLayerIcon_' + this.getGlobalId()).hasClass('fa-spinner')) {
           $('#syncLayerIcon_' + this.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
         }
+        kvm.setConnectionStatus();
         kvm.createFeatureList();
 
         this.drawFeatureMarker();
@@ -348,7 +349,7 @@ function Layer(stelle, settings = {}) {
         };
 
         if (!deltas) {
-          dataObj = new Blob(['file data to upload'], { type: 'text/plain' });
+          dataObj = new Blob(['kein deltas Array vorhanden'], { type: 'text/plain' });
         }
         else {
           dataObj = new Blob([JSON.stringify(deltas)], { type: 'application/json'});
@@ -615,23 +616,15 @@ function Layer(stelle, settings = {}) {
             deltas = {'rows' : [] },
             i;
 
-        if (numRows > 0) {
-          for (i = 0; i < numRows; i++) {
-            kvm.log('Push item ' + i + ' to deltas.', 4);
-            deltas.rows.push({
-              'version' : rs.rows.item(i).version,
-              'sql' : rs.rows.item(i).delta
-            });
-          }
-          this.sendDeltas(deltas);
+        for (i = 0; i < numRows; i++) {
+          kvm.log('Push item ' + i + ' to deltas.', 4);
+          deltas.rows.push({
+            'version' : rs.rows.item(i).version,
+            'sql' : rs.rows.item(i).delta
+          });
         }
-        else {
-          kvm.msg('Keine Änderungen zum Syncronisieren vorhanden.');
-          if ($('#syncLayerIcon_' + this.getGlobalId()).hasClass('fa-spinner')) {
-            $('#syncLayerIcon_' + this.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
-            $('#sperr_div').hide();
-          }
-        }
+        // Sende Anfrage auch mit leeren rows Array um Änderungen vom Server zu bekommen.
+        this.sendDeltas(deltas);
       }).bind(this),
       function(error) {
         kvm.log('Layer.syncData query deltas Fehler: ' + JSON.stringify(error), 1);
@@ -782,6 +775,7 @@ function Layer(stelle, settings = {}) {
                     }
                   );
                   kvm.bindLayerEvents();
+                  kvm.setConnectionStatus();
                   //console.log('Store after save layer: %o', kvm.store);
                   $('#requestLayersButton').hide();
                   $('#sperr_div').hide();
@@ -1218,10 +1212,10 @@ function Layer(stelle, settings = {}) {
       <div id="layer_' + this.getGlobalId()  + '">\
         <input type="radio" name="activeLayerId" value="' + this.getGlobalId() + '"/> ' +
         (this.get('alias') ? this.get('alias') : this.get('title')) + '\
-        <button id="syncLayerButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="settings-button sync-layer-button" style="float: right; display: none;">\
+        <button id="syncLayerButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="settings-button sync-layer-button inactive-button" style="float: right; display: none;">\
           <i id="syncLayerIcon_' + this.getGlobalId() + '" class="fa fa-refresh" aria-hidden="true"></i>\
         </button>\
-        <button id="syncImagesButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="settings-button sync-images-button" style="float: right; margin-right: 5px; display: none;">\
+        <button id="syncImagesButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="settings-button sync-images-button inactive-button" style="float: right; margin-right: 5px; display: none;">\
           <i id="syncImagesIcon_' + this.getGlobalId() + '" class="fa fa-upload" aria-hidden="true"></i>\
         </button>\
         <button id="clearLayerButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="settings-button clear-layer-button" style="float: right; margin-right: 5px; display: none;">\

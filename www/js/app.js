@@ -1,5 +1,5 @@
 kvm = {
-  version: '1.4.1',
+  version: '1.4.2',
   Buffer: require('buffer').Buffer,
   wkx: require('wkx'),
   controls: {},
@@ -49,7 +49,7 @@ kvm = {
     SyncStatus.load(this.store);
 
     kvm.log('Lade Netzwerkstatus', 3);
-    NetworkStatus.load();
+    this.setConnectionStatus();
 
     kvm.log('initialisiere Karte.', 3);
     this.initMap();
@@ -587,35 +587,39 @@ kvm = {
     $('.sync-layer-button').on(
       'click',
       function(evt) {
-        var id = evt.target.value,
-            layer = kvm.activeLayer;
+        var layer = kvm.activeLayer;
 
-        $('#syncLayerIcon_' + layer.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
-        $('#sperr_div').show();
-
-        if (layer.isEmpty()) {
-          navigator.notification.confirm(
-            'Daten vom Server holen und lokal speichern?',
-            function(buttonIndex) {
-              if (buttonIndex == 2) { // ja
-                layer.requestData();
-              }
-            },
-            '',
-            ['nein', 'ja']
-          );
+        if ($('.sync-layer-button').hasClass('inactive-button')) {
+          kvm.msg('Keine Internetverbindung! Kann Layer jetzt nicht synchronisieren.');
         }
         else {
-          navigator.notification.confirm(
-            'Jetzt lokale Änderungen zum Server schicken und Änderungen vom Server holen und lokal einspielen?',
-            function(buttonIndex) {
-              if (buttonIndex == 2) { // ja
-                layer.syncData();
-              }
-            },
-            '',
-            ['nein', 'ja']
-          );
+          $('#syncLayerIcon_' + layer.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
+          $('#sperr_div').show();
+
+          if (layer.isEmpty()) {
+            navigator.notification.confirm(
+              'Daten vom Server holen und lokal speichern?',
+              function(buttonIndex) {
+                if (buttonIndex == 2) { // ja
+                  layer.requestData();
+                }
+              },
+              '',
+              ['nein', 'ja']
+            );
+          }
+          else {
+            navigator.notification.confirm(
+              'Jetzt lokale Änderungen zum Server schicken und Änderungen vom Server holen und lokal einspielen?',
+              function(buttonIndex) {
+                if (buttonIndex == 2) { // ja
+                  layer.syncData();
+                }
+              },
+              '',
+              ['nein', 'ja']
+            );
+          }
         }
       }
     );
@@ -623,26 +627,30 @@ kvm = {
     $('.sync-images-button').on(
       'click',
       function(evt) {
-        var id = evt.target.value,
-            layer = kvm.activeLayer;
+        var layer = kvm.activeLayer;
 
-        navigator.notification.confirm(
-          'Bilder mit Server Syncronisieren?',
-          function(buttonIndex) {
-            if (buttonIndex == 1) { // nein
-              // Do nothing
-            }
+        if ($('.sync-images-button').hasClass('inactive-button')) {
+          kvm.msg('Keine Internetverbindung! Kann Bilder jetzt nicht synchronisieren.');
+        }
+        else {
+          navigator.notification.confirm(
+            'Bilder mit Server Syncronisieren?',
+            function(buttonIndex) {
+              if (buttonIndex == 1) { // nein
+                // Do nothing
+              }
 
-            if (buttonIndex == 2) { // ja
-              $('#syncImageIcon_' + layer.getGlobalId()).toggleClass('fa-upload fa-spinner fa-spin');
-              $('#sperr_div').show();
+              if (buttonIndex == 2) { // ja
+                $('#syncImageIcon_' + layer.getGlobalId()).toggleClass('fa-upload fa-spinner fa-spin');
+                $('#sperr_div').show();
 
-              layer.syncImages();
-            }
-          },
-          '',
-          ['nein', 'ja']
-        );
+                layer.syncImages();
+              }
+            },
+            '',
+            ['nein', 'ja']
+          );
+        }
       }
     );
 
@@ -681,6 +689,11 @@ kvm = {
       }
     );
 
+  },
+
+  setConnectionStatus: function() {
+    kvm.log('setConnectionStatus');
+    NetworkStatus.load();
   },
 
   loadDeviceData: function() {
