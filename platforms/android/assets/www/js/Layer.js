@@ -349,7 +349,7 @@ function Layer(stelle, settings = {}) {
         };
 
         if (!deltas) {
-          dataObj = new Blob(['file data to upload'], { type: 'text/plain' });
+          dataObj = new Blob(['kein deltas Array vorhanden'], { type: 'text/plain' });
         }
         else {
           dataObj = new Blob([JSON.stringify(deltas)], { type: 'application/json'});
@@ -616,23 +616,15 @@ function Layer(stelle, settings = {}) {
             deltas = {'rows' : [] },
             i;
 
-        if (numRows > 0) {
-          for (i = 0; i < numRows; i++) {
-            kvm.log('Push item ' + i + ' to deltas.', 4);
-            deltas.rows.push({
-              'version' : rs.rows.item(i).version,
-              'sql' : rs.rows.item(i).delta
-            });
-          }
-          this.sendDeltas(deltas);
+        for (i = 0; i < numRows; i++) {
+          kvm.log('Push item ' + i + ' to deltas.', 4);
+          deltas.rows.push({
+            'version' : rs.rows.item(i).version,
+            'sql' : rs.rows.item(i).delta
+          });
         }
-        else {
-          kvm.msg('Keine Änderungen zum Syncronisieren vorhanden.');
-          if ($('#syncLayerIcon_' + this.getGlobalId()).hasClass('fa-spinner')) {
-            $('#syncLayerIcon_' + this.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
-            $('#sperr_div').hide();
-          }
-        }
+        // Sende Anfrage auch mit leeren rows Array um Änderungen vom Server zu bekommen.
+        this.sendDeltas(deltas);
       }).bind(this),
       function(error) {
         kvm.log('Layer.syncData query deltas Fehler: ' + JSON.stringify(error), 1);
