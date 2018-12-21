@@ -8,6 +8,8 @@ https://github.com/srahn/kvwmap/
 http://kvwmap.de
 
 # Change log
+## 1.5.0
+    * Add Leaflet.Edit Plugin to enable geometrie editing
 ## 1.4.2
 	* Toggle style and function of sync Buttons pending from networkstatus
 	* Send also layer sync request with no deltas on client side
