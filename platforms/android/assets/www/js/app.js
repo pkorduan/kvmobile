@@ -1,5 +1,5 @@
 kvm = {
-  version: '1.4.2',
+  version: '1.5.0',
   Buffer: require('buffer').Buffer,
   wkx: require('wkx'),
   controls: {},
@@ -124,7 +124,8 @@ kvm = {
             zoom: 8,
             minZoom: config.minZoom,
             maxZoom: config.maxZoom,
-            layers: [orka_online, orka_offline]
+            layers: [orka_online, orka_offline],
+            editable: true
           }
         ),
         baseMaps = {
@@ -489,7 +490,8 @@ kvm = {
         this_.activeLayer.loadFeatureToForm(
           new Feature({
             uuid : this_.uuidv4()
-          })
+          }),
+          this_.activeLayer.classes[0]['name']
         );
 
         this_.showItem('formular');

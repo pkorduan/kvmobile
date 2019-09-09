@@ -15,6 +15,16 @@ function Layer(stelle, settings = {}) {
     )
   };
 
+  if (this.settings.classes) {
+    this.classes = this.settings.classes;
+  }
+  else {
+    this.classes = {
+      'id': 0,
+      'name' : 'default_point'
+    }
+  }
+
   this.features = {};
 
   this.get = function(key) {
@@ -78,6 +88,7 @@ function Layer(stelle, settings = {}) {
 
         var numRows = rs.rows.length,
             item,
+            feature_class,
             i;
 
         kvm.log(numRows + ' Datensaetze gelesen, erzeuge Featurliste neu.', 3);
@@ -85,9 +96,8 @@ function Layer(stelle, settings = {}) {
 
         this.features = {};
         for (i = 0; i < numRows; i++) {
-
           item = rs.rows.item(i);
-          this.features['id_' + item.uuid] = new Feature(item);
+          this.features['id_' + item.uuid] = new Feature(item, this.classes[0]['name']);
         }
         if ($('#syncLayerIcon_' + this.getGlobalId()).hasClass('fa-spinner')) {
           $('#syncLayerIcon_' + this.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
@@ -95,7 +105,7 @@ function Layer(stelle, settings = {}) {
         kvm.setConnectionStatus();
         kvm.createFeatureList();
 
-        this.drawFeatureMarker();
+        this.drawFeatureGeometry();
         $('#sperr_div').hide();
       }).bind(this),
       function(error) {
@@ -270,18 +280,30 @@ function Layer(stelle, settings = {}) {
                   collection = {},
                   errMsg = '';
 
-              kvm.log('Download Ergebnis:' + JSON.stringify(this.result), 4);
+              kvm.log('Download Ergebnis:' + JSON.stringify(this.result), 3);
               try {
                 collection = $.parseJSON(this.result);
-                if (collection.features.length > 0) {
-                  kvm.log('Mindestens 1 Datensatz empfangen.', 3);
-                  var layer = kvm.activeLayer;
-                  layer.runningSyncVersion = collection.features[0].properties.version;
-                  kvm.log('Version der Daten: ' + layer.runningSyncVersion, 3);
-                  layer.writeData(collection.features);
+                if (collection.type == 'FeatureCollection') {
+                  if (collection.features.length > 0) {
+                    kvm.log('Mindestens 1 Datensatz empfangen.', 3);
+                    var layer = kvm.activeLayer;
+                    layer.runningSyncVersion = collection.features[0].properties.version;
+                    kvm.log('Version der Daten: ' + layer.runningSyncVersion, 3);
+                    layer.writeData(collection.features);
+                  }
+                  else {
+                    kvm.msg('Auf dem Server sind noch keine Daten für den Layer vorhanden.', 'Hinweis');
+                    var layer = kvm.activeLayer;
+                    layer.runningSyncVersion = 1;
+                    kvm.log('Version der Daten: ' + layer.runningSyncVersion, 3);
+                    layer.set('syncVersion', layer.runningSyncVersion);
+                    layer.set('syncLastLocalTimestamp', Date());
+                    layer.setActive();
+                    layer.readData();
+                  }
                 }
                 else {
-                  kvm.msg('Abfrage liefert keine Daten vom Server. Entweder sind noch keine auf dem Server vorhanden oder die URL der Anfrage ist nicht korrekt. Prüfen Sie die Parameter unter Einstellungen.', 'Fehler');
+                  kvm.msg('Die Anfrage ergab keine korrekte Antwort vom Server. Entweder ist die URL der Anfrage nicht korrekt oder Server ist nicht richtig konfiguriert. Das Ergebnis der Anfrage lautet: ' + JSON.stringify(this.result) + ' Teilen Sie das dem Administrator der Anwendung mit.');
                 }
               } catch (e) {
                 errMsg = 'Es konnten keine Daten empfangen werden.' + this.result;
@@ -752,7 +774,7 @@ function Layer(stelle, settings = {}) {
             reader.onloadend = function() {
               kvm.log('Download der Layerdaten abgeschlossen.');
               var items = [];
-              kvm.log('Download Result: ' + this.result, 4);
+              kvm.log('Download Result: ' + this.result, 3);
               if (this.result.indexOf('form name="login"') > -1) {
                 kvm.msg('Zugang zum Server verweigert! Prüfen Sie Ihre Zugangsdaten unter Einstellungen.');
                 $('#sperr_div').hide();
@@ -813,7 +835,7 @@ function Layer(stelle, settings = {}) {
       downloadURL,
       localFile,
       (function (fileEntry) {
-        kvm.log('Download des Bildes abgeschlossen: ' + fileEntry.fullPath, 4);
+        kvm.log('Download des Bildes abgeschlossen: ' + fileEntry.fullPath, 3);
         var imageDiv = $('div[name$="' + this.remoteFile + '"]');
 
         imageDiv.attr('src', this.localFile);
@@ -849,19 +871,6 @@ function Layer(stelle, settings = {}) {
     );
   };
 
-  this.getIcon = function() {
-    return L.icon({
-        iconUrl: 'img/hst24.png',
-//        shadowUrl: 'leaf-shadow.png',
-
-        iconSize:     [24, 24], // size of the icon
-//        shadowSize:   [50, 64], // size of the shadow
-        iconAnchor:   [12, 12], // point of the icon which will correspond to marker's location
-        shadowAnchor: [16, 8],  // the same for the shadow
-        popupAnchor:  [0, -12] // point from which the popup should open relative to the iconAnchor
-    });
-  };
-
   this.loadFeatureToForm = function(feature) {
     kvm.log('Lade Feature in Formular.', 3);
     this.activeFeature = feature;
@@ -886,8 +895,25 @@ function Layer(stelle, settings = {}) {
     kvm.controller.mapper.watchGpsAccuracy();
   };
 
-  this.drawFeatureMarker = function() {
-    kvm.log('Erzeuge Markercluster in der Karte: ', 3);
+  this.drawFeatureGeometry = function() {
+		var layer;
+  	switch (this.get('geometry_type')) {
+      case 'Point':
+				layer = this.drawMarkerCluster();
+        break;
+      case 'LineString':
+				layer = this.drawPolylines();
+				break;
+			case 'Polygon':
+				layer = this.drawPolygons();
+				break;
+		}
+    kvm.map.addLayer(layer);
+		kvm.log(Object.keys(this.features).length + ' Objekte in Karte eingefügt.', 3);
+  };
+
+	this.drawMarkerCluster = function() {
+		kvm.log('Erzeuge Markercluster in der Karte: ', 3);
 
     if (this.markerClusters) this.markerClusters.clearLayers();
     this.markerClusters = L.markerClusterGroup({
@@ -899,22 +925,56 @@ function Layer(stelle, settings = {}) {
       this.features,
       (function (key, feature) {
         var latlng = feature.getCoord();
-        //kvm.log('layer.drawFeatureMarker: add feature in map to latlng: ' + JSON.stringify(latlng), 4);
+        //kvm.log('layer.drawFeatureGeometry: add feature in map to latlng: ' + JSON.stringify(latlng), 4);
 
         if (latlng) {
-          feature.marker = L.marker(latlng, {icon: this.getIcon()}).bindPopup(this.getPopup(feature));
+          feature.marker = L.marker(latlng, feature.getStyle()).bindPopup(this.getPopup(feature));
           this.markerClusters.addLayer(feature.marker);
         }
       }).bind(this)
     );
-    kvm.map.addLayer(this.markerClusters);
-    kvm.log(Object.keys(this.features).length + ' Objekte in Karte eingefügt.', 3);
-  };
+		return this.markerClusters;
+	};
 
+	this.drawPolylines = function() {
+		kvm.log('Erzeuge Polylines in der Karte: ', 3);
+		this.polylineLayer = L.LayerGroup();
+
+		$.each(
+			this.features,
+      (function (key, feature) {
+        var latlngs = feature.getCoord();
+				if (latlngs) {
+					feature.polyline = L.polyline(latlngs, feature.getStyle()).bindPopup(this.getPopup(feature));
+					this.polylineLayer.addLayer(feature.polyline);
+				}
+			}).bind(this)
+    );
+		return this.polylineLayer;
+	};
+
+	this.drawPolygons = function() {
+		kvm.log('Erzeuge Polygone in der Karte: ', 3);
+		this.polygonLayer = L.LayerGroup();
+
+		$.each(
+			this.features,
+      (function (key, feature) {
+        var latlngs = feature.getCoord();
+				if (latlngs) {
+					feature.polygon = L.polygon(latlngs, feature.getStyle()).bindPopup(this.getPopup(feature));
+					this.polygonLayer.addLayer(feature.polygon);
+				}
+			}).bind(this)
+		);
+		return this.polygonLayer;
+	};
+	
   this.getPopup = function(feature) {
-    var html;
+    var html,
+        featureName = (feature.get('hst_name') == 'null' ? feature.get('name') : feature.get('hst_name'));
 
-    html = feature.get('hst_name') + '<br>\
+    html = featureName + '<br>\
         <a class="popup-aendern-link" href="#" onclick="kvm.activeLayer.goToForm(\'' + feature.get('uuid') + '\')">Ändern</a>\
     ';
     return html;

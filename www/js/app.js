@@ -490,7 +490,8 @@ kvm = {
         this_.activeLayer.loadFeatureToForm(
           new Feature({
             uuid : this_.uuidv4()
-          })
+          }),
+          this_.activeLayer.classes[0]['name']
         );
 
         this_.showItem('formular');

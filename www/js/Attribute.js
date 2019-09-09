@@ -113,8 +113,16 @@ function Attribute(layer, settings = {}) {
         slValue = "'f'";
         break;
       case (pgType == 'geometry') :
-        slValue = "'" + kvm.wkx.Geometry.parse('SRID=4326;POINT(' + pgValue.coordinates.toString().replace(',', ' ') + ')').toEwkb().inspect().replace(/<|Buffer| |>/g, '') + "'";
-        break;
+				if (this.layer.get('geometry_type') == 'Point') {
+        	slValue = "'" + kvm.wkx.Geometry.parse('SRID=4326;POINT(' + pgValue.coordinates.toString().replace(',', ' ') + ')').toEwkb().inspect().replace(/<|Buffer| |>/g, '') + "'";
+				}
+				if (this.layer.get('geometry_type') == 'LineString') {
+        	slValue = "'" + kvm.wkx.Geometry.parse('SRID=4326;LINESTRING((' + pgValue.coordinates.toString().replace(',', ' ') + '))').toEwkb().inspect().replace(/<|Buffer| |>/g, '') + "'";
+				}
+				if (this.layer.get('geometry_type') == 'Polygon') {
+        	slValue = "'" + kvm.wkx.Geometry.parse('SRID=4326;POLYGON((' + pgValue.coordinates.toString().replace(',', ' ') + '))').toEwkb().inspect().replace(/<|Buffer| |>/g, '') + "'";
+				}				
+				break;
       case (this.isArrayType()) :
         //console.log('value of arraytype: %o', pgValue);
         slValue = "'{" + pgValue + "}'";
