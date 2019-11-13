@@ -8,6 +8,8 @@ https://github.com/srahn/kvwmap/
 http://kvwmap.de
 
 # Change log
+## 1.4.4
+	* Enable origin https://geoport-vr.de/kvwmap/ in config.xml
 ## 1.4.3
 	* Enable origin https://geoportal-vg.de/kvwmap/ in config.xml
 ## 1.4.2
