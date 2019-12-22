@@ -132,6 +132,7 @@ kvm = {
           'Straßenkarte offline': orka_offline
         };
 
+    L.PM.initialize({ optIn: true });
     map.addControl(new L.control.betterscale({metric: true}));
     map.addControl(new L.control.locate({
       position: 'topright',
@@ -144,7 +145,14 @@ kvm = {
       }
     }));
     L.control.layers(baseMaps).addTo(map);
-    this.map = map;
+    map.pm.addControls({
+      position: 'topright',
+      drawCircle: false,
+      drawCircleMarker: false,
+      drawRectangle: false,
+      drawCircle: false,
+      removalMode: false
+    });
   },
 
   bindEvents: function() {
@@ -714,7 +722,7 @@ kvm = {
   * create the list of features of active layer in list view
   */
   createFeatureList: function() {
-    kvm.log('Erzeuge die Liste der Datensätze neu.', 3);
+    kvm.log('Erzeuge die Liste der Datensätze neu...', 3, true);
     $('#featurelistHeading').html(this.activeLayer.get('alias') ? this.activeLayer.get('alias') : this.activeLayer.get('title'));
     $('#featurelistBody').html('');
 
@@ -869,12 +877,15 @@ kvm = {
     });
   },
 
-  log: function(msg, level = 3) {
+  log: function(msg, level = 3, show_in_sperr_div = false) {
     if (level <= config.logLevel) {
       $('#logText').append('<br>' + msg);
       if (config.debug) {
         console.log('Log msg: ' + msg);
       }
+    }
+    if (show_in_sperr_div) {
+      $('#sperr_div_content').html(msg);
     }
   },
 

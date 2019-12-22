@@ -42,6 +42,14 @@ function Feature(data = {}) {
     return [geom.y, geom.x];
   };
 
+  this.getGeom = function() {
+    var geom = false;
+    if (this.get('geom') != '') {
+      var geom = kvm.wkx.Geometry.parse(new kvm.Buffer(this.get('geom'), 'hex'));
+    }
+    return geom;
+  };
+
   this.update = function() {
     sql = "\
       SELECT\

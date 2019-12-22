@@ -21,6 +21,7 @@
     <!--link rel="stylesheet" type="text/css" href="3rdparty/leaflet-gps-master/dist/leaflet-gps.min.css"/-->
     <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-locatecontrol-gh-pages/dist/L.Control.Locate.min.css"/>
     <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-betterscale-master/L.Control.BetterScale.css"/>
+    <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-geoman/leaflet-geoman.css" />
 
     <link rel="stylesheet" type="text/css" href="css/style.css"/>
     <script src="cordova.js"></script>
@@ -30,6 +31,7 @@
     <!--script src="3rdparty/leaflet-gps-master/dist/leaflet-gps.min.js"></script-->
     <script src="3rdparty/leaflet-locatecontrol-gh-pages/dist/L.Control.Locate.min.js"></script>
     <script src="3rdparty/leaflet-betterscale-master/L.Control.BetterScale.js"></script>
+    <script src="3rdparty/leaflet-geoman/leaflet-geoman.min.js"></script>
     <script src="3rdparty/wkx-0.4.2/dist/wkx.min.js"></script>
     <script src="js/config.js"></script>
     <script src="js/Layer.js"></script>
@@ -52,7 +54,7 @@
   <body onload="kvm.init()">
 
     <div id="sperr_div" class="modal">
-      <i class="fa fa-spinner fa-spin fa-2x"></i><p style="margin-top: 20px">Lade Daten ...</p>
+      <i class="fa fa-spinner fa-spin fa-2x"></i><p id="sperr_div_content" style="margin-top: 20px">Lade Daten ...</p>
     </div>
     <!-- Menue -->
     <div id="kopfbereich">

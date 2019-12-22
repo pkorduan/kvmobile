@@ -84,7 +84,7 @@ function Attribute(layer, settings = {}) {
           'double precision'
         ]) > -1) :
         slType = 'REAL';
-        default : slType = 'TEXT';
+      default : slType = 'TEXT';
     }
     return slType;
   };
