@@ -15,13 +15,15 @@ config = {
 
   projZone: 33,
 //  maxExtent: [274300, 5936054.721, 360500, 6023975.279],
-  maxExtent: [154300, 5836054.721, 360500, 6023975.279],
-  startPosition: [12.20896, 53.095876],
+//  maxExtent: [154300, 5836054.721, 360500, 6023975.279],
+//  startPosition: [12.20896, 53.095876],
+  maxExtent: [254243.367, 5936500, 380556.633, 6023530],
+  startPosition: [12.19127, 53.97413],
   startZoom: 8,
   logLevel: 3, // 0 off, 1 error, 2 waring, 3 info, 4 debug
   debug: true,
   kvwmapServerId: 1,
-  kvwmapServerName: 'kvwmap Server',
+  kvwmapServerName: 'kvwmap_pet_dev',
 /*
   kvwmapServerUrl: 'https://geoportal.lkros.de/kvwmap_dev',
   kvwmapServerLoginName: '',
@@ -34,7 +36,13 @@ config = {
   kvwmapServerStelleId: 72
 */
   kvwmapServerUrl: 'https://gdi-service.de/kvwmap_pet_dev',
-  kvwmapServerLoginName: 'mjohn',
-  kvwmapServerPasswort: 'Mar_ohN',
-  kvwmapServerStelleId: 72
+  kvwmapServerLoginName: 'korduan',
+  kvwmapServerPasswort: 'XKt!k$l6q6',
+  kvwmapServerStelleId: 58
+/*
+  kvwmapServerUrl: 'https://geoportal-vg.de/kvwmap',
+  kvwmapServerLoginName: 'pkorduan',
+  kvwmapServerPasswort: 'secret',
+  kvwmapServerStelleId: 45
+*/
 }

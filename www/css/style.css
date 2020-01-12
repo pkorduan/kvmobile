@@ -68,6 +68,10 @@ button#gpsControlButton.kvm-gps-track {
   background-size: 20px 20px !important;
 }
 
+.leaflet-popup {
+  font-size: 20px;
+}
+
 a.hover {
 
 }
@@ -97,8 +101,8 @@ a.hover {
   border-radius: 5px;
 }
 
-.popup-aendern-link {
-
+.popup-link {
+  
 }
 
 .feature-status-0 {
@@ -272,3 +276,30 @@ a.hover {
 #gps-signal-icon {
   fill: rgb(236, 236, 236);
 }
+.center {
+  text-align: center;
+}
+
+.pagination {
+  display: inline-block;
+}
+
+.pagination a {
+  color: black;
+  float: left;
+  padding: 8px 16px;
+  text-decoration: none;
+}
+
+.pagination a.active {
+  background-color: #4CAF50;
+  color: white;
+  border-radius: 5px;
+}
+
+.pagination a:hover:not(.active) {
+  background-color: #ddd;
+  border-radius: 5px;
+}
+
+

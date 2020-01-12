@@ -22,12 +22,13 @@
     <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-locatecontrol-gh-pages/dist/L.Control.Locate.min.css"/>
     <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-betterscale-master/L.Control.BetterScale.css"/>
     <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-geoman/leaflet-geoman.css" />
-
     <link rel="stylesheet" type="text/css" href="css/style.css"/>
     <script src="cordova.js"></script>
     <script src="3rdparty/jquery/3.2.1/jquery.min.js"></script>
     <script src="3rdparty/leaflet-1.3.1/leaflet.js"></script>
-    <script src="3rdparty/Leaflet.markercluster-1.3.0/dist/leaflet.markercluster.js"></script>
+    <script src="3rdparty/leaflet-1.3.1/Leaflet.Editable.js"></script>
+    <script src="3rdparty/leaflet-1.3.1/Path.Drag.js"></script>
+    <!--script src="3rdparty/Leaflet.markercluster-1.3.0/dist/leaflet.markercluster.js"></script//-->
     <!--script src="3rdparty/leaflet-gps-master/dist/leaflet-gps.min.js"></script-->
     <script src="3rdparty/leaflet-locatecontrol-gh-pages/dist/L.Control.Locate.min.js"></script>
     <script src="3rdparty/leaflet-betterscale-master/L.Control.BetterScale.js"></script>
@@ -54,7 +55,7 @@
   <body onload="kvm.init()">
 
     <div id="sperr_div" class="modal">
-      <i class="fa fa-spinner fa-spin fa-2x"></i><p id="sperr_div_content" style="margin-top: 20px">Lade Daten ...</p>
+      <i class="fa fa-spinner fa-pulse fa-2x"></i><p id="sperr_div_content" style="margin-top: 20px">Lade Daten ...</p>
     </div>
     <!-- Menue -->
     <div id="kopfbereich">
@@ -195,7 +196,23 @@
     </div>
     <div style="clear: both;"></div>
     <input type="search" id="searchHaltestelle" placeholder="Datensatz suchen" aria-label"Liste der Datensätze durchsuchen" autocomplete="off" style="margin-left: 6px; margin-bottom: 4px; padding-left: 4px; padding-top: 2px; padding-bottom: 2px; font-size: 24px; width: 97%; border-radius: 5px; display: none">
+    <div class="center">
+      <div class="pagination">
+        <a class="page_first_link" href="#" page="0" onclick="kvm.paginate(this)" style="display: none">&laquo;</a>
+        <a class="page_prev_link" href="#" page="0" onclick="kvm.paginate(this)" style="display: none">zurück</a>
+        <a class="page_next_link" href="#" page="25" onclick="kvm.paginate(this)">weiter</a>
+        <a class="page_last_link" href="#" page="" onclick="kvm.paginate(this)" style="display: none">&raquo;</a>
+      </div>
+    </div>
     <div id="featurelistBody"></div>
+    <div class="center">
+      <div class="pagination">
+        <a class="page_first_link" href="#" page="0" onclick="kvm.paginate(this)" style="display: none">&laquo;</a>
+        <a class="page_prev_link" href="#" page="0" onclick="kvm.paginate(this)" style="display: none">zurück</a>
+        <a class="page_next_link" href="#" page="25" onclick="kvm.paginate(this)">weiter</a>
+        <a class="page_last_link" href="#" page="" onclick="kvm.paginate(this)" style="display: none">&raquo;</a>
+      </div>
+    </div>
   </div>
   <div class="clear"></div>
 

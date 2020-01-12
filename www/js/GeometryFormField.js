@@ -59,8 +59,8 @@ function GeometrieFormField(formId, settings) {
       'click',
       function() {
         kvm.log('Gehe zu Gps Position.', 3);
-        var uuid = $('#featureFormular input[name=uuid]').val(),
-            feature = kvm.activeLayer.features['id_' + uuid];
+        var featureId = $('#featureFormular input[name=' + kvm.activeLayer.get('id_attribute') + ']').val(),
+            feature = kvm.activeLayer.features[featureId];
 
         if (feature) {
           kvm.activeLayer.markerClusters.zoomToShowLayer(feature.marker, function() {

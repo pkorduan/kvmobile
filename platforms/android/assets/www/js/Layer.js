@@ -1,10 +1,12 @@
 function Layer(stelle, settings = {}) {
-  kvm.log('Erzeuge Layerobjekt mit settings: ' + JSON.stringify(settings), 3);
+  kvm.log('Erzeuge Layerobjekt: ' + settings.title, 3);
+  kvm.log('Layersettings: ' + JSON.stringify(settings), 4);
   var layer_ = this;
   this.stelle = stelle;
   this.settings = (typeof settings == 'string' ? $.parseJSON(settings) : settings);
   this.attributes = [];
   this.runningSyncVersion = 0;
+  this.layerGroup = L.layerGroup();
 
   if (this.settings.attributes) {
     this.attributes = $.map(
@@ -53,9 +55,12 @@ function Layer(stelle, settings = {}) {
 
   /*
   * Load data from local db, create feature objects and show in list view
+  * Read data from offset to offset + limit
   */
-  this.readData = function() {
-    kvm.log('Layer.readData from table: ' + this.get('schema_name') + '.' + this.get('table_name'), 3);
+  this.readData = function(limit = 25, offset = 0) {
+    kvm.log('Layer.readData from table: ' + this.get('schema_name') + '_' + this.get('table_name'), 3);
+  //  order = (this.get('name_attribute') != '' ? this.get('name_attribute') : this.get('id_attribute'));
+    order = 'nr';
     $('#sperr_div').show();
 
     var filter = $('#anzeigeFilterSelect').val(),
@@ -63,11 +68,12 @@ function Layer(stelle, settings = {}) {
       SELECT\
         *\
       FROM\
-        " + this.get('schema_name') + '.' + this.get('table_name') + "\
+        " + this.get('schema_name') + '_' + this.get('table_name') + "\
       WHERE\
         " + (filter == '' ? "1 = 1" : filter) + "\
       ORDER BY \
-        " + (this.get('name_attribute') != '' ? this.get('name_attribute') : this.get('id_attribute')) + "\
+        " + order + "\
+      LIMIT " + limit + " OFFSET " + offset + "\
     ";
     kvm.log('Lese Daten aus lokaler Datenbank mit Sql: ' + sql, 3, true);
     kvm.db.executeSql(
@@ -85,9 +91,15 @@ function Layer(stelle, settings = {}) {
 
         this.features = {};
         for (i = 0; i < numRows; i++) {
-
+          //console.log('Create Feature %s', i);
           item = rs.rows.item(i);
-          this.features['id_' + item.uuid] = new Feature(item);
+          this.features[item[this.get('id_attribute')]] = new Feature(
+            item, {
+              id_attribute: this.get('id_attribute'),
+              geometry_type: this.get('geometry_type'),
+              geometry_attribute: this.get('geometry_attribute')
+            }
+          );
         }
         if ($('#syncLayerIcon_' + this.getGlobalId()).hasClass('fa-spinner')) {
           $('#syncLayerIcon_' + this.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
@@ -108,7 +120,7 @@ function Layer(stelle, settings = {}) {
 
   this.writeData = function(items) {
     kvm.log('Schreibe die Empfangenen Daten in die lokale Datebank...', 3, true);
-    var tableName = this.get('schema_name') + '.' + this.get('table_name'),
+    var tableName = this.get('schema_name') + '_' + this.get('table_name'),
         keys = $.map(
           this.attributes,
           function(attr) {
@@ -136,7 +148,7 @@ function Layer(stelle, settings = {}) {
         ')';
 
     sql = "\
-      INSERT INTO " + this.get('schema_name') + '.' + this.get('table_name') +" (\
+      INSERT INTO " + this.get('schema_name') + '_' + this.get('table_name') +" (\
         " + keys + ")\
       VALUES\
         " + values + "\
@@ -152,7 +164,7 @@ function Layer(stelle, settings = {}) {
         this.set('syncLastLocalTimestamp', Date());
         this.saveToStore();
         this.setActive();
-        this.readData();
+        this.readData(25, 0);
       }).bind(this),
       (function(error) {
         this.set('syncVersion', 0);
@@ -163,7 +175,7 @@ function Layer(stelle, settings = {}) {
   };
 
   this.createTables = function() {
-    kvm.log('Tabelle anlegen.', 3);
+    kvm.log('Layer.createTables', 3);
     var layerIds = $.parseJSON(kvm.store.getItem('layerIds_' + this.stelle.get('id'))),
         layer_ = this,
         i;
@@ -177,75 +189,64 @@ function Layer(stelle, settings = {}) {
           return new Attribute(layer_, attribute);
         }
       );
-      this.createTable(this);
+      this.createTable();
     };
   };
 
-  this.createTable = function(layer) {
-    kvm.log('Layer.createTable with settings: ' + JSON.stringify(this.settings), 4);
-    layer_ = this;
-
-    kvm.db.attach(
-      this.get('schema_name'),
-      config.dbname + '.db',
-      (function() {
-        var layer_ = this;
-        kvm.log('Erzeuge Tabelle ' + layer_.get('schema_name') + '.' + layer_.get('table_name') +' in lokaler Datenbank.');
-        sql = '\
-          CREATE TABLE IF NOT EXISTS ' + layer_.get('schema_name') + '.' + layer_.get('table_name') + ' (' +
-            $.map(
-              layer_.attributes,
+  this.createTable = function() {
+    kvm.db.transaction(
+      (function(tx) {
+        var tableName = this.get('schema_name') + '_' + this.get('table_name'),
+            tableColumns = $.map(
+              this.attributes,
               function(attr) {
                 return attr.get('name') + ' ' + attr.getSqliteType() + (attr.get('nullable') == '0 ' ? ' NOT NULL' : '');
               }
-            ).join(', ') + '\
-          )\
-        ';
-        kvm.log('Erzeuge Tabelle mit Statement sql: ' + sql, 3);
+            ).join(', '),
+            sql = 'CREATE TABLE IF NOT EXISTS ' + tableName + ' (' + tableColumns + ')';
 
-        kvm.db.executeSql(
-          sql,
-          [],
-          function(db, res) {
-            kvm.log('Tabelle erfolgreich angelegt.', 3);
-          },
-          function(error) {
-            kvm.log('Fehler beim Anlegen der Tabelle: ' + error.message, 1);
-            kvm.msg('Fehler beim Anlegen der Tabelle: ' + error.message);
-          }
+        kvm.log('Erzeuge Tabelle mit sql: ' + sql, 3);
+
+        //create table
+        tx.executeSql(sql, [],
+          (function(tx, res) {
+            kvm.log('Tabelle ' + this.get('schema_name') + '_' + this.get('table_name')  + ' erfolgreich angelegt.', 3);
+            var tableName = this.get('schema_name') + '_' + this.get('table_name') + '_deltas',
+                tableColumns = '\
+                  version INTEGER PRIMARY KEY,\
+                  type text,\
+                  change text,\
+                  delta text,\
+                  created_at text\
+                ',
+                sql = 'CREATE TABLE IF NOT EXISTS ' + tableName + ' (' + tableColumns + ')';
+            kvm.log('Erzeuge Delta-Tabelle mit sql: ' + sql, 3);
+
+            tx.executeSql(sql,[],
+              (function(tx, res) {
+                kvm.log('Deltas Tabelle erfolgreich angelegt.', 3);
+                this.appendToList();
+                if ($('#layer_list .sync-layer-button').length == this.stelle.numLayers) {
+                  // Erst wenn der letzte Layer geladen wurde.
+                  kvm.bindLayerEvents();
+                }
+              }).bind(this),
+              (function(error) {
+                var tableName = this.get('schema_name') + '_' + this.get('table_name')
+                kvm.msg('Fehler beim Anlegen der Tabelle: ' + tableName + ' ' + error.message);
+              }).bind(this)
+            )
+          }).bind(this),
+          (function(error) {
+            var tableName = this.get('schema_name') + '_' + this.get('table_name')
+            kvm.msg('Fehler beim Anlegen der Tabelle: ' + tableName + ' ' + error.message);
+          }).bind(this)
         );
-
-        layer_.createDeltaTable();
-      }).bind(layer_),
-      function(err) {
-        kvm.log('err: ' + JSON.stringify(err), 1);
-      }
-    );
-  };
-
-  this.createDeltaTable = function() {
-    kvm.log('Erzeuge Tabelle für deltas in lokaler Datenbank.', 3);
-    sql = '\
-      CREATE TABLE IF NOT EXISTS ' + this.get('schema_name') + '.' + this.get('table_name') + '_deltas (\
-        version INTEGER PRIMARY KEY,\
-        type text,\
-        change text,\
-        delta text,\
-        created_at text\
-      )\
-    ';
-    kvm.log('Erzeuge Deltas Tabelle mit Statement sql: ' + sql, 3);
-
-    kvm.db.executeSql(
-      sql,
-      [],
-      function(db, res) {
-        kvm.log('Deltas Tabelle erfolgreich angelegt.', 3);
-      },
-      function(error) {
-        kvm.log('Fehler beim Anlegen der Deltas Tabelle: ' + error.message, 1);
-        kvm.msg('Fehler beim Anlegen der Deltas Tabelle: ' + error.message);
-      }
+      }).bind(this),
+      (function(error) {
+        kvm.log('Fehler beim Anlegen der Tabellen für den Layer: ' + this.get('title') + ' ' + error.message, 1);
+        kvm.msg('Fehler beim Anlegen der Tabellen für den Layer: ' + this.get('title') + ' ' + error.message);
+      }).bind(this)
     );
   };
 
@@ -374,10 +375,10 @@ function Layer(stelle, settings = {}) {
         $.each(
           response.deltas,
           (function(index, value) {
-            this.execDelta(value.sql);
+            kvm.log('Führe Änderungen vom Server auf dem Client aus: ' + value.sql);
+            this.execDelta(this.pointToUnderlineName(value.sql, this.get('schema_name'), this.get('table_name')));
           }).bind(this)
         );
-        // ToDo delete deltas and set new Version at the end of a transaction in which all deltas has been executed
         this.deleteDeltas('sql');
         this.set('syncVersion', parseInt(response.syncData[0].push_to_version));
       }
@@ -449,7 +450,7 @@ function Layer(stelle, settings = {}) {
       SELECT\
         * \
       FROM\
-        " + this.get('schema_name') + '.' + this.get('table_name') + "_deltas\
+        " + this.get('schema_name') + '_' + this.get('table_name') + "_deltas\
       WHERE\
         type = 'img'\
     ";
@@ -599,12 +600,13 @@ function Layer(stelle, settings = {}) {
   */
   this.syncData = function() {
     kvm.log('Layer.syncData', 3);
+    var tableName = this.get('schema_name') + '_' + this.get('table_name');
 
     sql = "\
       SELECT\
         * \
       FROM\
-        " + this.get('schema_name') + '.' + this.get('table_name') + "_deltas\
+        " + tableName + "_deltas\
       WHERE\
         type = 'sql'\
     ";
@@ -639,6 +641,14 @@ function Layer(stelle, settings = {}) {
     );
   };
 
+  this.underlineToPointName = function(sql, schema, table) {
+    return sql.replace(this.get('schema_name') + '_' + this.get('table_name'), this.get('schema_name') + '.' + this.get('table_name'));
+  };
+
+  this.pointToUnderlineName = function(sql, schema, table) {
+    return sql.replace(this.get('schema_name') + '.' + this.get('table_name'), this.get('schema_name') + '_' + this.get('table_name'));
+  };
+
   /*
   * Delete all features from layer, feature list, map and its data in the database table and deltas
   * and also lastVersionNr of the layer to make the way free for a new initial download
@@ -646,7 +656,7 @@ function Layer(stelle, settings = {}) {
   this.clearData = function() {
     kvm.log('Layer.clearData', 4);
     var sql = '\
-      DELETE FROM ' + this.get('schema_name') + '.' + this.get('table_name') + '\
+      DELETE FROM ' + this.get('schema_name') + '_' + this.get('table_name') + '\
     ';
     kvm.db.executeSql(
       sql,
@@ -684,7 +694,7 @@ function Layer(stelle, settings = {}) {
     if (typeof delta === 'undefined') delta = '';
     kvm.log('Layer.deleteDeltas', 4);
     var sql = '\
-      DELETE FROM ' + this.get('schema_name') + '.' + this.get('table_name') + '_deltas\
+      DELETE FROM ' + this.get('schema_name') + '_' + this.get('table_name') + '_deltas\
     ';
     if (type != 'all') {
       sql += " WHERE type = '" + type + "'";
@@ -729,80 +739,6 @@ function Layer(stelle, settings = {}) {
           ['OK']
         );
       }
-    );
-  };
-
-  /*
-  * Request all layers from active serversetting
-  */
-  this.requestLayers = function() {
-    //console.log('Layer.requestLayers for stelle: %o', this.stelle);
-    var fileTransfer = new FileTransfer(),
-        filename = cordova.file.dataDirectory + 'layers_stelle_' + this.stelle.get('id') + '.json',
-        //filename = 'temp_file.json',
-        url = this.getLayerUrl();
-
-    kvm.log('Download Layerdaten von Url: ' + url);
-    kvm.log('Speicher die Datei auf dem Gerät in Datei: ' + filename);
-
-    fileTransfer.download(
-      url,
-      filename,
-      function (fileEntry) {
-        fileEntry.file(
-          function (file) {
-            var reader = new FileReader();
-
-            reader.onloadend = function() {
-              kvm.log('Download der Layerdaten abgeschlossen.');
-              var items = [];
-              kvm.log('Download Result: ' + this.result, 4);
-              if (this.result.indexOf('form name="login"') > -1) {
-                kvm.msg('Zugang zum Server verweigert! Prüfen Sie Ihre Zugangsdaten unter Einstellungen.');
-                $('#sperr_div').hide();
-              }
-              else {
-                resultObj = $.parseJSON(this.result);
-                if (resultObj.success) {
-                  kvm.log('Download erfolgreich.', 3);
-                  //console.log('resultObj: %o', resultObj);
-                  $('#layer_list').html('');
-                  $.each(
-                    resultObj.layers,
-                    function(index, layerSetting) {
-                      //console.log('Layer.requestLayers create layer with settings: %o', layerSetting);
-                      kvm.log('Erzeuge Layerliste.', 3);
-                      layer = new Layer(kvm.activeStelle, layerSetting);
-                      layer.saveToStore();
-                      layer.createTable();
-                      layer.appendToList();
-                    }
-                  );
-                  kvm.bindLayerEvents();
-                  kvm.setConnectionStatus();
-                  //console.log('Store after save layer: %o', kvm.store);
-                  $('#requestLayersButton').hide();
-                  $('#sperr_div').hide();
-                }
-                else {
-                  kvm.log('Fehler beim Abfragen der Layerdaten. Falsche Serverparameter oder Fehler auf dem Server.', 2);
-                  alert('Abfrage liefert keine Daten vom Server. Entweder sind keine auf dem Server vorhanden oder die URL der Anfrage ist nicht korrekt. Prüfen Sie die Parameter unter Einstellungen.');
-                  $('#sperr_div').hide();
-                }
-              }
-            };
-
-            reader.readAsText(file);
-          },
-          function(error) {
-            alert('Fehler beim Einlesen der heruntergeladenen Datei. Prüfen Sie die URL und Parameter, die für den Download verwendet werden.');
-            kvm.log('Fehler beim lesen der Datei: ' + error.code);
-            $('#sperr_div').hide();
-          }
-        );
-      },
-      this.downloadError,
-      true
     );
   };
 
@@ -853,6 +789,14 @@ function Layer(stelle, settings = {}) {
     );
   };
 
+  this.getNormalCircleMarkerStyle = function() {
+    return { color: "#000000", fill: true, fillOpacity: 0.8, fillColor: "#0078A8" };
+  };
+
+  this.getEditModeCircleMarkerStyle = function() {
+    return { color: "#666666", fill: true, fillOpacity: 0.8, fillColor: "#cccccc" };
+  };
+
   this.getIcon = function() {
     return L.icon({
         iconUrl: 'img/hst24.png',
@@ -865,6 +809,31 @@ function Layer(stelle, settings = {}) {
         popupAnchor:  [0, -12] // point from which the popup should open relative to the iconAnchor
     });
   };
+
+  this.getDraggableIcon = function() {
+    return L.icon({
+        iconUrl: 'img/draggableIcon.svg',
+        iconSize: [38, 95],
+        iconAnchor: [19, 81],
+        popupAnchor: [-3, -76],
+        shadowUrl: 'img/draggableIconShadow.svg',
+        shadowSize: [68, 95],
+        shadowAnchor: [19, 81]
+    });
+  };
+/*
+  kvm.activeLayer.getDraggableIcon = function() {
+    return L.icon({
+        iconUrl: 'img/draggableIcon.svg',
+        iconSize: [38, 95],
+        iconAnchor: [19, 80],
+        popupAnchor: [-3, -76],
+        shadowUrl: 'img/draggableIconShadow.svg',
+        shadowSize: [68, 95],
+        shadowAnchor: [22, 94]
+    });
+  };
+*/
 
   this.loadFeatureToForm = function(feature) {
     kvm.log('Lade Feature in Formular.', 3);
@@ -880,7 +849,7 @@ function Layer(stelle, settings = {}) {
       }).bind(feature)
     );
 
-    if (typeof kvm.activeLayer.features['id_' + kvm.activeLayer.activeFeature.get('uuid')] == 'undefined') {
+    if (typeof kvm.activeLayer.features[kvm.activeLayer.activeFeature.get(this.get('id_attribute'))] == 'undefined') {
       $('#goToGpsPositionButton').hide();
     }
     else {
@@ -892,7 +861,46 @@ function Layer(stelle, settings = {}) {
 
   this.drawFeatures = function() {
     kvm.log('Erzeuge Geometrieobjekt in der Karte: ', 3);
+    var myRenderer = L.canvas({ padding: 0.5 });
+    $.each(
+      this.features,
+      (function (key, feature) {
+        // circleMarker erzeugen mit Popup Eventlistener
+        var circleMarker = L.circleMarker(feature.getGeom(), {
+          renderer: myRenderer
+        }).bindPopup(this.getPopup(feature));
+        circleMarker.setStyle(this.getNormalCircleMarkerStyle());
+        // circleMarker als Layer zur Layergruppe hinzufügen
+        this.layerGroup.addLayer(circleMarker);
+        // layer_id abfragen und in Feature als markerId speichern
+        feature.markerId = this.layerGroup.getLayerId(circleMarker);
+      }).bind(this)
+    );
+    this.layerGroup.addTo(kvm.map);
+/*
+    layer = kvm.activeLayer;
+    layer.drawFeatures = function() {
+      kvm.log('Erzeuge Geometrieobjekt in der Karte: ', 3);
+      var myRenderer = L.canvas({ padding: 0.5 });
+      $.each(
+        layer.features,
+        (function (key, feature) {
+          // circleMarker erzeugen mit Popup Eventlistener
+          var circleMarker = L.circleMarker(feature.getGeom(), {
+            renderer: myRenderer
+          }).bindPopup(this.getPopup(feature));
+          // circleMarker als Layer zur Layergruppe hinzufügen
+          this.layerGroup.addLayer(circleMarker);
+          // layer_id abfragen und in Feature als markerId speichern
+          feature.markerId = this.layerGroup.getLayerId(circleMarker);
+        }).bind(layer)
+      );
+      layer.layerGroup.addTo(kvm.map);
+    }
+    layer.drawFeatures();
 
+*/
+/*
     if (this.settings['geometry_type'] == 'Point') {
       if (this.geometryLayer) {
         this.geometryLayer.clearLayers();
@@ -909,7 +917,7 @@ function Layer(stelle, settings = {}) {
       this.features,
       (function (key, feature) {
         var geom = feature.getGeom();
-        kvm.log('layer.drawFeature: add feature in map with geom: ' + JSON.stringify(geom), 4);
+        kvm.log('layer.drawFeature: add feature in map with geom: ' + JSON.stringify(geom), 3);
 
         if (geom) {
           switch (this.settings['geometry_type']) {
@@ -920,38 +928,259 @@ function Layer(stelle, settings = {}) {
               feature.geometry = L.polygon(geom, {icon: this.getIcon()}).bindPopup(this.getPopup(feature));
             } break;
             default: {
+              console.log('create feature geom for uuid: %s', feature.get('uuid'));
               feature.geometry = L.marker(geom, {icon: this.getIcon()}).bindPopup(this.getPopup(feature));
             }
           }
+          //kvm.log('Füge Marker zur Clustergruppe hinzu...', 3, true);
           this.geometryLayer.addLayer(feature.geometry);
+          //kvm.log('Marker hinzugefügt.', 3, true);
         }
       }).bind(this)
     );
+    kvm.log('Füge Markercluster zur Karte hinzu...', 3, true);
     kvm.map.addLayer(this.geometryLayer);
-
-    kvm.log(Object.keys(this.geometryLayer).length + ' Objekte in Karte eingefügt.', 3);
+*/
+    console.log('Alle Feature gezeichnet.');
   };
 
   this.getPopup = function(feature) {
     var html;
 
-    html = feature.get('hst_name') + '<br>\
-      Geometrie ändern\
-      <br>\
-      <a class="popup-aendern-link" href="#" onclick="kvm.activeLayer.goToForm(\'' + feature.get('uuid') + '\')">Ändern</a>\
+    html = feature.get(this.get('name_attribute')) + '<br>\
+      <a\
+        href="#"\
+        title="Geometrie ändern"\
+        onclick="kvm.activeLayer.editGeometry(\'' + feature.get(this.get('id_attribute')) + '\')"\
+      ><span class="fa-stack fa-lg">\
+          <i class="fa fa-square fa-stack-2x"></i>\
+          <i class="fa fa-pencil fa-stack-1x fa-inverse"></i>\
+        </span></i></a>\
+      <a\
+        class="popup-link"\
+        href="#"\
+        title="Sachdaten ändern"\
+        onclick="kvm.activeLayer.goToForm(\'' + feature.get(this.get('id_attribute')) + '\')"\
+      ><span class="fa-stack fa-lg">\
+          <i class="fa fa-square fa-stack-2x"></i>\
+          <i class="fa fa-bars fa-stack-1x fa-inverse"></i>\
+        </span></i></a>\
+      <a\
+        href="#"\
+        title="Fenster schließen"\
+        onclick="kvm.map.closePopup()"\
+      ><span class="fa-stack fa-lg">\
+          <i class="fa fa-square fa-stack-2x" style="color: darkred;"></i>\
+          <i class="fa fa-times fa-stack-1x fa-inverse"></i>\
+        </span></i></a>\
     ';
     return html;
   };
 
-  this.goToForm = function(uuid) {
+  this.getDraggablePopup = function(feature) {
+    var html;
+
+    html = feature.get(this.get('name_attribute')) + '\
+      <br>\
+      <a\
+        href="#"\
+        title="Geometrie speichern"\
+        onclick="kvm.activeLayer.saveGeometry(\'' + feature.get(this.get('id_attribute')) + '\')"\
+      ><span class="fa-stack fa-lg">\
+          <i class="fa fa-square fa-stack-2x" style="color: darkgreen;"></i>\
+          <i id="save_geometry_button" class="fa fa-check-square-o fa-stack-1x fa-inverse"></i>\
+        </span></i></a>\
+      <a\
+        class="popup-link"\
+        href="#"\
+        title="Sachdaten ändern"\
+        onclick="kvm.activeLayer.goToForm(\'' + feature.get(this.get('id_attribute')) + '\')"\
+      ><span class="fa-stack fa-lg">\
+          <i class="fa fa-square fa-stack-2x"></i>\
+          <i class="fa fa-bars fa-stack-1x fa-inverse"></i>\
+        </span></i></a>\
+      <a\
+        href="#"\
+        title="Änderung verwerfen"\
+        onclick="kvm.activeLayer.cancelEditGeometry(\'' + feature.get(this.get('id_attribute')) + '\')"\
+      ><span class="fa-stack fa-lg">\
+          <i class="fa fa-square fa-stack-2x" style="color: darkred;"></i>\
+          <i class="fa fa-ban fa-stack-1x fa-inverse"></i>\
+        </span></i></a>\
+    ';
+    return html;
+  };
+
+  this.goToForm = function(featureId) {
+    // ToDo: Hier berücksichtigen, dass man auch von einer geänderten Geometrie kommen kann
+    // in dem Fall muss die geänderte Geometrie mit in das Formular übernommen werden
+    // für den Fall, dass man das Form speichert. Damit man da dann über getValue aus dem Geom Feld die letzte Geom
+    // nimmt zum Speichern.
     if ($('#saveFeatureButton').hasClass('active-button')) {
       kvm.msg('Es gibt nicht gespeicherte Änderungen! Gehen Sie zurück zum Formular und verwerfen Sie die Änderungen um eine neue Änderung zu beginnen.');
     }
     else {
-      this.loadFeatureToForm(this.features['id_' + uuid]);
+      this.loadFeatureToForm(this.features[featureId]);
       kvm.showItem('formular');
     }
   };
+
+  /*
+  * Ermittelt die layer_id des circleMarkers des Features
+  * schließt den offenen Popup
+  * unbind das Popup
+  * Setzt den Style des circleMarkers auf grau
+  * Erzeugt das Formular mit den Feature-Werten, aber bleibt in der Karte
+  * Erzeugt einen draggable Marker mit einem Popup.
+  * Damit kann der Nutzer den Marker so lange verschieben wie er möchte.
+  * Wenn er den Marker anklickt kommt das Popup des draggable Markers mit folgenden Funktionen:
+  *   - Speichern: Speichert die neue Position mit der Funktion saveGeometry(feature_id)
+  *   - Sachdaten editieren: Wechselt in die Sachdatenanzeige mit der Funktion goToForm(feature_id)
+  *   - Abbrechen:
+  *     - Setzt die Geometrie im Formular auf den ursprünglichen Wert
+  *     - Löscht den draggable Marker
+  *     - Bindet das Popup des Features erneut an den circleMarker
+  *     - ändert den Style zurück auf den Standardstyle des circleMarkers
+  */
+  this.editGeometry = function(featureId) {
+    console.log('editGeometry Id: %s', featureId);
+    // Ermittelt die layer_id des circleMarkers des Features
+    var feature = this.features[featureId],
+        circleMarker = this.layerGroup.getLayer(feature.markerId);
+
+    console.log('Edit CircleMarker: %o in Layer Id: %s von Feature Id: %s.', circleMarker, feature.markerId, featureId);
+
+    // schließt den offenen Popup
+    kvm.map.closePopup();
+
+    // unbind das Popup
+    circleMarker.unbindPopup();
+
+    // färbt den circle Marker grau ein.
+    circleMarker.setStyle(this.getEditModeCircleMarkerStyle());
+
+    // Erzeugt einen draggable Marker mit einem Popup
+    draggable = L.marker(
+      feature.getGeom(), {
+        icon: this.getDraggableIcon()
+      }
+    ).addTo(kvm.map);
+    draggable.enableEdit();
+    draggableId = draggable._leaflet_id;
+    kvm.map._layers[draggable._leaflet_id].bindPopup(this.getDraggablePopup(feature, draggable));
+
+    // registriert den draggable
+    this.features[featureId].draggable = draggable;
+  };
+  /*
+    kvm.activeLayer.editGeometry = function(featureId) {
+      console.log('editGeometry Id: %s', featureId);
+      var feature = this.features[featureId],
+          circleMarker = this.layerGroup.getLayer(feature.markerId);
+
+      console.log('Edit CircleMarker: %o in Layer Id: %s von Feature Id: %s.', circleMarker, feature.markerId, featureId);  
+      circleMarker.setStyle({ color: '#f00', fillColor: '#f00' });
+      draggable = L.marker(feature.getGeom()).addTo(kvm.map);
+      draggable.enableEdit();
+      draggableId = draggable._leaflet_id;
+      kvm.map._layers[draggable._leaflet_id].bindPopup(this.getDraggablePopup(feature, draggable));
+      this.features[featureId].draggable = draggable;
+    }
+    kvm.activeLayer.editGeometry('0e926383-6ce8-4e1d-8a38-9e775f74ac1c')
+  */
+
+  /*
+  * Löscht die editierbare Geometrie
+  * zoomt zum ursprünglichen Geometrie
+  * Setzt den Style des circle Markers auf den alten zurück
+  * Binded das Popup an den dazugehörigen Layers
+  */
+  this.cancelEditGeometry = function(featureId) {
+    console.log('cancelEditGeometry Id: %s', featureId);
+    // Ermittelt die layer_id des circleMarkers des Features
+    var feature = this.features[featureId],
+          layer = kvm.map._layers[feature.markerId];
+
+    // Löscht die editierbare Geometrie 
+    kvm.map.removeLayer(this.features[featureId].draggable);
+
+    // Zoom zur ursprünglichen Geometrie
+    kvm.map.panTo(kvm.map._layers[feature.markerId].getLatLng());
+
+    //Setzt den Style des circle Markers auf den alten zurück
+    kvm.map._layers[feature.markerId].setStyle(this.getNormalCircleMarkerStyle());
+
+    // Binded das Popup an den dazugehörigen Layer
+    kvm.map._layers[feature.markerId].bindPopup(this.getPopup(feature));
+  };
+  /*
+    featureId = '0fb17108-f06f-4af8-b658-442d30bac8a4';
+    layer = kvm.activeLayer;
+    feature = layer.features[featureId],
+    circleMarker = layer.layerGroup.getLayer(feature.markerId);
+    kvm.map.fitBounds(L.latLngBounds([circleMarker.getLatLng()]));
+  */
+
+  /*
+  * Sperrdiv Content Meldung setzen
+  * Sperrdiv einblenden
+  * Wartesymbol an Stelle des Speicherbutton anzeigen
+  * Änderungsdatensatz anlegen
+  * Ursprüngliche durch neue Geometrie ersetzen
+  *  - im Layerobjekt (z.B. circleMarker)
+  *  - im Featureobjekt
+  *  - im Formular falls vorhanden
+  * Style der ursprünglichen Geometrie auf default setzen
+  * editierbare Geometrie aus der Karte löschen und damit Popup der editierbaren Geometrie schließen
+  * Binded das default Popup an den dazugehörigen Layer
+  * Sperrdiv entfernen
+  */
+  this.saveGeometry = function(featureId) {
+    var feature = this.features[featureId],
+        layer = kvm.map._layers[feature.markerId],
+        latlng = feature.draggable.getLatLng();
+
+    $('#sperr_div_content').html('Aktualisiere die Geometrie');
+    $('#sperr_div').show();
+    $('#save_geometry_button').toggleClass('fa-check-square-o fa-spinner fa-pulse');
+
+    /*
+    * Änderung der Geometrie speicher wie folgt:
+    * 
+    */
+    // Eintragen der neuen Geometrie in das Formular
+    //  - im Formular falls vorhanden
+    $('#featureFormular input[id=0]').val(latlng.lat + ' ' + latlng.lng).trigger('change');
+
+    // Speichern des Formulares ohne es zu zeigen.
+    //  - Dabei wird der Änderungsdatensatz erzeugt (Delta als hätte man das Form gespeichert)
+    //  - Die Änderung im Featureobjekt vorgenommen
+    feature.setGeom([latlng.lat, latlng.lng]);
+
+    // Ursprüngliche durch neue Geometrie ersetzen
+    //  - im Layerobjekt (z.B. circleMarker)
+    layer.setLatLng(feature.draggable.getLatLng());
+
+    // Style der ursprünglichen Geometrie auf default setzen
+    layer.setStyle(this.getNormalCircleMarkerStyle());
+
+    // editierbare Geometrie aus der Karte löschen und damit Popup der editierbaren Geometrie schließen
+    kvm.map.removeLayer(feature.draggable);
+
+    // Binded das default Popup an den dazugehörigen Layer
+    layer.bindPopup(this.getPopup(feature));
+
+    // Sperrdiv entfernen
+    $('#sperr_div').hide();
+  };
+  /*
+    featureId = '934d121b-18b8-4c0a-b755-f3554ea4388d';
+    l = kvm.activeLayer;
+    feature = l.features[featureId],
+    layer = kvm.map._layers[feature.markerId];
+    latlng = feature.draggable.getLatLng();
+    [latlng.lat, latlng.lng]
+  */
 
   this.collectChanges = function(action) {
     kvm.log('Layer.collectChanges', 4);
@@ -1006,7 +1235,7 @@ function Layer(stelle, settings = {}) {
                 return change.key;
               }
             ).join(', ') + ', \
-            uuid\
+            ' + this.get('id_attribute') + '\
           )\
           VALUES (' +
             $.map(
@@ -1023,7 +1252,7 @@ function Layer(stelle, settings = {}) {
                 }
               }
             ).join(', ') + ', \
-            \'' + this.activeFeature.get('uuid') + '\'\
+            \'' + this.activeFeature.get(this.get('id_attribute')) + '\'\
           )\
         '
       });
@@ -1048,7 +1277,7 @@ function Layer(stelle, settings = {}) {
               }
             ).join(', ') + '\
           WHERE\
-            uuid = \'' + this.activeFeature.get('uuid') + '\'\
+            ' + this.get('id_attribute') + ' = \'' + this.activeFeature.get(this.get('id_attribute')) + '\'\
         '
       });
     };
@@ -1060,7 +1289,7 @@ function Layer(stelle, settings = {}) {
         "delta" : '\
           DELETE FROM ' + this.get('schema_name') + '.' + this.get('table_name') + '\
           WHERE\
-            uuid = \'' + this.activeFeature.get('uuid') + '\'\
+            ' + this.get('id_attribute') + ' = \'' + this.activeFeature.get(this.get('id_attribute')) + '\'\
         '
       });
     }
@@ -1098,7 +1327,7 @@ function Layer(stelle, settings = {}) {
                 SELECT\
                   *\
                 FROM\
-                  " + this.get('schema_name') + '.' + this.get('table_name') + "_deltas\
+                  " + this.get('schema_name') + '_' + this.get('table_name') + "_deltas\
                 WHERE\
                   change = 'insert' AND\
                   delta LIKE '%" + img + "%'\
@@ -1115,7 +1344,7 @@ function Layer(stelle, settings = {}) {
                   if (numRows > 0) {
                     // lösche diesen Eintrag
                     sql = "\
-                      DELETE FROM " + this.get('schema_name') + '.' + this.get('table_name') + "_deltas\
+                      DELETE FROM " + this.get('schema_name') + '_' + this.get('table_name') + "_deltas\
                       WHERE\
                         change = 'insert' AND\
                         delta LIKE '%" + img + "%'\
@@ -1167,7 +1396,7 @@ function Layer(stelle, settings = {}) {
       [],
       (function(rs) {
         kvm.log('Layer.execDelta Sql ausgeführt.', 4);
-        this.readData();
+        this.readData($('#limit').val(), $('#offset').val());
         kvm.showItem('featurelist');
       }).bind(this),
       function(error) {
@@ -1190,7 +1419,7 @@ function Layer(stelle, settings = {}) {
       deltas,
       (function(index, delta) {
         var sql = "\
-              INSERT INTO " + this.get('schema_name') + '.' + this.get('table_name') + "_deltas (\
+              INSERT INTO " + this.get('schema_name') + '_' + this.get('table_name') + "_deltas (\
                 type,\
                 change,\
                 delta,\
@@ -1204,7 +1433,7 @@ function Layer(stelle, settings = {}) {
               )\
             ";
 
-        kvm.log('Layer.writeDeltas to table ' + this.get('schema_name') + '.' + this.get('table_name') + '_deltas sql: ' + sql, 3);
+        kvm.log('Layer.writeDeltas to table ' + this.get('schema_name') + '_' + this.get('table_name') + '_deltas sql: ' + sql, 3);
 
         kvm.db.executeSql(
           sql,
@@ -1247,19 +1476,6 @@ function Layer(stelle, settings = {}) {
       </div>\
       <div style="clear: both"></div>';
     return html;
-  };
-
-  this.getLayerUrl = function() {
-    kvm.log('Layer.getLayerUrl', 4);
-    var url = this.stelle.get('url'),
-        file = this.stelle.getUrlFile(url);
-
-    url += file +
-      'go=mobile_get_layers' + '&' +
-      'login_name=' + stelle.get('login_name') + '&' +
-      'passwort=' + stelle.get('passwort') + '&' +
-      'Stelle_ID=' + stelle.get('Stelle_ID');
-    return url;
   };
 
   this.getSyncUrl = function() {
@@ -1317,11 +1533,14 @@ function Layer(stelle, settings = {}) {
   };
 
   this.saveToStore = function() {
-    kvm.log('Einstellungen speichern.', 3);
+    kvm.log('Speicher Settings für Layer: ' + this.settings.title, 3);
     var layerIds = $.parseJSON(kvm.store.getItem('layerIds_' + this.stelle.get('id'))),
         settings = JSON.stringify(this.settings);
 
-    if (layerIds == null) { layerIds = []; }
+    if (layerIds == null) {
+      layerIds = [];
+    }
+    settings.loaded = false;
     kvm.store.setItem('layerSettings_' + this.getGlobalId(), settings);
 
     if ($.inArray(this.get('id'), layerIds) < 0) {

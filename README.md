@@ -8,6 +8,13 @@ https://github.com/srahn/kvwmap/
 http://kvwmap.de
 
 # Change log
+## 1.5.0
+  * Change methode to load layer
+  * enable different types of geometry by applying geom_attribut setting of layer
+ToDo
+  * paging in feature list
+  * points as CircleMarkers in sted of marker cluster due to more than 10.000 featue per layer
+  * enable editing the geometry of feature
 ## 1.4.4
 	* Enable origin https://geoport-vr.de/kvwmap/ in config.xml
 ## 1.4.3

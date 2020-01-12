@@ -1,5 +1,5 @@
 kvm = {
-  version: '1.4.4',
+  version: '1.5.0',
   Buffer: require('buffer').Buffer,
   wkx: require('wkx'),
   controls: {},
@@ -120,19 +120,23 @@ kvm = {
         }),
         map = L.map(
           'map', {
+            editable: true,
             center: [54, 12.2],
             zoom: 8,
             minZoom: config.minZoom,
             maxZoom: config.maxZoom,
-            layers: [orka_online, orka_offline]
+            layers: [
+              orka_online
+            //  , orka_offline
+            ]
           }
         ),
         baseMaps = {
-          'Straßenkarte online': orka_online,
-          'Straßenkarte offline': orka_offline
+          'Straßenkarte online': orka_online
+          //, 'Straßenkarte offline': orka_offline
         };
 
-    L.PM.initialize({ optIn: true });
+//    L.PM.initialize({ optIn: true });
     map.addControl(new L.control.betterscale({metric: true}));
     map.addControl(new L.control.locate({
       position: 'topright',
@@ -145,6 +149,7 @@ kvm = {
       }
     }));
     L.control.layers(baseMaps).addTo(map);
+/*
     map.pm.addControls({
       position: 'topright',
       drawCircle: false,
@@ -153,6 +158,8 @@ kvm = {
       drawCircle: false,
       removalMode: false
     });
+    */
+    this.map = map;
   },
 
   bindEvents: function() {
@@ -198,8 +205,7 @@ kvm = {
       'click',
       function () {
         $('#sperr_div').show();
-        var layer = new Layer(kvm.activeStelle);
-        layer.requestLayers();
+        kvm.activeStelle.requestLayers();
       }
     );
 
@@ -415,7 +421,7 @@ kvm = {
               navigator.notification.confirm(
                 'Datensatz Speichern?',
                 function(buttonIndex) {
-                  var action = (typeof kvm.activeLayer.features['id_' + kvm.activeLayer.activeFeature.get('uuid')] == 'undefined' ? 'INSERT' : 'UPDATE');
+                  var action = (typeof kvm.activeLayer.features[kvm.activeLayer.activeFeature.get(kvm.activeLayer.get('id_attribute'))] == 'undefined' ? 'INSERT' : 'UPDATE');
                   if (buttonIndex == 1) { // ja
                     changes = kvm.activeLayer.collectChanges(action);
                     kvm.log('Änderungen: ' + JSON.stringify(changes), 3);
@@ -495,9 +501,11 @@ kvm = {
         var this_ = evt.data.context;
 
         this_.activeLayer.loadFeatureToForm(
-          new Feature({
-            uuid : this_.uuidv4()
-          })
+          new Feature(
+            { uuid : this_.uuidv4()},
+            this_.activeLayer.settings.geometry_type,
+            this_.activeLayer.settings.geometry_attribute
+          )
         );
 
         this_.showItem('formular');
@@ -570,7 +578,7 @@ kvm = {
         kvm.log('Öffne Formular mit Objektdaten.', 4);
 
         var id = evt.target.getAttribute('id'),
-            feature = kvm.activeLayer.features['id_' + id];
+            feature = kvm.activeLayer.features[id];
 
         kvm.activeLayer.loadFeatureToForm(feature);
         kvm.showItem('formular');
@@ -578,7 +586,15 @@ kvm = {
     );
   },
 
+  /*
+  * Erzeugt die Events für die Auswahl, Syncronisierung und das Zurücksetzen von Layern
+  */
   bindLayerEvents: function() {
+    /*
+    * Schaltet einen anderen Layer und deren Sync-Funktionen aktiv
+    * Die Einstellungen des Layers werden aus dem Store geladen
+    * Die Featureliste und Kartenelemente werden falls vorhanden aus der Datenbank geladen.
+    */
     $('input[name=activeLayerId]').on(
       'change',
       function(evt) {
@@ -737,6 +753,7 @@ kvm = {
         $('#featurelistBody').append(
           haystack.indexOf(needle) > -1 ? element.show() : element.hide()
         );
+        //kvm.log(feature.get('uuid') + ' hinzugefügt.', 3, true);
       }
     );
     kvm.bindFeatureItemClickEvents();
@@ -868,6 +885,30 @@ kvm = {
       kvm.downloadError,
       true
     );
+  },
+
+  paginate: function(evt) {
+    debug_e = evt;
+    var limit = 25,
+        target = $(evt),
+        page = parseInt(target.attr('page')),
+        prevPage = page - limit;
+        nextPage = page + limit;
+
+    kvm.activeLayer.readData(limit, page);
+
+    if (target.attr('class') == 'page_next_link') {
+      $('.page_first_link').show();
+      $('.page_prev_link').show();
+    }
+
+    if (page < limit) {
+      $('.page_first_link').hide();
+      $('.page_prev_link').hide();
+    }    
+
+    $('.page_prev_link').attr('page', prevPage);
+    $('.page_next_link').attr('page', nextPage);
   },
 
   uuidv4: function() {
