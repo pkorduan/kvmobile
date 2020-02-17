@@ -147,12 +147,12 @@ a.hover {
   font-size: 18px;
 }
 
-.menubutton {
+.menu-button {
   color: #263286;
 }
 
-.menubutton:hover {
-  color: #FFFFFF;
+.menu-button:hover {
+  color: #FF0000;
   text-decoration: none;
   cursor: pointer;
 }
@@ -165,6 +165,15 @@ a.hover {
 .active-button {
   cursor: pointer;
   color: #263286;
+}
+
+.text-button {
+  font-size: 30px;
+  border: 2px solid #263286;
+  padding-left: 10px;
+  padding-right: 10px;
+  border-radius: 5px;
+  background-color: white
 }
 
 .form-div {
@@ -221,6 +230,22 @@ a.hover {
   vertical-align: middle;
   font-size: 30px;
   padding-top: 200px;
+}
+
+.deb {
+  display: none; /* Hidden by default */
+  position: fixed;
+  z-index: 1; /* Sit on top */*/
+  left:0;
+  top:0;
+  width: 100%;
+  height: 400px;
+/*  overflow: auto; /* Enable scroll if needed */
+  background-color: white; /* Fallback color */
+  color: black;
+  text-align: left;
+  font-size: 20px;
+  padding-top: 5px;
 }
 
 .v-scroll-div {

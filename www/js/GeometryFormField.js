@@ -9,7 +9,7 @@ function GeometrieFormField(formId, settings) {
 
   this.element = $('\
     <input\
-      type="text"\
+      type="hidden"\
       id="' + this.get('index') + '"\
       name="' + this.get('name') + '"\
       value=""' +
@@ -18,7 +18,10 @@ function GeometrieFormField(formId, settings) {
   );
 
   this.setValue = function(val) {
-    //console.log('GeometrieFormField.setValue with value: %o', val);
+    kvm.deb('GeometrieFormField.setValue with value:' + val);
+    var geom = kvm.wkx.Geometry.parse(new kvm.Buffer(val, 'hex'));
+    this.element.val(geom.toWkb().join(''));
+/*
     if (val == null || val == 'null') {
       val = '';
     }
@@ -27,7 +30,7 @@ function GeometrieFormField(formId, settings) {
           faktor = Math.pow(10, 6),
           val = Math.round(geom.x * faktor) / faktor + ' ' + Math.round(geom.y * faktor) / faktor;
     }
-    this.element.val(val);
+*/
   };
 
   this.getValue = function(action = '') {
@@ -37,10 +40,11 @@ function GeometrieFormField(formId, settings) {
     if (typeof val === "undefined" || val == '') {
       val = null;
     }
+/*
     else {
       val = kvm.wkx.Geometry.parse('SRID=4326;POINT(' + val + ')').toEwkb().inspect().replace(/<|Buffer| |>/g, '');
     }
-
+*/
     return val;
   };
 
@@ -60,22 +64,19 @@ function GeometrieFormField(formId, settings) {
       function() {
         kvm.log('Gehe zu Gps Position.', 3);
         var featureId = $('#featureFormular input[name=' + kvm.activeLayer.get('id_attribute') + ']').val(),
-            feature = kvm.activeLayer.features[featureId];
+            feature = kvm.activeLayer.features[featureId],
+            marker = kvm.map._layers[feature.markerId];
 
-        if (feature) {
-          kvm.activeLayer.markerClusters.zoomToShowLayer(feature.marker, function() {
-            feature.marker.openPopup();
-          });
-
-          kvm.showItem('mapFormular');
-        }
+        kvm.controller.mapper.zoomToFeature(feature.markerId)
+        marker.openPopup();
+        kvm.showItem('mapEdit');
       }
     );
 
-    $('#backToFormButton').on(
+    $('#showFormEdit').on(
       'click',
       function() {
-        kvm.showItem('formular');
+        kvm.showItem('formularEdit');
       }
     )
 
@@ -116,6 +117,68 @@ function GeometrieFormField(formId, settings) {
         );
       }
     );
+
+    /*
+    * Setzt die Geometrien auf gleiche Werte in
+    * -> WKX Geometry Objekt im Feature
+    * -> WKB für den Wert des geom_attribut: geom.toWkb().join('') => 16000200013000200040000000012866645...
+    * -> LatLng für die Geometrie des circleMarkers oder/und editables: feature.wkxToLatLngs(geom) => [[[54, 12], [54.1 12.1]],[[54 12], [...]],[...]]]
+    * -> WKT für die Anzeige im Formular: geom.toWkt() => 'MULTIPOLYGON(((54, 12 ....)))'
+    * @params event event object
+    * @params options: Object mit den Attributen
+    *   geom: Die Geometrie, die gesetzt werde soll im wkx Objekt-Format
+    *   exclude: Die Variante zum setzen der Geometrie nicht verwenden
+    */
+    $(document).on(
+      'geomChanged',
+      function(event, options) {
+        var feature = kvm.activeLayer.activeFeature,
+            geom = options.geom,
+            exclude = options.exclude;
+
+        console.log('Event geomChanged mit geom: %o und exclude: %s', geom, exclude);
+        if (exclude != 'wkx') {
+          var oldGeom = feature.newGeom,
+              newGeom = geom;
+          if (newGeom != oldGeom) {
+            feature.newGeom = newGeom;
+            console.log('Neue WKX Geometrie im Feature: %s', newGeom);
+          }
+        }
+
+        // Das kann eigentlich auch gemacht werden beim Speichern.
+        if (exclude != 'wkb') {
+          var oldGeom = $('#featureFormular input[id=0]').val(),
+              newGeom = geom.toWkb().join('');
+
+          kvm.deb('newGeom: ' + newGeom);
+          kvm.deb('oldGeom: ' + oldGeom);
+          if (newGeom != oldGeom) {
+            $('#featureFormular input[id=0]').val(newGeom).change();
+            console.log('Neue WKB Geometrie im Hidden-Field von geom_attribut im Formular: %s', newGeom);
+            kvm.deb('Neue WKB Geometrie im Formular Attribut ' + kvm.activeLayer.get('geometry_attribute') + ': ' + newGeom);
+          }
+        }
+
+        if (exclude != 'wkt') {
+          var oldGeom = $('#geom_wkt').val(),
+              newGeom = geom.toWkt();
+
+          console.log('Vergleiche alt: %s mit neu: %s', oldGeom, newGeom);
+          if (newGeom != oldGeom) {
+            $('#geom_wkt').val(newGeom);
+            console.log('Neue WKT Geometrie für die Anzeige als Text im Formular: %s', newGeom);
+          }
+        }
+
+        if (exclude != 'latlngs') {
+          feature.setLatLngs(geom);
+        }
+        kvm.activeLayer.features[feature.id] = feature;
+        console.log('fertig mit Trigger geomChanged');
+      }
+    );
+
   };
 
   this.withLabel = function() {
@@ -132,7 +195,8 @@ function GeometrieFormField(formId, settings) {
               <rect class="bar-5" x="24" y="0" width="4" height="28" />\
             </g>\
           </svg>\
-          <i id="goToGpsPositionButton" class="fa fa-globe fa-2x" aria-hidden="true" style="float: right; margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>'
+          <i id="goToGpsPositionButton" class="fa fa-globe fa-2x" aria-hidden="true" style="float: right; margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>\
+          <input type="text" id="geom_wkt" value=""/>'
         )
         .append(
           this.element

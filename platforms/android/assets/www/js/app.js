@@ -51,6 +51,9 @@ kvm = {
     kvm.log('Lade Netzwerkstatus', 3);
     this.setConnectionStatus();
 
+    kvm.log('Lade GPS-Status', 3);
+    this.setGpsStatus();
+
     kvm.log('initialisiere Karte.', 3);
     this.initMap();
 
@@ -337,6 +340,7 @@ kvm = {
       }
     );
 
+    /* wird nicht mehr benutzt
     $('#backArrow').on(
       'click',
       function(evt) {
@@ -361,6 +365,66 @@ kvm = {
         else {
           kvm.showItem('featurelist');
         }
+      }
+    );
+    */
+
+    /*
+    * Bricht Änderungen im Formular ab,
+    * - läd das Feature neu in das Formular im Anzeigemodus
+    * - Löscht die editable Geometrie in der Karte
+    * - setzt saveFeatureButton wieder auf inactiv
+    */
+    $('#cancelFeatureButton').on(
+      'click',
+      { context: this},
+      function(evt) {
+        console.log('cancelFeatureButton geklickt.');
+        var this_ = evt.data.context;
+
+        navigator.notification.confirm(
+          'Änderungen verwerfen?',
+          function(buttonIndex) {
+            console.log('Änderungen verwerfen.');
+            var activeFeature = this_.activeLayer.activeFeature,
+                featureId = activeFeature.id;
+
+            if (buttonIndex == 1) { // ja
+              console.log('Feature ist neu? %s', activeFeature.options.new);
+              if (activeFeature.options.new) {
+                console.log('Änderungen am neuen Feature verwerfen.');
+                this_.activeLayer.cancelEditGeometry();
+                if (this_.controller.mapper.isMapVisible()) {
+                  this_.showItem('map');
+                }
+                else {
+                  this_.showItem('featurelist');
+                }
+              }
+              else {
+                console.log('Änderungen am vorhandenen Feature verwerfen.');
+                this_.activeLayer.cancelEditGeometry(featureId); // Editierung der Geometrie abbrechen
+                this_.activeLayer.loadFeatureToForm(activeFeature, { editable: false}); // Formular mit ursprünglichen Daten laden
+
+                if (this_.controller.mapper.isMapVisible()) {
+                  // ToDo editableLayer existier im Moment nur, wenn man den Änderungsmodus im Popup in der Karte ausgelößt hat.
+                  // auch noch für neue Features einbauen.
+                  this_.showItem('map');
+                }
+                else {
+                  this_.showItem('formular');
+                }
+              }
+
+              this_.controller.mapper.clearWatch(); // GPS-Tracking ausschalten
+            }
+            if (buttonIndex == 2) { // nein
+              // Do nothing
+            }
+          },
+          'Formular',
+          ['ja', 'nein']
+        );
       }
     );
 
@@ -422,9 +486,10 @@ kvm = {
                 'Datensatz Speichern?',
                 function(buttonIndex) {
                   var action = (typeof kvm.activeLayer.features[kvm.activeLayer.activeFeature.get(kvm.activeLayer.get('id_attribute'))] == 'undefined' ? 'INSERT' : 'UPDATE');
+                  kvm.deb('Action: ' + action);
                   if (buttonIndex == 1) { // ja
                     changes = kvm.activeLayer.collectChanges(action);
-                    kvm.log('Änderungen: ' + JSON.stringify(changes), 3);
+                    kvm.deb('Änderungen: ' + JSON.stringify(changes));
 
                     if (changes.length > 1) {
                       // more than created_at or updated_at_client
@@ -482,34 +547,34 @@ kvm = {
       }
     );
 
-    $("#showHaltestelle").mouseover(function() {
-      $("#showHaltestelle_button").hide();
-      $("#showHaltestelle_button_white").show();
+    $("#showFeatureList").mouseover(function() {
+      $("#showFeatureList_button").hide();
+      $("#showFeatureList_button_white").show();
     });
 
-    $("#showHaltestelle").mouseleave(function() {
-      $("#showHaltestelle_button").show();
-      $("#showHaltestelle_button_white").hide();
+    $("#showFeatureList").mouseleave(function() {
+      $("#showFeatureList_button").show();
+      $("#showFeatureList_button_white").hide();
     });
 
     $('#newFeatureButton').on(
       'click',
-      {
-        "context": this
-      },
+      this.controller.mapper.newFeature
+    );
+
+    /*
+    * Läd das Formular im Editiermodus
+    */
+    $('#editFeatureButton').on(
+      'click',
+      { "context": this },
       function(evt) {
-        var this_ = evt.data.context;
+        var this_ = evt.data.context,
+            featureId = this_.activeLayer.activeFeature.id,
+            feature = this_.activeLayer.features[featureId];
 
-        this_.activeLayer.loadFeatureToForm(
-          new Feature(
-            { uuid : this_.uuidv4()},
-            this_.activeLayer.settings.geometry_type,
-            this_.activeLayer.settings.geometry_attribute
-          )
-        );
-
-        this_.showItem('formular');
-        $('#formOptionButton').hide();
+        this_.activeLayer.loadFeatureToForm(feature, { editable: true });
+        kvm.activeLayer.startEditing();
       }
     );
 
@@ -580,7 +645,7 @@ kvm = {
         var id = evt.target.getAttribute('id'),
             feature = kvm.activeLayer.features[id];
 
-        kvm.activeLayer.loadFeatureToForm(feature);
+        kvm.activeLayer.loadFeatureToForm(feature, { editable: false });
         kvm.showItem('formular');
       }
     );
@@ -720,6 +785,11 @@ kvm = {
     NetworkStatus.load();
   },
 
+  setGpsStatus: function() {
+    kvm.log('setGpsStatus');
+    GpsStatus.load();
+  },
+
   loadDeviceData: function() {
     kvm.log('loadDeviceData', 4);
     $('#deviceDataText').html(
@@ -765,62 +835,68 @@ kvm = {
 
   showItem: function(item) {
     kvm.log('showItem: ' + item, 4);
+    // erstmal alle panels ausblenden
+    $(".panel").hide();
 
     switch (item) {
-      case 'map':
+      case "settings":
         kvm.showDefaultMenu();
-        $("#featurelist, #settings, #formular, #loggings").hide();
-        $("#map").show();
-        if (kvm.activeLayer && parseInt(kvm.activeLayer.get('privileg')) > 0) $('#newFeatureButton').show();
-        kvm.map.invalidateSize();
-        break;
-      case 'mapFormular':
-        $('.menubutton').hide()
-        $("#backArrow, #saveFeatureButton, #deleteFeatureButton").hide();
-        $("#featurelist, #settings, #formular, #loggings").hide();
-        $("#map, #backToFormButton").show();
-        kvm.map.invalidateSize();
-        break;
-      case "featurelist":
-        kvm.showDefaultMenu();
-        $("#map, #settings, #formular, #loggings").hide();
-        $("#featurelist").show();
-        if (kvm.activeLayer && parseInt(kvm.activeLayer.get('privileg')) > 0) $('#newFeatureButton').show();
+        $("#settings").show();
         break;
       case "loggings":
         kvm.showDefaultMenu();
-        $("#map, #featurelist, #settings, #formular").hide();
-        if (kvm.activeLayer && parseInt(kvm.activeLayer.get('privileg')) > 0) $('#newFeatureButton').show();
         $("#loggings").show();
         break;
-      case "settings":
+      case "featurelist":
         kvm.showDefaultMenu();
-        $("#map, #featurelist, #formular, #loggings").hide();
-        $("#settings").show();
-        if (kvm.activeLayer && parseInt(kvm.activeLayer.get('privileg')) > 0) $('#newFeatureButton').show();
+        $("#featurelist").show();
+        break;
+      case 'map':
+        kvm.showDefaultMenu();
+        $("#map").show();
+        kvm.map.invalidateSize();
+        break;
+      case 'mapEdit':
+        $(".menu-button").hide();
+        $("#showFormEdit, #saveFeatureButton, #saveFeatureButton, #cancelFeatureButton").show();
+        if (kvm.activeLayer && parseInt(kvm.activeLayer.get('privileg')) == 2) {
+          $('#deleteFeatureButton').show();
+        }
+        $("#map").show();
+        kvm.map.invalidateSize();
         break;
       case "formular":
-        kvm.showFormMenu();
-        $("#map, #featurelist, #settings, #loggings, #newFeatureButton, #backToFormButton").hide();
+        $(".menu-button").hide();
+        $("#showSettings, #showFeatureList, #showMap, #editFeatureButton").show();
+        $("#formular").show().scrollTop(0);
+        break;
+      case "formularEdit":
+        $(".menu-button").hide();
+        $("#showMapEdit, #saveFeatureButton, #saveFeatureButton, #cancelFeatureButton").show();
+        if (kvm.activeLayer && parseInt(kvm.activeLayer.get('privileg')) == 2) {
+          $('#deleteFeatureButton').show();
+        }
         $("#formular").show().scrollTop(0);
         break;
       default:
         kvm.showDefaultMenu();
-        $("#map, #featurelist, #settings, #loggings, #formular").hide();
         $("#settings").show();
-        if (kvm.activeLayer && parseInt(kvm.activeLayer.get('privileg')) > 0) $('#newFeatureButton').show();
     }
   },
 
   showDefaultMenu: function() {
-    $("#backArrow, #saveFeatureButton, #deleteFeatureButton, #backToFormButton").hide();
-    $("#showMap, #showLine, #showHaltestelle, #showSettings").show();
+    $(".menu-button").hide();
+  //  $("#backArrow, #saveFeatureButton, #deleteFeatureButton, #backToFormButton").hide();
+    $("#showSettings, #showFeatureList, #showMap, #newFeatureButton").show();
+    if (kvm.activeLayer && parseInt(kvm.activeLayer.get('privileg')) > 0) $('#newFeatureButton').show();
   },
 
   showFormMenu: function() {
-    $("#showMap, #showLine, #showHaltestelle, #showSettings").hide();
-    $("#backArrow, #saveFeatureButton").show();
-    if (kvm.activeLayer && parseInt(kvm.activeLayer.get('privileg')) == 2) $('#deleteFeatureButton').show();
+    $(".menu-button").hide();
+    $("#showFeatureList, #showMap, #saveFeatureButton").show();
+    if (kvm.activeLayer && parseInt(kvm.activeLayer.get('privileg')) == 2) {
+      $('#deleteFeatureButton').show();
+    }
   },
 
   getGeoLocation: function() {
@@ -938,6 +1014,12 @@ kvm = {
       title,
       ['ok']
     );
+  },
+
+  deb: function(msg) {
+    $('#debText').append('<p>' + msg);
+    //$(document).scrollBottom($('#debText').offset().bottom);
+    $('#debugs').show();
   },
 
   coalesce: function() {

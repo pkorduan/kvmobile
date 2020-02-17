@@ -97,7 +97,8 @@ function Layer(stelle, settings = {}) {
             item, {
               id_attribute: this.get('id_attribute'),
               geometry_type: this.get('geometry_type'),
-              geometry_attribute: this.get('geometry_attribute')
+              geometry_attribute: this.get('geometry_attribute'),
+              new: false
             }
           );
         }
@@ -810,32 +811,12 @@ function Layer(stelle, settings = {}) {
     });
   };
 
-  this.getDraggableIcon = function() {
-    return L.icon({
-        iconUrl: 'img/draggableIcon.svg',
-        iconSize: [38, 95],
-        iconAnchor: [19, 81],
-        popupAnchor: [-3, -76],
-        shadowUrl: 'img/draggableIconShadow.svg',
-        shadowSize: [68, 95],
-        shadowAnchor: [19, 81]
-    });
-  };
-/*
-  kvm.activeLayer.getDraggableIcon = function() {
-    return L.icon({
-        iconUrl: 'img/draggableIcon.svg',
-        iconSize: [38, 95],
-        iconAnchor: [19, 80],
-        popupAnchor: [-3, -76],
-        shadowUrl: 'img/draggableIconShadow.svg',
-        shadowSize: [68, 95],
-        shadowAnchor: [22, 94]
-    });
-  };
-*/
-
-  this.loadFeatureToForm = function(feature) {
+  /*
+  * - Befüllt das Formular des Layers mit den Attributwerten des übergebenen Features
+  * - Setzt das Feature als activeFeature im Layer
+  * - Startet das GPS-Tracking
+  */
+  this.loadFeatureToForm = function(feature, options = { editable: false}) {
     kvm.log('Lade Feature in Formular.', 3);
     this.activeFeature = feature;
 
@@ -853,20 +834,26 @@ function Layer(stelle, settings = {}) {
       $('#goToGpsPositionButton').hide();
     }
     else {
+      if (feature.geom) {
+        $('#geom_wkt').val(feature.geom.toWkt());
+      }
       $('#goToGpsPositionButton').show();
     }
 
-    kvm.controller.mapper.watchGpsAccuracy();
+    if (options.editable) {
+      kvm.controller.mapper.watchGpsAccuracy();
+    }
   };
 
   this.drawFeatures = function() {
-    kvm.log('Erzeuge Geometrieobjekt in der Karte: ', 3);
+    //kvm.log('Erzeuge Geometrieobjekt in der Karte: ', 3);
     var myRenderer = L.canvas({ padding: 0.5 });
     $.each(
       this.features,
       (function (key, feature) {
+        //console.log('Erzeuge circleMarker: %s', feature.id);
         // circleMarker erzeugen mit Popup Eventlistener
-        var circleMarker = L.circleMarker(feature.getGeom(), {
+        var circleMarker = L.circleMarker(feature.wkxToLatLngs(feature.newGeom), {
           renderer: myRenderer
         }).bindPopup(this.getPopup(feature));
         circleMarker.setStyle(this.getNormalCircleMarkerStyle());
@@ -959,7 +946,7 @@ function Layer(stelle, settings = {}) {
       <a\
         class="popup-link"\
         href="#"\
-        title="Sachdaten ändern"\
+        title="Sachdaten anzeigen"\
         onclick="kvm.activeLayer.goToForm(\'' + feature.get(this.get('id_attribute')) + '\')"\
       ><span class="fa-stack fa-lg">\
           <i class="fa fa-square fa-stack-2x"></i>\
@@ -977,7 +964,9 @@ function Layer(stelle, settings = {}) {
     return html;
   };
 
-  this.getDraggablePopup = function(feature) {
+/*
+  Werden nicht mehr benötigt.
+  this.geteditablePopup = function(feature) {
     var html;
 
     html = feature.get(this.get('name_attribute')) + '\
@@ -1010,18 +999,40 @@ function Layer(stelle, settings = {}) {
     ';
     return html;
   };
-
+*/
   this.goToForm = function(featureId) {
     // ToDo: Hier berücksichtigen, dass man auch von einer geänderten Geometrie kommen kann
     // in dem Fall muss die geänderte Geometrie mit in das Formular übernommen werden
     // für den Fall, dass man das Form speichert. Damit man da dann über getValue aus dem Geom Feld die letzte Geom
     // nimmt zum Speichern.
+    // und berüsichtigen, dass man jetzt nur noch vom Menü aus in das FormularEdit wechselt.
     if ($('#saveFeatureButton').hasClass('active-button')) {
       kvm.msg('Es gibt nicht gespeicherte Änderungen! Gehen Sie zurück zum Formular und verwerfen Sie die Änderungen um eine neue Änderung zu beginnen.');
     }
     else {
-      this.loadFeatureToForm(this.features[featureId]);
+      this.loadFeatureToForm(this.features[featureId], { editable: false});
       kvm.showItem('formular');
+    }
+  };
+
+  /*
+  * Wenn alatlng übergeben wurde beginne die Editierung an dieser Stelle statt an der Stelle der Koordinaten des activeFeatures
+  */
+  this.startEditing = function(alatlng = []) {
+    var feature = this.activeFeature;
+
+    if (alatlng.length > 0) {
+      feature.setGeom(feature.aLatLngsToWkx([alatlng]));
+    }
+    feature.setEditable(true);
+
+    if (kvm.controller.mapper.isMapVisible()) {
+      console.log('Map is Visible, keep panel map open.');
+      kvm.showItem('mapEdit');
+    }
+    else {
+      console.log('Map Is not Visible, open in formular');
+      kvm.showItem('formularEdit');
     }
   };
 
@@ -1031,17 +1042,19 @@ function Layer(stelle, settings = {}) {
   * unbind das Popup
   * Setzt den Style des circleMarkers auf grau
   * Erzeugt das Formular mit den Feature-Werten, aber bleibt in der Karte
-  * Erzeugt einen draggable Marker mit einem Popup.
+  * Erzeugt einen editable Marker mit einem Popup.
   * Damit kann der Nutzer den Marker so lange verschieben wie er möchte.
-  * Wenn er den Marker anklickt kommt das Popup des draggable Markers mit folgenden Funktionen:
+  */
+/* Dies gilt nicht mehr:
+  * Wenn er den Marker anklickt kommt das Popup des editable Markers mit folgenden Funktionen:
   *   - Speichern: Speichert die neue Position mit der Funktion saveGeometry(feature_id)
   *   - Sachdaten editieren: Wechselt in die Sachdatenanzeige mit der Funktion goToForm(feature_id)
   *   - Abbrechen:
   *     - Setzt die Geometrie im Formular auf den ursprünglichen Wert
-  *     - Löscht den draggable Marker
+  *     - Löscht den editable Marker
   *     - Bindet das Popup des Features erneut an den circleMarker
   *     - ändert den Style zurück auf den Standardstyle des circleMarkers
-  */
+*/
   this.editGeometry = function(featureId) {
     console.log('editGeometry Id: %s', featureId);
     // Ermittelt die layer_id des circleMarkers des Features
@@ -1059,18 +1072,11 @@ function Layer(stelle, settings = {}) {
     // färbt den circle Marker grau ein.
     circleMarker.setStyle(this.getEditModeCircleMarkerStyle());
 
-    // Erzeugt einen draggable Marker mit einem Popup
-    draggable = L.marker(
-      feature.getGeom(), {
-        icon: this.getDraggableIcon()
-      }
-    ).addTo(kvm.map);
-    draggable.enableEdit();
-    draggableId = draggable._leaflet_id;
-    kvm.map._layers[draggable._leaflet_id].bindPopup(this.getDraggablePopup(feature, draggable));
+    // erzeugt die editierbare Geometrie
+    this.features[featureId].setEditable(true);
 
-    // registriert den draggable
-    this.features[featureId].draggable = draggable;
+    this.loadFeatureToForm(feature, { editable: true });
+    kvm.showItem('mapEdit');
   };
   /*
     kvm.activeLayer.editGeometry = function(featureId) {
@@ -1080,11 +1086,11 @@ function Layer(stelle, settings = {}) {
 
       console.log('Edit CircleMarker: %o in Layer Id: %s von Feature Id: %s.', circleMarker, feature.markerId, featureId);  
       circleMarker.setStyle({ color: '#f00', fillColor: '#f00' });
-      draggable = L.marker(feature.getGeom()).addTo(kvm.map);
-      draggable.enableEdit();
-      draggableId = draggable._leaflet_id;
-      kvm.map._layers[draggable._leaflet_id].bindPopup(this.getDraggablePopup(feature, draggable));
-      this.features[featureId].draggable = draggable;
+      editable = L.marker(feature.getGeom()).addTo(kvm.map);
+      editable.enableEdit();
+      editableId = editable._leaflet_id;
+      kvm.map._layers[editable._leaflet_id].bindPopup(this.geteditablePopup(feature, editable));
+      this.features[featureId].editable = editable;
     }
     kvm.activeLayer.editGeometry('0e926383-6ce8-4e1d-8a38-9e775f74ac1c')
   */
@@ -1097,22 +1103,29 @@ function Layer(stelle, settings = {}) {
   */
   this.cancelEditGeometry = function(featureId) {
     console.log('cancelEditGeometry Id: %s', featureId);
-    // Ermittelt die layer_id des circleMarkers des Features
-    var feature = this.features[featureId],
-          layer = kvm.map._layers[feature.markerId];
+    if (featureId) {
+      // Ermittelt die layer_id des circleMarkers des Features
+      var feature = this.features[featureId],
+            layer = kvm.map._layers[feature.markerId];
 
-    // Löscht die editierbare Geometrie 
-    kvm.map.removeLayer(this.features[featureId].draggable);
+      // Löscht die editierbare Geometrie
+      this.features[featureId].setEditable(false);
 
-    // Zoom zur ursprünglichen Geometrie
-    kvm.map.panTo(kvm.map._layers[feature.markerId].getLatLng());
+      // Zoom zur ursprünglichen Geometrie
+      kvm.map.panTo(kvm.map._layers[feature.markerId].getLatLng());
 
-    //Setzt den Style des circle Markers auf den alten zurück
-    kvm.map._layers[feature.markerId].setStyle(this.getNormalCircleMarkerStyle());
+      //Setzt den Style des circle Markers auf den alten zurück
+      kvm.map._layers[feature.markerId].setStyle(this.getNormalCircleMarkerStyle());
 
-    // Binded das Popup an den dazugehörigen Layer
-    kvm.map._layers[feature.markerId].bindPopup(this.getPopup(feature));
-  };
+      // Binded das Popup an den dazugehörigen Layer
+      kvm.map._layers[feature.markerId].bindPopup(this.getPopup(feature));
+    }
+    else {
+      // Beende das Anlegen eines neuen Features
+      kvm.map.removeLayer(kvm.activeLayer.activeFeature.editableLayer);
+      kvm.showItem('map');
+    }
+  }
   /*
     featureId = '0fb17108-f06f-4af8-b658-442d30bac8a4';
     layer = kvm.activeLayer;
@@ -1122,6 +1135,9 @@ function Layer(stelle, settings = {}) {
   */
 
   /*
+  * Das ist alles nicht nötig wenn die geänderte Geometrie per Trigger immer automatisch in das Form und das Featureobjekt geschrieben wird.
+  * Dann reicht der Klick auf den Save-Button, der der gleiche ist wie der im Form. Form und Map sind Quasi eins, nur mit zwei Seiten zwischen denen geblättert werden kann.
+  *
   * Sperrdiv Content Meldung setzen
   * Sperrdiv einblenden
   * Wartesymbol an Stelle des Speicherbutton anzeigen
@@ -1138,34 +1154,31 @@ function Layer(stelle, settings = {}) {
   this.saveGeometry = function(featureId) {
     var feature = this.features[featureId],
         layer = kvm.map._layers[feature.markerId],
-        latlng = feature.draggable.getLatLng();
+        latlng = feature.editableLayer.getLatLng();
 
     $('#sperr_div_content').html('Aktualisiere die Geometrie');
     $('#sperr_div').show();
     $('#save_geometry_button').toggleClass('fa-check-square-o fa-spinner fa-pulse');
 
     /*
-    * Änderung der Geometrie speicher wie folgt:
+    * Änderung der Geometrie speichern wie folgt:
     * 
     */
-    // Eintragen der neuen Geometrie in das Formular
-    //  - im Formular falls vorhanden
-    $('#featureFormular input[id=0]').val(latlng.lat + ' ' + latlng.lng).trigger('change');
-
     // Speichern des Formulares ohne es zu zeigen.
     //  - Dabei wird der Änderungsdatensatz erzeugt (Delta als hätte man das Form gespeichert)
+
     //  - Die Änderung im Featureobjekt vorgenommen
-    feature.setGeom([latlng.lat, latlng.lng]);
+    feature.geom = kvm.controller.mapper.geomFromLatLngs(latlng);
 
     // Ursprüngliche durch neue Geometrie ersetzen
     //  - im Layerobjekt (z.B. circleMarker)
-    layer.setLatLng(feature.draggable.getLatLng());
+    layer.setLatLng(feature.editableLayer.getLatLng());
 
     // Style der ursprünglichen Geometrie auf default setzen
     layer.setStyle(this.getNormalCircleMarkerStyle());
 
     // editierbare Geometrie aus der Karte löschen und damit Popup der editierbaren Geometrie schließen
-    kvm.map.removeLayer(feature.draggable);
+    feature.setEditable(false);
 
     // Binded das default Popup an den dazugehörigen Layer
     layer.bindPopup(this.getPopup(feature));
@@ -1178,12 +1191,12 @@ function Layer(stelle, settings = {}) {
     l = kvm.activeLayer;
     feature = l.features[featureId],
     layer = kvm.map._layers[feature.markerId];
-    latlng = feature.draggable.getLatLng();
+    latlng = feature.editable.getLatLng();
     [latlng.lat, latlng.lng]
   */
 
   this.collectChanges = function(action) {
-    kvm.log('Layer.collectChanges', 4);
+    kvm.deb('Layer.collectChanges');
     var activeFeature = this.activeFeature,
         changes = [];
 
@@ -1192,17 +1205,19 @@ function Layer(stelle, settings = {}) {
     changes = $.map(
       this.attributes,
       (function(attr) {
-        kvm.log('Vergleiche Werte von Attribut: ' + attr.get('name') + ' action: ' + action, 3);
+        kvm.deb('Vergleiche Werte von Attribut: ' + attr.get('name'));
         var key = attr.get('name'),
-            oldVal = activeFeature.get(key);
+            oldVal = activeFeature.get(key),
             newVal = attr.formField.getValue(this.action);
 
         if (typeof oldVal == 'string') oldVal = oldVal.trim();
         if (typeof newVal == 'string') newVal = newVal.trim();
 
-        kvm.log('Vergleiche ' + attr.get('form_element_type') + ' Attribut: ' + key + '(' + oldVal + ' (' + typeof oldVal + ') vs. ' + newVal + '(' + typeof newVal + '))', 3);
+        kvm.deb('Vergleiche ' + attr.get('form_element_type') + ' Attribut: ' + key + '(' + oldVal + ' (' + typeof oldVal + ') vs. ' + newVal + '(' + typeof newVal + '))');
+
         if (oldVal != newVal) {
           kvm.log('Änderung in Attribut ' + key + ' gefunden.', 3);
+          kvm.deb('Änderung in Attribut ' + key + ' gefunden.');
           return {
             'key': key,
             'value': newVal,

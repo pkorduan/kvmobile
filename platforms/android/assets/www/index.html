@@ -50,6 +50,7 @@
     <script src="js/Attribute.js"></script>
     <script src="js/syncStatus.js"></script>
     <script src="js/networkStatus.js"></script>
+    <script src="js/gpsStatus.js"></script>
     <script src="js/app.js"></script>
   </head>
   <body onload="kvm.init()">
@@ -57,41 +58,51 @@
     <div id="sperr_div" class="modal">
       <i class="fa fa-spinner fa-pulse fa-2x"></i><p id="sperr_div_content" style="margin-top: 20px">Lade Daten ...</p>
     </div>
+
     <!-- Menue -->
     <div id="kopfbereich">
       <div class="col-xs-3" style="text-align:center;">
-        <a id="showSettings" class="menubutton" onClick="kvm.showItem('settings')">
+        <a id="showSettings" class="menu-button" onClick="kvm.showItem('settings')">
           <i class="fa fa-ellipsis-v fa-2x" aria-hidden="true"></i>
         </a>
-        <a id="backArrow" class="menubutton" style="display: none;">
-          <i class="fa fa-arrow-left fa-2x" aria-hidden="true"></i>
+        <a id="showMapEdit" class="menu-button" onClick="kvm.showItem('mapEdit')" style="display: none;">
+          <i class="fa fa-map fa-2x" aria-hidden="true"></i>
+          <i class="fa fa-pencil" aria-hidden="true"></i>
+        </a>
+        <a id="showFormEdit" class="menu-button" onClick="kvm.showItem('formularEdit')" style="display: none;">
+          <i class="fa fa-bars fa-2x" aria-hidden="true"></i>
         </a>
       </div>
       <div class="col-xs-3" style="text-align:center;">
-        <a id="showHaltestelle" class="menubutton" onClick="kvm.showItem('featurelist')">
+        <a id="showFeatureList" class="menu-button" onClick="kvm.showItem('featurelist')" style="display: none;">
           <i class="fa fa-list fa-2x" aria-hidden="true"></i>
         </a>
-      </div>
-      <div class="col-xs-3" style="text-align:center;">
-        <a id="showMap" class="menubutton" onClick="kvm.showItem('map')">
-          <i class="fa fa-map-marker fa-2x" aria-hidden="true"></i>
+        <a id="cancelFeatureButton" class="menu-button text-button" style="display: none;">
+          Abbrechen
         </a>
       </div>
       <div class="col-xs-3" style="text-align:center;">
-        <!--a onClick="kvm.showItem('formular')" class="menubutton" id="showLine">
+        <a id="showMap" class="menu-button" onClick="kvm.showItem('map')" style="display: none;">
+          <i class="fa fa-map fa-2x" aria-hidden="true"></i>
+        </a>
+        <a id="saveFeatureButton" class="menu-button text-button" style="display: none;">
+          Speichern
+        </a>
+      </div>
+      <div class="col-xs-3" style="text-align:center;">
+        <!--a onClick="kvm.showItem('formular')" class="menu-button" id="showLine">
           <i id="addHaltestelle" class="fa fa-plus-square fa-2x" aria-hidden="true"></i>
         </a //-->
-        <i id="backToFormButton" class="fa fa-arrow-right fa-2x menubutton" aria-hidden="true" style="display:none;"></i>
-        <i id="newFeatureButton" class="fa fa-plus-square fa-2x menubutton" aria-hidden="true" style="display:none;"></i>
-        <i id="saveFeatureButton" class="fa fa-check-square-o fa-2x inactive-button" aria-hidden="true" style="display:none; margin-right: 3px"></i>
-        <i id="deleteFeatureButton" class="fa fa-trash fa-2x menubutton" aria-hidden="true" style="display:none;"></i>
+        <i id="newFeatureButton" class="fa fa-plus-square fa-2x menu-button" aria-hidden="true" style="display: none;"></i>
+        <i id="editFeatureButton" class="fa fa-pencil fa-2x menu-button" aria-hidden="true" style="display: none;"></i>
+        <i id="deleteFeatureButton" class="fa fa-trash fa-2x menu-button" aria-hidden="true" style="display: none;"></i>
       </div>
     </div>
   </div>
   <div class="clear"></div>
 
   <!-- Einstellungen -->
-  <div id="settings" class="v-scroll-div">
+  <div id="settings" class="panel v-scroll-div">
     <h1>Einstellungen</h1>
 <!--
     <input type="checkbox" style="vertical-align: top;" />
@@ -147,8 +158,17 @@
     </div>
     <hr>
 
+    <h2>Sachdatenanzeige</h2>
+    Anzahl Zeilen pro Seite: <input type="text" id="limit" value="25" size="3"/><br>
+    Beginnen bei Zeile: <input type="text" id="offset" value="0" size="5"/>
+    <hr>
+
     <h2>Netzwerk</h2>
     <div id="networkStatusText">...wird geladen</div>
+    <hr>
+
+    <h2>GPS</h2>
+    <div id="gpsStatusText">...wird geladen</div>
     <hr>
 
     <h2>Geräteinformationen</h2>
@@ -180,14 +200,14 @@
   </div>
 
   <!-- Logs -->
-  <div id="loggings" class="v-scroll-div">
+  <div id="loggings" class="panel v-scroll-div">
     <h1>Logging</h1>
     <div id="logText"></div>
   </div>
   <div class="clear"></div>
 
   <!-- featurelist-->
-  <div id="featurelist" class="v-scroll-div">
+  <div id="featurelist" class="panel v-scroll-div">
     <div style="float: left; margin-left: 5px;">
       <h1 id="featurelistHeading" style="font-size: 24px"></h1>
     </div>
@@ -217,12 +237,20 @@
   <div class="clear"></div>
 
   <!-- Karte -->
-  <div id="map">
+  <div id="map" class="panel">
   </div>
   <div class="clear"></div>
 
   <!-- Formular -->
-  <div id="formular" class="v-scroll-div">
+  <div id="formular" class="panel v-scroll-div">
+  </div>
+  <div class="clear"></div>
+
+  <!-- Debugs -->
+  <div id="debugs" class="deb">
+    <div style="padding: 2px;"><h1>Debugmeldungen</h1></div>
+    <div id="debText" style="clear: both; height: 300px; overflow: auto;"></div>
+    <div style="text-align: center; padding: 2px;"><input type="button" value="Schließen" onclick="$('#debugs').hide()"></div>
   </div>
   <div class="clear"></div>
 
