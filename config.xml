@@ -12,6 +12,7 @@
     <access origin="https://geoportal.lkros.de/kvwmap_dev/*" />
     <access origin="https://geoportal.lkros.de/kvwmap_test/*" />
     <access origin="https://geoportal-vg.de/kvwmap/*" />
+    <access origin="https://geoportal-vg.de/kvwmap_test/*" />
     <access origin="https://geoport.lk-vr.de/kvwmap/*" />
     <access origin="https://www.orka-mv.de/*" />
     <allow-intent href="http://*/*" />

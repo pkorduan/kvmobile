@@ -18,9 +18,9 @@ function GeometrieFormField(formId, settings) {
   );
 
   this.setValue = function(val) {
-    kvm.deb('GeometrieFormField.setValue with value:' + val);
+    kvm.log('GeometrieFormField.setValue with value:' + val);
     var geom = kvm.wkx.Geometry.parse(new kvm.Buffer(val, 'hex'));
-    this.element.val(geom.toWkb().join(''));
+    this.element.val(geom.toWkb().toString('hex'));
 /*
     if (val == null || val == 'null') {
       val = '';
@@ -73,13 +73,6 @@ function GeometrieFormField(formId, settings) {
       }
     );
 
-    $('#showFormEdit').on(
-      'click',
-      function() {
-        kvm.showItem('formularEdit');
-      }
-    )
-
     $('#saveGpsPositionButton').on(
       'click',
       function() {
@@ -121,7 +114,7 @@ function GeometrieFormField(formId, settings) {
     /*
     * Setzt die Geometrien auf gleiche Werte in
     * -> WKX Geometry Objekt im Feature
-    * -> WKB für den Wert des geom_attribut: geom.toWkb().join('') => 16000200013000200040000000012866645...
+    * -> WKB für den Wert des geom_attribut: geom.toWkb().toString('hex') => 0101000000000000000000f03f0000000000000040...
     * -> LatLng für die Geometrie des circleMarkers oder/und editables: feature.wkxToLatLngs(geom) => [[[54, 12], [54.1 12.1]],[[54 12], [...]],[...]]]
     * -> WKT für die Anzeige im Formular: geom.toWkt() => 'MULTIPOLYGON(((54, 12 ....)))'
     * @params event event object
@@ -148,13 +141,13 @@ function GeometrieFormField(formId, settings) {
 
         // Das kann eigentlich auch gemacht werden beim Speichern.
         if (exclude != 'wkb') {
-          var oldGeom = $('#featureFormular input[id=0]').val(),
-              newGeom = geom.toWkb().join('');
+          var oldGeom = $('#featureFormular input[name=' + kvm.activeLayer.get('geometry_attribute') + ']').val(),
+              newGeom = geom.toWkb().toString('hex');
 
           kvm.deb('newGeom: ' + newGeom);
           kvm.deb('oldGeom: ' + oldGeom);
           if (newGeom != oldGeom) {
-            $('#featureFormular input[id=0]').val(newGeom).change();
+            $('#featureFormular input[name=' + kvm.activeLayer.get('geometry_attribute') + ']').val(newGeom).change();
             console.log('Neue WKB Geometrie im Hidden-Field von geom_attribut im Formular: %s', newGeom);
             kvm.deb('Neue WKB Geometrie im Formular Attribut ' + kvm.activeLayer.get('geometry_attribute') + ': ' + newGeom);
           }

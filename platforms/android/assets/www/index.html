@@ -5,7 +5,7 @@
     <META charset="UTF-8">
     <meta name="format-detection" content="telephone=no">
     <meta name="msapplication-tap-highlight" content="no">
-    <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width" /-->
+    <meta name="viewport" content="user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, width=device-width, height=device-height, target-densityDpi=device-dpi" /-->
     <!-- This is a wide open CSP declaration. To lock this down for production, see below. -->
     <!--meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline'; style-src 'self' 'unsafe-inline'; media-src *"-->
     <!--meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline'; img-src * filesystem://com.android.providers.media.documents/document/ content://com.android.providers.media.documents/document/ data://com.android.providers.media.documents/document/ blob://com.android.providers.media.documents/document/ android-webview-video-poster:content://com.android.providers.media.documents/document/ gap: https://ssl.gstatic.com content://com.android.providers.media.documents/document/ unsafe-eval'; style-src * 'unsafe-inline'; media-src *"-->
@@ -44,6 +44,7 @@
     <script src="js/TextFormField.js"></script>
     <script src="js/DateTimeFormField.js"></script>
     <script src="js/ZahlFormField.js"></script>
+    <script src="js/DataViewField.js"></script>
     <script src="js/Stelle.js"></script>
     <script src="js/Stelle.js"></script>
     <script src="js/Feature.js"></script>
@@ -62,19 +63,19 @@
     <!-- Menue -->
     <div id="kopfbereich">
       <div class="col-xs-3" style="text-align:center;">
-        <a id="showSettings" class="menu-button" onClick="kvm.showItem('settings')">
+        <a id="showSettings" class="menu-button">
           <i class="fa fa-ellipsis-v fa-2x" aria-hidden="true"></i>
         </a>
-        <a id="showMapEdit" class="menu-button" onClick="kvm.showItem('mapEdit')" style="display: none;">
+        <a id="showMapEdit" class="menu-button" style="display: none;">
           <i class="fa fa-map fa-2x" aria-hidden="true"></i>
           <i class="fa fa-pencil" aria-hidden="true"></i>
         </a>
-        <a id="showFormEdit" class="menu-button" onClick="kvm.showItem('formularEdit')" style="display: none;">
+        <a id="showFormEdit" class="menu-button" style="display: none;">
           <i class="fa fa-bars fa-2x" aria-hidden="true"></i>
         </a>
       </div>
       <div class="col-xs-3" style="text-align:center;">
-        <a id="showFeatureList" class="menu-button" onClick="kvm.showItem('featurelist')" style="display: none;">
+        <a id="showFeatureList" class="menu-button" style="display: none;">
           <i class="fa fa-list fa-2x" aria-hidden="true"></i>
         </a>
         <a id="cancelFeatureButton" class="menu-button text-button" style="display: none;">
@@ -117,6 +118,17 @@
         <option value="status = 0">Noch zu prüfen</option>
         <option value="status = 1">Ist schon geprüft</option>
         <option value="status = 2">Noch Nachfragen nötig</option>
+      </select>
+    </div>
+    <hr>
+
+    <h2>Sortierung</h2>
+    <div id="anzeigeSortDiv">
+      <select id="anzeigeSortSelect">
+        <option value="">keine Sortierung</option>
+        <option value="postleitzahl">PLZ</option>
+        <option value="strasse_name">Strassenname</option>
+        <option value="status">Status</option>
       </select>
     </div>
     <hr>
@@ -195,7 +207,9 @@
     </button>
     <button id="clearLoggingsButton" class="settings-button">
       <i class="fa fa-list" aria-hidden="true"> Leere Protokoll</i>
-    </button>
+    </button><br>
+    <input type="checkbox" id="show_allways_debug_messages" value="1"> Debug-Meldung immer einblenden<br>
+    <hr>
     <p>
   </div>
 
@@ -216,28 +230,33 @@
     </div>
     <div style="clear: both;"></div>
     <input type="search" id="searchHaltestelle" placeholder="Datensatz suchen" aria-label"Liste der Datensätze durchsuchen" autocomplete="off" style="margin-left: 6px; margin-bottom: 4px; padding-left: 4px; padding-top: 2px; padding-bottom: 2px; font-size: 24px; width: 97%; border-radius: 5px; display: none">
-    <div class="center">
+    <!--div class="center">
       <div class="pagination">
         <a class="page_first_link" href="#" page="0" onclick="kvm.paginate(this)" style="display: none">&laquo;</a>
         <a class="page_prev_link" href="#" page="0" onclick="kvm.paginate(this)" style="display: none">zurück</a>
         <a class="page_next_link" href="#" page="25" onclick="kvm.paginate(this)">weiter</a>
         <a class="page_last_link" href="#" page="" onclick="kvm.paginate(this)" style="display: none">&raquo;</a>
       </div>
-    </div>
+    </div//-->
     <div id="featurelistBody"></div>
-    <div class="center">
+    <!--div class="center">
       <div class="pagination">
         <a class="page_first_link" href="#" page="0" onclick="kvm.paginate(this)" style="display: none">&laquo;</a>
         <a class="page_prev_link" href="#" page="0" onclick="kvm.paginate(this)" style="display: none">zurück</a>
         <a class="page_next_link" href="#" page="25" onclick="kvm.paginate(this)">weiter</a>
         <a class="page_last_link" href="#" page="" onclick="kvm.paginate(this)" style="display: none">&raquo;</a>
       </div>
-    </div>
+    </div//-->
   </div>
   <div class="clear"></div>
 
   <!-- Karte -->
   <div id="map" class="panel">
+  </div>
+  <div class="clear"></div>
+
+  <!-- DataView -->
+  <div id="dataView" class="panel v-scroll-div">
   </div>
   <div class="clear"></div>
 

@@ -31,12 +31,12 @@ function Feature(
     geometry_attribute: 'geom',
     new: true
   }) {
-  //kvm.log('Create Feature with data: ' + JSON.stringify(data), 4);
+  //console.log('Create Feature with data: %o and options: %o', data, options);
   this.data = (typeof data == 'string' ? $.parseJSON(data) : data);
   this.options = options; // Optionen, die beim Erzeugen des Features mit übergeben wurden. Siehe Default-Argument in init-Klasse.
   this.id = this.data[options.id_attribute];
   this.markerId = ''; // Id des Layers (z.B. circleMarkers) in dem das Feature gezeichnet ist
-  this.editableLayer = L.marker(kvm.map.getCenter()); // Leaflet Layer-Objekt in dem die editierbare Geometrie ist
+  this.editableLayer = L.marker(kvm.map.getCenter()); // Leaflet Layer-Objekt in dem die editierbare Geometrie ist //ToDo starte an vorhandener Position
   this.editable = false; // Feature ist gerade im Modus editierbar oder nicht
 
   this.get = function(key) {
@@ -53,6 +53,10 @@ function Feature(
       this.editableLayer = kvm.controller.mapper.removeEditable(this);
     }
     this.editable = editable;
+  };
+
+  this.showPopupButtons = function() {
+    return kvm.activeLayer.showPopupButtons;
   };
 
   this.getAsArray = function(key) {
@@ -130,7 +134,7 @@ function Feature(
   /*
   * Gibt von einem WKX Geometry Objekt ein Array mit latlng Werten aus.
   */
-  this.wkxToLatLngs = function(geom) {
+  this.wkxToLatLngs = function(geom = this.geom) {
     // ToDo hier ggf. den Geometrietyp auch aus this.geometry_type auslesen und nicht aus der übergebenen geom
     // Problem dann, dass man die Funktion nur benutzen kann für den Geometrietype des activeLayer
     var coordsLevelDeep = kvm.controller.mapper.coordsLevelsDeep[geom.toWkt().split('(')[0].toUpperCase()];
@@ -150,7 +154,7 @@ function Feature(
   * Die Funktion wandelt die Koordinatenachsenreihenfolge von latlng auf eastnorth!
   * @return Liefert das erzeugte WKX-Geometrie-Objekt zurück.
   * Umformungsvarianten für WKX-Geometrie sind:
-  * -> WKB für den Wert des geom_attribut: geom.toWkb().join('') => 16000200013000200040000000012866645...
+  * -> WKB für den Wert des geom_attribut: geom.toWkb().toString('hex') => '0101000000000000000000f03f0000000000000040'
   * -> LatLng für die Geometrie des circleMarkers oder/und editables: kvm.controller.mapper.toLatLngs(geom) => [[[54, 12], [54.1 12.1]],[[54 12], [...]],[...]]]
   * -> WKT für die Anzeige im Formular: geom.toWkt() => 'MULTIPOLYGON(((54, 12 ....)))'
   */
@@ -176,7 +180,7 @@ function Feature(
   };
 
   this.wkxToWkb = function(wkx) {
-    return wkx.toWkb().join('');
+    return wkx.toWkb().toString('hex');
   };
 
   this.reverseAxis = function(point) {
@@ -218,13 +222,89 @@ function Feature(
     );
   };
 
+  this.unselect = function() {
+    kvm.log('Deselektiere Feature ' + this.markerId, 4);
+    if (this.markerId) {
+      kvm.map._layers[this.markerId].setStyle(this.getNormalCircleMarkerStyle());
+    }
+    $('.feature-item').removeClass('selected-feature-item');
+  };
+
+  this.select = function() {
+    kvm.log('Markiere Feature ' + this.id, 4);
+    kvm.activeLayer.activeFeature = this;
+
+    kvm.log('Select feature in map ' + this.markerId,4 );
+    kvm.map._layers[this.markerId].setStyle(this.getSelectedCircleMarkerStyle());
+    kvm.map.setZoom(18);
+    kvm.map.panTo(kvm.map._layers[this.markerId].getLatLng());
+
+    if (!this.showPopupButtons()) {
+      $('.popup-functions').hide();
+    }
+
+    kvm.log('Select feature in list' + this.id, 4);
+    $('#' + this.id).addClass('selected-feature-item');
+  };
+
   this.listElement = function() {
     return '\
       <div class="feature-item feature-status-' + this.get('status') + '" id="' + this.get(this.options.id_attribute) + '">' + kvm.coalesce(this.get(kvm.activeLayer.get('name_attribute')), 'Datensatz ' + this.get(this.options.id_attribute)) + '</div>\
     ';
   };
 
-  if (data[this.options.geometry_attribute]) {
+  /*
+  * ToDo addListElement zusammenlegen mit createFeatureList
+  */
+  this.addListElement = function() {
+    kvm.log('Feature.addListElement', 4);
+    $('#featurelistBody').prepend(this.listElement);
+    kvm.log(this.id + ' zur Liste hinzugefügt.', 4);
+
+    $("#" + this.id).on(
+      'click',
+      function(evt) {
+        kvm.log('Öffne DataView mit Objektdaten.', 4);
+        var id = evt.target.getAttribute('id'),
+            feature = kvm.activeLayer.features[id],
+            activeFeature = kvm.activeLayer.activeFeature;
+
+        if (activeFeature) {
+          activeFeature.unselect();
+        }
+        feature.select();
+        kvm.activeLayer.loadFeatureToView(feature, { editable: false });
+        kvm.showItem('dataView');
+      }
+    );
+    kvm.log('Click Event an Listenelement registriert', 4);
+
+    $('#numDatasetsText').html(Object.keys(this.activeLayer.features).length);
+    kvm.log('Anzeige der Anzahl der Features aktualisiert.', 4);
+  };
+
+  this.updateListElement = function() {
+    kvm.log('Feature.updateListElement', 4);
+    $("#" + this.id).html(kvm.coalesce(this.get(kvm.activeLayer.get('name_attribute')), 'Datensatz ' + this.id));
+  };
+
+  this.getNormalCircleMarkerStyle = function() {
+    return config.markerStyles[this.get('status') ? this.get('status') : 0];
+  };
+
+  this.getSelectedCircleMarkerStyle = function() {
+    var style = this.getNormalCircleMarkerStyle();
+    style.weight = 5;
+    style.color = '#ff2828';
+    return style;
+  };
+
+  this.getEditModeCircleMarkerStyle = function() {
+    return { color: "#666666", fill: true, fillOpacity: 0.8, fillColor: "#cccccc" };
+  };
+
+  if (this.data[this.options.geometry_attribute]) {
+    console.log('Setze geom des neuen Features mit data: %o', this.data);
     this.geom = this.wkbToWkx(this.data[this.options.geometry_attribute]);
   }
   this.newGeom = this.geom; // Aktuelle WKX-Geometry beim Editieren. Entspricht this.geom wenn das Feature neu geladen wurde und Geometrie in Karte, durch GPS oder Formular noch nicht geändert wurde.

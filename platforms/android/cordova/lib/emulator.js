@@ -188,6 +188,7 @@ module.exports.list_images = function() {
  * Returns a promise.
  */
 module.exports.best_image = function() {
+//    console.log('list_images: %o', this.list_images());
     return this.list_images()
     .then(function(images) {
         // Just return undefined if there is no images
@@ -196,9 +197,13 @@ module.exports.best_image = function() {
         var closest = 9999;
         var best = images[0];
         var project_target = check_reqs.get_target().replace('android-', '');
+  //      console.log('images: %o', images);
+    //    return null;
+
         for (var i in images) {
             var target = images[i].target;
             if(target) {
+                //var num = target.match(/\d+/)[0];
                 var num = target.split('(API level ')[1].replace(')', '');
                 if (num == project_target) {
                     return images[i];

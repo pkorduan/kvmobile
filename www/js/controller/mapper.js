@@ -52,7 +52,7 @@ kvm.controller.mapper = {
     // Erzeugt eine editierbare Geometrie der Featuregeometrie
     if (feature.options.geometry_type == 'Point') {
       editableLayer = L.marker(
-        feature.getLatLngs(), {
+        feature.wkxToLatLngs(), {
           icon: this.getDraggableIcon()
         }
       ).addTo(kvm.map);
@@ -69,7 +69,7 @@ kvm.controller.mapper = {
       function(evt) {
         var feature = kvm.activeLayer.activeFeature,
             latlng = feature.editableLayer.getLatLng();
-
+        console.log('trigger geomChanged mit latlng: %o', latlng);
         $(document).trigger('geomChanged', [{ geom: feature.aLatLngsToWkx([[latlng.lat, latlng.lng]]), exclude: 'latlngs'}]);
       }
     );
@@ -164,11 +164,10 @@ kvm.controller.mapper = {
   * Legt ein neues Feature Objekt an
   * übernimmt die Geometrie vom GPS oder der Mitte der Karte
   * und macht die Geometrie editierbar.
-  * 
   */
   newFeature: function(evt) {
     // Erzeugt ein neues leeres Feature Objekt erstmal ohne Geometrie
-    var feature = new Feature(
+    kvm.activeLayer.activeFeature = new Feature(
           '{ "' + kvm.activeLayer.get('id_attribute') + '": "' + kvm.uuidv4() + '"}',
           {
             id_attribute: 'uuid',
@@ -177,10 +176,7 @@ kvm.controller.mapper = {
             new: true
           }
         );
-
-    console.log('Neues Feature mit id: %s erzeugt.', feature.id);
-    // Erzeugt ein neues erstmal leeres Formular (bis auf die uuid, die wurde automatisch generiert)
-    kvm.activeLayer.loadFeatureToForm(feature, { editable: true });
+    console.log('Neues Feature mit id: %s erzeugt.', kvm.activeLayer.activeFeature.id);
 
     // Setzt die Position des Features
     navigator.geolocation.getCurrentPosition(
@@ -223,5 +219,14 @@ kvm.controller.mapper = {
     var feature = kvm.activeLayer.features[featureId];
 
     kvm.map.fitBounds(feature.editableLayer.getBounds(), { padding: [50, 50]});
+  },
+
+  wkbToLatLngs: function(wkb) {
+    // ToDo hier ggf. den Geometrietyp auch aus this.geometry_type auslesen und nicht aus der übergebenen geom
+    // Problem dann, dass man die Funktion nur benutzen kann für den Geometrietype des activeLayer
+    var wkx = kvm.wkx.Geometry.parse(new kvm.Buffer(wkb, 'hex')),
+        coordsLevelDeep = this.coordsLevelsDeep[wkx.toWkt().split('(')[0].toUpperCase()],
+        coords = wkx.toGeoJSON().coordinates;
+    return (coordsLevelDeep == 0 ? L.GeoJSON.coordsToLatLng(coords) : L.GeoJSON.coordsToLatLngs(coords, coordsLevelDeep));
   }
 }

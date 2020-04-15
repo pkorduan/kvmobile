@@ -126,8 +126,9 @@ function Stelle(settings = {}) {
         );
       },
       function(err) {
-        var errMsg = 'Fehler beim Download der Stellendaten code: ' + err.code + ' status: ' + err.http_status + ' ' + err.msg;
+        var errMsg = 'Fehler beim Download der Stellendaten code: ' + err.code + ' status: ' + err.http_status + ' Prüfen Sie ob der Nutzer vom dem Gerät aus mit seiner IP auf die Stelle zugreifen darf und die Domain in config.xml eingetragen ist.';
         kvm.msg(errMsg);
+        $('#sperr_div').hide();
       },
       true
     );
@@ -160,6 +161,85 @@ function Stelle(settings = {}) {
   };
 
   /*
+  * For current activeLayer do:
+  *   Delete all local data and deltas
+  *   Delete table and delta table
+  *   load layer definition with attributes new from server therewith
+  *   save settings in store and set layer active
+  *   create table and delta table new
+  *   load data from server and store in local database
+  *   load the data from local database and create features, map markers, form and featurelist
+  */
+  // ToDo: Diese Funktion ggf. Klasse Layer zuordnen wenn es möglich ist die Layersettings eines einzelnen Layers herunterzuladen. Dort dann keine layerId mehr übergeben sondern updateLayerSettings on LayerObjekt
+  // also ToDo mobile_get_layers erweitern mit der Option das für eine bestimmte LayerID zu filtern.
+  this.reloadLayer = function(layerId) {
+    console.log('Layer.reloadLayer for stelle: %o', this);
+    var fileTransfer = new FileTransfer(),
+        filename = cordova.file.dataDirectory + 'layers_stelle_' + this.get('id') + '.json',
+        //filename = 'temp_file.json',
+        url = this.getLayerUrl();
+
+        kvm.log('Download Layerdaten von Url: ' + url);
+        kvm.log('Speicher die Datei auf dem Gerät in Datei: ' + filename);
+
+    fileTransfer.download(
+      url,
+      filename,
+      function (fileEntry) {
+        fileEntry.file(
+          function (file) {
+            var reader = new FileReader();
+
+            reader.onloadend = function() {
+              kvm.log('Download der Layerdaten abgeschlossen.');
+              var items = [],
+                  validationResult = '';
+
+              kvm.log('Download Result: ' + this.result, 4);
+              resultObj = kvm.parseLayerResult(this.result);
+
+              if (resultObj.success) {
+                kvm.log('layerResult is valid!', 4);
+                var layers = [];
+                kvm.log('Download erfolgreich.', 3);
+                //console.log('resultObj: %o', resultObj);
+                $('#layer_' + kvm.activeLayer.getGlobalId()).remove();
+                kvm.activeStelle.numLayers = resultObj.layers.length;
+
+                var layerSettings = resultObj.layers.filter(function(layer) { return layer.id = layerId; })[0],
+                    layer;
+
+                console.log('Layer.reloadLayer create layer with settings: %o', layerSettings);
+
+                kvm.activeLayer.clearData();
+
+                layer = new Layer(kvm.activeStelle, layerSettings);
+                layer.saveToStore();
+                layer.updateTable();
+                console.log('Store after save layer: %o', kvm.store);
+              }
+              else {
+                kvm.log('Fehlerausgabe von parseLayerResult!', 4);
+                kvm.msg(resultObj.errMsg, 2);
+              }
+              $('#sperr_div').hide();
+            };
+
+            reader.readAsText(file);
+          },
+          function(error) {
+            alert('Fehler beim Einlesen der heruntergeladenen Datei. Prüfen Sie die URL und Parameter, die für den Download verwendet werden.');
+            kvm.log('Fehler beim lesen der Datei: ' + error.code);
+            $('#sperr_div').hide();
+          }
+        );
+      },
+      this.downloadError,
+      true
+    );
+  };
+
+  /*
   * Request all layers from stelle,
   * write to store,
   * create tables in database and
@@ -185,44 +265,40 @@ function Stelle(settings = {}) {
 
             reader.onloadend = function() {
               kvm.log('Download der Layerdaten abgeschlossen.');
-              var items = [];
+              var items = [],
+                  validationResult = '';
+
               kvm.log('Download Result: ' + this.result, 4);
-              if (this.result.indexOf('form name="login"') > -1) {
-                kvm.msg('Zugang zum Server verweigert! Prüfen Sie Ihre Zugangsdaten unter Einstellungen.');
+              resultObj = kvm.parseLayerResult(this.result);
+
+              if (resultObj.success) {
+                var layers = [];
+                kvm.log('Download erfolgreich.', 3);
+                //console.log('resultObj: %o', resultObj);
+                $('#layer_list').html('');
+                kvm.activeStelle.numLayers = resultObj.layers.length;
+                $.each(
+                  resultObj.layers,
+                  function(index, layerSetting) {
+                    var layer;
+                    //console.log('Layer.requestLayers create layer with settings: %o', layerSetting);
+                    layer = new Layer(kvm.activeStelle, layerSetting);
+                    layer.saveToStore();
+                    layer.createTable(this);
+                  }
+                );
+
+                kvm.setConnectionStatus();
+                //console.log('Store after save layer: %o', kvm.store);
+                $('#requestLayersButton').hide();
                 $('#sperr_div').hide();
               }
               else {
-                resultObj = $.parseJSON(this.result);
-                if (resultObj.success) {
-                  var layers = [];
-                  kvm.log('Download erfolgreich.', 3);
-                  console.log('resultObj: %o', resultObj);
-                  $('#layer_list').html('');
-                  kvm.activeStelle.numLayers = resultObj.layers.length;
-                  $.each(
-                    resultObj.layers,
-                    function(index, layerSetting) {
-                      var layer;
-                      //console.log('Layer.requestLayers create layer with settings: %o', layerSetting);
-                      layer = new Layer(kvm.activeStelle, layerSetting);
-                      layer.saveToStore();
-                      layer.createTable(this);
-                    }
-                  );
-
-                  kvm.setConnectionStatus();
-                  //console.log('Store after save layer: %o', kvm.store);
-                  $('#requestLayersButton').hide();
-                  $('#sperr_div').hide();
-                }
-                else {
-                  kvm.log('Fehler beim Abfragen der Layerdaten. Falsche Serverparameter oder Fehler auf dem Server.', 2);
-                  alert('Abfrage liefert keine Daten vom Server. Entweder sind keine auf dem Server vorhanden oder die URL der Anfrage ist nicht korrekt. Prüfen Sie die Parameter unter Einstellungen.');
-                  $('#sperr_div').hide();
-                }
+                kvm.log('Fehlerausgabe von parseLayerResult!', 4);
+                kvm.msg(resultObj.errMsg, 'Downloadfehler');
               }
+              $('#sperr_div').hide();
             };
-
             reader.readAsText(file);
           },
           function(error) {

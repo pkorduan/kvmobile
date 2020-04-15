@@ -12,6 +12,10 @@ function Attribute(layer, settings = {}) {
     return this.settings[key];
   };
 
+  this.getViewField = function() {
+    return new DataViewField('dataViewDiv', this.settings);
+  };
+
   this.getFormField = function() {
     //console.log('Attribute.getFormField(' + this.get('form_element_type') + ')');
     var field = '';
@@ -129,6 +133,7 @@ function Attribute(layer, settings = {}) {
   };
 
   this.formField = this.getFormField();
+  this.viewField = this.getViewField();
 
   return this;
 }

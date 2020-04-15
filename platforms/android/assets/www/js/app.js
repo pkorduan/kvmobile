@@ -5,6 +5,8 @@ kvm = {
   controls: {},
   controller: {},
   views: {},
+  layerDataLoaded: false,
+  featureListLoaded: false,
 
   loadHeadFile: function(filename, filetype) {
     if (filetype=="js"){ //if filename is a external JavaScript file
@@ -82,6 +84,9 @@ kvm = {
             kvm.controller.mapper.createLayerList(stelle);
             kvm.log('Setze Layer: ' + layer.get('schema_name') + '.' + layer.get('table_name'), 3);
             layer.setActive();
+            kvm.layerDataLoaded = false;
+            kvm.featureListLoaded = false;
+            //layer.loadFeaturesToMap();
             layer.readData(); // load from loacl db to feature list
           },
           2000
@@ -178,6 +183,40 @@ kvm = {
       false
     );
 
+    document.addEventListener(
+      "dataLoaded",
+      function() {
+        if (
+          kvm.featureListLoaded &&
+          kvm.layerDataLoaded
+        ) {
+          $('#sperr_div').hide();
+        }
+      },
+      false
+    );
+
+    $('#showFormEdit').on(
+      'click',
+      function() {
+        kvm.showItem('formular');
+      }
+    );
+
+    $('#showMapEdit').on(
+      'click',
+      function() {
+        kvm.showItem('mapEdit');
+      }
+    );
+
+    $('#showSettings').on(
+      'click',
+      function() {
+        kvm.showItem('settings');
+      }
+    );
+
     $('#requestStellenButton').on(
       'click',
       function() {
@@ -188,6 +227,7 @@ kvm = {
             login_name : $('#kvwmapServerLoginNameField').val(),
             passwort : $('#kvwmapServerPasswortField').val()
           });
+          console.log('Stellenobjekt erzeugt um Stellen abfragen zu können: ' + JSON.stringify(stelle));
           kvm.log('Stellenobjekt erzeugt um Stellen abfragen zu können: ' + JSON.stringify(stelle), 4);
           stelle.requestStellen();
         }
@@ -412,7 +452,7 @@ kvm = {
                   this_.showItem('map');
                 }
                 else {
-                  this_.showItem('formular');
+                  this_.showItem('dataView');
                 }
               }
 
@@ -429,6 +469,13 @@ kvm = {
     );
 
     $('#anzeigeFilterSelect').on(
+      'change',
+      function(evt) {
+        kvm.activeLayer.readData();
+      }
+    );
+
+    $('#anzeigeSortSelect').on(
       'change',
       function(evt) {
         kvm.activeLayer.readData();
@@ -478,58 +525,55 @@ kvm = {
             delta = '',
             errMsg = '';
 
-        if ((saveButton).hasClass('active-button')) {
-          if ($('#featureFormular input[id=0]').val()) {
-            var notNullErrMsg = kvm.activeLayer.notNullValid();
-            if (notNullErrMsg == '') {
-              navigator.notification.confirm(
-                'Datensatz Speichern?',
-                function(buttonIndex) {
-                  var action = (typeof kvm.activeLayer.features[kvm.activeLayer.activeFeature.get(kvm.activeLayer.get('id_attribute'))] == 'undefined' ? 'INSERT' : 'UPDATE');
-                  kvm.deb('Action: ' + action);
-                  if (buttonIndex == 1) { // ja
-                    changes = kvm.activeLayer.collectChanges(action);
-                    kvm.deb('Änderungen: ' + JSON.stringify(changes));
+        if ($('#featureFormular input[name=' + kvm.activeLayer.id_attribute + ']').val()) {
+          var notNullErrMsg = kvm.activeLayer.notNullValid();
+          if (notNullErrMsg == '') {
+            navigator.notification.confirm(
+              'Datensatz Speichern?',
+              function(buttonIndex) {
+                var action = (kvm.activeLayer.activeFeature.options.new ? 'INSERT' : 'UPDATE');
+                kvm.log('Action: ' + action);
+                if (buttonIndex == 1) { // ja
+                  kvm.log('Speichern');
+                  changes = kvm.activeLayer.collectChanges(action);
+                  kvm.deb('Änderungen: ' + JSON.stringify(changes));
 
-                    if (changes.length > 1) {
-                      // more than created_at or updated_at_client
-                      kvm.activeLayer.createDeltas(action, changes);
-                      imgChanges = changes.filter(
-                        function(change) {
-                          return ($.inArray(change.key, kvm.activeLayer.getDokumentAttributeNames()) > -1);
-                        }
-                      );
-                      if (imgChanges.length > 0) kvm.activeLayer.createImgDeltas(action, imgChanges);
-                    }
-                    else {
-                      kvm.log('Keine Änderungen.', 2);
-                      kvm.msg('Keine Änderungen!');
-                    }
+                  if (changes.length > 1) {
+                    // more than created_at or updated_at_client
+                    kvm.activeLayer.createDeltas(action, changes);
 
-                    $('.popup-aendern-link').show();
-                    saveButton.toggleClass('active-button inactive-button');
-                    kvm.controller.mapper.clearWatch();
+                    imgChanges = changes.filter(
+                      function(change) {
+                        return ($.inArray(change.key, kvm.activeLayer.getDokumentAttributeNames()) > -1);
+                      }
+                    );
+                    if (imgChanges.length > 0) kvm.activeLayer.createImgDeltas(action, imgChanges);
+                  }
+                  else {
+                    kvm.log('Keine Änderungen.', 2);
+                    kvm.msg('Keine Änderungen!');
                   }
 
-                  if (buttonIndex == 2) { // nein
-                    // Do nothing
-                  }
+                  $('.popup-aendern-link').show();
+                  saveButton.toggleClass('active-button inactive-button');
+                  kvm.controller.mapper.clearWatch();
+                }
 
-                },
-                'Datenbank',
-                ['ja', 'nein']
-              );
-            }
-            else {
-              errMsg = notNullErrMsg;
-            }
+                if (buttonIndex == 2) { // nein
+                  // Do nothing
+                }
+
+              },
+              'Datenbank',
+              ['ja', 'nein']
+            );
           }
           else {
-            errMsg = 'Sie haben noch keine Koordinaten erfasst!';
+            errMsg = notNullErrMsg;
           }
         }
         else {
-          errMsg = 'Keine Änderungen!';
+          errMsg = 'Sie haben noch keine Koordinaten erfasst!';
         }
 
         if (errMsg != '') {
@@ -546,6 +590,10 @@ kvm = {
         }
       }
     );
+
+    $('#showFeatureList').click(function() {
+      kvm.showItem('featurelist');
+    });
 
     $("#showFeatureList").mouseover(function() {
       $("#showFeatureList_button").hide();
@@ -574,7 +622,7 @@ kvm = {
             feature = this_.activeLayer.features[featureId];
 
         this_.activeLayer.loadFeatureToForm(feature, { editable: true });
-        kvm.activeLayer.startEditing();
+        kvm.activeLayer.editGeometry(featureId);
       }
     );
 
@@ -640,13 +688,21 @@ kvm = {
     $(".feature-item").on(
       'click',
       function(evt) {
-        kvm.log('Öffne Formular mit Objektdaten.', 4);
+        kvm.log('Öffne DataView mit Objektdaten.', 4);
 
         var id = evt.target.getAttribute('id'),
-            feature = kvm.activeLayer.features[id];
+            feature = kvm.activeLayer.features[id],
+            activeFeature = kvm.activeLayer.activeFeature;
 
-        kvm.activeLayer.loadFeatureToForm(feature, { editable: false });
-        kvm.showItem('formular');
+        if (activeFeature) {
+          activeFeature.unselect();
+        }
+
+        feature.select();
+
+        kvm.activeLayer.loadFeatureToView(feature, { editable: false });
+
+        kvm.showItem('dataView');
       }
     );
   },
@@ -654,13 +710,13 @@ kvm = {
   /*
   * Erzeugt die Events für die Auswahl, Syncronisierung und das Zurücksetzen von Layern
   */
-  bindLayerEvents: function() {
+  bindLayerEvents: function(layerGlobalId = 0) {
     /*
     * Schaltet einen anderen Layer und deren Sync-Funktionen aktiv
     * Die Einstellungen des Layers werden aus dem Store geladen
     * Die Featureliste und Kartenelemente werden falls vorhanden aus der Datenbank geladen.
     */
-    $('input[name=activeLayerId]').on(
+    $('input[name=activeLayerId]' + (layerGlobalId > 0 ? "[value='" + layerGlobalId + "']" : '')).on(
       'change',
       function(evt) {
         var id = evt.target.value,
@@ -673,7 +729,7 @@ kvm = {
       }
     );
 
-    $('.sync-layer-button').on(
+    $('.sync-layer-button' + (layerGlobalId > 0 ? "[id='syncLayerButton_" + layerGlobalId + "']" : '')).on(
       'click',
       function(evt) {
         var layer = kvm.activeLayer;
@@ -692,8 +748,11 @@ kvm = {
                 if (buttonIndex == 2) { // ja
                   layer.requestData();
                 }
+                else {
+                  $('#sperr_div').hide();
+                }
               },
-              '',
+              'Daten mit Server synchronisieren',
               ['nein', 'ja']
             );
           }
@@ -704,6 +763,9 @@ kvm = {
                 if (buttonIndex == 2) { // ja
                   layer.syncData();
                 }
+                else {
+                  $('#sperr_div').hide();
+                }
               },
               '',
               ['nein', 'ja']
@@ -713,7 +775,7 @@ kvm = {
       }
     );
 
-    $('.sync-images-button').on(
+    $('.sync-images-button' + (layerGlobalId > 0 ? "[id='syncImagesButton_" + layerGlobalId + "']" : '')).on(
       'click',
       function(evt) {
         var layer = kvm.activeLayer;
@@ -743,7 +805,7 @@ kvm = {
       }
     );
 
-    $('.clear-layer-button').on(
+    $('.clear-layer-button' + (layerGlobalId > 0 ? "[id='clearLayerButton_" + layerGlobalId + "']" : '')).on(
       'click',
       function(evt) {
         var id = evt.target.value,
@@ -778,6 +840,42 @@ kvm = {
       }
     );
 
+    $('.reload-layer-button' + (layerGlobalId > 0 ? "[id='reloadLayerButton_" + layerGlobalId + "']" : '')).on(
+      'click',
+      function(evt) {
+        var id = evt.target.value,
+            layer = kvm.activeLayer;
+
+        if (!layer.isEmpty()) {
+          navigator.notification.confirm(
+            'Layer ist noch nicht geleert. Die Daten des Layers auf dem Endgerät müssen erst gelöscht werden.',
+            function (buttonIndex) {
+            },
+            'Datenbank',
+            ['OK']
+          );
+        }
+        else {
+          navigator.notification.confirm(
+            'Die Einstellungen des Layers neu laden und die Tabelle neu anlegen.',
+            function(buttonIndex) {
+              if (buttonIndex == 1) { // nein
+                // Do nothing
+              }
+
+              if (buttonIndex == 2) { // ja
+                $('#reloadLayerIcon_' + layer.getGlobalId()).toggleClass('fa-window-restore fa-spinner fa-spin');
+                console.log('reload layer id: %s', kvm.activeLayer.get('id'));
+                kvm.activeStelle.reloadLayer(kvm.activeLayer.get('id'));
+              }
+            },
+            '',
+            ['nein', 'ja']
+          );
+        }
+      }
+    );
+
   },
 
   setConnectionStatus: function() {
@@ -788,6 +886,10 @@ kvm = {
   setGpsStatus: function() {
     kvm.log('setGpsStatus');
     GpsStatus.load();
+  },
+
+  hideSperrDiv: function() {
+    
   },
 
   loadDeviceData: function() {
@@ -808,24 +910,25 @@ kvm = {
   * create the list of features of active layer in list view
   */
   createFeatureList: function() {
-    kvm.log('Erzeuge die Liste der Datensätze neu...', 3, true);
+    console.log('Erzeuge die Liste der Datensätze neu: %o', this.activeLayer.features);
     $('#featurelistHeading').html(this.activeLayer.get('alias') ? this.activeLayer.get('alias') : this.activeLayer.get('title'));
     $('#featurelistBody').html('');
+    html = '';
 
     $.each(
       this.activeLayer.features,
       function (key, feature) {
-        //console.log('append feature: %o', feature);
+        //console.log('append feature: %o to list', feature);
         var needle = $('#searchHaltestelle').val().toLowerCase(),
             element = $(feature.listElement()),
             haystack = element.html().toLowerCase();
 
-        $('#featurelistBody').append(
-          haystack.indexOf(needle) > -1 ? element.show() : element.hide()
-        );
-        //kvm.log(feature.get('uuid') + ' hinzugefügt.', 3, true);
+        html = html + feature.listElement();
+        //console.log(feature.get('uuid') + ' zur Liste hinzugefügt.');
+        //console.log(html);
       }
     );
+    $('#featurelistBody').append(html);
     kvm.bindFeatureItemClickEvents();
     if (Object.keys(this.activeLayer.features).length > 0) {
       kvm.showItem('featurelist');
@@ -865,12 +968,12 @@ kvm = {
         $("#map").show();
         kvm.map.invalidateSize();
         break;
-      case "formular":
+      case "dataView":
         $(".menu-button").hide();
         $("#showSettings, #showFeatureList, #showMap, #editFeatureButton").show();
-        $("#formular").show().scrollTop(0);
+        $("#dataView").show().scrollTop(0);
         break;
-      case "formularEdit":
+      case "formular":
         $(".menu-button").hide();
         $("#showMapEdit, #saveFeatureButton, #saveFeatureButton, #cancelFeatureButton").show();
         if (kvm.activeLayer && parseInt(kvm.activeLayer.get('privileg')) == 2) {
@@ -925,7 +1028,7 @@ kvm = {
         filename = 'download_data.json',
         url = context.getSyncUrl();
 
-    kvm.log('download data from url: ' + url);
+    kvm.log('download data from url: ' + url.substr(0, url.indexOf('passwort=') + 9) + '****');
     kvm.log('store the file in: ' + cordova.file.dataDirectory + filename);
     fileTransfer.download(
       url,
@@ -943,6 +1046,7 @@ kvm = {
               items = $.parseJSON(this.result);
               if (items.length > 0) {
                 kvm.log('Mindestens 1 Datensatz empfangen.');
+                // Warum kvm.writeData writeData ist eine Methode von Layer
                 kvm.writeData(items);
               }
               else {
@@ -996,13 +1100,15 @@ kvm = {
 
   log: function(msg, level = 3, show_in_sperr_div = false) {
     if (level <= config.logLevel) {
-      $('#logText').append('<br>' + msg);
-      if (config.debug) {
-        console.log('Log msg: ' + msg);
-      }
-    }
-    if (show_in_sperr_div) {
-      $('#sperr_div_content').html(msg);
+      setTimeout(function() {
+        $('#logText').append('<br>' + msg);
+        if (config.debug) {
+          console.log('Log msg: ' + msg);
+        }
+        if (show_in_sperr_div) {
+          $('#sperr_div_content').html(msg);
+        }
+      });
     }
   },
 
@@ -1019,7 +1125,9 @@ kvm = {
   deb: function(msg) {
     $('#debText').append('<p>' + msg);
     //$(document).scrollBottom($('#debText').offset().bottom);
-    $('#debugs').show();
+    if ($('#show_allways_debug_messages').is(':checked')) {
+      $('#debugs').show();
+    }
   },
 
   coalesce: function() {
@@ -1048,6 +1156,34 @@ kvm = {
       return false;
     }
     return true;
+  },
+
+  parseLayerResult: function(layerResult) {
+    kvm.log('Starte parseLayerResult', 4);
+    var resultObj = {
+          "success" : false
+        };
+
+    if (layerResult.indexOf('form name="login"') > -1) {
+      kvm.log('form name="login" gefunden!', 4);
+      resultObj.errMsg = 'Zugang zum Server verweigert! Prüfen Sie Ihre Zugangsdaten unter Einstellungen.';
+      return resultObj;
+    }
+
+    if (!kvm.isValidJsonString(layerResult)) {
+      kvm.log('Das Ergebnis der Layerdatenanfrage ist kein JSON!', 4);
+      resultObj.errMsg = 'Fehler beim Abfragen der Layerdaten. Abfrage liefert keine korrekten Daten vom Server. Entweder sind keine auf dem Server vorhanden, die URL der Anfrage ist nicht korrekt oder der es wird eine Fehlermeldung vom Server geliefert statt der Daten. Hier ist das zurückgelieferte Result: ' + layerResult;
+      return resultObj;
+    }
+
+    resultObj = $.parseJSON(layerResult);
+
+    if (!resultObj.success) {
+      kvm.log('Result success ist false!', 4);
+      resultObj.errMsg = 'Fehler beim Abfragen der Layerdaten. Falsche Serverparameter oder Fehler auf dem Server.';
+    }
+
+    return resultObj;
   }
 
 };
