@@ -512,6 +512,7 @@ function Layer(stelle, settings = {}) {
           img : img
         }),
         fail = (function (error) {
+          console.log('err: %o', error);
           if (this.hasClass('fa-spinner')) this.toggleClass('fa-upload fa-spinner fa-spin');
           $('#sperr_div').hide();
 
@@ -535,6 +536,10 @@ function Layer(stelle, settings = {}) {
       passwort : this.stelle.get('passwort'),
       selected_layer_id : this.get('id'),
       go : 'mobile_upload_image'
+    };
+    options.chunkedMode = false;
+    options.headers = {
+      Connection: "close"
     };
 
     kvm.log('upload to url: ' + server, 3);
