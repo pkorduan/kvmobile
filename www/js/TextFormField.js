@@ -1,3 +1,14 @@
+/*
+* create a text form field in the structure
+*   <div class="form-field">
+*     <div class="form-label">
+*       <label for="name"/>
+*     </div>
+*     <div class="form-value">
+*       <input type="text" id="1" name="bezeichnung" value="Wert"/>
+*     </div>
+*   </div>
+*/
 function TextFormField(formId, settings) {
   //console.log('Erzeuge TextformField with settings %o', settings);
   this.settings = settings,
@@ -8,7 +19,7 @@ function TextFormField(formId, settings) {
 
   this.selector = '#' + formId + ' input[id=' + this.get('index') + ']';
 
-  this.element = $('\
+  this.element = $('<div class="form-value">').append('\
     <input\
       type="text"\
       id="' + this.get('index') + '"\
@@ -68,7 +79,7 @@ function TextFormField(formId, settings) {
   };
 
   this.withLabel = function() {
-    var label = $('<label for="' + this.get('name') + '"/>');
+    var label = $('<div class="form-label">').append('<label for="' + this.get('name') + '"/>');
 
     label.append((this.get('alias') ? this.get('alias') : this.get('name')));
 

@@ -7,7 +7,7 @@ function CheckboxFormField(formId, settings) {
 
   this.selector = '#' + formId + ' input[id=' + this.get('index') + ']',
 
-  this.element = $('\
+  this.element = $('<div class="form-value">').append('\
     <input\
       type="checkbox"\
       id="' + this.get('index') + '"\
@@ -48,7 +48,7 @@ function CheckboxFormField(formId, settings) {
   };
 
   this.withLabel = function() {
-    var label = $('<label for="' + this.get('name') + '"/>');
+    var label = $('<div class="form-label">').append('<label for="' + this.get('name') + '"/>');
 
     label.append((this.get('alias') ? this.get('alias') : this.get('name')));
 

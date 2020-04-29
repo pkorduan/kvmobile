@@ -1,3 +1,14 @@
+/*
+* create a field in data view in the form
+*   <div class="data-view-field">
+*     <div class="data-view-label">
+*       label
+*     </div>
+*     <div class="data-view-value">
+*       value
+*    </div>
+*  </div>
+*/
 function DataViewField(divId, settings) {
   this.settings = settings,
 

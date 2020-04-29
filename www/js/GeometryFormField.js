@@ -1,3 +1,14 @@
+/*
+* create a geometry form field in the structure
+*   <div class="form-field">
+*     <div class="form-label">
+*       <label for="name"/>
+*     </div>
+*     <div class="form-value">
+*       <input type="text" id="1" name="bezeichnung" value="Wert"/>
+*     </div>
+*   </div>
+*/
 function GeometrieFormField(formId, settings) {
   this.settings = settings;
 
@@ -7,7 +18,7 @@ function GeometrieFormField(formId, settings) {
 
   this.selector = '#' + formId + ' input[id=' + this.get('index') + ']',
 
-  this.element = $('\
+  this.element = $('<div class="form-value">').append('\
     <input\
       type="hidden"\
       id="' + this.get('index') + '"\
@@ -176,7 +187,7 @@ function GeometrieFormField(formId, settings) {
 
   this.withLabel = function() {
     return $('<div class="form-field">').append(
-      $('<label for="Koordinaten" />')
+      $('<div class="form-label">').append('<label for="Koordinaten" />')
         .html(
           '<i id="saveGpsPositionButton" class="fa fa-map-marker fa-2x" aria-hidden="true" style="margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>\
           <svg onclick="kvm.msg(\'Die GPS-Genauigkeit beträgt ca. \' + Math.round(kvm.controller.mapper.getGPSAccuracy()) + \' Meter.\')" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="28" height="28" version="1.1">\

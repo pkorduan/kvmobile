@@ -1,3 +1,14 @@
+/*
+* create a textarea form field in the structure
+*   <div class="form-field">
+*     <div class="form-label">
+*       <label for="name"/>
+*     </div>
+*     <div class="form-value">
+*       <input type="text" id="1" name="bezeichnung" value="Wert"/>
+*     </div>
+*   </div>
+*/
 function TextfeldFormField(formId, settings) {
   this.settings = settings,
 
@@ -7,7 +18,7 @@ function TextfeldFormField(formId, settings) {
 
   this.selector = '#' + formId + ' input[id=' + this.get('index') + ']',
 
-  this.element = $('\
+  this.element = $('<div class="form-value">').append('\
     <textarea\
       id="' + this.get('index') + '"\
       name="' + this.get('name') + '"\
@@ -50,7 +61,7 @@ function TextfeldFormField(formId, settings) {
   };
 
   this.withLabel = function() {
-    var label = $('<label for="' + this.get('name') + '"/>');
+    var label = $('<div class="form-label>').append('<label for="' + this.get('name') + '"/>');
 
     label.append((this.get('alias') ? this.get('alias') : this.get('name')));
 
