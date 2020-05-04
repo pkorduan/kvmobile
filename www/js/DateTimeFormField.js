@@ -19,7 +19,7 @@ function DateTimeFormField(formId, settings) {
 
   this.selector = '#' + formId + ' input[id=' + this.get('index') + ']',
 
-  this.element = $('<div class="form-value>"').append('\
+  this.element = $('\
     <input\
       type="datetime-local"\
       id="' + this.get('index') + '"\
@@ -71,18 +71,6 @@ function DateTimeFormField(formId, settings) {
         }
       }
     );
-  };
-
-  this.withLabel = function() {
-    return $('<div class="form-field">').append(
-      $('<div class="form-label">').append('<label for="' + this.get('name') + '"/>')
-        .html(
-          (this.get('alias') ? this.get('alias') : this.get('name')) + '<br>' 
-        )
-        .append(
-          this.element
-        )
-    )
   };
 
   this.toISO = function(datetime) {

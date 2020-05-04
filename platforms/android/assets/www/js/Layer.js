@@ -1,5 +1,5 @@
 function Layer(stelle, settings = {}) {
-  kvm.log('Erzeuge Layerobjekt: ' + settings.title, 3);
+  kvm.log('Erzeuge Layerobjekt', 3);
   kvm.log('Layersettings: ' + JSON.stringify(settings), 4);
   var layer_ = this;
   this.stelle = stelle;
@@ -149,7 +149,7 @@ function Layer(stelle, settings = {}) {
       sql,
       [],
       (function(rs) {
-        kvm.log('Layer.readData result: ' + JSON.stringify(rs), 4);
+        //kvm.log('Layer.readData result: ' + JSON.stringify(rs), 4);
 
         var numRows = rs.rows.length,
             item,
@@ -161,13 +161,11 @@ function Layer(stelle, settings = {}) {
         this.features = {};
         //console.log('id_attribute: %o', this.get('id_attribute'));
         console.log('Anzahl Rows %s', numRows);
+
         for (i = 0; i < numRows; i++) {
-          item = rs.rows.item(i);
-          debug_i = item;
-          if (i < 3 ) {
-            //console.log('Item ' + i + ': %o', item);
-          }
-          console.log('Erzeuge Feature %s mit item: %o', i, item);
+          var item = rs.rows.item(i);
+          //console.log('Item ' + i + ': %o', item);
+          //console.log('Erzeuge Feature %s: ', i);
           this.features[item[this.get('id_attribute')]] = new Feature(
             item, {
               id_attribute: this.get('id_attribute'),
@@ -176,19 +174,19 @@ function Layer(stelle, settings = {}) {
               new: false
             }
           );
-          if (i < 3 ) {
-            //console.log('Feature ' + i + ': %o', this.features[item[this.get('id_attribute')]]);
-          }
+          //console.log('Feature ' + i + ': %o', this.features[item[this.get('id_attribute')]]);
         }
         console.log('Features erzeugt.');
         if ($('#syncLayerIcon_' + this.getGlobalId()).hasClass('fa-spinner')) {
           $('#syncLayerIcon_' + this.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
         }
         kvm.setConnectionStatus();
+
         kvm.createFeatureList();
         if (numRows > 0) {
           this.drawFeatures();
         }
+
         $('#sperr_div').hide();
       }).bind(this),
       function(error) {
@@ -908,17 +906,15 @@ function Layer(stelle, settings = {}) {
 
   this.createFeatureForm = function() {
     kvm.log('Layer.createFeatureForm', 4);
-    $('#formular').html('\
-      <form id="featureFormular">\
-      </form>'
-    );
+    $('#formular')
+      .append('<div id="formDiv">')
+      .append('<form id="featureFormular">');
     $.map(
       this.attributes,
       function(attr) {
         $('#featureFormular').append(
-          attr.formField.withLabel()
+          attr.withLabel()
         );
-
         attr.formField.bindEvents();
       }
     );
@@ -1009,14 +1005,13 @@ function Layer(stelle, settings = {}) {
   */
   this.drawFeatures = function() {
     kvm.log('Erzeuge Geometrieobjekt in der Karte: ', 3);
-    var myRenderer = L.canvas({ padding: 0.5 });
     kvm.log('Erzeuge ' + Object.keys(this.features).length + ' CircleMarker', 3);
     $.each(
       this.features,
       (function (key, feature) {
         // circleMarker erzeugen mit Popup Eventlistener
         var circleMarker = L.circleMarker(feature.wkxToLatLngs(feature.newGeom), {
-          renderer: myRenderer,
+          renderer: kvm.myRenderer,
           featureId: feature.id
         }).bindPopup(this.getPopup(feature));
         circleMarker.setStyle(feature.getNormalCircleMarkerStyle());
@@ -1332,6 +1327,8 @@ function Layer(stelle, settings = {}) {
   * editierbare Geometrie aus der Karte löschen und damit Popup der editierbaren Geometrie schließen
   * Binded das default Popup an den dazugehörigen Layer
   * Sperrdiv entfernen
+  *
+  * Überarbeiten für neue Features evtl.
   */
   this.saveGeometry = function(featureId) {
     var feature = this.features[featureId],
@@ -1363,7 +1360,7 @@ function Layer(stelle, settings = {}) {
 
       // circleMarker erzeugen mit Popup Eventlistener
       var circleMarker = L.circleMarker(feature.wkxToLatLngs(feature.newGeom), {
-        renderer: myRenderer,
+        renderer: kvm.myRenderer,
         featureId: feature.id
       }).bindPopup(this.getPopup(feature));
       circleMarker.setStyle(feature.getNormalCircleMarkerStyle());
@@ -1636,10 +1633,10 @@ function Layer(stelle, settings = {}) {
 
         if (kvm.activeLayer.activeFeature.options.new) {
           kvm.activeLayer.activeFeature.options.new = false;
-          kvm.activeLayer.addListElement();
+          kvm.activeLayer.activeFeature.addListElement();
         }
         else {
-          kvm.activeLayer.updateListElement();
+          kvm.activeLayer.activeFeature.updateListElement();
         }
 
         kvm.activeLayer.saveGeometry(kvm.activeLayer.activeFeature.id);

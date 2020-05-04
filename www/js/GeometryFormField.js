@@ -18,7 +18,7 @@ function GeometrieFormField(formId, settings) {
 
   this.selector = '#' + formId + ' input[id=' + this.get('index') + ']',
 
-  this.element = $('<div class="form-value">').append('\
+  this.element = $('\
     <input\
       type="hidden"\
       id="' + this.get('index') + '"\
@@ -183,29 +183,6 @@ function GeometrieFormField(formId, settings) {
       }
     );
 
-  };
-
-  this.withLabel = function() {
-    return $('<div class="form-field">').append(
-      $('<div class="form-label">').append('<label for="Koordinaten" />')
-        .html(
-          '<i id="saveGpsPositionButton" class="fa fa-map-marker fa-2x" aria-hidden="true" style="margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>\
-          <svg onclick="kvm.msg(\'Die GPS-Genauigkeit beträgt ca. \' + Math.round(kvm.controller.mapper.getGPSAccuracy()) + \' Meter.\')" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="28" height="28" version="1.1">\
-            <g id="gps-signal-icon" class="gps-signal-level-0" transform="scale(1 -1) translate(0 -28)">\
-              <rect class="bar-1" x="0" y="0" width="4" height="4" />\
-              <rect class="bar-2" x="6" y="0" width="4" height="10" />\
-              <rect class="bar-3" x="12" y="0" width="4" height="16" />\
-              <rect class="bar-4" x="18" y="0" width="4" height="22" />\
-              <rect class="bar-5" x="24" y="0" width="4" height="28" />\
-            </g>\
-          </svg>\
-          <i id="goToGpsPositionButton" class="fa fa-globe fa-2x" aria-hidden="true" style="float: right; margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>\
-          <input type="text" id="geom_wkt" value=""/>'
-        )
-        .append(
-          this.element
-        )
-    )
   };
 
   return this;

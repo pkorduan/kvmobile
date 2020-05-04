@@ -8,7 +8,7 @@ function BilderFormField(formId, settings) {
 
   this.selector = '#' + formId + ' input[id=' + this.get('index') + ']',
 
-  this.element = $('\
+  this.element = $('<div class="form-value">').append('\
     <input\
       type="hidden"\
       id="' + this.get('index') + '"\
@@ -373,20 +373,6 @@ function BilderFormField(formId, settings) {
     kvm.log('getLocalImgPath for imageData: ' + imageData);
     result = 'file:///storage/' + imageData.split('file:///storage/')[1].split('/Android/data/de.gdiservice.kvmobile/files/')[0] + '/Android/data/de.gdiservice.kvmobile/files/';
     kvm.log('getLocalImgPath returning: ' + result);
-  };
-
-  this.withLabel = function() {
-    return $('\
-      <div class="form-field">\
-        <i id="takePictureButton_' + this.get('index') + '" class="fa fa-camera fa-2x" style="color: rgb(38, 50, 134)"/>\
-        <!--i id="selectPictureButton_' + this.get('index') + '" class="fa fa-picture-o fa-2x" style="color: rgb(38, 50, 134)"/-->\
-        <i id="dropAllPictureButton_' + this.get('index') + '" class="fa fa-trash fa-2x" style="color: rgb(238, 50, 50); float: right; display: none;"/>\
-        <div id="' + this.images_div_id + '"></div>\
-      </div><div class="clear"></div>\
-    ')
-    .append(
-      this.element
-    );
   };
 
   return this;

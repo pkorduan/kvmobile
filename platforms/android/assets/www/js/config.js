@@ -13,7 +13,6 @@ config = {
 //  localImgPath: 'file:///storage/' + 'BAB2-4AA9' + '/Android/data/de.gdiservice.kvmobile/cache/',
   localImgPath: 'file:///storage/' + 'emulated/0' + '/Android/data/de.gdiservice.kvmobile/cache/',
   projZone: 33,
-  startZoom: 8,
   logLevel: 4, // 0 off, 1 error, 2 waring, 3 info, 4 debug
   debug: true,
   kvwmapServerId: 1,
@@ -27,6 +26,7 @@ config = {
 
   // Bei Rostock
 /*
+  startZoom: 8,
   maxExtent: [274300, 5936054.721, 360500, 6023975.279], 
   startPosition: [12.20896, 53.095876],
   kvwmapServerUrl: 'https://gdi-service.de/kvwmap_pet_dev',
@@ -35,6 +35,7 @@ config = {
 */
 
   // LK-VG
+  startZoom: 8,
   maxExtent: [339600, 5894500, 492200, 6016500],
   startPosition: [13.81898, 53.78441],
   kvwmapServerUrl: 'https://geoportal-vg.de/kvwmap_test',
@@ -43,6 +44,7 @@ config = {
 
   // LK-ROS
 /*
+  startZoom: 8,
   maxExtent: [154300, 5836054.721, 360500, 6023975.279],
   startPosition: [12.20896, 53.095876],
   kvwmapServerUrl: 'https://geoportal.lkros.de/kvwmap_dev',
@@ -52,6 +54,7 @@ config = {
 
   // Noch eine Ausdehnung
 /*
+  startZoom: 8,
   maxExtent: [254243.367, 5936500, 380556.633, 6023530],
   startPosition: [12.19127, 53.97413],
   kvwmapServerUrl: 'https://...',

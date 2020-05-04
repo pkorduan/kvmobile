@@ -88,10 +88,36 @@ a.hover {
   clear: both;
 }
 
-.form-field {
-  width: 99%;
+#formDiv {
+  display: table;
   font-size: 24px;
-  margin-bottom: 10px;
+  width: 100%;  
+}
+
+.form-field {
+  display: table-row;
+}
+
+.form-label {
+  width: 30%;
+  display: table-cell;
+  padding-left: 12px;
+  padding-top: 5px;
+  border-bottom: 0px solid white;
+  padding-bottom: 5px;
+  background-color: #dfdfdf;
+  border-top: 2px solid white;
+  padding-right: 12px;
+}
+
+.form-value {
+  display: table-cell;
+  border-bottom: 1px solid lightgray;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  padding-left: 16px;
+  width: 70%;
+  border-top: 0px solid lightgray;
 }
 
 #dataViewDiv {

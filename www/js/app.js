@@ -87,7 +87,7 @@ kvm = {
             kvm.layerDataLoaded = false;
             kvm.featureListLoaded = false;
             //layer.loadFeaturesToMap();
-            layer.readData(); // load from loacl db to feature list
+            layer.readData(25000); // load from loacl db to feature list
           },
           2000
         );
@@ -145,6 +145,7 @@ kvm = {
         };
 
 //    L.PM.initialize({ optIn: true });
+    this.myRenderer = L.canvas({ padding: 0.5 });
     map.addControl(new L.control.betterscale({metric: true}));
     map.addControl(new L.control.locate({
       position: 'topright',
@@ -288,7 +289,7 @@ kvm = {
               SELECT\
                 * \
               FROM\
-                " + this_.activeLayer.get('schema_name') + '.' + this_.activeLayer.get('table_name') + "_deltas\
+                " + this_.activeLayer.get('schema_name') + '_' + this_.activeLayer.get('table_name') + "_deltas\
             ";
 
         $('#showDeltasButton').hide();

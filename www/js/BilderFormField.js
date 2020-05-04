@@ -375,18 +375,5 @@ function BilderFormField(formId, settings) {
     kvm.log('getLocalImgPath returning: ' + result);
   };
 
-  this.withLabel = function() {
-    return $('<div class="form-field">').append(
-      $('<div class="form-label">').append('\
-        <i id="takePictureButton_' + this.get('index') + '" class="fa fa-camera fa-2x" style="color: rgb(38, 50, 134)"/>\
-        <!--i id="selectPictureButton_' + this.get('index') + '" class="fa fa-picture-o fa-2x" style="color: rgb(38, 50, 134)"/-->\
-        <i id="dropAllPictureButton_' + this.get('index') + '" class="fa fa-trash fa-2x" style="color: rgb(238, 50, 50); float: right; display: none;"/>\
-        <div id="' + this.images_div_id + '"></div>\
-        <div class="clear"></div>\
-      ').append(
-        this.element
-      );
-  };
-
   return this;
 }

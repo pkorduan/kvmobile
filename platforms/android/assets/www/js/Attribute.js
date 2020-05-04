@@ -132,6 +132,44 @@ function Attribute(layer, settings = {}) {
     return slValue;
   };
 
+  this.withLabel = function() {
+    var label = $('<div class="form-label">').append('<label for="' + this.formField.get('name') + '"/>')
+            .append((this.formField.get('alias') ? this.formField.get('alias') : this.formField.get('name'))),
+        value = $('<div class="form-value">');
+
+    if (this.get('form_element_type') == 'Geometrie') {
+      value.append('<i id="saveGpsPositionButton" class="fa fa-map-marker fa-2x" aria-hidden="true" style="margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>\
+        <svg onclick="kvm.msg(\'Die GPS-Genauigkeit beträgt ca. \' + Math.round(kvm.controller.mapper.getGPSAccuracy()) + \' Meter.\')" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="28" height="28" version="1.1">\
+          <g id="gps-signal-icon" class="gps-signal-level-0" transform="scale(1 -1) translate(0 -28)">\
+            <rect class="bar-1" x="0" y="0" width="4" height="4" />\
+            <rect class="bar-2" x="6" y="0" width="4" height="10" />\
+            <rect class="bar-3" x="12" y="0" width="4" height="16" />\
+            <rect class="bar-4" x="18" y="0" width="4" height="22" />\
+            <rect class="bar-5" x="24" y="0" width="4" height="28" />\
+          </g>\
+        </svg>\
+        <i id="goToGpsPositionButton" class="fa fa-globe fa-2x" aria-hidden="true" style="float: right; margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>\
+        <input type="text" id="geom_wkt" value=""/>');
+    }
+
+    if (this.get('form_element_type') == 'Dokument') {
+      value.append('\
+          <i id="takePictureButton_' + this.get('index') + '" class="fa fa-camera fa-2x" style="color: rgb(38, 50, 134)"/>\
+          <!--i id="selectPictureButton_' + this.get('index') + '" class="fa fa-picture-o fa-2x" style="color: rgb(38, 50, 134)"/-->\
+          <i id="dropAllPictureButton_' + this.get('index') + '" class="fa fa-trash fa-2x" style="color: rgb(238, 50, 50); float: right; display: none;"/>\
+          <div id="' + this.images_div_id + '"></div>\
+      ');
+    };
+
+    if (this.formField.get('tooltip')) {
+      label.append('&nbsp;<i class="fa fa-exclamation-circle" style="color: #f57802" onclick="kvm.msg(\'' + this.formField.get('tooltip') + '\');"></i>');
+    }
+
+    return $('<div class="form-field">')
+      .append(label)
+      .append(value.append(this.formField.element));
+  };
+
   this.formField = this.getFormField();
   this.viewField = this.getViewField();
 

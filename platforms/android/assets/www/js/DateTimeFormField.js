@@ -1,3 +1,14 @@
+/*
+* create a dateTime form field in the structure
+*   <div class="form-field">
+*     <div class="form-label">
+*       <label for="name"/>
+*     </div>
+*     <div class="form-value">
+*       <input type="text" id="1" name="bezeichnung" value="Wert"/>
+*     </div>
+*   </div>
+*/
 function DateTimeFormField(formId, settings) {
   //console.log('Erzeuge DateTimeFormField with settings %o', settings);
   this.settings = settings,
@@ -60,18 +71,6 @@ function DateTimeFormField(formId, settings) {
         }
       }
     );
-  };
-
-  this.withLabel = function() {
-    return $('<div class="form-field">').append(
-      $('<label for="' + this.get('name') + '"/>')
-        .html(
-          (this.get('alias') ? this.get('alias') : this.get('name')) + '<br>' 
-        )
-        .append(
-          this.element
-        )
-    )
   };
 
   this.toISO = function(datetime) {

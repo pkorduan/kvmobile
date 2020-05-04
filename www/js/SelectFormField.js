@@ -18,7 +18,7 @@ function SelectFormField(formId, settings) {
 
   this.selector = '#' + formId + ' input[id=' + this.get('index') + ']',
 
-  this.element = $('<div class="form-value">').append('\
+  this.element = $('\
     <select\
       id="' + this.get('index') + '"\
       name="' + this.get('name') + '"' +
@@ -62,18 +62,6 @@ function SelectFormField(formId, settings) {
         }
       }
     );
-  };
-
-  this.withLabel = function() {
-    var label = $('<div class="form-label>').append('<label for="' + this.get('name') + '"/>');
-
-    label.append((this.get('alias') ? this.get('alias') : this.get('name')));
-
-    if (this.get('tooltip')) {
-      label.append('&nbsp;<i class="fa fa-exclamation-circle" style="color: #f57802" onclick="kvm.msg(\'' + this.get('tooltip') + '\');"></i>');
-    }
-
-    return $('<div class="form-field">').append(label).append('<br>').append(this.element);
   };
 
   return this;
