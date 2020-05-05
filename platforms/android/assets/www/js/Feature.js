@@ -258,6 +258,7 @@ function Feature(
   * ToDo addListElement zusammenlegen mit createFeatureList
   */
   this.addListElement = function() {
+    console.log('addListElement');
     kvm.log('Feature.addListElement', 4);
     $('#featurelistBody').prepend(this.listElement());
     kvm.log(this.id + ' zur Liste hinzugefügt.', 4);
@@ -281,6 +282,7 @@ function Feature(
     kvm.log('Click Event an Listenelement registriert', 4);
 
     $('#numDatasetsText').html(Object.keys(kvm.activeLayer.features).length);
+    console.log('Neue Anzahl features: %s', Object.keys(kvm.activeLayer.features).length);
     kvm.log('Anzeige der Anzahl der Features aktualisiert.', 4);
   };
 
@@ -291,7 +293,7 @@ function Feature(
 
   this.getNormalCircleMarkerStyle = function() {
     //console.log('return normalcirclemarkerstyle %o', config.markerStyles[this.get('status')]);
-    return config.markerStyles[this.get('status') ? this.get('status') : 0];
+    return config.markerStyles[this.get('status') == 'null' ? 0 : this.get('status')];
   };
 
   this.getSelectedCircleMarkerStyle = function() {
@@ -302,7 +304,7 @@ function Feature(
   };
 
   this.getEditModeCircleMarkerStyle = function() {
-    return { color: "#666666", fill: true, fillOpacity: 0.8, fillColor: "#cccccc" };
+    return { color: "#666666", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#cccccc" };
   };
 
   if (this.data[this.options.geometry_attribute]) {

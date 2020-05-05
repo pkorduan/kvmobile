@@ -36,6 +36,6 @@ NetworkStatus = {
     states[Connection.CELL]     = 'generisches Netz';
     states[Connection.NONE]     = 'Keine Netzwerkverbindung';
 
-    return states[networkState];
+    return (navigator.onLine ? 'Wir sind online!' : 'Wir haben kein Netz!') + ' ' + states[networkState];
   }
 }

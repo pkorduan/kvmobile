@@ -79,7 +79,7 @@
           <i class="fa fa-list fa-2x" aria-hidden="true"></i>
         </a>
         <a id="cancelFeatureButton" class="menu-button text-button" style="display: none;">
-          Abbrechen
+          <i class="fa fa-arrow-left" aria-hidden="true"></i>
         </a>
       </div>
       <div class="col-xs-3" style="text-align:center;">
@@ -87,7 +87,7 @@
           <i class="fa fa-map fa-2x" aria-hidden="true"></i>
         </a>
         <a id="saveFeatureButton" class="menu-button text-button" style="display: none;">
-          Speichern
+          <i class="fa fa-floppy-o" aria-hidden="true"></i>
         </a>
       </div>
       <div class="col-xs-3" style="text-align:center;">
@@ -110,11 +110,10 @@
     Automatisches Öffnen von Formular, wenn in der Nähe von Haltestellen
     <hr>
 -->
-
     <h2>Anzeigefilter</h2>
     <div id="anzeigeFilterDiv">
       <select id="anzeigeFilterSelect">
-        <option value="">kein Filter</option>
+        <option value="" selected>kein Filter</option>
         <option value="status = 0">Noch zu prüfen</option>
         <option value="status = 1">Ist schon geprüft</option>
         <option value="status = 2">Noch Nachfragen nötig</option>
@@ -171,16 +170,26 @@
     <hr>
 
     <h2>Sachdatenanzeige</h2>
-    Anzahl Zeilen pro Seite: <input type="text" id="limit" value="25" size="3"/><br>
-    Beginnen bei Zeile: <input type="text" id="offset" value="0" size="5"/>
+    Anzahl der geladenen Datensätze: <input type="number" id="limit" value="25000" size="5"/><br>
+    Beginne bei: <input type="number" id="offset" value="50000" size="5"/>
     <hr>
 
-    <h2>Netzwerk</h2>
+    <h2>Position neuer Objekte</h2>
+    <div id="newPosDiv">
+      <select id="newPosSelect">
+        <option value="1" selected>An GPS-Position falls Signal vorhanden</option>
+        <option value="2">Immer am aktuellen Kartenmittelpunkt</option>
+      </select>
+    </div>
+    <hr>
+
+    <h2>Netzwerkstatus</h2>
     <div id="networkStatusText">...wird geladen</div>
     <hr>
 
-    <h2>GPS</h2>
+    <h2>GPS-Status</h2>
     <div id="gpsStatusText">...wird geladen</div>
+    <div id="gpsCurrentPosition"></div>
     <hr>
 
     <h2>Geräteinformationen</h2>

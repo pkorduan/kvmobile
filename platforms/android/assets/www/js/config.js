@@ -18,10 +18,10 @@ config = {
   kvwmapServerId: 1,
   kvwmapServerName: 'kvwmap',
   markerStyles: {
-    '0': { color: "#000000", fill: true, fillOpacity: 0.8, fillColor: "#dd8181" },
-    '1': { color: "#000000", fill: true, fillOpacity: 0.8, fillColor: "#465dc0" },
-    '2': { color: "#000000", fill: true, fillOpacity: 0.8, fillColor: "#23a325" },
-    '3': { color: "#000000", fill: true, fillOpacity: 0.8, fillColor: "#26a7f1" }
+    '0': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#dd8181" },
+    '1': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#465dc0" },
+    '2': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#23a325" },
+    '3': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#26a7f1" }
   },
 
   // Bei Rostock
@@ -37,7 +37,7 @@ config = {
   // LK-VG
   startZoom: 8,
   maxExtent: [339600, 5894500, 492200, 6016500],
-  startPosition: [13.81898, 53.78441],
+  startPosition: [53.78441, 13.81898],
   kvwmapServerUrl: 'https://geoportal-vg.de/kvwmap_test',
   kvwmapServerLoginName: 'kvmobile',
   kvwmapServerPasswort: 'Kvw1-Tool2'

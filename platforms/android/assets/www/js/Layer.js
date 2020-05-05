@@ -938,7 +938,7 @@ function Layer(stelle, settings = {}) {
 
   this.getIcon = function() {
     return L.icon({
-        iconUrl: 'img/hst24.png',
+//        iconUrl: 'img/hst24.png',
 //        shadowUrl: 'leaf-shadow.png',
 
         iconSize:     [24, 24], // size of the icon
@@ -1331,39 +1331,53 @@ function Layer(stelle, settings = {}) {
   * Überarbeiten für neue Features evtl.
   */
   this.saveGeometry = function(featureId) {
+    console.log('saveGeometry mit featureId: %s', featureId);
     var feature = this.features[featureId],
-        layer = kvm.map._layers[feature.markerId],
+        layer,
         latlng = feature.editableLayer.getLatLng();
+
+    console.log('Behandel feature: %o', feature);
+
+    if (feature.markerId) {
+      console.log('feature.markerId: %s', feature.markerId);
+      var layer = kvm.map._layers[feature.markerId];
+      console.log('layer extrahiert: %o'. layer);
+    }
 
     $('#sperr_div_content').html('Aktualisiere die Geometrie');
     $('#sperr_div').show();
-//    $('#save_geometry_button').toggleClass('fa-check-square-o fa-spinner fa-pulse');
+    console.log('sperrdiv eingeschaltet');
 
     /*
     * Änderung der Geometrie speichern wie folgt:
     * 
     */
-    // Speichern des Formulares ohne es zu zeigen.
-    //  - Dabei wird der Änderungsdatensatz erzeugt (Delta als hätte man das Form gespeichert)
 
+    console.log('setze neue geometry for feature: %o', feature.newGeom);
     //  - Die Änderung im Featureobjekt vorgenommen
     feature.geom = feature.newGeom;
 
     if (layer) {
       // Ursprüngliche durch neue Geometrie ersetzen
       //  - im Layerobjekt (z.B. circleMarker)
+      console.log('setLatLng from editable layer');
       layer.setLatLng(feature.editableLayer.getLatLng());
+
+      console.log('Style der ursprünglichen Geometrie auf default setzen');
+      layer.setStyle(feature.getNormalCircleMarkerStyle());
     }
     else {
-      // ToDo: layer neu anlegen und zur Layergruppe hinzufügen, siehe drawFeature
-      // die Funktion in drawFeature und hier zusammenlegen zu einer Funktion die hier und da aufgerufen wird.
-
+      console.log('Lege neuen CircleMarker an.');
       // circleMarker erzeugen mit Popup Eventlistener
       var circleMarker = L.circleMarker(feature.wkxToLatLngs(feature.newGeom), {
         renderer: kvm.myRenderer,
         featureId: feature.id
       }).bindPopup(this.getPopup(feature));
+
+      console.log('Style der neuen Geometrie auf default setzen');
       circleMarker.setStyle(feature.getNormalCircleMarkerStyle());
+
+      console.log('Setze click event for marker');
       circleMarker.on('click', function(evt) {
         kvm.log(kvm.activeLayer.activeFeature.editable, 4);
         if (kvm.activeLayer.activeFeature.editable) {
@@ -1377,23 +1391,31 @@ function Layer(stelle, settings = {}) {
         }
       });
 
+      console.log('Füge circleMarker zur layerGroup hinzu.');
       // circleMarker als Layer zur Layergruppe hinzufügen
       this.layerGroup.addLayer(circleMarker);
+
+      console.log('Frage markerId ab und ordne feature zu.');
       // layer_id abfragen und in Feature als markerId speichern
       feature.markerId = this.layerGroup.getLayerId(circleMarker);
+
+      console.log('setze layer variable mit circleMarker id: %s', feature.markerId);
+      layer = kvm.map._layers[feature.markerId];
+      console.log('layer variable jetzt: %o', layer);
     }
 
-    // Style der ursprünglichen Geometrie auf default setzen
-    layer.setStyle(feature.getNormalCircleMarkerStyle());
-
+    console.log('Setze feature auf nicht mehr editierbar.');
     // editierbare Geometrie aus der Karte löschen und damit Popup der editierbaren Geometrie schließen
     feature.setEditable(false);
 
+    console.log('schließe Popup (falls vorhanden)');
     kvm.map.closePopup();
 
+    console.log('Binde default Popup für layer');
     // Binded das default Popup an den dazugehörigen Layer
     layer.bindPopup(this.getPopup(feature));
 
+    console.log('Zoome zum Feature');
     feature.select();
 
   };
@@ -1622,7 +1644,8 @@ function Layer(stelle, settings = {}) {
   *
   */
   this.execDelta = function(delta) {
-    kvm.log('Layer.execDelta: ' + JSON.stringify(delta), 4);
+    console.log('Exec Delta: %s', delta);
+    kvm.log('Layer.execDelta: ' + delta, 4);
     kvm.db.executeSql(
       delta,
       [],
@@ -1639,10 +1662,13 @@ function Layer(stelle, settings = {}) {
           kvm.activeLayer.activeFeature.updateListElement();
         }
 
+        console.log('Rufe saveGeometry auf mit activeFeatureid: %s', kvm.activeLayer.activeFeature.id);
         kvm.activeLayer.saveGeometry(kvm.activeLayer.activeFeature.id);
 
+        console.log('Wechsel die Ansicht zum Formular oder map.');
         kvm.showItem($('#formular').is(':visible') ? 'featurelist' : 'map');
 
+        console.log('Blende Sperrdiv aus');
         // Sperrdiv entfernen
         $('#sperr_div').hide();
 

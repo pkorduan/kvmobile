@@ -84,7 +84,7 @@ kvm.controller.mapper = {
     kvm.log('mapper controller: watchGpsAccuracy');
     this.watchId = navigator.geolocation.watchPosition(
       (function(geoLocation) {
-        kvm.log('Set new geo location accuracy', 4);
+//        kvm.log('Set new geo location accuracy', 4);
         this.accuracy = geoLocation.coords.accuracy;
 
         switch (true) {
@@ -178,41 +178,50 @@ kvm.controller.mapper = {
         );
     console.log('Neues Feature mit id: %s erzeugt.', kvm.activeLayer.activeFeature.id);
 
-    // Setzt die Position des Features
-    navigator.geolocation.getCurrentPosition(
-      function(geoLocation) {
-        // GPS-Position konnte ermittelt werden.
-        // ToDo hier die Funktion aufrufen, die was aus der Koordinate vom GPS macht.
-        // - Geom für Feature übernehmen,
-        // - ins Form übernehmen
-        // - Neues Editable anlegen.
-        // - ggf. Views und Buttons umschalten
+    if ($('#newPosSelect').val() == 1) {
+      // Setzt die Position des Features
+      navigator.geolocation.getCurrentPosition(
+        function(geoLocation) {
+          // GPS-Position konnte ermittelt werden.
+          // ToDo hier die Funktion aufrufen, die was aus der Koordinate vom GPS macht.
+          // - Geom für Feature übernehmen,
+          // - ins Form übernehmen
+          // - Neues Editable anlegen.
+          // - ggf. Views und Buttons umschalten
 
-        //?      kvm.activeLayer.activeFeature.setGeom();
-        console.log('Starte Editierung an GPS-Coordinate');
-        kvm.activeLayer.startEditing([geoLocation.coords.latitude, geoLocation.coords.longitude]);
-      },
-      function(error) {
-        var center = kvm.map.getCenter();
+          //?      kvm.activeLayer.activeFeature.setGeom();
+          console.log('Starte Editierung an GPS-Coordinate');
+          kvm.activeLayer.startEditing([geoLocation.coords.latitude, geoLocation.coords.longitude]);
+          $('#gpsCurrentPosition').html(geoLocation.coords.latitude.toString() + ' ' + geoLocation.coords.longitude.toString());
+        },
+        function(error) {
+          var center = kvm.map.getCenter();
 
-        console.log('Starte Editierung in Bildschirmmitte');
-        kvm.activeLayer.startEditing([center.lat, center.lng]);
-        navigator.notification.confirm(
-          'Da keine GPS-Position ermittelt werden kann, wird die neue Geometrie in der Mitte der Karte gezeichnet. Schalten Sie die GPS Funktion auf Ihrem Gerät ein und suchen Sie einen Ort unter freiem Himmel auf um GPS benutzen zu können.',
-          function(buttonIndex) {
-            if (buttonIndex == 1) {
-              kvm.log('Einschalten der GPS-Funktion.', 3);
-            }
-          },
-          'GPS-Position',
-          ['ok', 'ohne GPS weitermachen']
-        );
-      }, {
-        maximumAge: 2000, // duration to cache current position
-        timeout: 5000, // timeout for try to call successFunction, else call errorFunction
-        enableHighAccuracy: true // take position from gps not network-based method
-      }
-    );
+          console.log('Starte Editierung in Bildschirmmitte');
+          kvm.activeLayer.startEditing([center.lat, center.lng]);
+          navigator.notification.confirm(
+            'Da keine GPS-Position ermittelt werden kann, wird die neue Geometrie in der Mitte der Karte gezeichnet. Schalten Sie die GPS Funktion auf Ihrem Gerät ein und suchen Sie einen Ort unter freiem Himmel auf um GPS benutzen zu können.',
+            function(buttonIndex) {
+              if (buttonIndex == 1) {
+                kvm.log('Einschalten der GPS-Funktion.', 3);
+              }
+            },
+            'GPS-Position',
+            ['ok', 'ohne GPS weitermachen']
+          );
+        }, {
+          maximumAge: 2000, // duration to cache current position
+          timeout: 5000, // timeout for try to call successFunction, else call errorFunction
+          enableHighAccuracy: true // take position from gps not network-based method
+        }
+      );
+    }
+    else {
+      var center = kvm.map.getCenter();
+
+      console.log('Starte Editierung in Bildschirmmitte');
+      kvm.activeLayer.startEditing([center.lat, center.lng]);
+    }
   },
 
   zoomToFeature: function(featureId) {

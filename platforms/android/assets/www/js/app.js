@@ -87,7 +87,7 @@ kvm = {
             kvm.layerDataLoaded = false;
             kvm.featureListLoaded = false;
             //layer.loadFeaturesToMap();
-            layer.readData(25000); // load from loacl db to feature list
+            layer.readData($('#limit').val(), $('#offset').val()); // load from loacl db to feature list
           },
           2000
         );
@@ -129,8 +129,8 @@ kvm = {
         map = L.map(
           'map', {
             editable: true,
-            center: [54, 12.2],
-            zoom: 8,
+            center: config.startPosition,
+            zoom: config.startZoom,
             minZoom: config.minZoom,
             maxZoom: config.maxZoom,
             layers: [
@@ -145,7 +145,7 @@ kvm = {
         };
 
 //    L.PM.initialize({ optIn: true });
-    this.myRenderer = L.canvas({ padding: 0.5 });
+    kvm.myRenderer = L.canvas({ padding: 0.5 });
     map.addControl(new L.control.betterscale({metric: true}));
     map.addControl(new L.control.locate({
       position: 'topright',
