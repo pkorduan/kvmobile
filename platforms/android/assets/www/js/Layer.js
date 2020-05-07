@@ -128,20 +128,25 @@ function Layer(stelle, settings = {}) {
   * Load data from local db, create feature objects and show in list view
   * Read data from offset to offset + limit
   */
-  this.readData = function(limit = 0, offset = 0, order = '') {
+  this.readData = function(limit = 50000, offset = 0, order = '') {
     kvm.log('Layer.readData from table: ' + this.get('schema_name') + '_' + this.get('table_name'), 3);
   //  order = (this.get('name_attribute') != '' ? this.get('name_attribute') : this.get('id_attribute'));
     $('#sperr_div').show();
 
-    var filter = $('#anzeigeFilterSelect').val(),
+    var filter = [],
         order = $('#anzeigeSortSelect').val(),
-        sql = "\
+        sql = '';
+
+    if ($('#statusFilterSelect').val() != '') filter.push($('#statusFilterSelect').val());
+    if ($('#expressionFilterText').val() != '') filter.push($('#expressionFilterText').val());
+    console.log('filter expression: $o', filter);
+    sql = "\
       SELECT\
         *\
       FROM\
         " + this.get('schema_name') + '_' + this.get('table_name') + "\
-      " + (filter != "" ? "WHERE " + filter : "") + "\
-      " + (order  != "" ? "ORDER BY " + order : "") + "\
+      " + (filter.length > 0 ? "WHERE " + filter.join(' AND ') : "") + "\
+      " + (order  != "" ? "ORDER BY " + order + "" : "") + "\
       " + (limit == 0 && offset == 0 ? "" : "LIMIT " + limit + " OFFSET " + offset) + "\
     ";
     kvm.log('Lese Daten aus lokaler Datenbank mit Sql: ' + sql, 3, true);
@@ -184,6 +189,9 @@ function Layer(stelle, settings = {}) {
 
         kvm.createFeatureList();
         if (numRows > 0) {
+          if (this.layerGroup) {
+            this.layerGroup.clearLayers();
+          }
           this.drawFeatures();
         }
 
@@ -245,7 +253,7 @@ function Layer(stelle, settings = {}) {
         this.set('syncLastLocalTimestamp', Date());
         this.saveToStore();
         this.setActive();
-        this.readData();
+        this.readData($('#limit').val(), $('#offset').val());
       }).bind(this),
       (function(error) {
         this.set('syncVersion', 0);
@@ -817,8 +825,8 @@ function Layer(stelle, settings = {}) {
     this.deleteDeltas('all');
     this.features = [];
     $('#featurelistBody').html('');
-    if (this.geometryLayer) {
-      this.geometryLayer.clearLayers();
+    if (this.layerGroup) {
+      this.layerGroup.clearLayers();
     }
     this.setEmpty();
   };
@@ -1840,16 +1848,27 @@ function Layer(stelle, settings = {}) {
     kvm.activeLayer = this;
     kvm.store.setItem('activeLayerId', this.get('id'));
 
+    $('#filterDiv').html('');
     $.each(
       this.attributes,
       function(key, value) {
-        var option = value.settings.name;
-        $('#anzeigeSortSelect')
-        .append($('<option>', { value : value.settings.value })
-        .text(value.settings.alias));
+        $('#filterDiv').append(
+          $('<div class="filter-view-field">')
+            .append('<div class="filter-view-label">' + value.settings.alias + '</div>')
+            .append('<div class="filter-view-operator">=</div>')
+            .append('<div class="filter-view-value"><input name="filter_value_' + value.settings.name + '" type="text"/></div>')
+        )
       }
     );
 
+    $('#anzeigeSortSelect option[value!=""]').remove();
+    $.each(
+      this.attributes,
+      function(key, value) {
+        $('#anzeigeSortSelect').append($('<option value="' + value.settings.name + '">' + value.settings.alias + '</option>'));
+      }
+    );
+    $('#formular').html();
     this.createFeatureForm();
     this.createDataView();
     $('input[name=activeLayerId]').checked = false

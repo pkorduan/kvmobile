@@ -132,6 +132,48 @@ a.hover {
   border-top: 0px solid lightgray;
 }
 
+#filterViewDiv {
+  display: table;
+  font-size: 24px;
+  width: 100%;  
+}
+
+.filter-view-field {
+  display: table-row;
+}
+
+.filter-view-label {
+  width: 30%;
+  display: table-cell;
+  padding-left: 12px;
+  padding-top: 5px;
+  border-bottom: 0px solid white;
+  padding-bottom: 5px;
+  background-color: #dfdfdf;
+  border-top: 2px solid white;
+  padding-right: 12px;
+}
+
+.filter-view-operator {
+  display: table-cell;
+  border-bottom: 1px solid lightgray;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  padding-left: 16px;
+  width: 10%;
+  border-top: 0px solid lightgray;
+}
+
+.filter-view-value {
+  display: table-cell;
+  border-bottom: 1px solid lightgray;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  padding-left: 16px;
+  width: 60%;
+  border-top: 0px solid lightgray;
+}
+
 #dataViewDiv {
   display: table;
   font-size: 24px;

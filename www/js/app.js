@@ -469,10 +469,10 @@ kvm = {
       }
     );
 
-    $('#anzeigeFilterSelect').on(
+    $('#statusFilterSelect').on(
       'change',
       function(evt) {
-        kvm.activeLayer.readData();
+        kvm.activeLayer.readData($('#limit').val(), $('#offset').val());
       }
     );
 
@@ -865,6 +865,7 @@ kvm = {
               }
 
               if (buttonIndex == 2) { // ja
+                if (kvm.aciveLayer) kvm.activeLayer.clearData();
                 $('#reloadLayerIcon_' + layer.getGlobalId()).toggleClass('fa-window-restore fa-spinner fa-spin');
                 console.log('reload layer id: %s', kvm.activeLayer.get('id'));
                 kvm.activeStelle.reloadLayer(kvm.activeLayer.get('id'));
