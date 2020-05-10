@@ -165,8 +165,6 @@ function Attribute(layer, settings = {}) {
       label.append('&nbsp;<i class="fa fa-exclamation-circle" style="color: #f57802" onclick="kvm.msg(\'' + this.formField.get('tooltip') + '\');"></i>');
     }
 
-    console.log(this.formField.element.val());
-    console.log(this.formField.element[0].value);
     return $('<div class="form-field">')
       .append(label)
       .append(value.append(this.formField.element));

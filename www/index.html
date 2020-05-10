@@ -119,9 +119,11 @@
         <option value="status = 1">Ist schon geprüft</option>
         <option value="status = 2">Noch Nachfragen nötig</option>
       </select>
-      Filterausdruck z.B. (Attribut = 'Wert'):
-      <input id="expressionFilterText" name="expressionFilter" type="text"/>
-      <div id="filterDiv" style="display: hide"></div>
+      <input id="toggleFilterDivButton" type="button" value="mehr" class="settings-button"/>
+      <div id="filterDiv" style="display: none">
+        <div id="attributeFilterFieldDiv"></div>
+        <input id="runFilterButton" type="button" value="Anwenden" class="settings-button"/>
+      </div>
     </div>
     <hr>
 

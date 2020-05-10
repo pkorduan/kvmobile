@@ -137,8 +137,22 @@ function Layer(stelle, settings = {}) {
         order = $('#anzeigeSortSelect').val(),
         sql = '';
 
+    filter = $('.filter-view-field')
+      .filter(
+        function(i, field) {
+          return ($(field).find('.filter-view-value input').val() != '');
+        }
+      )
+      .map(
+        function(i, field) { 
+          return $(field).attr('name') + ' '
+            + $(field).find('.filter-view-operator select').val() + ' '
+            + $(field).find('.filter-view-value input').val()
+        }
+      )
+      .get();
     if ($('#statusFilterSelect').val() != '') filter.push($('#statusFilterSelect').val());
-    if ($('#expressionFilterText').val() != '') filter.push($('#expressionFilterText').val());
+
     console.log('filter expression: $o', filter);
     sql = "\
       SELECT\
@@ -1847,17 +1861,27 @@ function Layer(stelle, settings = {}) {
     kvm.log('Setze Layer ' + this.get('title') + ' (' + (this.get('alias') ? this.get('alias') : 'kein Aliasname') + ') auf aktiv.', 3);
     kvm.activeLayer = this;
     kvm.store.setItem('activeLayerId', this.get('id'));
+    var operators = [
+          '=', '>', '<', '>=' , '<=', 'IN'
+        ],
+        options = operators.map(
+          function(operator) {
+            return '<option value="' + operator + '"' + (operator == '=' ? ' selected' : '') + '>' + operator + '</option>'
+          }
+        );
 
-    $('#filterDiv').html('');
+    $('#attributeFilterFieldDiv').html('');
     $.each(
       this.attributes,
       function(key, value) {
-        $('#filterDiv').append(
-          $('<div class="filter-view-field">')
-            .append('<div class="filter-view-label">' + value.settings.alias + '</div>')
-            .append('<div class="filter-view-operator">=</div>')
-            .append('<div class="filter-view-value"><input name="filter_value_' + value.settings.name + '" type="text"/></div>')
-        )
+        if (value.settings.type != 'geometry') {
+          $('#attributeFilterFieldDiv').append(
+            $('<div class="filter-view-field" name="' + value.settings.name + '">')
+              .append('<div class="filter-view-label">' + value.settings.alias + '</div>')
+              .append('<div class="filter-view-operator"><select>' + options + '</select></div>')
+              .append('<div class="filter-view-value"><input name="filter_value_' + value.settings.name + '" type="text"/></div>')
+          )
+        }
       }
     );
 

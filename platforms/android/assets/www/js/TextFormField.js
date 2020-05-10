@@ -30,7 +30,7 @@ function TextFormField(formId, settings) {
   );
 
   this.setValue = function(val) {
-    console.log('TextFormField ' + this.get('name') + ' setValue with value: %o', val);
+    //console.log('TextFormField ' + this.get('name') + ' setValue with value: %o', val);
     if (!val && this.get('default')) {
       val = this.get('default');
     }

@@ -476,6 +476,21 @@ kvm = {
       }
     );
 
+    $('#toggleFilterDivButton').on(
+      'click',
+      function() {
+        $('#filterDiv').toggle();
+        $('#toggleFilterDivButton').val(($('#toggleFilterDivButton').val() == 'mehr' ? 'weniger' : 'mehr'));
+      }
+    )
+
+    $('#runFilterButton').on(
+      'click',
+      function() {
+        kvm.activeLayer.readData($('#limit').val(), $('#offset').val());
+      }
+    );
+
     $('#anzeigeSortSelect').on(
       'change',
       function(evt) {

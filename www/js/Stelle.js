@@ -217,6 +217,7 @@ function Stelle(settings = {}) {
                 layer.saveToStore();
                 layer.updateTable();
                 console.log('Store after save layer: %o', kvm.store);
+                layer.setActive();
               }
               else {
                 kvm.log('Fehlerausgabe von parseLayerResult!', 4);
