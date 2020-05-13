@@ -232,7 +232,6 @@ function Feature(
 
   this.select = function() {
     kvm.log('Markiere Feature ' + this.id, 4);
-    kvm.activeLayer.activeFeature = this;
 
     kvm.log('Select feature in map ' + this.markerId,4 );
     kvm.log('Set style %o',this.getSelectedCircleMarkerStyle());
@@ -246,6 +245,7 @@ function Feature(
 
     kvm.log('Select feature in list' + this.id, 4);
     $('#' + this.id).addClass('selected-feature-item');
+    return this;
   };
 
   this.listElement = function() {
@@ -255,29 +255,16 @@ function Feature(
   };
 
   /*
-  * ToDo addListElement zusammenlegen mit createFeatureList
+  * Add a single list element to the list of features in list view
   */
   this.addListElement = function() {
-    console.log('addListElement');
     kvm.log('Feature.addListElement', 4);
     $('#featurelistBody').prepend(this.listElement());
     kvm.log(this.id + ' zur Liste hinzugefügt.', 4);
 
     $("#" + this.id).on(
       'click',
-      function(evt) {
-        kvm.log('Öffne DataView mit Objektdaten.', 4);
-        var id = evt.target.getAttribute('id'),
-            feature = kvm.activeLayer.features[id],
-            activeFeature = kvm.activeLayer.activeFeature;
-
-        if (activeFeature) {
-          activeFeature.unselect();
-        }
-        feature.select();
-        kvm.activeLayer.loadFeatureToView(feature, { editable: false });
-        kvm.showItem('dataView');
-      }
+      kvm.featureItemClickEventFunction
     );
     kvm.log('Click Event an Listenelement registriert', 4);
 

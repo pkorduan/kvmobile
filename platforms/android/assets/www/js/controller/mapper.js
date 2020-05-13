@@ -168,7 +168,7 @@ kvm.controller.mapper = {
   newFeature: function(evt) {
     // Erzeugt ein neues leeres Feature Objekt erstmal ohne Geometrie
     kvm.activeLayer.activeFeature = new Feature(
-          '{ "' + kvm.activeLayer.get('id_attribute') + '": "' + kvm.uuidv4() + '"}',
+          '{ "' + kvm.activeLayer.get('id_attribute') + '": "' + kvm.uuidv4() + '", "version": "' + (kvm.activeLayer.get('syncVersion') + 1) + '"}',
           {
             id_attribute: 'uuid',
             geometry_type: kvm.activeLayer.get('geometry_type'),
@@ -227,7 +227,7 @@ kvm.controller.mapper = {
   zoomToFeature: function(featureId) {
     var feature = kvm.activeLayer.features[featureId];
 
-    kvm.map.fitBounds(feature.editableLayer.getBounds(), { padding: [50, 50]});
+    kvm.map.flyTo(feature.editableLayer.getLatLng(), 18);
   },
 
   wkbToLatLngs: function(wkb) {

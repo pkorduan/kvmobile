@@ -137,6 +137,8 @@ function Layer(stelle, settings = {}) {
         order = $('#anzeigeSortSelect').val(),
         sql = '';
 
+    delete this.activeFeature;
+
     filter = $('.filter-view-field')
       .filter(
         function(i, field) {
@@ -153,7 +155,6 @@ function Layer(stelle, settings = {}) {
       .get();
     if ($('#statusFilterSelect').val() != '') filter.push($('#statusFilterSelect').val());
 
-    console.log('filter expression: $o', filter);
     sql = "\
       SELECT\
         *\
@@ -988,6 +989,16 @@ function Layer(stelle, settings = {}) {
     );
   };
 
+  this.selectFeature = function(feature) {
+    kvm.log('Selectiere Feature ' + feature.id, 4);
+
+    // deselect feature if a selected exists
+    if (this.activeFeature) {
+      this.activeFeature.unselect();
+    }
+    this.activeFeature = feature.select();
+  };
+
   /*
   * - Befüllt das Formular des Layers mit den Attributwerten des übergebenen Features
   * - Setzt das Feature als activeFeature im Layer
@@ -1026,7 +1037,7 @@ function Layer(stelle, settings = {}) {
   * Zeichnet die Features in die Karte
   */
   this.drawFeatures = function() {
-    kvm.log('Erzeuge Geometrieobjekt in der Karte: ', 3);
+    kvm.log('Erzeuge Geometrieobjekte in der Karte: ', 3);
     kvm.log('Erzeuge ' + Object.keys(this.features).length + ' CircleMarker', 3);
     $.each(
       this.features,
@@ -1038,16 +1049,12 @@ function Layer(stelle, settings = {}) {
         }).bindPopup(this.getPopup(feature));
         circleMarker.setStyle(feature.getNormalCircleMarkerStyle());
         circleMarker.on('click', function(evt) {
-          debug_evt = 'evt';
           console.log(kvm.activeLayer.activeFeature.editable);
           if (kvm.activeLayer.activeFeature.editable) {
             $('.popup-functions').hide();
           }
           else {
-            if (kvm.activeLayer.activeFeature) {
-              kvm.activeLayer.activeFeature.unselect();
-            }
-            kvm.activeLayer.features[evt.target.options.featureId].select();
+            kvm.activeLayer.selectFeature(kvm.activeLayer.features[evt.target.options.featureId]);
           }
         });
 
@@ -1317,7 +1324,7 @@ function Layer(stelle, settings = {}) {
 
       // Binded das Popup an den dazugehörigen Layer
       kvm.map._layers[feature.markerId].bindPopup(this.getPopup(feature));
-      feature.select();
+      this.selectFeature(feature);
     }
     else {
       // Beende das Anlegen eines neuen Features
@@ -1406,10 +1413,7 @@ function Layer(stelle, settings = {}) {
           $('.popup-functions').hide();
         }
         else {
-          if (kvm.activeLayer.activeFeature) {
-            kvm.activeLayer.activeFeature.unselect();
-          }
-          kvm.activeLayer.features[evt.target.options.featureId].select();
+          kvm.activeLayer.selectFeature(kvm.activeLayer.features[evt.target.options.featureId]);
         }
       });
 
@@ -1438,7 +1442,7 @@ function Layer(stelle, settings = {}) {
     layer.bindPopup(this.getPopup(feature));
 
     console.log('Zoome zum Feature');
-    feature.select();
+    this.selectFeature(feature);
 
   };
   /*
@@ -1892,7 +1896,7 @@ function Layer(stelle, settings = {}) {
         $('#anzeigeSortSelect').append($('<option value="' + value.settings.name + '">' + value.settings.alias + '</option>'));
       }
     );
-    $('#formular').html();
+    $('#formular').html('');
     this.createFeatureForm();
     this.createDataView();
     $('input[name=activeLayerId]').checked = false

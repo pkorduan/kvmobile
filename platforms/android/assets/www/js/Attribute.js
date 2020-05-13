@@ -148,7 +148,7 @@ function Attribute(layer, settings = {}) {
             <rect class="bar-5" x="24" y="0" width="4" height="28" />\
           </g>\
         </svg>\
-        <i id="goToGpsPositionButton" class="fa fa-globe fa-2x" aria-hidden="true" style="float: right; margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>\
+        <i id="goToGpsPositionButton" class="fa fa-pencil fa-2x" aria-hidden="true" style="float: right; margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>\
         <input type="text" id="geom_wkt" value=""/>');
     }
 

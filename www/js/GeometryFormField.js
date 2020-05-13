@@ -78,7 +78,7 @@ function GeometrieFormField(formId, settings) {
             feature = kvm.activeLayer.features[featureId],
             marker = kvm.map._layers[feature.markerId];
 
-        kvm.controller.mapper.zoomToFeature(feature.markerId)
+        kvm.controller.mapper.zoomToFeature(featureId)
         marker.openPopup();
         kvm.showItem('mapEdit');
       }
@@ -94,8 +94,14 @@ function GeometrieFormField(formId, settings) {
               'Neue Position:\n' + geoLocation.coords.longitude + ' ' + geoLocation.coords.latitude + '\nübernehmen?',
               function(buttonIndex) {
                 if (buttonIndex == 1) {
-                  //kvm.log('set new Position ' + geoLocation.coords.latitude + ' ' + geoLocation.coords.longitude, 4);
-                  $('#featureFormular input[id=0]').val(geoLocation.coords.longitude + ' ' + geoLocation.coords.latitude).trigger('change');
+                  kvm.log('set new Position ' + geoLocation.coords.latitude + ' ' + geoLocation.coords.longitude, 4);
+                  var feature = kvm.activeLayer.activeFeature,
+                      newGeom = feature.aLatLngsToWkx([[geoLocation.coords.latitude, geoLocation.coords.longitude]]);
+
+                  $('#geom_wkt').val(newGeom.toWkt());
+
+                  console.log('trigger geomChanged mit coords der Geolocation: %o', geoLocation.coords);
+                  $(document).trigger('geomChanged', [{ geom: newGeom, exclude: 'wkt'}]);
                 }
               },
               'GPS-Position',

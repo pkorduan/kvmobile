@@ -149,9 +149,10 @@ kvm = {
     map.addControl(new L.control.betterscale({metric: true}));
     map.addControl(new L.control.locate({
       position: 'topright',
+      keepCurrentZoomLevel: true,
+      flyTo: true,
       strings: {
         title: "Zeig mir wo ich bin.",
-        flyTo: true,
         metersUnit: "Meter",
         popup: "Sie befinden sich im Umkreis von {distance} {unit}.",
         outsideMapBoundsMsg: "Sie sind außerhalb des darstellbaren Bereiches der Karte."
@@ -494,7 +495,7 @@ kvm = {
     $('#anzeigeSortSelect').on(
       'change',
       function(evt) {
-        kvm.activeLayer.readData();
+        kvm.activeLayer.readData($('#limit').val(), $('#offset').val());
       }
     );
 
@@ -703,24 +704,18 @@ kvm = {
     kvm.log('bindFeatureItemClickEvents', 4);
     $(".feature-item").on(
       'click',
-      function(evt) {
-        kvm.log('Öffne DataView mit Objektdaten.', 4);
-
-        var id = evt.target.getAttribute('id'),
-            feature = kvm.activeLayer.features[id],
-            activeFeature = kvm.activeLayer.activeFeature;
-
-        if (activeFeature) {
-          activeFeature.unselect();
-        }
-
-        feature.select();
-
-        kvm.activeLayer.loadFeatureToView(feature, { editable: false });
-
-        kvm.showItem('dataView');
-      }
+      kvm.featureItemClickEventFunction
     );
+  },
+
+  featureItemClickEventFunction: function(evt) {
+    kvm.log('Öffne DataView mit Objektdaten.', 4);
+
+    kvm.activeLayer.selectFeature(kvm.activeLayer.features[evt.target.getAttribute('id')]);
+
+    kvm.activeLayer.loadFeatureToView(kvm.activeLayer.activeFeature, { editable: false });
+
+    kvm.showItem('dataView');
   },
 
   /*
@@ -924,7 +919,7 @@ kvm = {
   },
 
   /*
-  * create the list of features of active layer in list view
+  * create the list of features of active layer in list view at once
   */
   createFeatureList: function() {
     console.log('Erzeuge die Liste der Datensätze neu: %o', this.activeLayer.features);
