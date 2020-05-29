@@ -120,10 +120,10 @@ kvm = {
   initMap: function() {
     kvm.log('Karte initialisieren.', 3);
 
-    var orka_online = L.tileLayer('https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png', {
+    var orka_offline = L.tileLayer(config.localTilePath + 'tiles/{z}/{x}/{y}.png', {
           attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
         }),
-        orka_offline = L.tileLayer(config.localTilePath + 'tiles/{z}/{x}/{y}.png', {
+        orka_online = L.tileLayer('https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png', {
           attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
         }),
         map = L.map(
@@ -134,14 +134,14 @@ kvm = {
             minZoom: config.minZoom,
             maxZoom: config.maxZoom,
             layers: [
-              orka_online,
-              orka_offline
+              orka_offline,
+              orka_online
             ]
           }
         ),
         baseMaps = {
-          'Hintergrundkarte online': orka_online,
-          'Hintergrundkarte offline': orka_offline
+          'Hintergrundkarte offline': orka_offline,
+          'Hintergrundkarte online': orka_online
         };
 
 //    L.PM.initialize({ optIn: true });
