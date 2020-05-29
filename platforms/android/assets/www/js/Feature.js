@@ -18,7 +18,7 @@
 * wkxToLatLngs // z.B. um aus Feature Marker oder Polylines in Karte zu zeichnen
 * wkxToLatLng // z.B. um von einem Punktfeature ein Marker zu erzeugen
 * wkbToWkx // um die PostGIS Geometrie in das Wkx Objekt zu übernehmen
-* wkxToWkb // um die Geometrie von wkx Objekt in die PostGIS-Geometrie rauszuschreiben beim Speichern
+* wkxToEwkb // um die Geometrie von wkx Objekt in die PostGIS-Geometrie rauszuschreiben beim Speichern
 * aLatLngs und aCoords Funktionen sind identisch mit den ohne a, enthalten aber Arrays von LatLngs bzw. Coords
 * aLatLngs und aCoords können bei Polygon und Multi-Geometrien verschachtelt sein.
 * Wenn das Zentrale Format immer wkx ist, kann man mit fromXY und asXY alle Transformationen umsetzen
@@ -154,7 +154,7 @@ function Feature(
   * Die Funktion wandelt die Koordinatenachsenreihenfolge von latlng auf eastnorth!
   * @return Liefert das erzeugte WKX-Geometrie-Objekt zurück.
   * Umformungsvarianten für WKX-Geometrie sind:
-  * -> WKB für den Wert des geom_attribut: geom.toWkb().toString('hex') => '0101000000000000000000f03f0000000000000040'
+  * -> WKB für den Wert des geom_attribut: geom.toEwkb().toString('hex') => '0101000000000000000000f03f0000000000000040'
   * -> LatLng für die Geometrie des circleMarkers oder/und editables: kvm.controller.mapper.toLatLngs(geom) => [[[54, 12], [54.1 12.1]],[[54 12], [...]],[...]]]
   * -> WKT für die Anzeige im Formular: geom.toWkt() => 'MULTIPOLYGON(((54, 12 ....)))'
   */
@@ -179,8 +179,8 @@ function Feature(
     return result;
   };
 
-  this.wkxToWkb = function(wkx) {
-    return wkx.toWkb().toString('hex');
+  this.wkxToEwkb = function(wkx) {
+    return wkx.toEwkb().toString('hex');
   };
 
   this.reverseAxis = function(point) {
@@ -279,8 +279,9 @@ function Feature(
   };
 
   this.getNormalCircleMarkerStyle = function() {
-    //console.log('return normalcirclemarkerstyle %o', config.markerStyles[this.get('status')]);
-    return config.markerStyles[this.get('status') == 'null' ? 0 : this.get('status')];
+    kvm.log('getNormalCircleMarkerStyle for status: ' + this.get('status'), 4);
+    var status = ((this.get('status') && this.get('status') != 'null') ? this.get('status') : 0);
+    return config.markerStyles[status];
   };
 
   this.getSelectedCircleMarkerStyle = function() {

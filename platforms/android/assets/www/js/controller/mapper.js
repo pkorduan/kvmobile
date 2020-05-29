@@ -192,6 +192,7 @@ kvm.controller.mapper = {
           //?      kvm.activeLayer.activeFeature.setGeom();
           console.log('Starte Editierung an GPS-Coordinate');
           kvm.activeLayer.startEditing([geoLocation.coords.latitude, geoLocation.coords.longitude]);
+          kvm.map.flyTo(kvm.activeLayer.activeFeature.editableLayer.getLatLng(), 18);
           $('#gpsCurrentPosition').html(geoLocation.coords.latitude.toString() + ' ' + geoLocation.coords.longitude.toString());
         },
         function(error) {

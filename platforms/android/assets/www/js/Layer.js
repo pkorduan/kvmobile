@@ -142,14 +142,16 @@ function Layer(stelle, settings = {}) {
     filter = $('.filter-view-field')
       .filter(
         function(i, field) {
-          return ($(field).find('.filter-view-value input').val() != '');
+          var value = $(field).find('.filter-view-value-field').val();
+          return (value !== undefined && value != '');
         }
       )
       .map(
-        function(i, field) { 
+        function(i, field) {
+          var bracket = kvm.bracketForType($(field).attr('database_type'));
           return $(field).attr('name') + ' '
             + $(field).find('.filter-view-operator select').val() + ' '
-            + $(field).find('.filter-view-value input').val()
+            + bracket + $(field).find('.filter-view-value-field').val() + bracket;
         }
       )
       .get();
@@ -180,7 +182,7 @@ function Layer(stelle, settings = {}) {
   
         this.features = {};
         //console.log('id_attribute: %o', this.get('id_attribute'));
-        console.log('Anzahl Rows %s', numRows);
+        kvm.log('Anzahl Rows: ' + numRows);
 
         for (i = 0; i < numRows; i++) {
           var item = rs.rows.item(i);
@@ -196,7 +198,7 @@ function Layer(stelle, settings = {}) {
           );
           //console.log('Feature ' + i + ': %o', this.features[item[this.get('id_attribute')]]);
         }
-        console.log('Features erzeugt.');
+        kvm.log('Features erzeugt.');
         if ($('#syncLayerIcon_' + this.getGlobalId()).hasClass('fa-spinner')) {
           $('#syncLayerIcon_' + this.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
         }
@@ -466,6 +468,7 @@ function Layer(stelle, settings = {}) {
   this.sendDeltas = function(deltas) {
     kvm.log('Layer.sendDeltas: ' + JSON.stringify(deltas), 3);
     deltas_ = deltas;
+
     window.requestFileSystem(
       window.TEMPORARY,
       5 * 1024 * 1024,
@@ -473,6 +476,9 @@ function Layer(stelle, settings = {}) {
         kvm.log('file system open: ' + fs.name, 4);
         var fileName = 'delta_layer_' + kvm.activeLayer.getGlobalId() + '.json';
         var dirEntry = fs.root;
+
+        console.log(fileName);
+        console.log(dirEntry);
 
         dirEntry.getFile(
           fileName,
@@ -482,15 +488,20 @@ function Layer(stelle, settings = {}) {
             this.writeFile(fileEntry, deltas_);
           }).bind(this),
           function(err) {
-            kvm.log('Fehler beim Erzeugen der Delta-Datei, die geschickt werden soll.', 1);
-            $('#sperr_div').hide();
+            kvm.msg('Fehler beim Erzeugen der Delta-Datei, die geschickt werden soll.', 'Upload Änderungen');
+            if ($('#syncLayerIcon_' + kvm.activeLayer.getGlobalId()).hasClass('fa-spinner')) {
+              $('#syncLayerIcon_' + kvm.activeLayer.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
+              $('#sperr_div').hide();
+            }
           }
         );
+
       }).bind(this),
       function(err) {
         kvm.log('Fehler beim öffnen des Filesystems', 1);
       }
     );
+
   };
 
   this.writeFile = function(fileEntry, deltas) {
@@ -1359,13 +1370,10 @@ function Layer(stelle, settings = {}) {
   *
   * Überarbeiten für neue Features evtl.
   */
-  this.saveGeometry = function(featureId) {
-    console.log('saveGeometry mit featureId: %s', featureId);
-    var feature = this.features[featureId],
-        layer,
+  this.saveGeometry = function(feature) {
+    console.log('saveGeometry mit feature: %s', feature);
+    var layer,
         latlng = feature.editableLayer.getLatLng();
-
-    console.log('Behandel feature: %o', feature);
 
     if (feature.markerId) {
       console.log('feature.markerId: %s', feature.markerId);
@@ -1464,25 +1472,32 @@ function Layer(stelle, settings = {}) {
     changes = $.map(
       this.attributes,
       (function(attr) {
-        kvm.log('Vergleiche Werte von Attribut: ' + attr.get('name'));
-        var key = attr.get('name'),
-            oldVal = activeFeature.get(key),
-            newVal = attr.formField.getValue(this.action);
+        console.log('attr.name: %s', attr.get('name'));
+        console.log('attr.privilege: %s', attr.get('privilege'));
+        if (
+          [this.id_attribute, 'updated_at_client', 'created_at'].includes(attr.get('name')) ||
+          attr.get('privilege') != '0'
+        ) {
+          kvm.log('Vergleiche Werte von Attribut: ' + attr.get('name'));
+          var key = attr.get('name'),
+              oldVal = activeFeature.get(key),
+              newVal = attr.formField.getValue(this.action);
 
-        if (typeof oldVal == 'string') oldVal = oldVal.trim();
-        if (typeof newVal == 'string') newVal = newVal.trim();
+          if (typeof oldVal == 'string') oldVal = oldVal.trim();
+          if (typeof newVal == 'string') newVal = newVal.trim();
 
-        kvm.log('Vergleiche ' + attr.get('form_element_type') + ' Attribut: ' + key + '(' + oldVal + ' (' + typeof oldVal + ') vs. ' + newVal + '(' + typeof newVal + '))');
+          kvm.log('Vergleiche ' + attr.get('form_element_type') + ' Attribut: ' + key + '(' + oldVal + ' (' + typeof oldVal + ') vs. ' + newVal + '(' + typeof newVal + '))');
 
-        if (oldVal != newVal) {
-          kvm.log('Änderung in Attribut ' + key + ' gefunden.', 3);
-          kvm.deb('Änderung in Attribut ' + key + ' gefunden.');
-          activeFeature.set(key, newVal);
+          if (oldVal != newVal) {
+            kvm.log('Änderung in Attribut ' + key + ' gefunden.', 3);
+            kvm.deb('Änderung in Attribut ' + key + ' gefunden.');
+            activeFeature.set(key, newVal);
 
-          return {
-            'key': key,
-            'value': newVal,
-            'type' : attr.getSqliteType()
+            return {
+              'key': key,
+              'value': newVal,
+              'type' : attr.getSqliteType()
+            }
           }
         }
       }).bind({ action: action})
@@ -1688,8 +1703,8 @@ function Layer(stelle, settings = {}) {
           kvm.activeLayer.activeFeature.updateListElement();
         }
 
-        console.log('Rufe saveGeometry auf mit activeFeatureid: %s', kvm.activeLayer.activeFeature.id);
-        kvm.activeLayer.saveGeometry(kvm.activeLayer.activeFeature.id);
+        console.log('Rufe saveGeometry auf mit activeFeature: %o', kvm.activeLayer.activeFeature);
+        kvm.activeLayer.saveGeometry(kvm.activeLayer.activeFeature);
 
         console.log('Wechsel die Ansicht zum Formular oder map.');
         kvm.showItem($('#formular').is(':visible') ? 'featurelist' : 'map');
@@ -1866,7 +1881,7 @@ function Layer(stelle, settings = {}) {
     kvm.activeLayer = this;
     kvm.store.setItem('activeLayerId', this.get('id'));
     var operators = [
-          '=', '>', '<', '>=' , '<=', 'IN'
+          '=', '>', '<', '>=' , '<=', 'IN', 'LIKE'
         ],
         options = operators.map(
           function(operator) {
@@ -1879,11 +1894,24 @@ function Layer(stelle, settings = {}) {
       this.attributes,
       function(key, value) {
         if (value.settings.type != 'geometry') {
+          
+          if (value.settings.form_element_type == 'Auswahlfeld') {
+            input_field = $('<select class="filter-view-value-field" name="filter_value_' + value.settings.name + '">');
+            input_field.append($('<option value=""></option>'));
+            value.settings.options.map(
+              function(option) {
+                input_field.append($('<option value="' + option.value + '">' + option.output + '</option>'));
+              }
+            )
+          }
+          else {
+            input_field = '<input class="filter-view-value-field" name="filter_value_' + value.settings.name + '" type="text" value=""/>';
+          }
           $('#attributeFilterFieldDiv').append(
-            $('<div class="filter-view-field" name="' + value.settings.name + '">')
+            $('<div class="filter-view-field" database_type="' + value.settings.type + '" name="' + value.settings.name + '">')
               .append('<div class="filter-view-label">' + value.settings.alias + '</div>')
               .append('<div class="filter-view-operator"><select>' + options + '</select></div>')
-              .append('<div class="filter-view-value"><input name="filter_value_' + value.settings.name + '" type="text"/></div>')
+              .append($('<div class="filter-view-value">').append(input_field))
           )
         }
       }

@@ -123,7 +123,7 @@ kvm = {
     var orka_online = L.tileLayer('https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png', {
           attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
         }),
-        orka_offline = L.tileLayer(config.localImgPath + 'orka_lkros/{z}/{x}/{y}.png', {
+        orka_offline = L.tileLayer(config.localTilePath + 'tiles/{z}/{x}/{y}.png', {
           attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
         }),
         map = L.map(
@@ -134,14 +134,14 @@ kvm = {
             minZoom: config.minZoom,
             maxZoom: config.maxZoom,
             layers: [
-              orka_online
-            //  , orka_offline
+              orka_online,
+              orka_offline
             ]
           }
         ),
         baseMaps = {
-          'Straßenkarte online': orka_online
-          //, 'Straßenkarte offline': orka_offline
+          'Hintergrundkarte online': orka_online,
+          'Hintergrundkarte offline': orka_offline
         };
 
 //    L.PM.initialize({ optIn: true });
@@ -553,7 +553,8 @@ kvm = {
                 if (buttonIndex == 1) { // ja
                   kvm.log('Speichern');
                   changes = kvm.activeLayer.collectChanges(action);
-                  kvm.deb('Änderungen: ' + JSON.stringify(changes));
+                  console.log('Änderungen: %o', changes);
+                  console.log('Anzahl Änderungen %s', changes.length);
 
                   if (changes.length > 1) {
                     // more than created_at or updated_at_client
@@ -638,7 +639,7 @@ kvm = {
             featureId = this_.activeLayer.activeFeature.id,
             feature = this_.activeLayer.features[featureId];
 
-        this_.activeLayer.loadFeatureToForm(feature, { editable: true });
+//        this_.activeLayer.loadFeatureToForm(feature, { editable: true });
         kvm.activeLayer.editGeometry(featureId);
       }
     );
@@ -698,6 +699,15 @@ kvm = {
         }
       }
     );
+
+    // Update the current slider value (each time you drag the slider handle)
+    $('#cameraOptionsQualitySlider').on(
+      'input',
+      function() {
+        $('#cameraOptionsQuality').html(this.value);
+      }
+    );
+
   },
 
   bindFeatureItemClickEvents: function() {
@@ -709,7 +719,7 @@ kvm = {
   },
 
   featureItemClickEventFunction: function(evt) {
-    kvm.log('Öffne DataView mit Objektdaten.', 4);
+    kvm.log('Öffne DataView für Feature ' + kvm.activeLayer.features[evt.target.getAttribute('id')], 4);
 
     kvm.activeLayer.selectFeature(kvm.activeLayer.features[evt.target.getAttribute('id')]);
 
@@ -922,7 +932,7 @@ kvm = {
   * create the list of features of active layer in list view at once
   */
   createFeatureList: function() {
-    console.log('Erzeuge die Liste der Datensätze neu: %o', this.activeLayer.features);
+    kvm.log('Erzeuge die Liste der Datensätze neu.');
     $('#featurelistHeading').html(this.activeLayer.get('alias') ? this.activeLayer.get('alias') : this.activeLayer.get('title'));
     $('#featurelistBody').html('');
     html = '';
@@ -1112,11 +1122,11 @@ kvm = {
 
   log: function(msg, level = 3, show_in_sperr_div = false) {
     if (level <= config.logLevel) {
+      if (config.debug) {
+        console.log('Log msg: ' + msg);
+      }
       setTimeout(function() {
         $('#logText').append('<br>' + msg);
-        if (config.debug) {
-          console.log('Log msg: ' + msg);
-        }
         if (show_in_sperr_div) {
           $('#sperr_div_content').html(msg);
         }
@@ -1184,7 +1194,7 @@ kvm = {
 
     if (!kvm.isValidJsonString(layerResult)) {
       kvm.log('Das Ergebnis der Layerdatenanfrage ist kein JSON!', 4);
-      resultObj.errMsg = 'Fehler beim Abfragen der Layerdaten. Abfrage liefert keine korrekten Daten vom Server. Entweder sind keine auf dem Server vorhanden, die URL der Anfrage ist nicht korrekt oder der es wird eine Fehlermeldung vom Server geliefert statt der Daten. Hier ist das zurückgelieferte Result: ' + layerResult;
+      resultObj.errMsg = "Fehler beim Abfragen der Layerdaten. Abfrage liefert keine korrekten Daten vom Server. Entweder sind keine auf dem Server vorhanden, die URL der Anfrage ist nicht korrekt oder der es wird eine Fehlermeldung vom Server geliefert statt der Daten.\nURL der Anfrage:\n" + kvm.activeStelle.getLayerUrl({ hidePassword: true}) + "\nZurückgelieferte Result:\n" + layerResult;
       return resultObj;
     }
 
@@ -1196,8 +1206,78 @@ kvm = {
     }
 
     return resultObj;
+  },
+
+  /**
+  * function return true if path is the path of the file
+  * @params string file The complete path with filename of the file
+  * @params string path The path to check if the file path match
+  * @return boolean true if file has path
+  */
+  hasFilePath: function(file, path) {
+    var fileDir = (file.match(/(.*)[\/\\]/)[1]||'/') + '/';
+    return fileDir == path;
+  },
+
+  /*
+  * Remove first and last caracter from string
+  * in this class used to remove the braces {...} from array values
+  * but can be used also for all other enclosing character
+  */
+  removeBraces: function(val) {
+    kvm.log('kvm.removeBraces ' + val, 4);
+    var result = val.substring(1, val.length - 1);
+    return result;
+  },
+
+  /*
+  * Add braces around the value to make an array
+  */
+  addBraces: function(val) {
+    kvm.log('kvm.addBraces ' + val, 4);
+    var result = '{' + val + '}';
+    return result;
+  },
+
+  /*
+  * Remove the part with original name of image in val
+  * Return the first part before & delimiter
+  */
+  removeOriginalName: function(val) {
+    kvm.log('kvm.removeOriginalName: ' + val, 4);
+    return val.split('&').shift();
+  },
+
+  /*
+  * Replace server image path by local image path
+  */
+  serverToLocalPath: function(src) {
+    kvm.log('kvm.serverToLocalPath ' + src, 4);
+    var result = config.localImgPath + src.substring(src.lastIndexOf('/') + 1);
+    return result
+  },
+
+  /*
+  * Replace local image path by servers image path
+  */
+  localToServerPath: function(src) {
+    kvm.log('kvm.localToServerPath src: ' + src, 4);
+    var result = kvm.activeLayer.get('document_path') + src.substring(src.lastIndexOf('/') + 1);
+    kvm.log('Result: ' + result,4);
+    return result
+  },
+
+  /**
+  * Function return a quotation mark if the given database type has to be used as string and requires quotation marks
+  * @params string type The database type of an attribute
+  * @return string If it is a string returns a single quotation mark "'" if not or unknown returns an empty string ""
+  */
+  bracketForType: function(type) {
+    kvm.log('Frage an ob type: ' + type + ' Hochkommas braucht.');
+    return (['bpchar', 'varchar', 'text', 'date', 'timestamp', 'geometry'].indexOf(type) > -1 ? "'" : "");
   }
 
 };
 
 kvm.loadHeadFile('js/controller/mapper.js', 'js');
+kvm.loadHeadFile('js/controller/files.js', 'js');

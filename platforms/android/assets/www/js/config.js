@@ -9,11 +9,12 @@ config = {
 * wenn das erste Foto gespeichert wird mit dem Camera Plugin, wird
 * der verwendete Pfad ermittelt und die Einstellung überschrieben.
 */
-
 //  localImgPath: 'file:///storage/' + 'BAB2-4AA9' + '/Android/data/de.gdiservice.kvmobile/cache/',
-  localImgPath: 'file:///storage/' + 'emulated/0' + '/Android/data/de.gdiservice.kvmobile/cache/',
+  localImgPath: 'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/',
+  localTilePath: 'file:///storage/emulated/0/Download/',
+  localBackupPath: 'file:///storage/emulated/0/Download/Backup/',
   projZone: 33,
-  logLevel: 4, // 0 off, 1 error, 2 waring, 3 info, 4 debug
+  logLevel: 2, // 0 off, 1 error, 2 waring, 3 info, 4 debug
   debug: true,
   kvwmapServerId: 1,
   kvwmapServerName: 'kvwmap',
@@ -35,7 +36,6 @@ config = {
   kvwmapServerLoginName: 'korduan',
   kvwmapServerPasswort: 'XKt!k$l6q6'
 */
-
   // LK-VG
   startZoom: 8,
   minZoom: 8,
@@ -44,7 +44,7 @@ config = {
   startPosition: [53.78441, 13.81898],
   kvwmapServerUrl: 'https://geoportal-vg.de/kvwmap_test',
   kvwmapServerLoginName: 'kvmobile',
-  kvwmapServerPasswort: 'Kvw1-Tool2'
+  kvwmapServerPasswort: ''
 
   // LK-ROS
 /*

@@ -314,7 +314,7 @@ function Stelle(settings = {}) {
     );
   };
 
-  this.getLayerUrl = function() {
+  this.getLayerUrl = function(options = { hidePassword: false}) {
     kvm.log('Stelle.getLayerUrl', 4);
     var url = this.get('url'),
         file = this.getUrlFile(url);
@@ -322,7 +322,7 @@ function Stelle(settings = {}) {
     url += file +
       'go=mobile_get_layers' + '&' +
       'login_name=' + this.get('login_name') + '&' +
-      'passwort=' + this.get('passwort') + '&' +
+      'passwort=' + (options.hidePassword ? '*****' : this.get('passwort')) + '&' +
       'Stelle_ID=' + this.get('Stelle_ID');
     return url;
   };

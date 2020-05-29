@@ -11,6 +11,9 @@ http://kvwmap.de
 ## 1.5.0
   * Change methode to load layer
   * enable different types of geometry by applying geom_attribut setting of layer
+	* sort function
+	* filter function
+	* settings for taking pictures
 ToDo
   * paging in feature list
   * points as CircleMarkers in sted of marker cluster due to more than 10.000 featue per layer
