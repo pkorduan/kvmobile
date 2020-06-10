@@ -12,9 +12,9 @@ config = {
 //  localImgPath: 'file:///storage/' + 'BAB2-4AA9' + '/Android/data/de.gdiservice.kvmobile/cache/',
   localImgPath: 'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/',
   localTilePath: 'file:///storage/emulated/0/Download/',
-  localBackupPath: 'file:///storage/emulated/0/Download/Backup/',
+  localBackupPath: 'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/',
   projZone: 33,
-  logLevel: 2, // 0 off, 1 error, 2 waring, 3 info, 4 debug
+  logLevel: 3, // 0 off, 1 error, 2 waring, 3 info, 4 debug
   debug: true,
   kvwmapServerId: 1,
   kvwmapServerName: 'kvwmap',

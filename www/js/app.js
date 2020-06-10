@@ -280,6 +280,24 @@ kvm = {
       }
     );
 
+    $('#saveDatabaseButton').on(
+      'click',
+      function() {
+        navigator.notification.prompt(
+          'Geben Sie einen Namen für die Sicherungsdatei an. Die Datenbank wird im Internen Speicher im Verzeichnis ' + config.localBackupPath + ' mit der Dateiendung .db gespeichert.',
+          function(arg) {
+            kvm.controller.files.copyFile(
+              'file:///data/user/0/de.gdiservice.kvmobile/databases/',
+              'kvmobile.db',
+              config.localBackupPath,
+              arg.input1 + '.db'
+            );
+          },
+          'Datenbanksicherung'
+        );
+      }
+    );
+
     $('#showDeltasButton').on(
       'click',
       { context: this},

@@ -177,12 +177,17 @@ function Layer(stelle, settings = {}) {
             item,
             i;
 
+
         kvm.log(numRows + ' Datensaetze gelesen, erzeuge Featureliste neu...', 3, true);
         this.numFeatures = numRows;
   
         this.features = {};
         //console.log('id_attribute: %o', this.get('id_attribute'));
         kvm.log('Anzahl Rows: ' + numRows);
+
+        if (numRows == 0) {
+          kvm.msg('Filter liefert keine Ergebnisse.', 'Datenfilter');
+        }
 
         for (i = 0; i < numRows; i++) {
           var item = rs.rows.item(i);

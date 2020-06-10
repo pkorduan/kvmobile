@@ -75,8 +75,63 @@ kvm.controller.files = {
         console.log(err);
       }
     )
+  },
+
+  copyFile2: function(fs, srcFilePath, dstFile) {
+    console.log('copyFile fs: %o', fs);
+    /**
+    * Function copy file in baseFileURI to dstPathName on the fileSystem
+    */
+    console.log('srcFilePath: %o', srcFilePath);
+    window.resolveLocalFileSystemURL(
+      srcFilePath, 
+      function(file) {
+        console.log('copy file: %o', file);
+        var documentsPath = fs.root;
+        console.log(documentsPath);
+        file.copyTo(
+          srcFilePath,
+          dstFile,
+          function(res) {
+            console.log('copying was successful to: ' + res.nativeURL)
+          },
+          function() {
+            console.log('unsuccessful copying')
+          }
+        );
+      },
+      function() {
+        console.log('failure! file was not found')
+      }
+    );
+  },
+
+  copyFile: function(srcDir, srcFile, dstDir, dstFile) {
+    var dstEntry;
+    //resolve url for source
+    window.resolveLocalFileSystemURL(dstDir, function success(dirEntry) {
+      dstEntry = dirEntry;
+      window.resolveLocalFileSystemURL(
+        srcDir + srcFile,
+        function onSuccess(fileEntry) {
+          fileEntry.copyTo(
+            dstEntry,
+            dstFile,
+            function() {
+              kvm.msg('Datenbank erfolgreich gesichert in: ' + dstEntry.nativeURL + dstFile);
+              console.log('copying was successful');
+            },
+            function() {
+              console.log('copying FAILED');
+            }
+          );
+        },
+        function (e) {
+          console.log(JSON.stringify(e));
+        }
+      );
+    });
   }
-  
 
 }
 /*

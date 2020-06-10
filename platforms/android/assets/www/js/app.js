@@ -280,6 +280,24 @@ kvm = {
       }
     );
 
+    $('#saveDatabaseButton').on(
+      'click',
+      function() {
+        navigator.notification.prompt(
+          'Geben Sie einen Namen für die Sicherungsdatei an. Die Datenbank wird im Internen Speicher im Verzeichnis ' + config.localBackupPath + ' mit der Dateiendung .db gespeichert.',
+          function(arg) {
+            kvm.controller.files.copyFile(
+              'file:///data/user/0/de.gdiservice.kvmobile/databases/',
+              'kvmobile.db',
+              config.localBackupPath,
+              arg.input1 + '.db'
+            );
+          },
+          'Datenbanksicherung'
+        );
+      }
+    );
+
     $('#showDeltasButton').on(
       'click',
       { context: this},
@@ -719,6 +737,8 @@ kvm = {
   },
 
   featureItemClickEventFunction: function(evt) {
+		console.log('click on feature: %o', evt);
+		debug_t = evt;
     kvm.log('Öffne DataView für Feature ' + kvm.activeLayer.features[evt.target.getAttribute('id')], 4);
 
     kvm.activeLayer.selectFeature(kvm.activeLayer.features[evt.target.getAttribute('id')]);
