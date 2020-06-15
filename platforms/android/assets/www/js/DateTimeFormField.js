@@ -55,10 +55,14 @@ function DateTimeFormField(formId, settings) {
       ) &&
       this.get('name') != 'updated_at_server'
     ) {
-      val = (new Date()).toISOString()
+      var now = new Date();
+      val = now.getFullYear() + '-' + String('0' + now.getMonth()).slice(-2) + '-' + String('0' + now.getDate()).slice(-2) + 'T'
+        + String('0' + now.getHours()).slice(-2) + ':' + String('0' + now.getMinutes()).slice(-2) + ':' + String('0' + now.getSeconds()).slice(-2)  + 'Z';
+     // val = (new Date()).toISOString()
     }
 
-    return this.fromISO(val);
+    //return this.fromISO(val);
+    return val;
   };
 
   this.bindEvents = function() {

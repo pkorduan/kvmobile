@@ -683,41 +683,6 @@ kvm = {
       kvm.getGeoLocation
     );
 
-    $("#startSyncButton").on(
-      'click',
-      {
-        "context": this
-      },
-      function(evt) {
-        kvm.log('Syncronisation aufgerufen.', 3);
-        var _this = evt.data.context,
-            syncVersion = _this.store.getItem('syncVersion');
-
-        if (navigator.onLine) {
-          kvm.log('Gerät ist onLine.', 3);
-          if (_this.serverSettingsExists()) {
-            kvm.log('Alle Verbindungseinstellungen sind gesetzt.', 3);
-            if (syncVersion) {
-              kvm.log('Es existiert eine Version der letzten Syncronisation.', 3);
-              _this.syncronize(evt.data.context);
-            }
-            else {
-              kvm.log('Keine letzte Version gefunden. Starte Download aller Daten.', 2);
-              _this.downloadData(evt.data.context);
-            }
-          }
-          else {
-            kvm.log('Es fehlen Einstellungen', 2);
-            alert('Es fehlen Einstellungen!', 1);
-          }
-        }
-        else {
-          kvm.log('Keine Netzverbindung', 2);
-          alert('Keine Netzverbindung!', 1);
-        }
-      }
-    );
-
     // Update the current slider value (each time you drag the slider handle)
     $('#cameraOptionsQualitySlider').on(
       'input',
@@ -1131,6 +1096,15 @@ kvm = {
     $('.page_next_link').attr('page', nextPage);
   },
 
+  replacePassword: function(s) {
+    if (kvm.activeStelle) {
+      return s.replace(kvm.activeStelle.settings.passwort, '********');
+    }
+    else {
+      return s;
+    }
+  },
+
   uuidv4: function() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
       var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
@@ -1140,6 +1114,7 @@ kvm = {
 
   log: function(msg, level = 3, show_in_sperr_div = false) {
     if (level <= config.logLevel) {
+      msg = this.replacePassword(msg);
       if (config.debug) {
         console.log('Log msg: ' + msg);
       }

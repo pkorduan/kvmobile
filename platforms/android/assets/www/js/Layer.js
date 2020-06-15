@@ -432,13 +432,14 @@ function Layer(stelle, settings = {}) {
                   collection = {},
                   errMsg = '';
 
-//              console.log('Download Ergebnis: %o', this.result);
+              console.log('Download Ergebnis (Head 1000): %s', this.result.substring(1, 1000));
               try {
                 collection = $.parseJSON(this.result);
                 if (collection.features.length > 0) {
                   kvm.log('Anzahl empfangene Datensätze: ' + collection.features.length, 3);
                   var layer = kvm.activeLayer;
-                  layer.runningSyncVersion = collection.features[0].properties.version;
+									kvm.log('Version in Response: ' + collection.lastDeltaVersion, 3);
+                  layer.runningSyncVersion = collection.lastDeltaVersion;
                   kvm.log('Version der Daten: ' + layer.runningSyncVersion, 3);
                   layer.writeData(collection.features);
                 }
@@ -543,16 +544,27 @@ function Layer(stelle, settings = {}) {
 
       if (response.success) {
         kvm.log('Syncronisierung erfolgreich auf dem Server durchgeführt.', 3);
-        kvm.log('Antwort vom Server: ' + JSON.stringify(response), 4);
-        $.each(
-          response.deltas,
-          (function(index, value) {
-            kvm.log('Führe Änderungen vom Server auf dem Client aus: ' + value.sql);
-            this.execDelta(this.pointToUnderlineName(value.sql, this.get('schema_name'), this.get('table_name')));
-          }).bind(this)
-        );
-        this.deleteDeltas('sql');
-        this.set('syncVersion', parseInt(response.syncData[0].push_to_version));
+        kvm.log('Antwort vom Server: ' + JSON.stringify(response), 3);
+        this.numExecutedDeltas = 0;
+        this.numReturnedDeltas = response.deltas.length;
+        if (this.numReturnedDeltas > 0) {
+          $.each(
+            response.deltas,
+            (function(index, value) {
+              if (kvm.coalesce(value.sql) != null) {
+                kvm.log('Führe Änderungen vom Server auf dem Client aus: ' + value.sql);
+                this.execSql(
+                  this.pointToUnderlineName(value.sql, this.get('schema_name'), this.get('table_name')),
+                  (this.execServerDeltaSuccessFunc).bind({ context: this, response: response})
+                );
+              }
+            }).bind(this)
+          );
+        }
+        else {
+          this.numExecutedDeltas = -1;
+          (this.execServerDeltaSuccessFunc()).bind({ context: this, response: response})
+        }
       }
       else {
         kvm.msg(response.err_msg);
@@ -596,7 +608,6 @@ function Layer(stelle, settings = {}) {
 
     var ft = new FileTransfer();
     kvm.log('upload to url: ' + server, 3);
-    kvm.log('with params: ' + JSON.stringify(params), 3);
     kvm.log('with options: ' + JSON.stringify(options), 3);
     ft.upload(fileURL, encodeURI(server), success, fail, options);
   };
@@ -773,6 +784,8 @@ function Layer(stelle, settings = {}) {
   this.syncData = function() {
     kvm.log('Layer.syncData', 3);
     var tableName = this.get('schema_name') + '_' + this.get('table_name');
+
+    $('#sperr_div_content').html('Synchronisiere Daten mit Server.');
 
     sql = "\
       SELECT\
@@ -1517,10 +1530,10 @@ function Layer(stelle, settings = {}) {
   */
   this.createDeltas = function(action, changes) {
     kvm.log('Erzeuge SQL für Änderung.', 3);
-    var deltas = [];
+    var delta;
 
     if (action == 'INSERT') {
-      deltas.push({
+      delta = {
         "type" : 'sql',
         "change" : 'insert',
         "delta" : '\
@@ -1551,11 +1564,11 @@ function Layer(stelle, settings = {}) {
             \'' + this.activeFeature.get(this.get('id_attribute')) + '\'\
           )\
         '
-      });
+      };
     };
 
     if (action == 'UPDATE') {
-      deltas.push({
+      delta = {
         "type" : 'sql',
         "change" : 'update',
         "delta" : '\
@@ -1575,11 +1588,11 @@ function Layer(stelle, settings = {}) {
           WHERE\
             ' + this.get('id_attribute') + ' = \'' + this.activeFeature.get(this.get('id_attribute')) + '\'\
         '
-      });
+      };
     };
 
     if (action == 'DELETE') {
-      deltas.push({
+      delta = {
         "type" : 'sql',
         "change" : 'delete',
         "delta" : '\
@@ -1587,10 +1600,10 @@ function Layer(stelle, settings = {}) {
           WHERE\
             ' + this.get('id_attribute') + ' = \'' + this.activeFeature.get(this.get('id_attribute')) + '\'\
         '
-      });
+      };
     }
-    kvm.log('Änderung sql: ' + JSON.stringify(deltas), 3);
-    this.writeDeltas(deltas);
+    kvm.log('Änderung sql: ' + JSON.stringify(delta), 3);
+    this.writeDelta(delta, this.execClientDeltaSuccessFunc, this.execClientDeltaErrorFunc);
   };
 
   this.createImgDeltas = function(action, changes) {
@@ -1605,11 +1618,11 @@ function Layer(stelle, settings = {}) {
           img_new,
           function(img) {
             if (img_old.indexOf(img) < 0) {
-              kvm.activeLayer.writeDeltas([{
+              kvm.activeLayer.writeDelta({
                 "type" : 'img',
                 "change" : 'insert',
                 "delta" : img
-              }]);
+              });
             }
           }
         );
@@ -1662,11 +1675,11 @@ function Layer(stelle, settings = {}) {
                   else {
                     kvm.log('Layer.createImgDeltas: kein insert delta vorhanden. Trage delete delta ein.', 3);
                     // Add delte of image to deltas table
-                    this.writeDeltas([{
+                    this.writeDelta({
                       "type" : 'img',
                       "change" : 'delete',
                       "delta" : img
-                    }]);
+                    });
                   }
                 }).bind(this),
                 function(error) {
@@ -1689,36 +1702,13 @@ function Layer(stelle, settings = {}) {
   * bzw. auf den Stand bringen als wäre er neu geladen. Wird weiter oben schon in callback von click on saveFeatureButton gemacht.
   *
   */
-  this.execDelta = function(delta) {
-    console.log('Exec Delta: %s', delta);
-    kvm.log('Layer.execDelta: ' + delta, 4);
+  this.execSql = function(sql, successFunc) {
+//    console.log('Exec Delta: %s', sql);
+    kvm.log('Layer.execSql: ' + sql, 4);
     kvm.db.executeSql(
-      delta,
+      sql,
       [],
-      (function(rs) {
-        kvm.log('Layer.execDelta Sql ausgeführt.', 4);
-        //this.readData();
-        //ToDo: Hier endet das log beim Speichern eines neuen Datensatzes.
-
-        if (kvm.activeLayer.activeFeature.options.new) {
-          kvm.activeLayer.activeFeature.options.new = false;
-          kvm.activeLayer.activeFeature.addListElement();
-        }
-        else {
-          kvm.activeLayer.activeFeature.updateListElement();
-        }
-
-        console.log('Rufe saveGeometry auf mit activeFeature: %o', kvm.activeLayer.activeFeature);
-        kvm.activeLayer.saveGeometry(kvm.activeLayer.activeFeature);
-
-        console.log('Wechsel die Ansicht zum Formular oder map.');
-        kvm.showItem($('#formular').is(':visible') ? 'featurelist' : 'map');
-
-        console.log('Blende Sperrdiv aus');
-        // Sperrdiv entfernen
-        $('#sperr_div').hide();
-
-      }).bind(this),
+      (successFunc).bind(this),
       function(error) {
         navigator.notification.confirm(
           'Fehler bei der Speicherung der Änderungen aus dem Formular!\nFehlercode: ' + error.code + '\nMeldung: ' + error.message,
@@ -1732,53 +1722,93 @@ function Layer(stelle, settings = {}) {
     );
   };
 
+  this.execServerDeltaSuccessFunc = function(rs) {
+    console.log('execServerDeltaSuccessFunc');
+    this.context.numExecutedDeltas++;
+    if (this.context.numExecutedDeltas == this.context.numReturnedDeltas) {
+      this.context.deleteDeltas('sql');
+      this.context.set('syncVersion', parseInt(this.response.syncData[this.response.syncData.length - 1].push_to_version));
+      kvm.msg('Synchronisierung erfolgreich abgeschlossen!');
+      kvm.msg('Aktuelle Version: ' + this.context.set('syncVersion'));
+    }
+    else {
+    }
+  };
+
+  this.execClientDeltaSuccessFunc = function(rs) {
+    console.log('execClientDeltaSuccessFunc');
+    if (kvm.activeLayer.activeFeature.options.new) {
+      kvm.activeLayer.addActiveFeature();
+      kvm.activeLayer.activeFeature.options.new = false;
+      kvm.activeLayer.activeFeature.addListElement();
+    }
+    else {
+      kvm.activeLayer.activeFeature.updateListElement();
+    }
+
+    console.log('Rufe saveGeometry auf mit activeFeature: %o', kvm.activeLayer.activeFeature);
+    kvm.activeLayer.saveGeometry(kvm.activeLayer.activeFeature);
+
+    console.log('Wechsel die Ansicht zum Formular oder map.');
+    kvm.showItem($('#formular').is(':visible') ? 'featurelist' : 'map');
+
+    console.log('Blende Sperrdiv aus');
+    // Sperrdiv entfernen
+    $('#sperr_div').hide();
+  };
+
+  this.execClientDeltaErrorFunc = function(err) {
+    kvm.msg('Fehler bei der Speicherung der Änderungsdaten in delta-Tabelle!\nFehlercode: ' + err.code + '\nMeldung: ' + err.message, 'Fehler');
+  };
+
   /*
   * Schreibe Deltas mit . Trenner zwischen Schema und Tablle in die sqlite deltas Tabelle und
   * führe diese nach Erfolg in sqlite aus.
   */
-  this.writeDeltas = function(deltas) {
-    kvm.log('Layer.writeDeltas', 4);
+  this.writeDelta = function(delta, sucFunc, errFunc) {
+    kvm.log('Layer.writeDelta', 4);
+    var sql = "\
+      INSERT INTO " + this.get('schema_name') + '_' + this.get('table_name') + "_deltas (\
+        type,\
+        change,\
+        delta,\
+        created_at\
+      )\
+      VALUES (\
+        '" + delta.type + "',\
+        '" + delta.change + "',\
+        '" + this.underlineToPointName(delta.delta, this.get('schema_name'), this.get('table_name')).replace(/\'/g, '\'\'') + "',\
+        '" + (new Date()).toISOString().replace('Z', '') + "'\
+      )\
+    ";
 
-    $.each(
-      deltas,
-      (function(index, delta) {
-        var sql = "\
-              INSERT INTO " + this.get('schema_name') + '_' + this.get('table_name') + "_deltas (\
-                type,\
-                change,\
-                delta,\
-                created_at\
-              )\
-              VALUES (\
-                '" + delta.type + "',\
-                '" + delta.change + "',\
-                '" + this.underlineToPointName(delta.delta, this.get('schema_name'), this.get('table_name')).replace(/\'/g, '\'\'') + "',\
-                '" + (new Date()).toISOString().replace('Z', '') + "'\
-              )\
-            ";
+    kvm.log('Schreibe Delta in Tabelle ' + this.get('schema_name') + '_' + this.get('table_name') + '_deltas sql: ' + sql, 3);
 
-        kvm.log('Schreibe Deltas in Tabelle ' + this.get('schema_name') + '_' + this.get('table_name') + '_deltas sql: ' + sql, 3);
-
-        kvm.db.executeSql(
-          sql,
-          [],
-          (function(rs) {
-            kvm.log('Layer.writeDeltas Speicherung erfolgreich.', 4);
-            if (delta.type == 'sql') {
-              this.execDelta(delta.delta);
-            }
-          }).bind(this),
-          function(error) {
-            kvm.msg('Fehler bei der Speicherung der Änderungsdaten in delta-Tabelle!\nFehlercode: ' + error.code + '\nMeldung: ' + error.message, 'Fehler');
-          }
-        );
-      }).bind(this)
+    kvm.db.executeSql(
+      sql,
+      [],
+      function(rs) {
+        kvm.log('Layer.writeDelta Speicherung erfolgreich.', 4);
+        if (delta.type == 'sql') {
+          kvm.db.executeSql(
+            delta.delta,
+            [],
+            sucFunc,
+            errFunc
+          );
+        }
+      },
+      errFunc
     );
   };
 
   this.appendToList = function() {
     kvm.log('Füge Layer ' + this.get('title') + ' zur Layerliste hinzu.', 3);
     $('#layer_list').append(this.getListItem());
+  };
+
+  this.addActiveFeature = function() {
+    this.features[this.activeFeature.id] = this.activeFeature;
   };
 
   this.getGlobalId = function() {
