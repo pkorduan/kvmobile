@@ -249,8 +249,9 @@ function Feature(
   };
 
   this.listElement = function() {
+    var markerStyles = JSON.parse(kvm.store.getItem('markerStyles'));
     return '\
-      <div class="feature-item feature-status-' + this.get('status') + '" id="' + this.get(this.options.id_attribute) + '">' + kvm.coalesce(this.get(kvm.activeLayer.get('name_attribute')), 'Datensatz ' + this.get(this.options.id_attribute)) + '</div>\
+      <div class="feature-item" id="' + this.get(this.options.id_attribute) + '" style="background-color: ' + markerStyles[this.get('status')].fillColor + '">' + kvm.coalesce(this.get(kvm.activeLayer.get('name_attribute')), 'Datensatz ' + this.get(this.options.id_attribute)) + '</div>\
     ';
   };
 
@@ -269,7 +270,7 @@ function Feature(
     kvm.log('Click Event an Listenelement registriert', 4);
 
     $('#numDatasetsText').html(Object.keys(kvm.activeLayer.features).length);
-    console.log('Neue Anzahl features: %s', Object.keys(kvm.activeLayer.features).length);
+    //console.log('Neue Anzahl features: %s', Object.keys(kvm.activeLayer.features).length);
     kvm.log('Anzeige der Anzahl der Features aktualisiert.', 4);
   };
 
@@ -280,8 +281,9 @@ function Feature(
 
   this.getNormalCircleMarkerStyle = function() {
     kvm.log('getNormalCircleMarkerStyle for status: ' + this.get('status'), 4);
-    var status = ((this.get('status') && this.get('status') != 'null') ? this.get('status') : 0);
-    return config.markerStyles[status];
+    var status = ((this.get('status') && this.get('status') != 'null') ? this.get('status') : 0),
+        markerStyles = JSON.parse(kvm.store.getItem('markerStyles'));
+    return markerStyles[status];
   };
 
   this.getSelectedCircleMarkerStyle = function() {

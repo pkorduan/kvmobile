@@ -8,6 +8,9 @@ https://github.com/srahn/kvwmap/
 http://kvwmap.de
 
 # Change log
+## 1.5.1
+  * Fix incomplete sync procedure
+	* Colorselector in settings
 ## 1.5.0
   * Change methode to load layer
   * enable different types of geometry by applying geom_attribut setting of layer

@@ -562,8 +562,13 @@ function Layer(stelle, settings = {}) {
           );
         }
         else {
-          this.numExecutedDeltas = -1;
-          (this.execServerDeltaSuccessFunc()).bind({ context: this, response: response})
+          this.set('syncVersion', parseInt(response.syncData[response.syncData.length - 1].push_to_version));
+          this.runningSyncVersion = this.get('syncVersion');
+          this.saveToStore();
+          kvm.msg('Synchronisierung erfolgreich abgeschlossen!');
+          kvm.msg('Keine neuen Daten vom Server! Aktuelle Version: ' + this.get('syncVersion'));
+          this.deleteDeltas('sql');
+          this.readData($('#limit').val(), $('#offset').val());
         }
       }
       else {
@@ -1723,15 +1728,17 @@ function Layer(stelle, settings = {}) {
   };
 
   this.execServerDeltaSuccessFunc = function(rs) {
-    console.log('execServerDeltaSuccessFunc');
     this.context.numExecutedDeltas++;
     if (this.context.numExecutedDeltas == this.context.numReturnedDeltas) {
-      this.context.deleteDeltas('sql');
       this.context.set('syncVersion', parseInt(this.response.syncData[this.response.syncData.length - 1].push_to_version));
+      this.context.saveToStore();
       kvm.msg('Synchronisierung erfolgreich abgeschlossen!');
-      kvm.msg('Aktuelle Version: ' + this.context.set('syncVersion'));
+      kvm.msg('Aktuelle Version: ' + this.context.get('syncVersion'));
+      this.context.deleteDeltas('sql');
+      this.context.readData($('#limit').val(), $('#offset').val());
     }
     else {
+      console.log(this.context.numExecutedDeltas + '. Delta ausgeführt! Weiter ...');
     }
   };
 

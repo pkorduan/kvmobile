@@ -59,6 +59,9 @@ kvm = {
     kvm.log('initialisiere Karte.', 3);
     this.initMap();
 
+    kvm.log('initialisiere Farbauswahl', 3);
+    this.initColorSelector();
+
     if (this.store.getItem('activeStelleId')) {
       var activeStelleId = this.store.getItem('activeStelleId'),
           activeStelleSettings = this.store.getItem('stelleSettings_' + activeStelleId),
@@ -120,7 +123,7 @@ kvm = {
   initMap: function() {
     kvm.log('Karte initialisieren.', 3);
 
-    var orka_offline = L.tileLayer(config.localTilePath + 'tiles/{z}/{x}/{y}.png', {
+    var orka_offline = L.tileLayer(config.localTilePath + 'orka-tiles-vg/{z}/{x}/{y}.png', {
           attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
         }),
         orka_online = L.tileLayer('https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png', {
@@ -170,6 +173,33 @@ kvm = {
     });
     */
     this.map = map;
+  },
+
+  initColorSelector: function() {
+    var markerStyles;
+    if (!(markerStyles = JSON.parse(kvm.store.getItem('markerStyles')))) {
+      markerStyles = config.markerStyles;
+      kvm.store.setItem('markerStyles', JSON.stringify(markerStyles));
+    }
+    Object.values(markerStyles).forEach(this.addColorSelector);
+  },
+
+  addColorSelector: function(style, i) {
+    var colorSelectorDiv = $('#colorSelectorDiv');
+    colorSelectorDiv.append('\
+      <label for="colorStatus' + i +'">Status ' + i + ':</label>\
+      <input type="color" id="colorStatus' + i + '" name="colorStatus' + i + '" value="' + style.fillColor + '" onChange="kvm.updateMarkerStyle(this)"><br>\
+    ');
+  },
+
+  updateMarkerStyle: function(elm) {
+    console.log('new Color: %o', elm);
+    var markerStyles = JSON.parse(kvm.store.getItem('markerStyles')),
+        index = elm.id.slice(-1);
+
+    markerStyles[index].fillColor = elm.value;
+    kvm.store.setItem('markerStyles', JSON.stringify(markerStyles));    
+    if (kvm.activeLayer) kvm.activeLayer.readData($('#limit').val(), $('#offset').val());
   },
 
   bindEvents: function() {

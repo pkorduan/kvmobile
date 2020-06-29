@@ -10,9 +10,9 @@ config = {
 * der verwendete Pfad ermittelt und die Einstellung überschrieben.
 */
 //  localImgPath: 'file:///storage/' + 'BAB2-4AA9' + '/Android/data/de.gdiservice.kvmobile/cache/',
-  localImgPath: 'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/',
-  localTilePath: 'file:///storage/emulated/0/Download/',
-  localBackupPath: 'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/',
+  localImgPath:    'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/',
+  localTilePath:   'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/',
+  localBackupPath: 'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/Backups/',
   projZone: 33,
   logLevel: 3, // 0 off, 1 error, 2 waring, 3 info, 4 debug
   debug: true,

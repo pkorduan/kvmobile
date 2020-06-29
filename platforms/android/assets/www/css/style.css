@@ -223,15 +223,19 @@ a.hover {
 }
 
 .feature-status-0 {
-  background-color: #ffdede;
+  background-color: #dd8181;
 }
 
 .feature-status-1 {
-  background-color: #e0f6b5;
+  background-color: #465dc0;
 }
 
 .feature-status-2 {
-  background-color: #fff9df;
+  background-color: #23a325;
+}
+
+.feature-status-3 {
+  background-color: #26a7f1;
 }
 
 .kvm-gps-control {
