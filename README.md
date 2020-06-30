@@ -8,9 +8,13 @@ https://github.com/srahn/kvwmap/
 http://kvwmap.de
 
 # Change log
+## 1.5.2
+  * Der Zurück-Button zeigt einen Dialog ob man die Anwendung beenden möchte.
+	* Formularelementtypen User werden auf der Client-Seite automatisch befüllt entsprechend der Optionen die für das Attribut gesetzt sind.
 ## 1.5.1
   * Fix incomplete sync procedure
 	* Colorselector in settings
+	* Pfadeinstellung zu orka-tiles geändert auf files/orka-tiles-vg
 ## 1.5.0
   * Change methode to load layer
   * enable different types of geometry by applying geom_attribut setting of layer

@@ -1,5 +1,5 @@
 kvm = {
-  version: '1.5.0',
+  version: '1.5.2',
   Buffer: require('buffer').Buffer,
   wkx: require('wkx'),
   controls: {},
@@ -203,6 +203,28 @@ kvm = {
   },
 
   bindEvents: function() {
+
+    document.addEventListener(
+      "backbutton",
+      function() {
+        navigator.notification.confirm(
+          'Anwendung schließen?',
+          function(buttonIndex) {
+            if (buttonIndex == 1) { // ja
+              navigator.app.exitApp();
+            }
+            if (buttonIndex == 2) { // nein
+              // do nothing
+              // evtl. mal so etwas wie navigator.app.backHistory();
+            }
+          },
+          '',
+          ['ja', 'nein']
+        );
+      },
+      false
+    );
+
     document.addEventListener(
       "offline",
       this.setConnectionStatus,

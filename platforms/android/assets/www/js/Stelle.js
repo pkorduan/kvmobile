@@ -81,6 +81,7 @@ function Stelle(settings = {}) {
 
                     $('#kvwmapServerStelleSelectField').find('option').remove();
                     kvm.store.setItem('userId', resultObj.user_id);
+                    kvm.store.setItem('userName', resultObj.user_name);
                     $.each(
                       resultObj.stellen,
                       function(index, stelle) {

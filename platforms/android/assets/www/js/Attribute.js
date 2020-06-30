@@ -50,8 +50,11 @@ function Attribute(layer, settings = {}) {
       case 'Geometrie' :
         field = new GeometrieFormField('featureFormular', this.settings);
         break;
-      case 'Dokument':
+      case 'Dokument' :
         field = new BilderFormField('featureFormular', this.settings);
+        break;
+      case 'User' :
+        field = new UserFormField('featureFormular', this.settings);
         break;
 
       default :
