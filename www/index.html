@@ -45,6 +45,7 @@
     <script src="js/DateTimeFormField.js"></script>
     <script src="js/ZahlFormField.js"></script>
     <script src="js/UserFormField.js"></script>
+    <script src="js/UserIDFormField.js"></script>
     <script src="js/DataViewField.js"></script>
     <script src="js/Stelle.js"></script>
     <script src="js/Stelle.js"></script>
@@ -154,7 +155,7 @@
 
     <h2>Bildaufnahme</h2>
     <div id="cameraOptionsDiv">
-      Bildqualität: <span id="cameraOptionsQuality">25</span> % <input id="cameraOptionsQualitySlider" type="range" min="10" max="100" value="25" class="camera-options-slider"><br>
+      Bildqualität: <span id="cameraOptionsQuality">25</span> % <input id="cameraOptionsQualitySlider" type="range" min="10" max="100" value="25" class="camera-options-slider"><i class="fa fa-info" aria-hidden="true" onclick="alert('Verringert die Größe der aufgenommenen Bilddateien auf die angegebenen % der in der Kamera eingestellten Größe.')"></i><br>
       <input id="cameraOptionsAllowEdit" type="checkbox" checked> Editieren erlauben<br>
       <input id="cameraOptionsCorrectOrientation" type="checkbox" checked> Bildrichtung anpassen<br>
       <input id="cameraOptionsSaveToPhotoAlbum" type="checkbox" checked> Auch im Fotoalbum speichern
@@ -266,7 +267,22 @@
         <a class="page_last_link" href="#" page="" onclick="kvm.paginate(this)" style="display: none">&raquo;</a>
       </div>
     </div//-->
-    <div id="featurelistBody"></div>
+    <div id="featurelistBody" style="
+      width: 90%;
+      float: left;
+    "></div>
+    <div id="alphabetical_list" style="
+      float: right;
+      margin-right: 7px;
+    ">
+      <ul style="
+        list-style-type: none;
+      ">
+        <li>A</li>
+        <li>B</li>
+        <li>C</li>
+      </ul>
+    </div>
     <!--div class="center">
       <div class="pagination">
         <a class="page_first_link" href="#" page="0" onclick="kvm.paginate(this)" style="display: none">&laquo;</a>

@@ -155,7 +155,9 @@ function Layer(stelle, settings = {}) {
         }
       )
       .get();
-    if ($('#statusFilterSelect').val() != '') filter.push($('#statusFilterSelect').val());
+    if ($('#statusFilterSelect').val() != '') {
+      filter.push($('#statusFilterSelect').val());
+    }
 
     sql = "\
       SELECT\
@@ -852,6 +854,7 @@ function Layer(stelle, settings = {}) {
       sql,
       [],
       function(rs) {
+        kvm.store.removeItem('layerFilter');
         navigator.notification.confirm(
           'Alle Daten des Layers in lokaler Datenbank gelöscht.',
           function(buttonIndex) {},
@@ -1498,7 +1501,8 @@ function Layer(stelle, settings = {}) {
         console.log('attr.name: %s', attr.get('name'));
         console.log('attr.privilege: %s', attr.get('privilege'));
         if (
-          [this.id_attribute, 'updated_at_client', 'created_at'].includes(attr.get('name')) ||
+          [this.id_attribute, 'user_name', 'updated_at_client', 'created_at'].includes(attr.get('name')) ||
+          ['User', 'UserID', 'Time'].includes(attr.get('form_element_type')) ||
           attr.get('privilege') != '0'
         ) {
           kvm.log('Vergleiche Werte von Attribut: ' + attr.get('name'));
@@ -1922,43 +1926,15 @@ function Layer(stelle, settings = {}) {
     kvm.log('Setze Layer ' + this.get('title') + ' (' + (this.get('alias') ? this.get('alias') : 'kein Aliasname') + ') auf aktiv.', 3);
     kvm.activeLayer = this;
     kvm.store.setItem('activeLayerId', this.get('id'));
-    var operators = [
-          '=', '>', '<', '>=' , '<=', 'IN', 'LIKE'
-        ],
-        options = operators.map(
-          function(operator) {
-            return '<option value="' + operator + '"' + (operator == '=' ? ' selected' : '') + '>' + operator + '</option>'
-          }
-        );
 
-    $('#attributeFilterFieldDiv').html('');
-    $.each(
-      this.attributes,
-      function(key, value) {
-        if (value.settings.type != 'geometry') {
-          
-          if (value.settings.form_element_type == 'Auswahlfeld') {
-            input_field = $('<select class="filter-view-value-field" name="filter_value_' + value.settings.name + '">');
-            input_field.append($('<option value=""></option>'));
-            value.settings.options.map(
-              function(option) {
-                input_field.append($('<option value="' + option.value + '">' + option.output + '</option>'));
-              }
-            )
-          }
-          else {
-            input_field = '<input class="filter-view-value-field" name="filter_value_' + value.settings.name + '" type="text" value=""/>';
-          }
-          $('#attributeFilterFieldDiv').append(
-            $('<div class="filter-view-field" database_type="' + value.settings.type + '" name="' + value.settings.name + '">')
-              .append('<div class="filter-view-label">' + value.settings.alias + '</div>')
-              .append('<div class="filter-view-operator"><select>' + options + '</select></div>')
-              .append($('<div class="filter-view-value">').append(input_field))
-          )
-        }
-      }
-    );
+    // create layerFilter
+    this.createLayerFilterForm();
+    var layerFilter = kvm.store.getItem('layerFilter');
+    if (layerFilter) {
+      this.loadLayerFilterValues(JSON.parse(layerFilter));
+    }
 
+    // set sortAttribute
     $('#anzeigeSortSelect option[value!=""]').remove();
     $.each(
       this.attributes,
@@ -1966,6 +1942,12 @@ function Layer(stelle, settings = {}) {
         $('#anzeigeSortSelect').append($('<option value="' + value.settings.name + '">' + value.settings.alias + '</option>'));
       }
     );
+    var sortAttribute = kvm.store.getItem('sortAttribute');
+    if (sortAttribute) {
+      $('#anzeigeSortSelect').val(sortAttribute);
+    }
+
+    // set featureForm and dataView
     $('#formular').html('');
     this.createFeatureForm();
     this.createDataView();
@@ -1983,6 +1965,51 @@ function Layer(stelle, settings = {}) {
     if (parseInt(this.get('privileg')) > 0) {
       $('#newFeatureButton').show();
     }
+  };
+
+  this.createLayerFilterForm = function() {
+    var operators = [
+          '=', '>', '<', '>=' , '<=', 'IN', 'LIKE'
+        ],
+        options = operators.map(
+          function(operator) {
+            return '<option value="' + operator + '"' + (operator == '=' ? ' selected' : '') + '>' + operator + '</option>'
+          }
+        );
+
+    $('#attributeFilterFieldDiv').html('');
+    $.each(
+      this.attributes,
+      function(key, value) {
+        if (value.settings.type != 'geometry') {
+          
+          if (value.settings.form_element_type == 'Auswahlfeld') {
+            input_field = $('<select id="filter_value_' + value.settings.name + '" class="filter-view-value-field" name="filter_value_' + value.settings.name + '">');
+            input_field.append($('<option value=""></option>'));
+            value.settings.options.map(
+              function(option) {
+                input_field.append($('<option value="' + option.value + '">' + option.output + '</option>'));
+              }
+            )
+          }
+          else {
+            input_field = '<input id="filter_value_' + value.settings.name + '" class="filter-view-value-field" name="filter_value_' + value.settings.name + '" type="text" value=""/>';
+          }
+          $('#attributeFilterFieldDiv').append(
+            $('<div class="filter-view-field" database_type="' + value.settings.type + '" name="' + value.settings.name + '">')
+              .append('<div class="filter-view-label">' + value.settings.alias + '</div>')
+              .append('<div class="filter-view-operator"><select id="filter_operator_' + value.settings.name + '">' + options + '</select></div>')
+              .append($('<div class="filter-view-value">').append(input_field))
+          )
+        }
+      }
+    );
+  };
+
+  this.loadLayerFilterValues = function(layerFilter) {
+    Object.keys(layerFilter).forEach(function(attr_name) {
+      $('#filter_value_' + attr_name).val(layerFilter[attr_name].value);
+    })
   };
 
   this.notNullValid = function() {

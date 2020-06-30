@@ -56,7 +56,9 @@ function Attribute(layer, settings = {}) {
       case 'User' :
         field = new UserFormField('featureFormular', this.settings);
         break;
-
+      case 'UserID' :
+        field = new UserIDFormField('featureFormular', this.settings);
+        break;
       default :
         field = new TextFormField('featureFormular', this.settings);
     }

@@ -10,7 +10,9 @@ http://kvwmap.de
 # Change log
 ## 1.5.2
   * Der Zurück-Button zeigt einen Dialog ob man die Anwendung beenden möchte.
-	* Formularelementtypen User werden auf der Client-Seite automatisch befüllt entsprechend der Optionen die für das Attribut gesetzt sind.
+	* Formularelementtypen Time, User und UserID werden auf der Client-Seite automatisch befüllt entsprechend der Optionen die für das Attribut gesetzt sind.
+	* Status-, Layerattributfilter und Sortierattribut werden local gespeichert, so dass sie nach einem Neustart der App wieder verwendet werden.
+	* Auf Client erzeugte Zeiten in Local-Time
 ## 1.5.1
   * Fix incomplete sync procedure
 	* Colorselector in settings
@@ -21,10 +23,6 @@ http://kvwmap.de
 	* sort function
 	* filter function
 	* settings for taking pictures
-ToDo
-  * paging in feature list
-  * points as CircleMarkers in sted of marker cluster due to more than 10.000 featue per layer
-  * enable editing the geometry of feature
 ## 1.4.4
 	* Enable origin https://geoport-vr.de/kvwmap/ in config.xml
 ## 1.4.3

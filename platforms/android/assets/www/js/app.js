@@ -62,6 +62,9 @@ kvm = {
     kvm.log('initialisiere Farbauswahl', 3);
     this.initColorSelector();
 
+    kvm.log('initialisiere Statusfilter', 3);
+    this.initStatusFilter();
+
     if (this.store.getItem('activeStelleId')) {
       var activeStelleId = this.store.getItem('activeStelleId'),
           activeStelleSettings = this.store.getItem('stelleSettings_' + activeStelleId),
@@ -184,6 +187,13 @@ kvm = {
     Object.values(markerStyles).forEach(this.addColorSelector);
   },
 
+  initStatusFilter: function() {
+    var statusFilter = kvm.store.getItem('statusFilter');
+    if (statusFilter) {
+      $('#statusFilterSelect').val(statusFilter);
+    }
+  },
+
   addColorSelector: function(style, i) {
     var colorSelectorDiv = $('#colorSelectorDiv');
     colorSelectorDiv.append('\
@@ -198,7 +208,7 @@ kvm = {
         index = elm.id.slice(-1);
 
     markerStyles[index].fillColor = elm.value;
-    kvm.store.setItem('markerStyles', JSON.stringify(markerStyles));    
+    kvm.store.setItem('markerStyles', JSON.stringify(markerStyles));
     if (kvm.activeLayer) kvm.activeLayer.readData($('#limit').val(), $('#offset').val());
   },
 
@@ -543,6 +553,7 @@ kvm = {
     $('#statusFilterSelect').on(
       'change',
       function(evt) {
+        kvm.store.setItem('statusFilter', $('#statusFilterSelect').val());
         kvm.activeLayer.readData($('#limit').val(), $('#offset').val());
       }
     );
@@ -558,6 +569,7 @@ kvm = {
     $('#runFilterButton').on(
       'click',
       function() {
+        kvm.store.setItem('layerFilter', JSON.stringify(kvm.composeLayerFilter()));
         kvm.activeLayer.readData($('#limit').val(), $('#offset').val());
       }
     );
@@ -565,6 +577,7 @@ kvm = {
     $('#anzeigeSortSelect').on(
       'change',
       function(evt) {
+        kvm.store.setItem('sortAttribute', $('#anzeigeSortSelect').val());
         kvm.activeLayer.readData($('#limit').val(), $('#offset').val());
       }
     );
@@ -1320,7 +1333,26 @@ kvm = {
   bracketForType: function(type) {
     kvm.log('Frage an ob type: ' + type + ' Hochkommas braucht.');
     return (['bpchar', 'varchar', 'text', 'date', 'timestamp', 'geometry'].indexOf(type) > -1 ? "'" : "");
+  },
+
+  composeLayerFilter: function() {
+    var filter = kvm.activeLayer.attributes
+      .filter(function(a) {
+        return $('#filter_value_' + a.settings.name).val();
+      })
+      .map(function(a) {
+        return {
+          key: a.settings.name,
+          value: $('#filter_value_' + a.settings.name).val(),
+          operator: $('#filter_operator_' + a.settings.name).val() };
+      })
+      .reduce((acc, cur) => ({ ...acc, [cur.key]: {
+        value: cur.value,
+        operator: cur.operator
+      }}), {});
+    return filter;
   }
+
 
 };
 
