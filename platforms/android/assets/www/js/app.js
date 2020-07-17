@@ -130,16 +130,19 @@ kvm = {
     kvm.log('initialisiere Mapsettings', 3);
     this.initMapSettings();
 
+    kvm.log('initialisiere backgroundLayersettings', 3);
+    this.initBackgroundLayerSettings();
+
     var orka_offline = L.tileLayer(config.localTilePath + 'orka-tiles-vg/{z}/{x}/{y}.png', {
           attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
     });
 
-    if (config.backgroundLayerOnline.type == 'tile') {
-      var orka_online = L.tileLayer(config.backgroundLayerOnline.url, config.backgroundLayerOnline.params);
+    if (this.backgroundLayerOnline.type, == 'tile') {
+      var orka_online = L.tileLayer(this.backgroundLayerOnline.url, this.backgroundLayerOnline.params);
     };
 
-    if (config.backgroundLayerOnline.type == 'wms') {
-      var orka_online = L.tileLayer.wms(config.backgroundLayerOnline.url, config.backgroundLayerOnline.params);
+    if (this.backgroundLayerOnline.type == 'wms') {
+      var orka_online = L.tileLayer.wms(this.backgroundLayerOnline.url, this.backgroundLayerOnline.params);
     };
 
     var map = L.map(
@@ -222,6 +225,20 @@ kvm = {
   saveMapSettings: function(mapSettings) {
     this.mapSettings = mapSettings;
     kvm.store.setItem('mapSettings', JSON.stringify(mapSettings));
+  },
+
+  initBackgroundLayerOnline: function() {
+    if (!(this.backgroundLayerOnline = JSON.parse(kvm.store.getItem('backgroundLayerOnline')))) {
+      this.saveBackgroundLayerOnline(config.backgroundLayerOnline);
+    }
+    $('#backgroundLayerOnline_url').val(this.backgroundLayerOnline.url);
+    $('#backgroundLayerOnline_type').val(this.backgroundLayerOnline.type);
+    $('#backgroundLayerOnline_layers').val(this.backgroundLayerOnline.params.layers);
+  },
+
+  saveBackgroundLayerOnline: function(backgroundLayerOnline) {
+    this.backgroundLayerOnline = backgroundLayerOnline;
+    kvm.store.setItem('backgroundLayerOnline', JSON.stringify(backgroundLayerOnline));
   },
 
   addColorSelector: function(style, i) {
@@ -413,6 +430,13 @@ kvm = {
       }
     );
 
+    $('#backgroundLayerOnline_url, #backgroundLayerOnline_type, #backgroundLayerOnline_layers').on(
+      'change',
+      function() {
+        kvm.msg('Speichern noch nicht implementiert');
+        //kvm.map.setBackgroundLayerOnline();
+      }
+    );
 
     $('#saveDatabaseButton').on(
       'click',

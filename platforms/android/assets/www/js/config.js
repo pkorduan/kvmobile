@@ -43,7 +43,7 @@ config = {
     }
   }
 */
-/*
+
   // LK-VG
   mapSettings: {
     minZoom: 8,
@@ -66,8 +66,8 @@ config = {
       attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
     }
   }
-*/
 
+/*
   // LK-EE
   mapSettings: {
     minZoom: 8,
@@ -83,7 +83,7 @@ config = {
   kvwmapServerUrl: 'https://geoportal.lkee.de/kvwmap_dev',
   kvwmapServerLoginName: '',
   kvwmapServerPasswort: '',
-/*
+
   backgroundLayerOnline: {
     type: 'tile',
     url : 'https://isk.geobasis-bb.de/mapproxy/dop20c_wmts/service?service=WMTS&request=GetTile&version=1.0.0&layer=bebb_dop20c&style=default&format=image/png&TileMatrixSet=grid_25833&TileMatrix={z}&TileRow={x}&TileCol={y}',
@@ -91,7 +91,7 @@ config = {
       attribution: "LGB WMTS DOP20c"
     }
   },
-*/
+
   backgroundLayerOnline: {
     type: 'wms',
     url: 'https://isk.geobasis-bb.de/ows/dop20c_wms',
@@ -102,7 +102,7 @@ config = {
       attribution: "LGB WMS DOP20"
     }
   },
-
+*/
   // LK-ROS
 /*
   startZoom: 8,
