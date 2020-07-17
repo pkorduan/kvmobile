@@ -578,15 +578,18 @@ function Layer(stelle, settings = {}) {
       }
       if ($('#syncLayerIcon_' + this.getGlobalId()).hasClass('fa-spinner')) {
         $('#syncLayerIcon_' + this.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
-        $('#sperr_div').hide();
       }
+        $('#sperr_div').hide();
       // displayFileData(fileEntry.fullPath + " (content uploaded to server)");
     }).bind(this);
 
     var fail = function (error) {
-      var msg = 'Fehler beim Hochladen der Sync-Datei! Fehler ' + error.code;
+      var msg = 'Fehler beim Hochladen der Sync-Datei! Prüfe die Netzverbindung! Fehler Nr: ' + error.code;
       kvm.msg(msg);
       kvm.log(msg, 1);
+      if ($('#syncLayerIcon_' + this.getGlobalId()).hasClass('fa-spinner')) {
+        $('#syncLayerIcon_' + this.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
+      }
       $('#sperr_div').hide();
     }
 
@@ -731,7 +734,6 @@ function Layer(stelle, settings = {}) {
     };
 
     kvm.log('upload to url: ' + server, 3);
-    kvm.log('with params: ' + JSON.stringify(options.params), 3);
     kvm.log('with options: ' + JSON.stringify(options), 3);
     ft.upload(fileURL, encodeURI(server), win, fail, options);
 
@@ -842,7 +844,7 @@ function Layer(stelle, settings = {}) {
   };
 
   /*
-  * Delete all features from layer, feature list, map and its data in the database table and deltas
+  * Delete all features from layer, store, feature list, map and its data in the database table and deltas
   * and also lastVersionNr of the layer to make the way free for a new initial download
   */
   this.clearData = function() {
@@ -853,15 +855,16 @@ function Layer(stelle, settings = {}) {
     kvm.db.executeSql(
       sql,
       [],
-      function(rs) {
+      (function(rs) {
         kvm.store.removeItem('layerFilter');
+        kvm.store.removeItem('layerSettings_' + this.getGlobalId());
         navigator.notification.confirm(
           'Alle Daten des Layers in lokaler Datenbank gelöscht.',
           function(buttonIndex) {},
           'Datenbank',
           ['Verstanden']
         );
-      },
+      }).bind(this),
       function(error) {
         navigator.notification.confirm(
           'Fehler bei Löschen der Layerdaten!\nFehlercode: ' + error.code + '\nMeldung: ' + error.message,
@@ -906,15 +909,13 @@ function Layer(stelle, settings = {}) {
         icon = $('#syncImagesIcon_' + this.layer.getGlobalId());
         if (icon.hasClass('fa-spinner')) icon.toggleClass('fa-upload fa-spinner fa-spin');
         $('#sperr_div').hide();
-        if (this.delta == '') {
-          navigator.notification.confirm(
-            'Alle Änderungsversionen des Layers in lokaler Datenbank gelöscht.',
-            function(buttonIndex) {
-            },
-            'Datenbank',
-            ['Verstanden']
-          );
-        }
+        navigator.notification.confirm(
+          'Alle Änderungseinträge zu Bildern des Layers in lokaler Datenbank gelöscht.',
+          function(buttonIndex) {
+          },
+          'Datenbank',
+          ['Verstanden']
+        );
       }).bind({
         layer : this,
         delta : delta
@@ -1079,6 +1080,7 @@ function Layer(stelle, settings = {}) {
     $.each(
       this.features,
       (function (key, feature) {
+        console.log('zeichne feature: %o', feature);
         // circleMarker erzeugen mit Popup Eventlistener
         var circleMarker = L.circleMarker(feature.wkxToLatLngs(feature.newGeom), {
           renderer: kvm.myRenderer,
@@ -1522,7 +1524,8 @@ function Layer(stelle, settings = {}) {
 
             return {
               'key': key,
-              'value': newVal,
+              'oldVal': oldVal,
+              'newVal': newVal,
               'type' : attr.getSqliteType()
             }
           }
@@ -1559,14 +1562,14 @@ function Layer(stelle, settings = {}) {
             $.map(
               changes,
               function(change) {
-                if (change.value == null) {
+                if (change.newVal == null) {
                   return 'null';
                 }
                 if (change.type == 'TEXT') {
-                  return "'" + change.value + "'";
+                  return "'" + change.newVal + "'";
                 }
                 else {
-                  return change.value;
+                  return change.newVal;
                 }
               }
             ).join(', ') + ', \
@@ -1586,12 +1589,12 @@ function Layer(stelle, settings = {}) {
             $.map(
               changes,
               function(change) {
-                if (change.value == null)
+                if (change.newVal == null)
                   return change.key + " = null";
                 if (change.type == 'TEXT')
-                  return change.key + " = '" + change.value + "'";
+                  return change.key + " = '" + change.newVal + "'";
                 else
-                  return change.key + " = " + change.value;
+                  return change.key + " = " + change.newVal;
               }
             ).join(', ') + '\
           WHERE\
@@ -1620,13 +1623,15 @@ function Layer(stelle, settings = {}) {
     $.each(
       changes,
       (function(index, change) {
-        img_old = this.activeFeature.getAsArray(change.key);
-        img_new = (change.value ? change.value.slice(1, -1).split(',') : []);
+        img_old = (change.oldVal ? change.oldVal.slice(1, -1).split(',') : []);
+        img_new = (change.newVal ? change.newVal.slice(1, -1).split(',') : []);
 
         $.map(
           img_new,
           function(img) {
+            console.log(img + ' in ' + img_old.join(', ') + '?');
             if (img_old.indexOf(img) < 0) {
+              console.log('neues Image');
               kvm.activeLayer.writeDelta({
                 "type" : 'img',
                 "change" : 'insert',
@@ -1639,6 +1644,7 @@ function Layer(stelle, settings = {}) {
         $.map(
           img_old,
           (function(img) {
+            console.log(img + ' in ' + img_new.join(', ') + '?');
             if (img_new.indexOf(img) < 0) {
               // Remove insert delta of the image if exists, otherwise insert a delete delta for the img
               sql = "\
@@ -1655,7 +1661,7 @@ function Layer(stelle, settings = {}) {
                 sql,
                 [],
                 (function(rs) {
-                  kvm.log('Layer.createImgDeltas Abfrage erfolgreich, rs: ' + JSON.stringify(rs), 4);
+                  kvm.log('Layer.createImgDeltas Abfrage ob insert für Bild existiert erfolgreich, rs: ' + JSON.stringify(rs), 4);
                   var numRows = rs.rows.length;
 
                   kvm.log('numRows: ' + numRows, 4);
@@ -1683,7 +1689,7 @@ function Layer(stelle, settings = {}) {
                   }
                   else {
                     kvm.log('Layer.createImgDeltas: kein insert delta vorhanden. Trage delete delta ein.', 3);
-                    // Add delte of image to deltas table
+                    // Add delete of image to deltas table
                     this.writeDelta({
                       "type" : 'img',
                       "change" : 'delete',

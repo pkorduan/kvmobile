@@ -37,8 +37,9 @@ function UserFormField(formId, settings) {
   };
 
   this.getValue = function(action = '') {
-   kvm.log('UserFormField.getValue', 4);
+    kvm.log('UserFormField.getValue', 4);
     var val = this.element.val();
+
 
     if (typeof val === "undefined" || val == '') {
       val = null;
@@ -58,9 +59,9 @@ function UserFormField(formId, settings) {
       )
     ) {
       console.log('hier ist true, bitte setze jetzt val');
-      val = kvm.store.userName;
+      val = kvm.store.getItem('userName');
     }
-    console.log('val vor übergabe: %s und in store: %s', val, kvm.store.userName);
+    console.log('val vor übergabe: %s und in store: %s', val, kvm.store.getItem('userName'));
     kvm.log('UserFormField.getValue return: ' + val, 4);
     return val;
   };

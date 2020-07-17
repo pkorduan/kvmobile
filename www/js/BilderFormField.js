@@ -249,6 +249,9 @@ function BilderFormField(formId, settings) {
     );
   };
 
+  /**
+  * capture a picture
+  */
   this.takePicture = function(evt) {
     kvm.log('BilderFormField.takePicture: ' + JSON.stringify(evt), 4);
 
@@ -266,7 +269,7 @@ function BilderFormField(formId, settings) {
         $('#featureFormular input[name=bilder_updated_at]').val((new Date()).toISOString().replace('Z', '')).show();
       }).bind(evt.data.context),
       function(message) {
-        alert('Fehler wegen: ' + message);
+        kvm.msg('Keine Aufnahme gemacht! ' + message);
       }, {
         quality: $('#cameraOptionsQualitySlider').val(),
         correctOrientation: $('#cameraOptionsCorrectOrientation').is(':checked'),

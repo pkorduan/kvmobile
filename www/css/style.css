@@ -12,6 +12,25 @@ label: {
   display: inline-block;
 }
 
+.settings-label {
+  width: 200px;
+  margin-right: 5px;
+  float: left;
+  padding-top: 10px;
+}
+
+.mapSetting {
+  float: right;
+}
+
+#mapSettingsDiv > input {
+  width: 100px;
+}
+
+#mapSettingsDiv > select {
+  width: 60px;
+}
+
 h1 {
   margin-top: 9px;
   margin-bottom: 7px;

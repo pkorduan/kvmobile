@@ -77,7 +77,8 @@ function Stelle(settings = {}) {
                   resultObj = $.parseJSON(this.result);
                   if (resultObj.success) {
                     validResult = true;
-                    kvm.log('Download erfolgreich.', 3);
+                    kvm.log('Download der Stellendaten erfolgreich.', 3);
+                    console.log('Download erfolgreich. Antwortobjekt: %o', resultObj);
 
                     $('#kvwmapServerStelleSelectField').find('option').remove();
                     kvm.store.setItem('userId', resultObj.user_id);
@@ -192,7 +193,7 @@ function Stelle(settings = {}) {
             var reader = new FileReader();
 
             reader.onloadend = function() {
-              kvm.log('Download der Layerdaten abgeschlossen.');
+              kvm.log('Reload der Layerdaten abgeschlossen.');
               var items = [],
                   validationResult = '';
 
@@ -278,6 +279,14 @@ function Stelle(settings = {}) {
                 kvm.log('Download erfolgreich.', 3);
                 //console.log('resultObj: %o', resultObj);
                 $('#layer_list').html('');
+                JSON.parse(kvm.store['layerIds_' + kvm.activeStelle.get('id')]).map(
+                  function(id) {
+                    kvm.store.removeItem('layerSettings_' + kvm.activeStelle.get('id') + '_' + id);
+                  }
+                );
+                kvm.store.removeItem('layerIds_' + kvm.activeStelle.get('id'));
+                kvm.store.removeItem('aktiveLayerId');
+
                 kvm.activeStelle.numLayers = resultObj.layers.length;
                 $.each(
                   resultObj.layers,

@@ -1,5 +1,5 @@
 kvm = {
-  version: '1.5.2',
+  version: '1.5.3',
   Buffer: require('buffer').Buffer,
   wkx: require('wkx'),
   controls: {},
@@ -7,6 +7,7 @@ kvm = {
   views: {},
   layerDataLoaded: false,
   featureListLoaded: false,
+  mapSettings: {},
 
   loadHeadFile: function(filename, filetype) {
     if (filetype=="js"){ //if filename is a external JavaScript file
@@ -126,27 +127,36 @@ kvm = {
   initMap: function() {
     kvm.log('Karte initialisieren.', 3);
 
+    kvm.log('initialisiere Mapsettings', 3);
+    this.initMapSettings();
+
     var orka_offline = L.tileLayer(config.localTilePath + 'orka-tiles-vg/{z}/{x}/{y}.png', {
           attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
-        }),
-        orka_online = L.tileLayer('https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png', {
-          attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
-        }),
-        map = L.map(
+    });
+
+    if (config.backgroundLayerOnline.type == 'tile') {
+      var orka_online = L.tileLayer(config.backgroundLayerOnline.url, config.backgroundLayerOnline.params);
+    };
+
+    if (config.backgroundLayerOnline.type == 'wms') {
+      var orka_online = L.tileLayer.wms(config.backgroundLayerOnline.url, config.backgroundLayerOnline.params);
+    };
+
+    var map = L.map(
           'map', {
             editable: true,
-            center: config.startPosition,
-            zoom: config.startZoom,
-            minZoom: config.minZoom,
-            maxZoom: config.maxZoom,
+            center: L.latLng(this.mapSettings.startCenterLat, this.mapSettings.startCenterLon),
+            zoom: this.mapSettings.startZoom,
+            minZoom: this.mapSettings.minZoom,
+            maxZoom: this.mapSettings.maxZoom,
             layers: [
-              orka_offline,
+//              orka_offline,
               orka_online
             ]
           }
         ),
         baseMaps = {
-          'Hintergrundkarte offline': orka_offline,
+//          'Hintergrundkarte offline': orka_offline,
           'Hintergrundkarte online': orka_online
         };
 
@@ -192,6 +202,26 @@ kvm = {
     if (statusFilter) {
       $('#statusFilterSelect').val(statusFilter);
     }
+  },
+
+  initMapSettings: function() {
+    if (!(this.mapSettings = JSON.parse(kvm.store.getItem('mapSettings')))) {
+      this.saveMapSettings(config.mapSettings);
+    }
+    $('#mapSettings_west').val(this.mapSettings.west);
+    $('#mapSettings_south').val(this.mapSettings.south);
+    $('#mapSettings_east').val(this.mapSettings.east);
+    $('#mapSettings_north').val(this.mapSettings.north);
+    $('#mapSettings_minZoom').val(this.mapSettings.minZoom);
+    $('#mapSettings_maxZoom').val(this.mapSettings.maxZoom);
+    $('#mapSettings_startZoom').val(this.mapSettings.startZoom);
+    $('#mapSettings_startCenterLat').val(this.mapSettings.startCenterLat);
+    $('#mapSettings_startCenterLon').val(this.mapSettings.startCenterLon);
+  },
+
+  saveMapSettings: function(mapSettings) {
+    this.mapSettings = mapSettings;
+    kvm.store.setItem('mapSettings', JSON.stringify(mapSettings));
   },
 
   addColorSelector: function(style, i) {
@@ -341,6 +371,48 @@ kvm = {
         }
       }
     );
+
+    $('.mapSetting').on(
+      'change',
+      function() {
+        kvm.msg('Karteneinstellung gespeichert');
+        kvm.mapSettings[this.name] = this.value;
+        kvm.saveMapSettings(kvm.mapSettings);
+      }
+    );
+
+    $('#mapSettings_maxZoom').on(
+      'change',
+      function() {
+        kvm.map.setMaxZoom(this.value);
+      }
+    );
+
+    $('#mapSettings_minZoom').on(
+      'change',
+      function() {
+        kvm.map.setMinZoom(this.value);
+      }
+    );
+
+    $('#mapSettings_west, #mapSettings_south, #mapSettings_east, #mapSettings_north').on(
+      'change',
+      function() {
+        kvm.map.setMaxBounds(
+          L.bounds(
+            L.point(
+              $('#mapSettings_west').val(),
+              $('#mapSettings_south').val()
+            ),
+            L.point(
+              $('#mapSettings_east').val(),
+              $('#mapSettings_north').val()
+            )
+          )
+        );
+      }
+    );
+
 
     $('#saveDatabaseButton').on(
       'click',
@@ -635,20 +707,32 @@ kvm = {
                 kvm.log('Action: ' + action);
                 if (buttonIndex == 1) { // ja
                   kvm.log('Speichern');
+                  console.log('features bilder1: ' + kvm.activeLayer.activeFeature.getAsArray('bilder').join(', '));
                   changes = kvm.activeLayer.collectChanges(action);
+                  console.log('features bilder2: ' + kvm.activeLayer.activeFeature.getAsArray('bilder').join(', '));
                   console.log('Änderungen: %o', changes);
                   console.log('Anzahl Änderungen %s', changes.length);
 
-                  if (changes.length > 1) {
+                  if (changes.length > 0) {
                     // more than created_at or updated_at_client
+                  console.log('features bilder3: ' + kvm.activeLayer.activeFeature.getAsArray('bilder').join(', '));
                     kvm.activeLayer.createDeltas(action, changes);
-
+                  console.log('features bilder4: ' + kvm.activeLayer.activeFeature.getAsArray('bilder').join(', '));
                     imgChanges = changes.filter(
                       function(change) {
                         return ($.inArray(change.key, kvm.activeLayer.getDokumentAttributeNames()) > -1);
                       }
                     );
-                    if (imgChanges.length > 0) kvm.activeLayer.createImgDeltas(action, imgChanges);
+                    console.log('check if images changes');
+                    if (imgChanges.length > 0) {
+                      console.log('yes Anzahl imgChanges %s:', imgChanges.length);
+                      console.log('features bilder5: ' + kvm.activeLayer.activeFeature.getAsArray('bilder').join(', '));
+                      kvm.activeLayer.createImgDeltas(action, imgChanges);
+                      console.log('features bilder5: ' + kvm.activeLayer.activeFeature.getAsArray('bilder').join(', '));
+                    }
+                    else {
+                      console.log('no imgChanges');
+                    }
                   }
                   else {
                     kvm.log('Keine Änderungen.', 2);
@@ -1310,8 +1394,8 @@ kvm = {
   * Replace server image path by local image path
   */
   serverToLocalPath: function(src) {
-    kvm.log('kvm.serverToLocalPath ' + src, 4);
     var result = config.localImgPath + src.substring(src.lastIndexOf('/') + 1);
+    kvm.log('kvm.serverToLocalPath convert: ' + src + ' to: ' + result, 4);
     return result
   },
 
