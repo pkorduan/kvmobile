@@ -193,7 +193,7 @@ function Stelle(settings = {}) {
             var reader = new FileReader();
 
             reader.onloadend = function() {
-              kvm.log('Reload der Layerdaten abgeschlossen.');
+              kvm.log('Reload der Layerdaten abgeschlossen.', 3);
               var items = [],
                   validationResult = '';
 
@@ -270,7 +270,6 @@ function Stelle(settings = {}) {
               kvm.log('Download der Layerdaten abgeschlossen.');
               var items = [],
                   validationResult = '';
-
               kvm.log('Download Result: ' + this.result, 4);
               resultObj = kvm.parseLayerResult(this.result);
 
@@ -279,12 +278,14 @@ function Stelle(settings = {}) {
                 kvm.log('Download erfolgreich.', 3);
                 //console.log('resultObj: %o', resultObj);
                 $('#layer_list').html('');
-                JSON.parse(kvm.store['layerIds_' + kvm.activeStelle.get('id')]).map(
-                  function(id) {
-                    kvm.store.removeItem('layerSettings_' + kvm.activeStelle.get('id') + '_' + id);
-                  }
-                );
-                kvm.store.removeItem('layerIds_' + kvm.activeStelle.get('id'));
+                if ('layerIds_' + kvm.activeStelle.get('id') in kvm.store) {
+                  JSON.parse(kvm.store['layerIds_' + kvm.activeStelle.get('id')]).map(
+                    function(id) {
+                      kvm.store.removeItem('layerSettings_' + kvm.activeStelle.get('id') + '_' + id);
+                    }
+                  );
+                  kvm.store.removeItem('layerIds_' + kvm.activeStelle.get('id'));
+                }
                 kvm.store.removeItem('aktiveLayerId');
 
                 kvm.activeStelle.numLayers = resultObj.layers.length;

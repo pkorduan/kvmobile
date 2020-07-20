@@ -65,66 +65,6 @@ function Layer(stelle, settings = {}) {
   };
 
   /*
-  * Funciton load all features of the layer from local database
-  * create a hash with feature_id as key and mapObj_id as value
-  * and show it in the layer in leaflet map. 
-  */
-/*
-  this.loadFeaturesToMap = function() {
-    var sql = "\
-      SELECT\
-        *\
-      FROM\
-        " + this.get('schema_name') + '_' + this.get('table_name') + "\
-    ";
-    kvm.log('Lese Datensätze aus lokaler Datenbank zur Darstellung in der Karte mit Sql: ' + sql, 3, true);
-    kvm.db.executeSql(
-      sql,
-      [],
-      (function(rs) {
-        //kvm.log('Layer.loadFeaturesToMap result: ' + JSON.stringify(rs), 4);
-
-        var numRows = rs.rows.length,
-            item,
-            feature_id,
-            wkb,
-            circleMarker,
-            myRenderer = L.canvas({ padding: 0.5 });
-
-        kvm.log(numRows + ' Datensaetze gelesen. Lade sie in die Karte ...', 3, true);
-        this.numFeatures = numRows;
-
-        this.features = {};
-        //console.log('id_attribute: %o', this.get('id_attribute'));
-        for (i = 0; i < numRows; i++) {
-          console.log('Erzeuge circleMarker mit geom: %o', feature.newGeom);
-          //console.log('Create Feature %s', i);
-          item = rs.rows.item(i);
-          feature_id = item[this.get('id_attribute')];
-          wkb = item[this.get('geometry_attribute')];
-          circleMarker = L.circleMarker(kvm.controller.mapper.wkbToLatLngs(wkb), {
-            renderer: myRenderer
-          }).bindPopup(this.getPopup(item));
-          circleMarker.setStyle(feature.getNormalCircleMarkerStyle());
-          // circleMarker als Layer zur Layergruppe hinzufügen
-          this.layerGroup.addLayer(circleMarker);
-          // layer_id abfragen und in Feature als markerId speichern
-          this.features[feature_id] = this.layerGroup.getLayerId(circleMarker);
-          console.log('Marker gezeichnet');
-          this.layerGroup.addTo(kvm.map);
-          kvm.layerDataLoaded = true;
-          $(document).trigger('dataLoaded');
-        }
-      }).bind(this),
-      function(error) {
-        kvm.log('Fehler bei der Abfrage der Daten aus lokaler Datenbank: ' + error.message);
-        $('#sperr_div').hide();
-      }
-    );
-  };
-*/
-
-  /*
   * Load data from local db, create feature objects and show in list view
   * Read data from offset to offset + limit
   */
@@ -161,7 +101,7 @@ function Layer(stelle, settings = {}) {
 
     sql = "\
       SELECT\
-        *\
+        " + this.getSelectExpressions().join(', ') + "\
       FROM\
         " + this.get('schema_name') + '_' + this.get('table_name') + "\
       " + (filter.length > 0 ? "WHERE " + filter.join(' AND ') : "") + "\
@@ -232,7 +172,9 @@ function Layer(stelle, settings = {}) {
     kvm.log('Schreibe die empfangenen Daten in die lokale Datebank...', 3, true);
     var tableName = this.get('schema_name') + '_' + this.get('table_name'),
         keys = $.map(
-          this.attributes,
+          this.attributes.filter(function(attr) {
+            return attr.get('saveable') == '1';
+          }),
           function(attr) {
             return attr.get('name');
           }
@@ -244,7 +186,9 @@ function Layer(stelle, settings = {}) {
               //console.log('item.geometry %', item.geometry);
               if (item.geometry) {
                 return $.map(
-                  kvm.activeLayer.attributes,
+                  kvm.activeLayer.attributes.filter(function(attr) {
+                    return attr.get('saveable') == '1'
+                  }),
                   (function(attr) {
                       var type = attr.get('type'),
                           value = (type == 'geometry' ? this.item.geometry : this.item.properties[attr.get('name')]);
@@ -310,13 +254,8 @@ function Layer(stelle, settings = {}) {
     kvm.db.transaction(
       (function(tx) {
         var tableName = this.get('schema_name') + '_' + this.get('table_name'),
-            tableColumns = $.map(
-              this.attributes,
-              function(attr) {
-                return attr.get('name') + ' ' + attr.getSqliteType() + (attr.get('nullable') == '0 ' ? ' NOT NULL' : '');
-              }
-            ).join(', '),
-            sql = 'CREATE TABLE IF NOT EXISTS ' + tableName + ' (' + tableColumns + ')';
+            tableColumnDefinitions = this.getTableColumnDefinitions(),
+            sql = 'CREATE TABLE IF NOT EXISTS ' + tableName + ' (' + tableColumnDefinitions.join(', ') + ')';
 
         kvm.log('Erzeuge Tabelle mit sql: ' + sql, 3);
 
@@ -325,14 +264,14 @@ function Layer(stelle, settings = {}) {
           (function(tx, res) {
             kvm.log('Tabelle ' + this.get('schema_name') + '_' + this.get('table_name')  + ' erfolgreich angelegt.', 3);
             var tableName = this.get('schema_name') + '_' + this.get('table_name') + '_deltas',
-                tableColumns = '\
-                  version INTEGER PRIMARY KEY,\
-                  type text,\
-                  change text,\
-                  delta text,\
-                  created_at text\
-                ',
-                sql = 'CREATE TABLE IF NOT EXISTS ' + tableName + ' (' + tableColumns + ')';
+                tableColumnDefinitions = [
+                  'version INTEGER PRIMARY KEY',
+                  'type text',
+                  'change text',
+                  'delta text',
+                  'created_at text'
+                ],
+                sql = 'CREATE TABLE IF NOT EXISTS ' + tableName + ' (' + tableColumnDefinitions.join(', ') + ')';
             kvm.log('Erzeuge Delta-Tabelle mit sql: ' + sql, 3);
 
             tx.executeSql(sql,[],
@@ -374,13 +313,8 @@ function Layer(stelle, settings = {}) {
           (function(tx, res) {
             kvm.log('Tabelle ' + this.get('schema_name') + '_' + this.get('table_name')  + ' erfolgreich gelöscht.', 3);
             var tableName = this.get('schema_name') + '_' + this.get('table_name'),
-                tableColumns = $.map(
-                  this.attributes,
-                  function(attr) {
-                    return attr.get('name') + ' ' + attr.getSqliteType() + (attr.get('nullable') == '0 ' ? ' NOT NULL' : '');
-                  }
-                ).join(', '),
-                sql = 'CREATE TABLE IF NOT EXISTS ' + tableName + ' (' + tableColumns + ')';
+                tableColumnDefinitions = this.getTableColumnDefinitions(),
+                sql = 'CREATE TABLE IF NOT EXISTS ' + tableName + ' (' + tableColumnDefinitions.join(', ') + ')';
 
             kvm.log('Erzeuge Tabelle neu mit sql: ' + sql, 3);
             tx.executeSql(sql,[],
@@ -411,6 +345,36 @@ function Layer(stelle, settings = {}) {
     );
   };
 
+  /**
+  * Function returns an array with column expressions
+  * for create table statement but only for saveable attributes
+  */
+  this.getTableColumnDefinitions = function() {
+    var tableColumnDefinitions = $.map(
+      this.attributes.filter(function(attr) {
+        return attr.get('saveable') == '1';
+      }),
+      function(attr) {
+        return attr.get('name') + ' ' + attr.getSqliteType() + (attr.get('nullable') == '0 ' ? ' NOT NULL' : '');
+      }
+    );
+    return tableColumnDefinitions;
+  };
+
+  /**
+  * Function returns an array with column expressions for select statement
+  * use attribute name, if difference from real_name use it in stead
+  */
+  this.getSelectExpressions = function() {
+    var selectExpressions = $.map(
+      this.attributes,
+      function(attr) {
+        return (attr.get('name') != attr.get('real_name') ? attr.get('real_name') + ' AS ' + attr.get('name') : attr.get('name'));
+      }
+    );
+    return selectExpressions;
+  };
+
   this.requestData = function() {
     // ToDo Ab hier in einem Fenster den Fortschritt des Ladevorganges anzeigen.
     kvm.log('Frage Daten vom Server ab.<br>Das kann je nach Datenmenge und<br>Internetverbindung einige Minuten dauern.' , 3, true);
@@ -434,7 +398,7 @@ function Layer(stelle, settings = {}) {
                   collection = {},
                   errMsg = '';
 
-              console.log('Download Ergebnis (Head 1000): %s', this.result.substring(1, 1000));
+              //console.log('Download Ergebnis (Head 1000): %s', this.result.substring(1, 1000));
               try {
                 collection = $.parseJSON(this.result);
                 if (collection.features.length > 0) {
@@ -1080,7 +1044,7 @@ function Layer(stelle, settings = {}) {
     $.each(
       this.features,
       (function (key, feature) {
-        console.log('zeichne feature: %o', feature);
+        //console.log('zeichne feature: %o', feature);
         // circleMarker erzeugen mit Popup Eventlistener
         var circleMarker = L.circleMarker(feature.wkxToLatLngs(feature.newGeom), {
           renderer: kvm.myRenderer,
@@ -1088,7 +1052,6 @@ function Layer(stelle, settings = {}) {
         }).bindPopup(this.getPopup(feature));
         circleMarker.setStyle(feature.getNormalCircleMarkerStyle());
         circleMarker.on('click', function(evt) {
-          console.log(kvm.activeLayer.activeFeature.editable);
           if (kvm.activeLayer.activeFeature.editable) {
             $('.popup-functions').hide();
           }
@@ -1613,9 +1576,13 @@ function Layer(stelle, settings = {}) {
             ' + this.get('id_attribute') + ' = \'' + this.activeFeature.get(this.get('id_attribute')) + '\'\
         '
       };
+      kvm.log('Löschung sql: ' + JSON.stringify(delta), 3);
+      this.writeDelta(delta, this.execClientDeltaDeleteSuccessFunc, this.execClientDeltaErrorFunc);
     }
-    kvm.log('Änderung sql: ' + JSON.stringify(delta), 3);
-    this.writeDelta(delta, this.execClientDeltaSuccessFunc, this.execClientDeltaErrorFunc);
+    else {
+      kvm.log('Änderung sql: ' + JSON.stringify(delta), 3);
+      this.writeDelta(delta, this.execClientDeltaSuccessFunc, this.execClientDeltaErrorFunc);
+    }
   };
 
   this.createImgDeltas = function(action, changes) {
@@ -1766,8 +1733,43 @@ function Layer(stelle, settings = {}) {
     console.log('Rufe saveGeometry auf mit activeFeature: %o', kvm.activeLayer.activeFeature);
     kvm.activeLayer.saveGeometry(kvm.activeLayer.activeFeature);
 
-    console.log('Wechsel die Ansicht zum Formular oder map.');
+    console.log('Wechsel die Ansicht zur Feature Liste oder zur Karte.');
     kvm.showItem($('#formular').is(':visible') ? 'featurelist' : 'map');
+
+    console.log('Blende Sperrdiv aus');
+    // Sperrdiv entfernen
+    $('#sperr_div').hide();
+  };
+
+  /**
+  * function called after writing a delete Statement into Client sqlite DB
+  * Do every thing to delete the feature, geometry, Layer and listelement
+  *
+  */
+  this.execClientDeltaDeleteSuccessFunc = function(rs) {
+    var featureId = kvm.activeLayer.activeFeature.id,
+        markerId = kvm.activeLayer.activeFeature.markerId;
+
+    console.log('execClientDeltaDeleteSuccessFunc');
+
+    console.log('Remove Editable Geometrie');
+    kvm.controller.mapper.removeEditable(kvm.activeLayer.activeFeature);
+
+    console.log('Löscht Layer mit markerId: %s aus Layergroup', kvm.activeLayer.activeFeature.markerId);
+    kvm.activeLayer.layerGroup.removeLayer(markerId);
+
+    console.log('Löscht Feature aus FeatureList : %o', kvm.activeLayer.activeFeature);
+    $('#' + kvm.activeLayer.activeFeature.id).remove()
+
+    console.log('Wechsel die Ansicht zur Featurelist.');
+    kvm.showItem($('#formular').is(':visible') ? 'featurelist' : 'map');
+    console.log('Scroll die FeatureListe nach ganz oben');
+
+    console.log('Lösche Feature aus features Array des activeLayer');
+    delete kvm.activeLayer.features[featureId];
+
+    console.log('Lösche activeFeature')
+    delete kvm.activeLayer.activeFeature;
 
     console.log('Blende Sperrdiv aus');
     // Sperrdiv entfernen
@@ -1837,18 +1839,29 @@ function Layer(stelle, settings = {}) {
       <div id="layer_' + this.getGlobalId()  + '">\
         <input type="radio" name="activeLayerId" value="' + this.getGlobalId() + '"/> ' +
         (this.get('alias') ? this.get('alias') : this.get('title')) + '\
-        <button id="syncLayerButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="settings-button sync-layer-button inactive-button" style="float: right; display: none;">\
-          <i id="syncLayerIcon_' + this.getGlobalId() + '" class="fa fa-refresh" aria-hidden="true"></i>\
+        <button id="layerFunctionsButton" class="settings-button" style="float: right;">\
+          <i class="fa fa-ellipsis-v" aria-hidden="true"></i>\
         </button>\
-        <button id="syncImagesButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="settings-button sync-images-button inactive-button" style="float: right; margin-right: 5px; display: none;">\
-          <i id="syncImagesIcon_' + this.getGlobalId() + '" class="fa fa-upload" aria-hidden="true"></i>\
-        </button>\
-        <button id="clearLayerButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="settings-button clear-layer-button" style="float: right; margin-right: 5px; display: none;">\
-          <i id="clearLayerIcon_' + this.getGlobalId() + '" class="fa fa-ban" aria-hidden="true"></i>\
-        </button>\
-        <button id="reloadLayerButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="settings-button reload-layer-button" style="float: right; display: none;">\
-          <i id="reloadLayerIcon_' + this.getGlobalId() + '" class="fa fa-window-restore" aria-hidden="true"></i>\
-        </button>\
+        <div class="layer-functions-div">\
+          <button id="syncLayerButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="settings-button sync-layer-button layer-function-button">\
+            <i id="syncLayerIcon_' + this.getGlobalId() + '" class="fa fa-refresh" aria-hidden="true"></i>\
+          </button> Daten synchronisieren\
+        </div>\
+        <div class="layer-functions-div">\
+          <button id="syncImagesButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="settings-button sync-images-button layer-function-button">\
+            <i id="syncImagesIcon_' + this.getGlobalId() + '" class="fa fa-upload" aria-hidden="true"></i>\
+          </button> Bilder synchronisieren\
+        </div>\
+        <div class="layer-functions-div">\
+          <button id="clearLayerButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="settings-button clear-layer-button layer-function-button">\
+            <i id="clearLayerIcon_' + this.getGlobalId() + '" class="fa fa-ban" aria-hidden="true"></i>\
+          </button> Mobile Daten löschen\
+        </div>\
+        <div class="layer-functions-div">\
+          <button id="reloadLayerButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="settings-button reload-layer-button layer-function-button">\
+            <i id="reloadLayerIcon_' + this.getGlobalId() + '" class="fa fa-window-restore" aria-hidden="true"></i>\
+          </button> Layer neu Laden\
+        </div>\
       </div>\
       <div style="clear: both"></div>';
     return html;

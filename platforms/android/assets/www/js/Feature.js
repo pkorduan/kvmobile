@@ -280,7 +280,7 @@ function Feature(
   };
 
   this.getNormalCircleMarkerStyle = function() {
-    kvm.log('getNormalCircleMarkerStyle for status: ' + this.get('status'), 4);
+    //kvm.log('getNormalCircleMarkerStyle for status: ' + this.get('status'), 4);
     var status = ((this.get('status') && this.get('status') != 'null') ? this.get('status') : 0),
         markerStyles = JSON.parse(kvm.store.getItem('markerStyles'));
     return markerStyles[status];

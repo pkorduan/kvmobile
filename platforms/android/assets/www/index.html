@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
   <head>
-    <TITLE>kvmobile</TITLE>
+    <TITLE>kvmobile 1.5.4</TITLE>
     <META charset="UTF-8">
     <meta name="format-detection" content="telephone=no">
     <meta name="msapplication-tap-highlight" content="no">
@@ -123,10 +123,10 @@
         <option value="status = 2">Noch Nachfragen nötig</option>
       </select>
       Anzahl der geladenen Datensätze: <input type="number" id="limit" value="1000" size="5"/> starte bei: <input type="number" id="offset" value="0" size="5"/><br>
+      <input id="runFilterButton" type="button" value="Anwenden" class="settings-button" style="margin-top: 5px"/>
       <input id="toggleFilterDivButton" type="button" value="mehr" class="settings-button"/>
       <div id="filterDiv" style="display: none">
         <div id="attributeFilterFieldDiv"></div>
-        <input id="runFilterButton" type="button" value="Anwenden" class="settings-button" style="margin-top: 5px"/>
       </div>
     </div>
     <hr>
@@ -359,12 +359,13 @@
       </div>
     </div//-->
     <div id="featurelistBody" style="
-      width: 90%;
+      width: 100%;
       float: left;
     "></div>
     <div id="alphabetical_list" style="
       float: right;
       margin-right: 7px;
+      display: none;
     ">
       <ul style="
         list-style-type: none;

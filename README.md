@@ -8,6 +8,11 @@ https://github.com/srahn/kvwmap/
 http://kvwmap.de
 
 # Change log
+## 1.5.4
+	* Berücksichtigung von zusammengesetzten Attributen, die auf dem Server als not saveable pseudoattribute definiert sind
+	* Layerfunktionen mit Beschriftung und toggle
+	* Löschfunktion auf Client korrigiert
+	* Monat im Timestamp auf Client korrigiert
 ## 1.5.3
 	* Änder- und speicherbare Karteneinstellungen, Ausdehnung, min-, maxzoom, sowie Startposition und Startzoom
 	* Bug beim Speichern von Bildern behoben

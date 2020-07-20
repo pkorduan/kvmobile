@@ -1,5 +1,5 @@
 kvm = {
-  version: '1.5.3',
+  version: '1.5.4',
   Buffer: require('buffer').Buffer,
   wkx: require('wkx'),
   controls: {},
@@ -131,13 +131,13 @@ kvm = {
     this.initMapSettings();
 
     kvm.log('initialisiere backgroundLayersettings', 3);
-    this.initBackgroundLayerSettings();
+    this.initBackgroundLayerOnline();
 
     var orka_offline = L.tileLayer(config.localTilePath + 'orka-tiles-vg/{z}/{x}/{y}.png', {
-          attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
+      attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
     });
 
-    if (this.backgroundLayerOnline.type, == 'tile') {
+    if (this.backgroundLayerOnline.type == 'tile') {
       var orka_online = L.tileLayer(this.backgroundLayerOnline.url, this.backgroundLayerOnline.params);
     };
 
@@ -153,13 +153,13 @@ kvm = {
             minZoom: this.mapSettings.minZoom,
             maxZoom: this.mapSettings.maxZoom,
             layers: [
-//              orka_offline,
+              orka_offline,
               orka_online
             ]
           }
         ),
         baseMaps = {
-//          'Hintergrundkarte offline': orka_offline,
+          'Hintergrundkarte offline': orka_offline,
           'Hintergrundkarte online': orka_online
         };
 
@@ -526,38 +526,6 @@ kvm = {
       }
     )
 
-    $('#formOptionButton').on(
-      'click',
-      function() {
-        navigator.notification.confirm(
-          'Datensatz Löschen?',
-          function(buttonIndex) {
-            if (buttonIndex == 1) { // ja
-              kvm.log('Datensatz löschen.', 3);
-              kvm.activeLayer.createDeltas('DELETE', []);
-              kvm.activeLayer.createImgDeltas('DELETE',
-                $.map(
-                  kvm.activeLayer.getDokumentAttributeNames(),
-                  function(name) {
-                    return {
-                      "key" : name,
-                      "value" : ''
-                    }
-                  }
-                )
-              );
-            }
-
-            if (buttonIndex == 2) { // nein
-              // Do nothing
-            }
-          },
-          '',
-          ['ja', 'nein']
-        );
-      }
-    );
-
     /* wird nicht mehr benutzt
     $('#backArrow').on(
       'click',
@@ -690,6 +658,19 @@ kvm = {
                 kvm.log('Lösche Feature uuid: ' + kvm.activeLayer.activeFeature.get('uuid'), 3);
                 kvm.controller.mapper.clearWatch();
                 kvm.activeLayer.createDeltas('DELETE', []);
+                kvm.activeLayer.createImgDeltas('DELETE',
+                  $.map(
+                    kvm.activeLayer.getDokumentAttributeNames(),
+                    function(name) {
+                      return {
+                        "key" : name,
+                        "value" : ''
+                      }
+                    }
+                  )
+                );
+
+
               }
 
               if (buttonIndex == 2) { // nein
@@ -728,31 +709,21 @@ kvm = {
               'Datensatz Speichern?',
               function(buttonIndex) {
                 var action = (kvm.activeLayer.activeFeature.options.new ? 'INSERT' : 'UPDATE');
-                kvm.log('Action: ' + action);
+                kvm.log('Action: ' + action, 4);
                 if (buttonIndex == 1) { // ja
-                  kvm.log('Speichern');
-                  console.log('features bilder1: ' + kvm.activeLayer.activeFeature.getAsArray('bilder').join(', '));
+                  kvm.log('Speichern', 3);
                   changes = kvm.activeLayer.collectChanges(action);
-                  console.log('features bilder2: ' + kvm.activeLayer.activeFeature.getAsArray('bilder').join(', '));
-                  console.log('Änderungen: %o', changes);
-                  console.log('Anzahl Änderungen %s', changes.length);
 
                   if (changes.length > 0) {
                     // more than created_at or updated_at_client
-                  console.log('features bilder3: ' + kvm.activeLayer.activeFeature.getAsArray('bilder').join(', '));
                     kvm.activeLayer.createDeltas(action, changes);
-                  console.log('features bilder4: ' + kvm.activeLayer.activeFeature.getAsArray('bilder').join(', '));
                     imgChanges = changes.filter(
                       function(change) {
                         return ($.inArray(change.key, kvm.activeLayer.getDokumentAttributeNames()) > -1);
                       }
                     );
-                    console.log('check if images changes');
                     if (imgChanges.length > 0) {
-                      console.log('yes Anzahl imgChanges %s:', imgChanges.length);
-                      console.log('features bilder5: ' + kvm.activeLayer.activeFeature.getAsArray('bilder').join(', '));
                       kvm.activeLayer.createImgDeltas(action, imgChanges);
-                      console.log('features bilder5: ' + kvm.activeLayer.activeFeature.getAsArray('bilder').join(', '));
                     }
                     else {
                       console.log('no imgChanges');
@@ -906,6 +877,16 @@ kvm = {
       }
     );
 
+    $('#layerFunctionsButton').on(
+      'click',
+      function(evt) {
+        var target = evt.target;
+        //zeige alle darunter liegenden layer-functions-div
+        $(target).parent().children().filter('.layer-functions-div').toggle();
+        $(target).children().toggleClass('fa-ellipsis-v fa-window-close-o');
+      }
+    );
+
     $('.sync-layer-button' + (layerGlobalId > 0 ? "[id='syncLayerButton_" + layerGlobalId + "']" : '')).on(
       'click',
       function(evt) {
@@ -926,6 +907,7 @@ kvm = {
                   layer.requestData();
                 }
                 else {
+                  $('#syncLayerIcon_' + layer.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
                   $('#sperr_div').hide();
                 }
               },
@@ -941,6 +923,7 @@ kvm = {
                   layer.syncData();
                 }
                 else {
+                  $('#syncLayerIcon_' + layer.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
                   $('#sperr_div').hide();
                 }
               },
