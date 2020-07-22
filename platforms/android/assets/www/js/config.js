@@ -12,7 +12,7 @@ config = {
 //  localImgPath: 'file:///storage/' + 'BAB2-4AA9' + '/Android/data/de.gdiservice.kvmobile/cache/',
   localImgPath:    'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/',
   localTilePath:   'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/',
-  localBackupPath: 'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/Backups/',
+  localBackupPath: 'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/',
   projZone: 33,
   logLevel: 4, // 0 off, 1 error, 2 waring, 3 info, 4 debug
   debug: true,
