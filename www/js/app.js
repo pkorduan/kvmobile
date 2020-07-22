@@ -66,6 +66,9 @@ kvm = {
     kvm.log('initialisiere Statusfilter', 3);
     this.initStatusFilter();
 
+    kvm.log('initLocalBackupPath', 3);
+    this.initLocalBackupPath();
+
     if (this.store.getItem('activeStelleId')) {
       var activeStelleId = this.store.getItem('activeStelleId'),
           activeStelleSettings = this.store.getItem('stelleSettings_' + activeStelleId),
@@ -177,7 +180,7 @@ kvm = {
         outsideMapBoundsMsg: "Sie sind außerhalb des darstellbaren Bereiches der Karte."
       }
     }));
-    L.control.layers(baseMaps).addTo(map);
+    kvm.controls.layers = L.control.layers(baseMaps).addTo(map);
 /*
     map.pm.addControls({
       position: 'topright',
@@ -205,6 +208,15 @@ kvm = {
     if (statusFilter) {
       $('#statusFilterSelect').val(statusFilter);
     }
+  },
+
+  initLocalBackupPath: function() {
+    var localBackupPath;
+    if (!(localBackupPath = kvm.store.getItem('localBackupPath'))) {
+      localBackupPath = config.localBackupPath;
+      kvm.store.setItem('localBackupPath', localBackupPath);
+    }
+    $('#localBackupPath').val(localBackupPath);
   },
 
   initMapSettings: function() {
@@ -250,7 +262,7 @@ kvm = {
   },
 
   updateMarkerStyle: function(elm) {
-    console.log('new Color: %o', elm);
+    //console.log('new Color: %o', elm);
     var markerStyles = JSON.parse(kvm.store.getItem('markerStyles')),
         index = elm.id.slice(-1);
 
@@ -438,16 +450,23 @@ kvm = {
       }
     );
 
+    $('localBackupPath').on(
+      'change',
+      function() {
+        kvm.store.setItem('localBackupPath', this.val());
+      }
+    );
+
     $('#saveDatabaseButton').on(
       'click',
       function() {
         navigator.notification.prompt(
-          'Geben Sie einen Namen für die Sicherungsdatei an. Die Datenbank wird im Internen Speicher im Verzeichnis ' + config.localBackupPath + ' mit der Dateiendung .db gespeichert.',
+          'Geben Sie einen Namen für die Sicherungsdatei an. Die Datenbank wird im Internen Speicher im Verzeichnis ' + kvm.store.getItem('localBackupPath') + ' mit der Dateiendung .db gespeichert.',
           function(arg) {
             kvm.controller.files.copyFile(
               'file:///data/user/0/de.gdiservice.kvmobile/databases/',
               'kvmobile.db',
-              config.localBackupPath,
+              kvm.store.getItem('localBackupPath'),
               arg.input1 + '.db'
             );
           },
@@ -835,6 +854,19 @@ kvm = {
       }
     );
 
+    $('#fillOpacitySlider').on(
+      'input',
+      function() {
+        var newOpacity = this.value / 10,
+            markerStyles = JSON.parse(kvm.store.getItem('markerStyles'));
+
+        //console.log('New fillOpacity: ', newOpacity);
+        $('#fillOpacitySpan').html(newOpacity);
+        for (var index in markerStyles) { markerStyles[index].fillOpacity = newOpacity; }
+        kvm.store.setItem('markerStyles', JSON.stringify(markerStyles));
+      }
+    );
+
   },
 
   bindFeatureItemClickEvents: function() {
@@ -891,6 +923,7 @@ kvm = {
       'click',
       function(evt) {
         var layer = kvm.activeLayer;
+        $('#sperr_div_content').html('');
 
         if ($('.sync-layer-button').hasClass('inactive-button')) {
           kvm.msg('Keine Internetverbindung! Kann Layer jetzt nicht synchronisieren.');

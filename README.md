@@ -13,6 +13,9 @@ http://kvwmap.de
 	* Layerfunktionen mit Beschriftung und toggle
 	* Löschfunktion auf Client korrigiert
 	* Monat im Timestamp auf Client korrigiert
+	* Speicherpfad für Backups lässt sich einstellen
+	* Änderungsmöglichkeit für Transparenz der MarkerSymbole
+	* Featurelayer zum Layercontrol hinzugefügt um ihn ein- und ausschalten zu können
 ## 1.5.3
 	* Änder- und speicherbare Karteneinstellungen, Ausdehnung, min-, maxzoom, sowie Startposition und Startzoom
 	* Bug beim Speichern von Bildern behoben

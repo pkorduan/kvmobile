@@ -144,7 +144,7 @@ function Stelle(settings = {}) {
     url += file +
       'go=mobile_get_stellen' + '&' +
       'login_name=' + this.get('login_name') + '&' +
-      'passwort=' + this.get('passwort');
+      'passwort=' + escape(this.get('passwort'));
     return url;
   };
 

@@ -1068,47 +1068,6 @@ function Layer(stelle, settings = {}) {
     );
     kvm.log('Marker gezeichnet', 4);
     this.layerGroup.addTo(kvm.map);
-/*
-    if (this.settings['geometry_type'] == 'Point') {
-      if (this.geometryLayer) {
-        this.geometryLayer.clearLayers();
-      }
-      this.geometryLayer = L.markerClusterGroup({
-        maxClusterRadius: function(zoom) {
-          return (zoom == 18 ? 5 : 50)
-        }
-      });
-      kvm.log('Clustergruppe erzeugt.', 3);
-    }
-
-    $.each(
-      this.features,
-      (function (key, feature) {
-        var geom = feature.getGeom();
-        kvm.log('layer.drawFeature: add feature in map with geom: ' + JSON.stringify(geom), 3);
-
-        if (geom) {
-          switch (this.settings['geometry_type']) {
-            case 'LineString': {
-              feature.geometry = L.polyline(geom, {icon: this.getIcon()}).bindPopup(this.getPopup(feature));
-            } break;
-            case 'Polygon' : {
-              feature.geometry = L.polygon(geom, {icon: this.getIcon()}).bindPopup(this.getPopup(feature));
-            } break;
-            default: {
-              console.log('create feature geom for uuid: %s', feature.get('uuid'));
-              feature.geometry = L.marker(geom, {icon: this.getIcon()}).bindPopup(this.getPopup(feature));
-            }
-          }
-          //kvm.log('Füge Marker zur Clustergruppe hinzu...', 3, true);
-          this.geometryLayer.addLayer(feature.geometry);
-          //kvm.log('Marker hinzugefügt.', 3, true);
-        }
-      }).bind(this)
-    );
-    kvm.log('Füge Markercluster zur Karte hinzu...', 3, true);
-    kvm.map.addLayer(this.geometryLayer);
-*/
     kvm.log('layerGroup zur Karte hinzugefügt.', 4)
   };
 
@@ -1984,6 +1943,8 @@ function Layer(stelle, settings = {}) {
     if (parseInt(this.get('privileg')) > 0) {
       $('#newFeatureButton').show();
     }
+    kvm.controls.layers.removeLayer(this.layerGroup);
+    kvm.controls.layers.addOverlay(this.layerGroup, this.get('alias'));
   };
 
   this.createLayerFilterForm = function() {

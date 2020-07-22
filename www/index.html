@@ -144,6 +144,11 @@
     </div>
     <hr>
 
+    <h2>Farben</h2>
+    Symboltransparenz : <span id="fillOpacitySpan">0.8</span><br>
+    <input type="range" class="camera-options-slider" id="fillOpacitySlider" name="fillOpacity" min="0" max="10" value="8"><i class="fa fa-info" aria-hidden="true" onclick="kvm.msg('0 ist ganz durchsichtig, 1 ohne Transparenz. Wirkt sich erst nach dem neu Laden der Datensätze z.B. durch Filterung aus. Dazu einmal bei Filter auf Anwenden klicken.')" style="margin-left: 5px"></i>
+    <hr>
+
     <h2>Startposition neuer Objekte</h2>
     <div id="newPosDiv">
       <select id="newPosSelect">
@@ -155,7 +160,7 @@
 
     <h2>Bildaufnahme</h2>
     <div id="cameraOptionsDiv">
-      Bildqualität: <span id="cameraOptionsQuality">25</span> % <input id="cameraOptionsQualitySlider" type="range" min="10" max="100" value="25" class="camera-options-slider"><i class="fa fa-info" aria-hidden="true" onclick="alert('Verringert die Größe der aufgenommenen Bilddateien auf die angegebenen % der in der Kamera eingestellten Größe.')" style="margin-left: 5px"></i><br>
+      Bildqualität: <span id="cameraOptionsQuality">25</span> % <input id="cameraOptionsQualitySlider" type="range" min="10" max="100" value="25" class="camera-options-slider"><i class="fa fa-info" aria-hidden="true" onclick="kvm.msg('Verringert die Größe der aufgenommenen Bilddateien auf die angegebenen % der in der Kamera eingestellten Größe.')" style="margin-left: 5px"></i><br>
       <input id="cameraOptionsAllowEdit" type="checkbox" checked> Editieren erlauben<br>
       <input id="cameraOptionsCorrectOrientation" type="checkbox" checked> Bildrichtung anpassen<br>
       <input id="cameraOptionsSaveToPhotoAlbum" type="checkbox" checked> Auch im Fotoalbum speichern
@@ -315,6 +320,8 @@
     </button>
     <div id="showDeltasDiv" style="display: none;">
     </div>
+    <b>Backup-Speicherpfad:</b><br>
+    <input id="localBackupPath" type="text"><br>
     <button id="saveDatabaseButton" class="settings-button">
       <i class="fa fa-database" aria-hidden="true"></i>
       <i class="fa fa-check" aria-hidden="true"></i> Sichere Datenbank
