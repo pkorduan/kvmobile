@@ -1,6 +1,5 @@
 function Layer(stelle, settings = {}) {
   kvm.log('Erzeuge Layerobjekt', 3);
-  kvm.log('Layersettings: ' + JSON.stringify(settings), 4);
   var layer_ = this;
   this.stelle = stelle;
   this.settings = (typeof settings == 'string' ? $.parseJSON(settings) : settings);
@@ -99,6 +98,13 @@ function Layer(stelle, settings = {}) {
       filter.push($('#statusFilterSelect').val());
     }
 
+    if ($('#historyFilter').is(':checked')) {
+      filter.push('endet IS NOT NULL');
+    }
+    else {
+      filter.push('endet IS NULL');
+    }
+
     sql = "\
       SELECT\
         " + this.getSelectExpressions().join(', ') + "\
@@ -171,14 +177,7 @@ function Layer(stelle, settings = {}) {
   this.writeData = function(items) {
     kvm.log('Schreibe die empfangenen Daten in die lokale Datebank...', 3, true);
     var tableName = this.get('schema_name') + '_' + this.get('table_name'),
-        keys = $.map(
-          this.attributes.filter(function(attr) {
-            return attr.get('saveable') == '1';
-          }),
-          function(attr) {
-            return attr.get('name');
-          }
-        ).join(', '),
+        keys = this.getTableColumns().join(', '),
         values = '(' +
           $.map(
             items,
@@ -253,12 +252,8 @@ function Layer(stelle, settings = {}) {
   this.createTable = function() {
     kvm.db.transaction(
       (function(tx) {
-        var tableName = this.get('schema_name') + '_' + this.get('table_name'),
-            tableColumnDefinitions = this.getTableColumnDefinitions(),
-            sql = 'CREATE TABLE IF NOT EXISTS ' + tableName + ' (' + tableColumnDefinitions.join(', ') + ')';
-
+        var sql = this.getCreateTableSql();
         kvm.log('Erzeuge Tabelle mit sql: ' + sql, 3);
-
         //create table
         tx.executeSql(sql, [],
           (function(tx, res) {
@@ -312,10 +307,7 @@ function Layer(stelle, settings = {}) {
         tx.executeSql(sql, [],
           (function(tx, res) {
             kvm.log('Tabelle ' + this.get('schema_name') + '_' + this.get('table_name')  + ' erfolgreich gelöscht.', 3);
-            var tableName = this.get('schema_name') + '_' + this.get('table_name'),
-                tableColumnDefinitions = this.getTableColumnDefinitions(),
-                sql = 'CREATE TABLE IF NOT EXISTS ' + tableName + ' (' + tableColumnDefinitions.join(', ') + ')';
-
+            var sql = this.getCreateTableSql();
             kvm.log('Erzeuge Tabelle neu mit sql: ' + sql, 3);
             tx.executeSql(sql,[],
               (function(tx, res) {
@@ -361,6 +353,50 @@ function Layer(stelle, settings = {}) {
     return tableColumnDefinitions;
   };
 
+  this.getTableColumns = function() {
+    kvm.alog('getTableColumns', 4);
+    var tableColumns = $.map(
+      this.attributes.filter(function(attr) {
+        return attr.get('saveable') == '1';
+      }),
+      function(attr) {
+        return attr.get('name');
+      }
+    );
+    kvm.alog('return tableColumns: %o', tableColumns);
+    return tableColumns;
+  };
+
+  this.getColumnValues = function() {
+    kvm.alog('getColumnValues', '', 4)
+    var values = $.map(
+          this.attributes.filter(function(attr) {
+            return attr.get('saveable') == '1';
+          }),
+          function(attr) {
+            var type = attr.get('type'),
+                value = this.activeFeature.get(attr.get('name'));
+
+            v = attr.toSqliteValue(type, value);
+            return v;
+          }
+        );
+        kvm.alog('values: %o', values, 4);
+    return values;
+  };
+
+  /**
+  * Erzeugt und liefert das SQL zum Anlegen der Datentabelle
+  */
+  this.getCreateTableSql = function() {
+    kvm.log('getCreateTableSql', 4);
+    var tableName = this.get('schema_name') + '_' + this.get('table_name'),
+        tableColumnDefinitions = this.getTableColumnDefinitions(),
+        sql = 'CREATE TABLE IF NOT EXISTS ' + tableName + ' (' + tableColumnDefinitions.join(', ') + ', endet TEXT)';
+
+    return sql;
+  };
+
   /**
   * Function returns an array with column expressions for select statement
   * use attribute name, if difference from real_name use it in stead
@@ -404,7 +440,7 @@ function Layer(stelle, settings = {}) {
                 if (collection.features.length > 0) {
                   kvm.log('Anzahl empfangene Datensätze: ' + collection.features.length, 3);
                   var layer = kvm.activeLayer;
-									kvm.log('Version in Response: ' + collection.lastDeltaVersion, 3);
+                  kvm.log('Version in Response: ' + collection.lastDeltaVersion, 3);
                   layer.runningSyncVersion = collection.lastDeltaVersion;
                   kvm.log('Version der Daten: ' + layer.runningSyncVersion, 3);
                   layer.writeData(collection.features);
@@ -518,7 +554,7 @@ function Layer(stelle, settings = {}) {
             response.deltas,
             (function(index, value) {
               if (kvm.coalesce(value.sql) != null) {
-                kvm.log('Führe Änderungen vom Server auf dem Client aus: ' + value.sql);
+                kvm.alog('Führe Änderungen vom Server auf dem Client aus: ', value.sql, 4);
                 this.execSql(
                   this.pointToUnderlineName(value.sql, this.get('schema_name'), this.get('table_name')),
                   (this.execServerDeltaSuccessFunc).bind({ context: this, response: response})
@@ -533,7 +569,7 @@ function Layer(stelle, settings = {}) {
           this.saveToStore();
           kvm.msg('Synchronisierung erfolgreich abgeschlossen!');
           kvm.msg('Keine neuen Daten vom Server! Aktuelle Version: ' + this.get('syncVersion'));
-          this.deleteDeltas('sql');
+          this.clearDeltas('sql');
           this.readData($('#limit').val(), $('#offset').val());
         }
       }
@@ -666,7 +702,7 @@ function Layer(stelle, settings = {}) {
             kvm.log("Code = " + r.responseCode, 4);
             kvm.log("Response = " + r.response, 4);
             kvm.log("Sent = " + r.bytesSent, 4);
-            this.layer.deleteDeltas('img', this.img);
+            this.layer.clearDeltas('img', this.img);
         }).bind({
           layer : this,
           img : img
@@ -735,7 +771,7 @@ function Layer(stelle, settings = {}) {
         if (data.success) {
           kvm.log(data.msg);
           kvm.log('Bild: ' + this.img + ' erfolgreich gelöscht.', 4);
-          this.layer.deleteDeltas('img', this.img);
+          this.layer.clearDeltas('img', this.img);
         }
       },
       error: function (e) {
@@ -841,7 +877,7 @@ function Layer(stelle, settings = {}) {
       }
     );
 
-    this.deleteDeltas('all');
+    this.clearDeltas('all');
     this.features = [];
     $('#featurelistBody').html('');
     if (this.layerGroup) {
@@ -850,9 +886,9 @@ function Layer(stelle, settings = {}) {
     this.setEmpty();
   };
 
-  this.deleteDeltas = function(type, delta) {
+  this.clearDeltas = function(type, delta) {
     if (typeof delta === 'undefined') delta = '';
-    kvm.log('Layer.deleteDeltas', 4);
+    kvm.log('Layer.clearDeltas', 4);
     var sql = '\
       DELETE FROM ' + this.get('schema_name') + '_' + this.get('table_name') + '_deltas\
     ';
@@ -1101,43 +1137,6 @@ function Layer(stelle, settings = {}) {
     return html;
   };
 
-/*
-  Werden nicht mehr benötigt.
-  this.geteditablePopup = function(feature) {
-    var html;
-
-    html = feature.get(this.get('name_attribute')) + '\
-      <br>\
-      <a\
-        href="#"\
-        title="Geometrie speichern"\
-        onclick="kvm.activeLayer.saveGeometry(\'' + feature.get(this.get('id_attribute')) + '\')"\
-      ><span class="fa-stack fa-lg">\
-          <i class="fa fa-square fa-stack-2x" style="color: darkgreen;"></i>\
-          <i id="save_geometry_button" class="fa fa-check-square-o fa-stack-1x fa-inverse"></i>\
-        </span></i></a>\
-      <a\
-        class="popup-link"\
-        href="#"\
-        title="Sachdaten ändern"\
-        onclick="kvm.activeLayer.showFormular(\'' + feature.get(this.get('id_attribute')) + '\')"\
-      ><span class="fa-stack fa-lg">\
-          <i class="fa fa-square fa-stack-2x"></i>\
-          <i class="fa fa-bars fa-stack-1x fa-inverse"></i>\
-        </span></i></a>\
-      <a\
-        href="#"\
-        title="Änderung verwerfen"\
-        onclick="kvm.activeLayer.cancelEditGeometry(\'' + feature.get(this.get('id_attribute')) + '\')"\
-      ><span class="fa-stack fa-lg">\
-          <i class="fa fa-square fa-stack-2x" style="color: darkred;"></i>\
-          <i class="fa fa-ban fa-stack-1x fa-inverse"></i>\
-        </span></i></a>\
-    ';
-    return html;
-  };
-*/
-
   this.showDataView = function(featureId) {
     this.loadFeatureToView(this.features[featureId]);
     kvm.showItem('dataView');
@@ -1198,16 +1197,6 @@ function Layer(stelle, settings = {}) {
   * Erzeugt einen editable Marker mit einem Popup.
   * Damit kann der Nutzer den Marker so lange verschieben wie er möchte.
   */
-/* Dies gilt nicht mehr:
-  * Wenn er den Marker anklickt kommt das Popup des editable Markers mit folgenden Funktionen:
-  *   - Speichern: Speichert die neue Position mit der Funktion saveGeometry(feature_id)
-  *   - Sachdaten editieren: Wechselt in die Sachdatenanzeige mit der Funktion showFormular(feature_id)
-  *   - Abbrechen:
-  *     - Setzt die Geometrie im Formular auf den ursprünglichen Wert
-  *     - Löscht den editable Marker
-  *     - Bindet das Popup des Features erneut an den circleMarker
-  *     - ändert den Style zurück auf den Standardstyle des circleMarkers
-*/
   this.editGeometry = function(featureId) {
     console.log('editGeometry Id: %s', featureId);
     // Ermittelt die layer_id des circleMarkers des Features
@@ -1293,18 +1282,9 @@ function Layer(stelle, settings = {}) {
       kvm.showItem('map');
     }
   }
-  /*
-    featureId = '0fb17108-f06f-4af8-b658-442d30bac8a4';
-    layer = kvm.activeLayer;
-    feature = layer.features[featureId],
-    circleMarker = layer.layerGroup.getLayer(feature.markerId);
-    kvm.map.fitBounds(L.latLngBounds([circleMarker.getLatLng()]));
-  */
 
-  /*
-  * Das ist alles nicht nötig wenn die geänderte Geometrie per Trigger immer automatisch in das Form und das Featureobjekt geschrieben wird.
-  * Dann reicht der Klick auf den Save-Button, der der gleiche ist wie der im Form. Form und Map sind Quasi eins, nur mit zwei Seiten zwischen denen geblättert werden kann.
-  *
+  /**
+  * ToDo: Prüfen ob der Algorithmus so ist wie hier beschrieben und Doku anpassen
   * Sperrdiv Content Meldung setzen
   * Sperrdiv einblenden
   * Wartesymbol an Stelle des Speicherbutton anzeigen
@@ -1333,12 +1313,6 @@ function Layer(stelle, settings = {}) {
 
     $('#sperr_div_content').html('Aktualisiere die Geometrie');
     $('#sperr_div').show();
-    console.log('sperrdiv eingeschaltet');
-
-    /*
-    * Änderung der Geometrie speichern wie folgt:
-    * 
-    */
 
     console.log('setze neue geometry for feature: %o', feature.newGeom);
     //  - Die Änderung im Featureobjekt vorgenommen
@@ -1458,94 +1432,552 @@ function Layer(stelle, settings = {}) {
     return changes;
   };
 
-  /*
-  * create deltas for the active dataset related to the actions insert, update or delete
-  * create also deltas for image updates for all document attributes
+  /**
+  * This function runs the startFunc with the bound strategy as context
   */
-  this.createDeltas = function(action, changes) {
-    kvm.log('Erzeuge SQL für Änderung.', 3);
-    var delta;
+  this.runStrategy = function(startFunc) {
+    console.log('runStrategy with context: %o', this);
+    startFunc();
+  };
 
-    if (action == 'INSERT') {
-      delta = {
-        "type" : 'sql',
-        "change" : 'insert',
-        "delta" : '\
-          INSERT INTO ' + this.get('schema_name') + '_' + this.get('table_name') + '(' +
-            $.map(
-              changes,
-              function(change) {
-                return change.key;
-              }
-            ).join(', ') + ', \
-            ' + this.get('id_attribute') + '\
+  /**
+  * Function create a dataset in the local database and
+  * create the appropriated delta dataset in the deltas table
+  * @param array changes Data from the activeFeature for the new dataset
+  * @param function The callback function for success
+  */
+  this.runInsertStrategy = function() {
+    console.log('runInsertStrategy');
+    var strategy = {
+      context: this,
+      succFunc: 'backupDataset',
+      next: {
+        succFunc: 'createDataset',
+        next: {
+          succFunc: 'writeDelta',
+          next: {
+            succFunc: 'afterInsertDataset',
+            succMsg: 'Datensatz erfolgreich angelegt'
+          }
+        }
+      }
+    }
+//    console.log('runInsertStrategy uebergebe strategy: %s', JSON.stringify(strategy));
+
+    this.runStrategy((this[strategy.succFunc]).bind(strategy));
+    return true;
+  }; 
+
+  /**
+  * Function copy a dataset with endet = current date as a backup of activeFeature
+  * if not allready exists
+  * @param object strategy Object with context and information about following processes
+  */
+  this.backupDataset = function() {
+    console.log('backupDataset');
+    var layer = this.context,
+        table = layer.get('schema_name') + "_" + layer.get('table_name'),
+        tableColumns = layer.getTableColumns(),
+        id_attribute = layer.get('id_attribute'),
+        id = layer.activeFeature.get(id_attribute),
+        sql = "\
+          INSERT INTO " + table + "(" +
+            tableColumns.join(', ') + ",\
+            endet\
           )\
-          VALUES (' +
-            $.map(
-              changes,
-              function(change) {
-                if (change.newVal == null) {
-                  return 'null';
-                }
-                if (change.type == 'TEXT') {
-                  return "'" + change.newVal + "'";
-                }
-                else {
-                  return change.newVal;
-                }
-              }
-            ).join(', ') + ', \
-            \'' + this.activeFeature.get(this.get('id_attribute')) + '\'\
-          )\
-        '
-      };
-    };
-
-    if (action == 'UPDATE') {
-      delta = {
-        "type" : 'sql',
-        "change" : 'update',
-        "delta" : '\
-          UPDATE ' + this.get('schema_name') + '_' + this.get('table_name') + '\
-          SET ' +
-            $.map(
-              changes,
-              function(change) {
-                if (change.newVal == null)
-                  return change.key + " = null";
-                if (change.type == 'TEXT')
-                  return change.key + " = '" + change.newVal + "'";
-                else
-                  return change.key + " = " + change.newVal;
-              }
-            ).join(', ') + '\
+          SELECT " + tableColumns.join(', ') + ", '" + kvm.now() + "'\
+          FROM " + table + "\
           WHERE\
-            ' + this.get('id_attribute') + ' = \'' + this.activeFeature.get(this.get('id_attribute')) + '\'\
-        '
-      };
-    };
+            " + id_attribute + " = '" + id + "' AND\
+            (\
+              SELECT " + id_attribute + "\
+              FROM " + table + "\
+              WHERE\
+                " + id_attribute + " = '" + id + "' AND\
+                endet IS NOT NULL\
+            ) IS NULL\
+        ";
 
-    if (action == 'DELETE') {
-      delta = {
-        "type" : 'sql',
-        "change" : 'delete',
-        "delta" : '\
-          DELETE FROM ' + this.get('schema_name') + '_' + this.get('table_name') + '\
-          WHERE\
-            ' + this.get('id_attribute') + ' = \'' + this.activeFeature.get(this.get('id_attribute')) + '\'\
-        '
-      };
-      kvm.log('Löschung sql: ' + JSON.stringify(delta), 3);
-      this.writeDelta(delta, this.execClientDeltaDeleteSuccessFunc, this.execClientDeltaErrorFunc);
+    console.log('Backup vorhandenen Datensatz mit sql: %o', sql);
+    this.next.context = layer;
+    kvm.db.executeSql(
+      sql,
+      [],
+      (layer[this.next.succFunc]).bind(this.next),
+      function(err) {
+        kvm.msg('Fehler beim Ausführen von ' + sql + ' in backupDataset! Fehler: ' + err.code + '\nMeldung: ' + err.message, 'Fehler');
+      }
+    );
+  };
+
+  this.createDataset = function(rs) {
+    console.log('insertDataset rs: %o', rs);
+    var layer = this.context,
+        changes = layer.collectChanges('insert'),
+        delta = layer.getInsertDelta(changes);
+
+    this.next.context = layer;
+    this.next.delta = delta;
+    kvm.db.executeSql(
+      delta.delta,
+      [],
+      (layer[this.next.succFunc]).bind(this.next),
+      function(err) {
+        kvm.msg('Fehler beim Anlegen des Datensatzes! Fehler: ' + err.code + '\nMeldung: ' + err.message, 'Fehler');
+      }
+    );
+  };
+
+  /*
+  * Function, die nach dem erfolgreichen Eintragen eines INSERT - Deltas Entrages ausgeführt werden soll
+  */
+  this.afterInsertDataset = function(rs) {
+    console.log('afterInsertDataset');
+    var layer = this.context;
+
+    console.log('Neuen Datensatz erfolgreich angelegt.');
+    layer.addActiveFeature();
+    layer.activeFeature.options.new = false;
+    layer.activeFeature.addListElement();
+
+    console.log('Rufe saveGeometry auf mit activeFeature: %o', kvm.activeLayer.activeFeature);
+    layer.saveGeometry(kvm.activeLayer.activeFeature);
+
+    console.log('Wechsel die Ansicht zur Feature Liste oder zur Karte.');
+    kvm.showItem($('#formular').is(':visible') ? 'featurelist' : 'map');
+
+    console.log('Blende Sperrdiv aus');
+    $('#sperr_div').hide();
+
+    $('.popup-aendern-link').show();
+    saveButton.toggleClass('active-button inactive-button');
+    kvm.controller.mapper.clearWatch();
+
+    kvm.msg(this.succMsg, 'Hinweis');
+  };
+
+  /**
+  * Function make an backup of the dataset if not exists allready,
+  * update it in the local database and
+  * create the appropriated delta dataset in the deltas table
+  * @param array changes Data from the activeFeature for the update
+  * @param function The callback function for success
+  */
+  this.runUpdateStrategy = function() {
+    console.log('runUpdateStrategy');
+    var strategy = {
+      context: this,
+      succFunc: 'backupDataset',
+      next: {
+        succFunc: 'updateDataset',
+        next: {
+          succFunc: 'writeDelta',
+          next: {
+            succFunc: 'afterUpdateDataset'
+          }
+        }
+      }
+    }
+//    console.log('runUpdateStrategy uebergebe strategy: %s', JSON.stringify(strategy));
+
+    this.runStrategy((this[strategy.succFunc]).bind(strategy));
+    return true;
+  };
+
+  this.updateDataset = function(rs) {
+    console.log('updateDataset rs: %o', rs);
+    var layer = this.context,
+        changes = layer.collectChanges('update'),
+        imgChanges = changes.filter(
+          function(change) {
+            return ($.inArray(change.key, layer.getDokumentAttributeNames()) > -1);
+          }
+        ),
+        delta = layer.getUpdateDelta(changes),
+        sql = delta.delta + " AND endet IS NULL";
+
+    if (changes.length == 0) {
+      $('#sperr_div').hide();
+      kvm.msg('Keine Änderungen! Zum Abbrechen verwenden Sie den Button neben Speichen.');
     }
     else {
-      kvm.log('Änderung sql: ' + JSON.stringify(delta), 3);
-      this.writeDelta(delta, this.execClientDeltaSuccessFunc, this.execClientDeltaErrorFunc);
+      if (imgChanges.length == 0) {
+        console.log('no imgChanges');
+      }
+      else {
+        layer.createImgDeltas(imgChanges);
+      }
+
+      this.next.context = layer;
+      this.next.delta = delta;
+      kvm.db.executeSql(
+        sql,
+        [],
+        (layer[this.next.succFunc]).bind(this.next),
+        function(err) {
+          kvm.msg('Fehler beim Aktualisieren des Datensatzes! Fehler: ' + err.code + '\nMeldung: ' + err.message, 'Fehler');
+        }
+      );
     }
   };
 
-  this.createImgDeltas = function(action, changes) {
-    kvm.log('Layer.createImgDeltas action: ' + action + ' changes: ' + JSON.stringify(changes), 4);
+  /*
+  * Function, die nach dem erfolgreichen Eintragen eines UPDATE - Deltas Entrages ausgeführt werden soll
+  */
+  this.afterUpdateDataset = function(rs) {
+    console.log('afterUpdateDataset');
+    var layer = this.context;
+
+    console.log('Datensatz erfolgreich gesichert und aktuellen geändert.')
+    layer.activeFeature.updateListElement();
+
+    console.log('Rufe saveGeometry auf mit activeFeature: %o', layer.activeFeature);
+    layer.saveGeometry(kvm.activeLayer.activeFeature);
+
+    console.log('Wechsel die Ansicht zur Feature Liste oder zur Karte.');
+    kvm.showItem($('#formular').is(':visible') ? 'featurelist' : 'map');
+
+    $('.popup-aendern-link').show();
+    $('#saveFeatureButton').toggleClass('active-button inactive-button');
+    kvm.controller.mapper.clearWatch();
+
+    console.log('Blende Sperrdiv aus');
+    // Sperrdiv entfernen
+    $('#sperr_div').hide();
+  };
+
+  /**
+  * Function make an backup of the dataset if not exists allready,
+  * delete it in the local database and
+  * create and remove the appropriated delta datasets in the deltas table
+  * @param function The callback function for success
+  */
+  this.runDeleteStrategy = function() {
+    console.log('runDeleteStrategy');
+    var strategy = {
+      context: this,
+      succFunc: 'backupDataset',
+      next: {
+        succFunc: 'deleteDataset',
+        next: {
+          succFunc: 'writeDelta',
+          next: {
+            succFunc: 'deleteDeltas',
+            other: 'insert',
+            next : {
+              succFunc: 'afterDeleteDataset',
+              succMsg: 'Datensatz erfolgreich gelöscht! Er kann wieder hergestellt werden.'
+            }
+          }
+        }
+      }
+    }
+//    console.log('runDeleteStrategy uebergebe strategy: %s', JSON.stringify(strategy));
+
+    this.runStrategy((this[strategy.succFunc]).bind(strategy));
+    return true;
+  };
+
+  this.deleteDataset = function(rs) {
+    console.log('deleteDataset');
+    var layer = this.context,
+        delta = layer.getDeleteDelta(),
+        sql = delta.delta + " AND endet IS NULL";
+
+    this.next.context = layer;
+    this.next.delta = delta;
+    console.log('SQL zum Löschen des Datensatzes: %s', sql);
+    console.log('Nächste Funktion nach Datenbankabfrage: %s', this.next.succFunc);
+    kvm.db.executeSql(
+      sql,
+      [],
+      (layer[this.next.succFunc]).bind(this.next),
+      function(err) {
+        kvm.msg('Fehler beim Löschen des Datensatzes!\nFehlercode: ' + err.code + '\nMeldung: ' + err.message, 'Fehler');
+      }
+    );
+  };
+
+  /**
+  * function called after writing a delete Statement into Client sqlite DB
+  * Do every thing to delete the feature, geometry, Layer and listelement
+  *
+  */
+  this.afterDeleteDataset = function(rs) {
+    console.log('afterDeleteDataset');
+    var layer = this.context,
+        featureId = layer.activeFeature.id,
+        markerId = layer.activeFeature.markerId;
+
+    console.log('Datensatz erfolgreich gesichert und aktueller gelöscht.')
+
+    console.log('Remove Editable Geometrie');
+    kvm.controller.mapper.removeEditable(layer.activeFeature);
+
+    console.log('Löscht Layer mit markerId: %s aus Layergroup', layer.activeFeature.markerId);
+    layer.layerGroup.removeLayer(markerId);
+
+    console.log('Löscht Feature aus FeatureList : %o', layer.activeFeature);
+    $('#' + layer.activeFeature.id).remove();
+
+    console.log('Wechsel die Ansicht zur Featurelist.');
+    kvm.showItem((!$('#map').is(':visible')) ? 'featurelist' : 'map');
+    console.log('Scroll die FeatureListe nach ganz oben');
+
+    console.log('Lösche Feature aus features Array des activeLayer');
+    delete layer.features[featureId];
+
+    console.log('Lösche activeFeature')
+    delete layer.activeFeature;
+
+    console.log('Blende Sperrdiv aus');
+    // Sperrdiv entfernen
+    $('#sperr_div').hide();
+    kvm.msg(this.succMsg, 'Hinweis');
+  };
+
+  /**
+  * write delta dataset to database expect:
+  * for delete delta if insert delta exists or
+  * for insert delta if delte delta exists
+  */
+  this.writeDelta = function(rs) {
+    console.log('writeDelta');
+    console.log('layer: %o', this.context);
+    console.log('delta: %o', this.delta);
+    var layer = this.context,
+        delta = this.delta,
+        sql = "\
+          INSERT INTO " + layer.get('schema_name') + '_' + layer.get('table_name') + "_deltas (\
+            type,\
+            change,\
+            delta,\
+            created_at\
+          )\
+          SELECT\
+            '" + delta.type + "' AS type,\
+            '" + delta.change + "' AS change,\
+            '" + layer.underlineToPointName(delta.delta, layer.get('schema_name'), layer.get('table_name')).replace(/\'/g, '\'\'') + "' AS delta,\
+            '" + kvm.now() + "' AS created_at\
+          WHERE\
+            (\
+              SELECT\
+                count(*)\
+              FROM\
+                " + layer.get('schema_name') + '_' + layer.get('table_name') + "_deltas\
+              WHERE\
+                delta LIKE '%" + layer.activeFeature.get(layer.get('id_attribute')) + "%' AND\
+                type = 'sql' AND\
+                (\
+                  (change = 'insert' AND '" + delta.change + "' = 'delete') OR\
+                  (change = 'delete' AND '" + delta.change + "' = 'insert')\
+                )\
+             ) = 0\
+        ";
+
+    this.next.context = layer;
+    console.log('SQL zum Schreiben des Deltas: %s', sql);
+    console.log('Funktion nach erfolgreicher Datenbankabfrag: %s', this.next.succFunc);
+    kvm.db.executeSql(
+      sql,
+      [],
+      (layer[this.next.succFunc]).bind(this.next),
+      function(err) {
+        kvm.msg('Fehler beim Schreiben der Deltas! Fehler: ' + err.code + '\nMeldung: ' + err.message, 'Fehler');
+      }
+    );
+  };
+
+  this.runRestoreStrategy = function() {
+    console.log('runRestoreStrategy');
+    var strategy = {
+      context: this,
+      succFunc: 'deleteDataset',
+      next: {
+        succFunc: 'restoreDataset',
+        next: {
+          succFunc: 'writeDelta',
+          next: {
+            succFunc: 'deleteDeltas',
+            next : {
+              succFunc: 'afterDeleteDataset',
+              succMsg: 'Datensatz erfolgreich wiederhergestellt! Wechseln Sie den Filter um ihn zu sehen.'
+            }
+          }
+        }
+      }
+    }
+
+    this.runStrategy((this[strategy.succFunc]).bind(strategy));
+    return true;
+  };
+
+  this.restoreDataset = function(rs) {
+    console.log('restoreDataset');
+    console.log('context %o', this.context);
+    console.log('attr gefiltert: %o', );
+    var layer = this.context,
+        table = layer.get('schema_name') + '_' + layer.get('table_name'),
+        id_attribute = layer.get('id_attribute'),
+        id = layer.activeFeature.get(id_attribute),
+        sql = "\
+          UPDATE " + table + "\
+          SET endet = NULL\
+          WHERE\
+            " + id_attribute + " = '" + id + "' AND\
+            endet IS NOT NULL\
+        ",
+        changes = $.map(
+          layer.attributes.filter(function(attr) {
+            return attr.get('saveable') == '1';
+          }),
+          function(attr) {
+            var key = attr.get('name');
+            return {
+              'key' : key,
+              'oldVal' : null,
+              'newVal' : layer.activeFeature.get(key),
+              'type' : attr.getSqliteType()
+            }
+          }
+        ),
+        delta = layer.getInsertDelta(changes);
+
+    this.next.context = layer;
+    this.next.delta = delta;
+    console.log('SQL zum Wiederherstellen des Datensatzes: %s', sql);
+    console.log('Nächste Funktion nach Datenbankabfrage: %s', this.next.succFunc);
+    kvm.db.executeSql(
+      sql,
+      [],
+      (layer[this.next.succFunc]).bind(this.next),
+      function(err) {
+        kvm.msg('Fehler beim Wiederherstellen des Datensatzes! Fehler: ' + err.code + '\nMeldung: ' + err.message, 'Fehler');
+      }
+    );
+  };
+
+  /**
+  * function return insert delta based on changes of a dataset
+  * @param array changes
+  * @return object The insert delta object.
+  */
+  this.getInsertDelta = function(changes) {
+    kvm.log('Erzeuge SQL für INSERT Delta', 3);
+    var delta = {
+          "type" : 'sql',
+          "change" : 'insert',
+          "delta" : '\
+            INSERT INTO ' + this.get('schema_name') + '_' + this.get('table_name') + '(' +
+              $.map(
+                changes,
+                function(change) {
+                  return change.key;
+                }
+              ).join(', ') + ', \
+              ' + this.get('id_attribute') + '\
+            )\
+            VALUES (' +
+              $.map(
+                changes,
+                function(change) {
+                  if (change.newVal == null) {
+                    return 'null';
+                  }
+                  if (change.type == 'TEXT') {
+                    return "'" + change.newVal + "'";
+                  }
+                  else {
+                    return change.newVal;
+                  }
+                }
+              ).join(', ') + ', \
+              \'' + this.activeFeature.get(this.get('id_attribute')) + '\'\
+            )\
+          '
+        };
+
+    kvm.log('INSERT Delta: ' + JSON.stringify(delta), 3);   
+    return delta;
+  };
+
+  /**
+  * Create update delta
+  */
+  this.getUpdateDelta = function(changes) {
+    kvm.log('Erzeuge SQL für UPDATE Delta', 3);
+    var delta = {
+      "type" : 'sql',
+      "change" : 'update',
+      "delta" : '\
+        UPDATE ' + this.get('schema_name') + '_' + this.get('table_name') + '\
+        SET ' +
+          $.map(
+            changes,
+            function(change) {
+              if (change.newVal == null)
+                return change.key + " = null";
+              if (change.type == 'TEXT')
+                return change.key + " = '" + change.newVal + "'";
+              else
+                return change.key + " = " + change.newVal;
+            }
+          ).join(', ') + '\
+        WHERE\
+          ' + this.get('id_attribute') + ' = \'' + this.activeFeature.get(this.get('id_attribute')) + '\'\
+      '
+    };
+    kvm.log('UPDATE Delta sql: ' + JSON.stringify(delta), 3);
+    return delta;
+  }
+
+  /**
+  * Create delete delta
+  */
+  this.getDeleteDelta = function(changes) {
+    kvm.log('Erzeuge SQL für DELETE Delta', 3)
+    var delta = {
+      "type" : 'sql',
+      "change" : 'delete',
+      "delta" : '\
+        DELETE FROM ' + this.get('schema_name') + '_' + this.get('table_name') + '\
+        WHERE\
+          ' + this.get('id_attribute') + ' = \'' + this.activeFeature.get(this.get('id_attribute')) + '\'\
+      '
+    };
+    kvm.log('DELETE Delta sql: ' + JSON.stringify(delta), 3);
+    return delta;
+  }
+
+  /**
+  * Delete all sql update deltas from activeFeature and other (insert or delete) deltas
+  * @param string this.other Delete also this other deltas
+  */
+  this.deleteDeltas = function(rs) {
+    console.log('deleteDeltas');
+    var layer = this.context,
+        sql = '';
+
+    this.next.context = layer;
+    sql = "\
+      DELETE FROM " + layer.get('schema_name') + "_" + layer.get('table_name') + "_deltas\
+      WHERE\
+        type = 'sql' AND\
+        (change = 'update' OR change = '" + this.other + "') AND\
+        delta LIKE '%" + layer.activeFeature.get(layer.get('id_attribute')) + "%'\
+    ";
+    kvm.db.executeSql(
+      sql,
+      [],
+      (layer[this.next.succFunc]).bind(this.next),
+      function(err) {
+        kvm.msg('Fehler beim Löschen der Deltas!\nFehlercode: ' + err.code + '\nMeldung: ' + err.message, 'Fehler');
+      }
+    );
+  };
+
+  this.createImgDeltas = function(changes) {
+    kvm.log('Layer.createImgDeltas with changes: ' + JSON.stringify(changes), 4);
     $.each(
       changes,
       (function(index, change) {
@@ -1644,8 +2076,7 @@ function Layer(stelle, settings = {}) {
   *
   */
   this.execSql = function(sql, successFunc) {
-//    console.log('Exec Delta: %s', sql);
-    kvm.log('Layer.execSql: ' + sql, 4);
+    kvm.log('Layer.execSql: ' + sql, 5);
     kvm.db.executeSql(
       sql,
       [],
@@ -1664,13 +2095,14 @@ function Layer(stelle, settings = {}) {
   };
 
   this.execServerDeltaSuccessFunc = function(rs) {
+    kvm.log('execServerDeltaSuccessFunc');
     this.context.numExecutedDeltas++;
     if (this.context.numExecutedDeltas == this.context.numReturnedDeltas) {
       this.context.set('syncVersion', parseInt(this.response.syncData[this.response.syncData.length - 1].push_to_version));
       this.context.saveToStore();
       kvm.msg('Synchronisierung erfolgreich abgeschlossen!');
-      kvm.msg('Aktuelle Version: ' + this.context.get('syncVersion'));
-      this.context.deleteDeltas('sql');
+      //kvm.msg('Aktuelle Version: ' + this.context.get('syncVersion'));
+      this.context.clearDeltas('sql');
       this.context.readData($('#limit').val(), $('#offset').val());
     }
     else {
@@ -1678,107 +2110,12 @@ function Layer(stelle, settings = {}) {
     }
   };
 
-  this.execClientDeltaSuccessFunc = function(rs) {
-    console.log('execClientDeltaSuccessFunc');
-    if (kvm.activeLayer.activeFeature.options.new) {
-      kvm.activeLayer.addActiveFeature();
-      kvm.activeLayer.activeFeature.options.new = false;
-      kvm.activeLayer.activeFeature.addListElement();
-    }
-    else {
-      kvm.activeLayer.activeFeature.updateListElement();
-    }
-
-    console.log('Rufe saveGeometry auf mit activeFeature: %o', kvm.activeLayer.activeFeature);
-    kvm.activeLayer.saveGeometry(kvm.activeLayer.activeFeature);
-
-    console.log('Wechsel die Ansicht zur Feature Liste oder zur Karte.');
-    kvm.showItem($('#formular').is(':visible') ? 'featurelist' : 'map');
-
-    console.log('Blende Sperrdiv aus');
-    // Sperrdiv entfernen
-    $('#sperr_div').hide();
-  };
-
-  /**
-  * function called after writing a delete Statement into Client sqlite DB
-  * Do every thing to delete the feature, geometry, Layer and listelement
-  *
-  */
-  this.execClientDeltaDeleteSuccessFunc = function(rs) {
-    var featureId = kvm.activeLayer.activeFeature.id,
-        markerId = kvm.activeLayer.activeFeature.markerId;
-
-    console.log('execClientDeltaDeleteSuccessFunc');
-
-    console.log('Remove Editable Geometrie');
-    kvm.controller.mapper.removeEditable(kvm.activeLayer.activeFeature);
-
-    console.log('Löscht Layer mit markerId: %s aus Layergroup', kvm.activeLayer.activeFeature.markerId);
-    kvm.activeLayer.layerGroup.removeLayer(markerId);
-
-    console.log('Löscht Feature aus FeatureList : %o', kvm.activeLayer.activeFeature);
-    $('#' + kvm.activeLayer.activeFeature.id).remove()
-
-    console.log('Wechsel die Ansicht zur Featurelist.');
-    kvm.showItem($('#formular').is(':visible') ? 'featurelist' : 'map');
-    console.log('Scroll die FeatureListe nach ganz oben');
-
-    console.log('Lösche Feature aus features Array des activeLayer');
-    delete kvm.activeLayer.features[featureId];
-
-    console.log('Lösche activeFeature')
-    delete kvm.activeLayer.activeFeature;
-
-    console.log('Blende Sperrdiv aus');
-    // Sperrdiv entfernen
-    $('#sperr_div').hide();
-  };
-
-  this.execClientDeltaErrorFunc = function(err) {
-    kvm.msg('Fehler bei der Speicherung der Änderungsdaten in delta-Tabelle!\nFehlercode: ' + err.code + '\nMeldung: ' + err.message, 'Fehler');
-  };
-
-  /*
-  * Schreibe Deltas mit . Trenner zwischen Schema und Tablle in die sqlite deltas Tabelle und
-  * führe diese nach Erfolg in sqlite aus.
-  */
-  this.writeDelta = function(delta, sucFunc, errFunc) {
-    kvm.log('Layer.writeDelta', 4);
-    var sql = "\
-      INSERT INTO " + this.get('schema_name') + '_' + this.get('table_name') + "_deltas (\
-        type,\
-        change,\
-        delta,\
-        created_at\
-      )\
-      VALUES (\
-        '" + delta.type + "',\
-        '" + delta.change + "',\
-        '" + this.underlineToPointName(delta.delta, this.get('schema_name'), this.get('table_name')).replace(/\'/g, '\'\'') + "',\
-        '" + (new Date()).toISOString().replace('Z', '') + "'\
-      )\
-    ";
-
-    kvm.log('Schreibe Delta in Tabelle ' + this.get('schema_name') + '_' + this.get('table_name') + '_deltas sql: ' + sql, 3);
-
-    kvm.db.executeSql(
-      sql,
-      [],
-      function(rs) {
-        kvm.log('Layer.writeDelta Speicherung erfolgreich.', 4);
-        if (delta.type == 'sql') {
-          kvm.db.executeSql(
-            delta.delta,
-            [],
-            sucFunc,
-            errFunc
-          );
-        }
-      },
-      errFunc
-    );
-  };
+  // ToDo getInsertDelta schreiben und ggf. auch in createDelta verwenden.
+  // Prüfen ob values auch so wie in collectChanges erzeugt werden können oder dort wieder verwendet werden kann.
+  // was wenn ein changes Array erzeugt wird und damit writeDelta aufgerufen wird bei einem restore Dataset. Muss da nicht
+  // immer ein neuer Datensatz her? Also statt endet auf null setzen immer einen neuen erzeugen und dafür den mit endet = Datum immer löschen.
+  // prüfen wie sich die ganze Geschichte auf img auswirkt.
+  // prüfen wie das mit dem user_name ist, der darf nach einem Rückgängig machen nicht mit drin sein, wenn vorher keiner drin stand.
 
   this.appendToList = function() {
     kvm.log('Füge Layer ' + this.get('title') + ' zur Layerliste hinzu.', 3);
@@ -1814,12 +2151,12 @@ function Layer(stelle, settings = {}) {
         <div class="layer-functions-div">\
           <button id="clearLayerButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="settings-button clear-layer-button layer-function-button">\
             <i id="clearLayerIcon_' + this.getGlobalId() + '" class="fa fa-ban" aria-hidden="true"></i>\
-          </button> Mobile Daten löschen\
+          </button> Lokale Daten löschen\
         </div>\
         <div class="layer-functions-div">\
           <button id="reloadLayerButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="settings-button reload-layer-button layer-function-button">\
             <i id="reloadLayerIcon_' + this.getGlobalId() + '" class="fa fa-window-restore" aria-hidden="true"></i>\
-          </button> Layer neu Laden\
+          </button> Layer neu laden\
         </div>\
       </div>\
       <div style="clear: both"></div>';
@@ -1882,6 +2219,7 @@ function Layer(stelle, settings = {}) {
 
   this.saveToStore = function() {
     kvm.log('Speicher Settings für Layer: ' + this.settings.title, 3);
+    console.log('getlayerIds: %o', kvm.store.getItem('layerIds_' + this.stelle.get('id')));
     var layerIds = $.parseJSON(kvm.store.getItem('layerIds_' + this.stelle.get('id'))),
         settings = JSON.stringify(this.settings);
 

@@ -12,6 +12,20 @@ label: {
   display: inline-block;
 }
 
+.b-collapsed:before {
+  content: '\25BA\0020';
+  color: #263286
+}
+
+.b-expanded:before {
+  content: '\25F8\0020';
+  color: #263286;
+}
+
+.h2-div + div {
+  display: none;
+}
+
 .settings-label {
   width: 200px;
   margin-right: 5px;
@@ -43,7 +57,6 @@ label: {
   border: 1px solid gray;
   padding: 2px;
   margin: 2px;
-  cursor: pointer;
 }
 
 .layer-function-button {

@@ -8,6 +8,10 @@ https://github.com/srahn/kvwmap/
 http://kvwmap.de
 
 # Change log
+## 1.5.5
+	* Funktion zum Wiederherstellen von Datensätzen.
+	* Korrektur von Fehlern bei Synchronisierung.
+	* Auf- und Zuklappbare Abschnitte in den Einstellungen
 ## 1.5.4
 	* Berücksichtigung von zusammengesetzten Attributen, die auf dem Server als not saveable pseudoattribute definiert sind
 	* Layerfunktionen mit Beschriftung und toggle

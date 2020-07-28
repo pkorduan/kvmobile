@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
   <head>
-    <TITLE>kvmobile 1.5.4</TITLE>
+    <TITLE>kvmobile 1.5.5</TITLE>
     <META charset="UTF-8">
     <meta name="format-detection" content="telephone=no">
     <meta name="msapplication-tap-highlight" content="no">
@@ -99,6 +99,7 @@
         </a //-->
         <i id="newFeatureButton" class="fa fa-plus-square fa-2x menu-button" aria-hidden="true" style="display: none;"></i>
         <i id="editFeatureButton" class="fa fa-pencil fa-2x menu-button" aria-hidden="true" style="display: none;"></i>
+        <i id="restoreFeatureButton" class="fa fa-undo fa-2x menu-button" aria-hidden="true" style="display: none;"></i>
         <i id="deleteFeatureButton" class="fa fa-trash fa-2x menu-button" aria-hidden="true" style="display: none;"></i>
       </div>
     </div>
@@ -113,7 +114,7 @@
     Automatisches Öffnen von Formular, wenn in der Nähe von Haltestellen
     <hr>
 -->
-    <h2>Anzeigefilter</h2>
+    <div class="h2-div"><h2 class="b-collapsed">Anzeigefilter</h2></div>
     <div id="anzeigeFilterDiv">
       Status:
       <select id="statusFilterSelect" style="50%">
@@ -122,7 +123,9 @@
         <option value="status = 1">Ist schon geprüft</option>
         <option value="status = 2">Noch Nachfragen nötig</option>
       </select>
-      Anzahl der geladenen Datensätze: <input type="number" id="limit" value="1000" size="5"/> starte bei: <input type="number" id="offset" value="0" size="5"/><br>
+      <div class="settings-label">Anzahl der Zeilen:</div><input type="number" id="limit" value="1000" size="5"/><br>
+      <div class="settings-label">Starten bei Zeile:</div><input type="number" id="offset" value="0" size="5"/><br>
+      Nur historische Datensätze: <input id="historyFilter" type="checkbox"><br>
       <input id="runFilterButton" type="button" value="Anwenden" class="settings-button" style="margin-top: 5px"/>
       <input id="toggleFilterDivButton" type="button" value="mehr" class="settings-button"/>
       <div id="filterDiv" style="display: none">
@@ -131,7 +134,7 @@
     </div>
     <hr>
 
-    <h2>Sortierung</h2>
+    <div class="h2-div"><h2 class="b-collapsed">Sortierung</h2></div>
     <div id="anzeigeSortDiv">
       <select id="anzeigeSortSelect">
         <option value="">keine Sortierung</option>
@@ -139,26 +142,19 @@
     </div>
     <hr>
 
-    <h2>Farben</h2>
+    <div class="h2-div"><h2 class="b-collapsed">Farben</h2></div>
     <div id="colorSelectorDiv">
     </div>
     <hr>
 
-    <h2>Farben</h2>
-    Symboltransparenz : <span id="fillOpacitySpan">0.8</span><br>
-    <input type="range" class="camera-options-slider" id="fillOpacitySlider" name="fillOpacity" min="0" max="10" value="8"><i class="fa fa-info" aria-hidden="true" onclick="kvm.msg('0 ist ganz durchsichtig, 1 ohne Transparenz. Wirkt sich erst nach dem neu Laden der Datensätze z.B. durch Filterung aus. Dazu einmal bei Filter auf Anwenden klicken.')" style="margin-left: 5px"></i>
-    <hr>
-
-    <h2>Startposition neuer Objekte</h2>
-    <div id="newPosDiv">
-      <select id="newPosSelect">
-        <option value="1" selected>An GPS-Position falls Signal vorhanden</option>
-        <option value="2">Immer am aktuellen Kartenmittelpunkt</option>
-      </select>
+    <div class="h2-div"><h2 class="b-collapsed">Symbole</h2></div>
+    <div id="transfarencySelectorDiv">
+      Symboltransparenz : <span id="fillOpacitySpan">0.8</span><br>
+      <input type="range" class="camera-options-slider" id="fillOpacitySlider" name="fillOpacity" min="0" max="10" value="8"><i class="fa fa-info" aria-hidden="true" onclick="kvm.msg('0 ist ganz durchsichtig, 1 ohne Transparenz. Wirkt sich erst nach dem neu Laden der Datensätze z.B. durch Filterung aus. Dazu einmal bei Filter auf Anwenden klicken.')" style="margin-left: 5px"></i>
     </div>
     <hr>
 
-    <h2>Bildaufnahme</h2>
+    <div class="h2-div"><h2 class="b-collapsed">Bildaufnahme</h2></div>
     <div id="cameraOptionsDiv">
       Bildqualität: <span id="cameraOptionsQuality">25</span> % <input id="cameraOptionsQualitySlider" type="range" min="10" max="100" value="25" class="camera-options-slider"><i class="fa fa-info" aria-hidden="true" onclick="kvm.msg('Verringert die Größe der aufgenommenen Bilddateien auf die angegebenen % der in der Kamera eingestellten Größe.')" style="margin-left: 5px"></i><br>
       <input id="cameraOptionsAllowEdit" type="checkbox" checked> Editieren erlauben<br>
@@ -167,8 +163,15 @@
     </div>
     <hr>
 
-    <h2>Karteneinstellungen</h2>
+    <div class="h2-div"><h2 class="b-collapsed">Karteneinstellungen</h2></div>
     <div id="mapSettingsDiv">
+      Startposition neuer Objekte<br>
+      <div id="newPosDiv">
+        <select id="newPosSelect">
+          <option value="1" selected>An GPS-Position falls Signal vorhanden</option>
+          <option value="2">Immer am aktuellen Kartenmittelpunkt</option>
+        </select>
+      </div>
       maximale Kartenausdehnung:
       <div class="settings-label">West:</div><input id="mapSettings_west" name="west" class="mapSetting" type="number" size="7"/>
       <div style="clear: both"></div>
@@ -242,9 +245,7 @@
     </div>
     <hr>
 
-    <span id="serverSettingHeader">
-      <h2>Server</h2>
-    </span>
+    <div class="h2-div"><h2 id="h2_server" class="b-collapsed">Server</h2></div>
     <div id="kvwmapServerDataForm" class="div-form">
       <input id="kvwmapServerIdField" name="kvwmapServerId" type="hidden" value="1">
       Name<br>
@@ -270,16 +271,18 @@
     </div>
     <hr>
 
-    <h2>Layer</h2>
-    <button id="requestLayersButton" class="settings-button" style="display: none;">
-      <i class="fa fa-download" aria-hidden="true"> Layer abfragen</i>
-    </button>
-    <div style="clear: both"></div>
-    <div id="layer_list">
+    <div class="h2-div"><h2 id="h2_layer" class="b-collapsed">Layer</h2></div>
+    <div>
+      <button id="requestLayersButton" class="settings-button" style="display: none;">
+        <i class="fa fa-download" aria-hidden="true"> Layer abfragen</i>
+      </button>
+      <div style="clear: both"></div>
+      <div id="layer_list">
+      </div>
     </div>
     <hr>
 
-    <h2>Hinergrundlayer</h2>
+    <div class="h2-div"><h2 class="b-collapsed">Hinergrundlayer</h2></div>
     <div id="backgroundLayerOnlineDiv">
       URL:<br>
       <input id="backgroundLayerOnline_url" type="text" name="url"/><br>
@@ -290,52 +293,58 @@
       </select>
       <div style="clear: both"></div>
       <div class="settings-label">Layername</div>
-      <input id="backgroundLayerOnline_layers" type="text" name="layers" class="mapSetting">
+      <input id="backgroundLayerOnline_layers" type="text" name="layers" class="mapSetting"/>
       <div style="clear: both"></div>
     </div>
     <hr>
 
-    <h2>Netzwerkstatus</h2>
+    <div class="h2-div"><h2 class="b-collapsed">Netzwerkstatus</h2></div>
     <div id="networkStatusText">...wird geladen</div>
     <hr>
 
-    <h2>GPS-Status</h2>
-    <div id="gpsStatusText">...wird geladen</div>
-    <div id="gpsCurrentPosition"></div>
+    <div class="h2-div"><h2 class="b-collapsed">GPS-Status</h2></div>
+    <div>
+      <div id="gpsStatusText">...wird geladen</div>
+      <div id="gpsCurrentPosition"></div>
+    </div>
     <hr>
 
-    <h2>Geräteinformationen</h2>
+    <div class="h2-div"><h2 class="b-collapsed">Geräteinformationen</h2></div>
     <div id="deviceDataText">...wird geladen</div>
     <hr>
 
-    <h2>Datenbank</h2>
-    <b>Datenbankname: </b><span id="dbnameText">...wird geladen</span><br>
-    <b>Anzahl Datensätze: </b><span id="numDatasetsText" style="display: none">... wird geladen</span><br>
-    <button id="showDeltasButton" class="settings-button" style="display: none">
-      <i class="fa fa-pencil-square-o" aria-hidden="true"> Zeige Änderungen</i>
-    </button>
-    <i id="showDeltasWaiting" class="fa fa-spinner fa-pulse fa-3x fa-fw" style="display: none;"></i>
-    <button id="hideDeltasButton" class="settings-button" style="display: none;">
-      <i class="fa fa-window-close-o" aria-hidden="true"> Blende Änderungen aus</i>
-    </button>
-    <div id="showDeltasDiv" style="display: none;">
+    <div class="h2-div"><h2 class="b-collapsed">Datenbank</h2></div>
+    <div>
+      Datenbankname: <span id="dbnameText">...wird geladen</span><br>
+      Anzahl Datensätze: <span id="numDatasetsText" style="display: none">... wird geladen</span><br>
+      <button id="showDeltasButton" class="settings-button" style="display: none">
+        <i class="fa fa-pencil-square-o" aria-hidden="true"> Zeige Änderungen</i>
+      </button>
+      <i id="showDeltasWaiting" class="fa fa-spinner fa-pulse fa-3x fa-fw" style="display: none;"></i>
+      <button id="hideDeltasButton" class="settings-button" style="display: none;">
+        <i class="fa fa-window-close-o" aria-hidden="true"> Blende Änderungen aus</i>
+      </button>
+      <div id="showDeltasDiv" style="display: none;">
+      </div><br>
+      Backup-Speicherpfad:<br>
+      <input id="localBackupPath" type="text"><br>
+      <button id="saveDatabaseButton" class="settings-button">
+        <i class="fa fa-database" aria-hidden="true"></i>
+        <i class="fa fa-check" aria-hidden="true"></i> Sichere Datenbank
+      </button>
     </div>
-    <b>Backup-Speicherpfad:</b><br>
-    <input id="localBackupPath" type="text"><br>
-    <button id="saveDatabaseButton" class="settings-button">
-      <i class="fa fa-database" aria-hidden="true"></i>
-      <i class="fa fa-check" aria-hidden="true"></i> Sichere Datenbank
-    </button>
     <hr>
 
-    <h2>Protokol</h2>
-    <button id="showLoggingsButton" class="settings-button">
-      <i class="fa fa-list" aria-hidden="true"> Zeige Protokoll an</i>
-    </button>
-    <button id="clearLoggingsButton" class="settings-button">
-      <i class="fa fa-list" aria-hidden="true"> Leere Protokoll</i>
-    </button><br>
-    <input type="checkbox" id="show_allways_debug_messages" value="1"> Debug-Meldung immer einblenden<br>
+    <div class="h2-div"><h2 class="b-collapsed">Protokol</h2></div>
+    <div>
+      <button id="showLoggingsButton" class="settings-button">
+        <i class="fa fa-list" aria-hidden="true"> Zeige Protokoll an</i>
+      </button>
+      <button id="clearLoggingsButton" class="settings-button">
+        <i class="fa fa-list" aria-hidden="true"> Leere Protokoll</i>
+      </button><br>
+      <input type="checkbox" id="show_allways_debug_messages" value="1"> Debug-Meldung immer einblenden<br>
+    </div>
     <hr>
     <p>
   </div>

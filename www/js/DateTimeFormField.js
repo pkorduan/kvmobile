@@ -55,9 +55,7 @@ function DateTimeFormField(formId, settings) {
       ) &&
       this.get('name') != 'updated_at_server'
     ) {
-      var now = new Date();
-      val = now.getFullYear() + '-' + String('0' + parseInt(now.getMonth() + 1)).slice(-2) + '-' + String('0' + now.getDate()).slice(-2) + 'T'
-        + String('0' + now.getHours()).slice(-2) + ':' + String('0' + now.getMinutes()).slice(-2) + ':' + String('0' + now.getSeconds()).slice(-2)  + 'Z';
+      val = kvm.now()
      // val = (new Date()).toISOString()
     }
 

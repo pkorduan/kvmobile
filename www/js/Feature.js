@@ -243,7 +243,7 @@ function Feature(
       $('.popup-functions').hide();
     }
 
-    kvm.log('Select feature in list' + this.id, 4);
+    kvm.log('Select feature in list ' + this.id, 4);
     $('#' + this.id).addClass('selected-feature-item');
     return this;
   };

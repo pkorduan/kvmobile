@@ -108,7 +108,7 @@ function Attribute(layer, settings = {}) {
   };
 
   this.toSqliteValue = function(pgType, pgValue) {
-    //console.log('Attribute.toSqliteValue pgType: ' + pgType + ' pgValue: %o', pgValue);
+    kvm.alog('Attribute.toSqliteValue pgType: ' + pgType + ' pgValue: %o', pgValue, 5);
     var slType = this.getSqliteType();
 
     switch (true) {
@@ -134,6 +134,7 @@ function Attribute(layer, settings = {}) {
       default:
         slValue = "'" + pgValue + "'";
     }
+    kvm.alog('slValue: %o', slValue, 5);
     return slValue;
   };
 

@@ -166,16 +166,18 @@ kvm.controller.mapper = {
   * und macht die Geometrie editierbar.
   */
   newFeature: function(evt) {
+    kvm.alog('Feature.newFeature', '', 4);
+    kvm.activeLayer.activeFeature.unselect();
     // Erzeugt ein neues leeres Feature Objekt erstmal ohne Geometrie
     kvm.activeLayer.activeFeature = new Feature(
-          '{ "' + kvm.activeLayer.get('id_attribute') + '": "' + kvm.uuidv4() + '", "version": "' + (kvm.activeLayer.get('syncVersion') + 1) + '"}',
-          {
-            id_attribute: 'uuid',
-            geometry_type: kvm.activeLayer.get('geometry_type'),
-            geometry_attribute: kvm.activeLayer.get('geometry_attribute'),
-            new: true
-          }
-        );
+      '{ "' + kvm.activeLayer.get('id_attribute') + '": "' + kvm.uuidv4() + '", "version": "' + (kvm.activeLayer.get('syncVersion') + 1) + '"}',
+      {
+        id_attribute: 'uuid',
+        geometry_type: kvm.activeLayer.get('geometry_type'),
+        geometry_attribute: kvm.activeLayer.get('geometry_attribute'),
+        new: true
+      }
+    );
     console.log('Neues Feature mit id: %s erzeugt.', kvm.activeLayer.activeFeature.id);
 
     if ($('#newPosSelect').val() == 1) {
