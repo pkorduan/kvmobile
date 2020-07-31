@@ -900,21 +900,25 @@ kvm = {
       }
     );
 
-    $('#layerFunctionsButton').on(
+    $('.layer-functions-button').on(
       'click',
       function(evt) {
-        $('#layerFunctionsButton').parent().children().filter('.layer-functions-div').toggle();
-        $('#layerFunctionsButton').children().toggleClass('fa-ellipsis-v fa-window-close-o');
+        console.log()
+        var target = $(evt.target);
+        target.parent().children().filter('.layer-functions-div').toggle();
+        target.toggleClass('fa-ellipsis-v fa-window-close-o');
       }
     );
 
     $('.sync-layer-button' + (layerGlobalId > 0 ? "[id='syncLayerButton_" + layerGlobalId + "']" : '')).on(
       'click',
       function(evt) {
-        var layer = kvm.activeLayer;
+        var layer = kvm.activeLayer,
+            target = $(evt.target);
+
         $('#sperr_div_content').html('');
 
-        if ($('.sync-layer-button').hasClass('inactive-button')) {
+        if (target.hasClass('inactive-button')) {
           kvm.msg('Keine Internetverbindung! Kann Layer jetzt nicht synchronisieren.');
         }
         else {
@@ -960,9 +964,10 @@ kvm = {
     $('.sync-images-button' + (layerGlobalId > 0 ? "[id='syncImagesButton_" + layerGlobalId + "']" : '')).on(
       'click',
       function(evt) {
-        var layer = kvm.activeLayer;
+        var layer = kvm.activeLayer,
+            target = $(evt.target);
 
-        if ($('.sync-images-button').hasClass('inactive-button')) {
+        if (target.hasClass('inactive-button')) {
           kvm.msg('Keine Internetverbindung! Kann Bilder jetzt nicht synchronisieren.');
         }
         else {

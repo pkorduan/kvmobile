@@ -14,6 +14,8 @@
     <access origin="https://geoportal-vg.de/kvwmap/*" />
     <access origin="https://geoportal-vg.de/kvwmap_test/*" />
     <access origin="https://geoport.lk-vr.de/kvwmap/*" />
+    <access origin="https://geoport-lk-mse.de/kvwmap/*" />
+    <access origin="https://geoport-lk-mse.de/supergis/*" />
     <access origin="https://geoportal.lkee.de/*" />
     <access origin="https://www.orka-mv.de/*" />
     <access origin="https://isk.geobasis-bb.de/mapproxy/*" />

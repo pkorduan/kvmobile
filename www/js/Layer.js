@@ -1514,7 +1514,20 @@ function Layer(stelle, settings = {}) {
     console.log('insertDataset rs: %o', rs);
     var layer = this.context,
         changes = layer.collectChanges('insert'),
+        imgChanges = changes.filter(
+          function(change) {
+            return ($.inArray(change.key, layer.getDokumentAttributeNames()) > -1);
+          }
+        ),
         delta = layer.getInsertDelta(changes);
+
+
+    if (imgChanges.length == 0) {
+      console.log('no imgChanges');
+    }
+    else {
+      layer.createImgDeltas(imgChanges);
+    }
 
     this.next.context = layer;
     this.next.delta = delta;
@@ -1986,17 +1999,27 @@ function Layer(stelle, settings = {}) {
 
         $.map(
           img_new,
-          function(img) {
+          (function(img) {
             console.log(img + ' in ' + img_old.join(', ') + '?');
             if (img_old.indexOf(img) < 0) {
               console.log('neues Image');
-              kvm.activeLayer.writeDelta({
-                "type" : 'img',
-                "change" : 'insert',
-                "delta" : img
-              });
+              var context = {
+                context : this,
+                delta: {
+                  "type" : 'img',
+                  "change" : 'insert',
+                  "delta" : img
+                },
+                next: {
+                  succFunc: 'showMessage',
+                  msg: img + ' als neues Bild eingetragen.',
+                  title: 'Datenbank'
+                }
+              };
+              console.log('context: %o', context);
+              (this.writeDelta).bind(context)();
             }
-          }
+          }).bind(this)
         );
 
         $.map(
@@ -2048,11 +2071,19 @@ function Layer(stelle, settings = {}) {
                   else {
                     kvm.log('Layer.createImgDeltas: kein insert delta vorhanden. Trage delete delta ein.', 3);
                     // Add delete of image to deltas table
-                    this.writeDelta({
-                      "type" : 'img',
-                      "change" : 'delete',
-                      "delta" : img
-                    });
+                    (this.writeDelta).bind({
+                      context : this,
+                      delta: {
+                        "type" : 'img',
+                        "change" : 'delete',
+                        "delta" : img
+                      },
+                      next: {
+                        succFunc: 'showMessage',
+                        msg: 'Löschung von Bild' + img + ' eingetragen.',
+                        title: 'Datenbank'
+                      }
+                    })();
                   }
                 }).bind(this),
                 function(error) {
@@ -2066,6 +2097,10 @@ function Layer(stelle, settings = {}) {
         )
       }).bind(this)
     );
+  };
+
+  this.showMessage = function() {
+    kvm.msg(this.msg, this.title);
   };
 
   /*
@@ -2135,9 +2170,7 @@ function Layer(stelle, settings = {}) {
       <div id="layer_' + this.getGlobalId()  + '">\
         <input type="radio" name="activeLayerId" value="' + this.getGlobalId() + '"/> ' +
         (this.get('alias') ? this.get('alias') : this.get('title')) + '\
-        <button id="layerFunctionsButton" class="settings-button" style="float: right;">\
-          <i class="fa fa-ellipsis-v" aria-hidden="true"></i>\
-        </button>\
+        <i class="layer-functions-button fa fa-ellipsis-v" aria-hidden="true"></i>\
         <div class="layer-functions-div">\
           <button id="syncLayerButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="settings-button sync-layer-button layer-function-button">\
             <i id="syncLayerIcon_' + this.getGlobalId() + '" class="fa fa-refresh" aria-hidden="true"></i>\
@@ -2269,15 +2302,10 @@ function Layer(stelle, settings = {}) {
     this.createDataView();
     $('input[name=activeLayerId]').checked = false
     $('input[value=' + this.getGlobalId() + ']')[0].checked = true;
-    $('.reload-layer-button').hide();
-    $('#reloadLayerButton_' + this.getGlobalId()).show();
-    $('.sync-layer-button').hide();
-    $('#syncLayerButton_' + this.getGlobalId()).show();
-    $('.sync-images-button').hide();
-    $('#syncImagesButton_' + this.getGlobalId()).show();
-    $('.clear-layer-button').hide();
-    $('#clearLayerButton_' + this.getGlobalId()).show();
-    $('#showDeltasButton').show();
+    $('.layer-functions-button, .layer-functions-div').hide();
+    $('#layer_' + kvm.activeLayer.getGlobalId() + ' > .layer-functions-button').show();
+    $('#layer_' + kvm.activeLayer.getGlobalId() + ' > .layer-functions-button').children().removeClass('fa-ellipsis-v fa-window-close-o');
+    $('#layer_' + kvm.activeLayer.getGlobalId() + ' > .layer-functions-button').children().addClass('fa-ellipsis-v');
     if (parseInt(this.get('privileg')) > 0) {
       $('#newFeatureButton').show();
     }
