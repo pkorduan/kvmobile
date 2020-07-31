@@ -25,20 +25,20 @@ config = {
     '3': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#26a7f1" }
   },
 
-  // LK-MSE
+  // LK-VG
   mapSettings: {
     minZoom: 8,
     maxZoom: 18,
     startZoom: 8,
-    west: 311109,
+    west: 339600,
     south: 5894500,
-    east: 428034,
-    north: 5990606,
-    startCenterLat: 53.50467,
-    startCenterLon: 12.96181
+    east: 492200,
+    north: 6016500,
+    startCenterLat: 53.78441,
+    startCenterLon: 13.81898
   },
-  kvwmapServerUrl: 'https://geoport-lk-mse.de/supergis',
-  kvwmapServerLoginName: 'peter.korduan',
+  kvwmapServerUrl: 'https://geoportal-vg.de/kvwmap_test',
+  kvwmapServerLoginName: 'kvmobile',
   kvwmapServerPasswort: '',
   backgroundLayerOnline: {
     type: 'tile',
