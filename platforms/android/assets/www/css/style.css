@@ -12,6 +12,59 @@ label: {
   display: inline-block;
 }
 
+.b-collapsed:before {
+  content: '\25BA\0020';
+  color: #263286
+}
+
+.b-expanded:before {
+  content: '\25F8\0020';
+  color: #263286;
+}
+
+.h2-div + div {
+  display: none;
+}
+
+.settings-label {
+  width: 200px;
+  margin-right: 5px;
+  float: left;
+  padding-top: 10px;
+}
+
+.mapSetting {
+  float: right;
+}
+
+#mapSettingsDiv > input {
+  width: 100px;
+}
+
+#mapSettingsDiv > select {
+  width: 60px;
+}
+
+.layer-functions-button {
+  width: 38px;
+  height: 38px;
+  margin-top: -7px;
+  float: right;
+  color: #263286;
+}
+
+.layer-functions-div {
+  display: none;
+  background-color: #fdebeb;
+  border: 1px solid gray;
+  padding: 2px;
+  margin: 2px;
+}
+
+.layer-function-button {
+  margin: 5px;
+}
+
 h1 {
   margin-top: 9px;
   margin-bottom: 7px;
@@ -34,8 +87,20 @@ input[type="radio"]{
   cursor: pointer;
 }
 
-input[type=text], input[type=number], input[type=datetime-local], input[type=password], select, textarea {
+input[type=text], input[type=datetime-local], input[type=password], select, textarea {
   width: 100%;
+  padding: 4px;
+  margin-top: 2px;
+  margin-bottom: 11px;
+  display: inline-block;
+  border: 1px solid rgb(38, 50, 134);
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 20px
+}
+
+input[type=number] {
+  width: 80px;
   padding: 4px;
   margin-top: 2px;
   margin-bottom: 11px;
@@ -62,10 +127,19 @@ button#gpsControlButton.kvm-gps-track {
   color: white;
 }
 
+.selected-feature-item {
+  border-color: #ff2828 !important;
+  box-shadow: 0px 0px 5px 5px #ff2828 !important;
+}
+
 .leaflet-control-layers-toggle {
   width:  30px !important;
   height: 30px !important;
   background-size: 20px 20px !important;
+}
+
+.leaflet-popup {
+  font-size: 20px;
 }
 
 a.hover {
@@ -79,10 +153,110 @@ a.hover {
   clear: both;
 }
 
-.form-field {
-  width: 99%;
+#formDiv {
+  display: table;
   font-size: 24px;
-  margin-bottom: 10px;
+  width: 100%;  
+}
+
+.form-field {
+  display: table-row;
+}
+
+.form-label {
+  width: 30%;
+  display: table-cell;
+  padding-left: 12px;
+  padding-top: 5px;
+  border-bottom: 0px solid white;
+  padding-bottom: 5px;
+  background-color: #dfdfdf;
+  border-top: 2px solid white;
+  padding-right: 12px;
+}
+
+.form-value {
+  display: table-cell;
+  border-bottom: 1px solid lightgray;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  padding-left: 16px;
+  width: 70%;
+  border-top: 0px solid lightgray;
+}
+
+#filterViewDiv {
+  display: table;
+  font-size: 24px;
+  width: 100%;  
+}
+
+.filter-view-field {
+  display: table-row;
+}
+
+.filter-view-label {
+  width: 30%;
+  display: table-cell;
+  padding-left: 12px;
+  padding-top: 5px;
+  border-bottom: 0px solid white;
+  padding-bottom: 5px;
+  background-color: #dfdfdf;
+  border-top: 2px solid white;
+  padding-right: 12px;
+}
+
+.filter-view-operator {
+  display: table-cell;
+  border-bottom: 1px solid lightgray;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  padding-left: 16px;
+  width: 10%;
+  border-top: 0px solid lightgray;
+}
+
+.filter-view-value {
+  display: table-cell;
+  border-bottom: 1px solid lightgray;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  padding-left: 16px;
+  width: 60%;
+  border-top: 0px solid lightgray;
+}
+
+#dataViewDiv {
+  display: table;
+  font-size: 24px;
+  width: 100%;
+}
+
+.data-view-field {
+  display: table-row;
+}
+
+.data-view-label {
+  width: 30%;
+  display: table-cell;
+  padding-left: 12px;
+  padding-top: 5px;
+  border-bottom: 0px solid white;
+  padding-bottom: 5px;
+  background-color: #dfdfdf;
+  border-top: 2px solid white;
+  padding-right: 12px;
+}
+
+.data-view-value {
+  display: table-cell;
+  border-bottom: 1px solid lightgray;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  padding-left: 16px;
+  width: 70%;
+  border-top: 0px solid lightgray;
 }
 
 .feature-item {
@@ -97,20 +271,24 @@ a.hover {
   border-radius: 5px;
 }
 
-.popup-aendern-link {
-
+.popup-link {
+  
 }
 
 .feature-status-0 {
-  background-color: #ffdede;
+  background-color: #dd8181;
 }
 
 .feature-status-1 {
-  background-color: #e0f6b5;
+  background-color: #465dc0;
 }
 
 .feature-status-2 {
-  background-color: #fff9df;
+  background-color: #23a325;
+}
+
+.feature-status-3 {
+  background-color: #26a7f1;
 }
 
 .kvm-gps-control {
@@ -143,12 +321,12 @@ a.hover {
   font-size: 18px;
 }
 
-.menubutton {
+.menu-button {
   color: #263286;
 }
 
-.menubutton:hover {
-  color: #FFFFFF;
+.menu-button:hover {
+  color: #FF0000;
   text-decoration: none;
   cursor: pointer;
 }
@@ -161,6 +339,15 @@ a.hover {
 .active-button {
   cursor: pointer;
   color: #263286;
+}
+
+.text-button {
+  font-size: 30px;
+  border: 2px solid #263286;
+  padding-left: 10px;
+  padding-right: 10px;
+  border-radius: 5px;
+  background-color: white
 }
 
 .form-div {
@@ -219,6 +406,22 @@ a.hover {
   padding-top: 200px;
 }
 
+.deb {
+  display: none; /* Hidden by default */
+  position: fixed;
+  z-index: 1; /* Sit on top */*/
+  left:0;
+  top:0;
+  width: 100%;
+  height: 400px;
+/*  overflow: auto; /* Enable scroll if needed */
+  background-color: white; /* Fallback color */
+  color: black;
+  text-align: left;
+  font-size: 20px;
+  padding-top: 5px;
+}
+
 .v-scroll-div {
   clear: both;
   height: 845px;
@@ -271,4 +474,64 @@ a.hover {
 
 #gps-signal-icon {
   fill: rgb(236, 236, 236);
+}
+.center {
+  text-align: center;
+}
+
+.pagination {
+  display: inline-block;
+}
+
+.pagination a {
+  color: black;
+  float: left;
+  padding: 8px 16px;
+  text-decoration: none;
+}
+
+.pagination a.active {
+  background-color: #4CAF50;
+  color: white;
+  border-radius: 5px;
+}
+
+.pagination a:hover:not(.active) {
+  background-color: #ddd;
+  border-radius: 5px;
+}
+
+/* The slider itself */
+.camera-options-slider {
+  -webkit-appearance: none;  /* Override default CSS styles */
+  appearance: none;
+  width: 60%; /* Full-width */
+  height: 25px; /* Specified height */
+  background: #d3d3d3; /* Grey background */
+  outline: none; /* Remove outline */
+  opacity: 0.7; /* Set transparency (for mouse-over effects on hover) */
+  -webkit-transition: .2s; /* 0.2 seconds transition on hover */
+  transition: opacity .2s;
+}
+
+/* Mouse-over effects */
+.camera-options-slider:hover {
+  opacity: 1; /* Fully shown on mouse-over */
+}
+
+/* The slider handle (use -webkit- (Chrome, Opera, Safari, Edge) and -moz- (Firefox) to override default look) */
+.camera-options-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; /* Override default look */
+  appearance: none;
+  width: 25px; /* Set a specific slider handle width */
+  height: 25px; /* Slider handle height */
+  background: #4CAF50; /* Green background */
+  cursor: pointer; /* Cursor on hover */
+}
+
+.camera-options-slider::-moz-range-thumb {
+  width: 25px; /* Set a specific slider handle width */
+  height: 25px; /* Slider handle height */
+  background: #4CAF50; /* Green background */
+  cursor: pointer; /* Cursor on hover */
 }

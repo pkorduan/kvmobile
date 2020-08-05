@@ -1,3 +1,14 @@
+/*
+* create a text form field in the structure
+*   <div class="form-field">
+*     <div class="form-label">
+*       <label for="name"/>
+*     </div>
+*     <div class="form-value">
+*       <input type="text" id="1" name="bezeichnung" value="Wert"/>
+*     </div>
+*   </div>
+*/
 function TextFormField(formId, settings) {
   //console.log('Erzeuge TextformField with settings %o', settings);
   this.settings = settings,
@@ -19,7 +30,7 @@ function TextFormField(formId, settings) {
   );
 
   this.setValue = function(val) {
-    //console.log('TextFormField ' + this.get('name') + ' setValue with value: %o', val);
+    console.log('TextFormField ' + this.get('name') + ' setValue with value: %o', val);
     if (!val && this.get('default')) {
       val = this.get('default');
     }
@@ -65,18 +76,6 @@ function TextFormField(formId, settings) {
         }
       }
     );
-  };
-
-  this.withLabel = function() {
-    var label = $('<label for="' + this.get('name') + '"/>');
-
-    label.append((this.get('alias') ? this.get('alias') : this.get('name')));
-
-    if (this.get('tooltip')) {
-      label.append('&nbsp;<i class="fa fa-exclamation-circle" style="color: #f57802" onclick="kvm.msg(\'' + this.get('tooltip') + '\');"></i>');
-    }
-
-    return $('<div class="form-field">').append(label).append('<br>').append(this.element);
   };
 
   return this;

@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<widget id="de.gdiservice.kvmobile" version="1.5.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+<widget id="de.gdiservice.kvmobile" version="1.5.6" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
     <name>kvwmobile</name>
     <description>
       Anwendung zur Erfassung von Geodaten und zum synchronisieren mit dem Web-GIS kvwmap.
@@ -13,15 +13,23 @@
     <access origin="https://geoportal.lkros.de/kvwmap_test/*" />
     <access origin="https://geoportal.lkros.de/kvwmap_lro/*" />
     <access origin="https://geoportal-vg.de/kvwmap/*" />
+    <access origin="https://geoportal-vg.de/kvwmap_test/*" />
+    <access origin="https://geoport.lk-vr.de/kvwmap/*" />
+    <access origin="https://geoport-lk-mse.de/kvwmap/*" />
+    <access origin="https://geoport-lk-mse.de/supergis/*" />
+    <access origin="https://geoportal.lkee.de/*" />
     <access origin="https://www.orka-mv.de/*" />
+    <access origin="https://isk.geobasis-bb.de/mapproxy/*" />
     <allow-intent href="http://*/*" />
     <allow-intent href="https://*/*" />
     <allow-intent href="tel:*" />
     <allow-intent href="sms:*" />
     <allow-intent href="mailto:*" />
     <allow-intent href="geo:*" />
+    <allow-navigation href="*" />
     <platform name="android">
         <allow-intent href="market:*" />
+        <preference name="AndroidPersistentFileLocation" value="Compatibility" />
     </platform>
     <platform name="ios">
         <allow-intent href="itms:*" />

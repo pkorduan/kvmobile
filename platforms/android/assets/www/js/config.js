@@ -9,32 +9,43 @@ config = {
 * wenn das erste Foto gespeichert wird mit dem Camera Plugin, wird
 * der verwendete Pfad ermittelt und die Einstellung überschrieben.
 */
-
 //  localImgPath: 'file:///storage/' + 'BAB2-4AA9' + '/Android/data/de.gdiservice.kvmobile/cache/',
-  localImgPath: 'file:///storage/' + 'emulated/0' + '/Android/data/de.gdiservice.kvmobile/cache/',
-
+  localImgPath:    'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/',
+  localTilePath:   'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/',
+  localBackupPath: 'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/',
   projZone: 33,
-//  maxExtent: [274300, 5936054.721, 360500, 6023975.279],
-  maxExtent: [154300, 5836054.721, 360500, 6023975.279],
-  startPosition: [12.20896, 53.095876],
-  startZoom: 8,
-  logLevel: 3, // 0 off, 1 error, 2 waring, 3 info, 4 debug
+  logLevel: 4, // 0 off, 1 error, 2 waring, 3 info, 4 debug, 5 all
   debug: true,
   kvwmapServerId: 1,
-  kvwmapServerName: 'kvwmap Server',
-/*
-  kvwmapServerUrl: 'https://geoportal.lkros.de/kvwmap_dev',
-  kvwmapServerLoginName: '',
-  kvwmapServerPasswort: '',
-  kvwmapServerStelleId: 610011
+  kvwmapServerName: 'kvwmap',
+  markerStyles: {
+    '0': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#dd8181" },
+    '1': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#465dc0" },
+    '2': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#23a325" },
+    '3': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#26a7f1" }
+  },
 
+
+  // GDI-Service pet_dev
+  mapSettings: {
+    minZoom: 8,
+    maxZoom: 18,
+    startZoom: 8,
+    west: 274300,
+    south: 5936055,
+    east: 360500,
+    north: 6023976,
+    startCenterLat: 53.095876,
+    startCenterLon: 12.20896
+  },
   kvwmapServerUrl: 'https://gdi-service.de/kvwmap_pet_dev',
   kvwmapServerLoginName: 'korduan',
-  kvwmapServerPasswort: 'Nation-6_!Hunger!',
-  kvwmapServerStelleId: 72
-*/
-  kvwmapServerUrl: 'https://gdi-service.de/kvwmap_pet_dev',
-  kvwmapServerLoginName: 'mjohn',
-  kvwmapServerPasswort: 'Mar_ohN',
-  kvwmapServerStelleId: 72
+  kvwmapServerPasswort: '3_]U$ao2e4',
+  backgroundLayerOnline: {
+    type: 'tile',
+    url: 'https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png',
+    params: {
+      attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
+    }
+  }
 }
