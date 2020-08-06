@@ -1,5 +1,5 @@
 kvm = {
-  version: '1.5.5',
+  version: '1.5.6',
   Buffer: require('buffer').Buffer,
   wkx: require('wkx'),
   controls: {},
@@ -224,6 +224,7 @@ kvm = {
     if (!(this.mapSettings = JSON.parse(kvm.store.getItem('mapSettings')))) {
       this.saveMapSettings(config.mapSettings);
     }
+    $('#newPosSelect').val(this.mapSettings.newPosSelect);
     $('#mapSettings_west').val(this.mapSettings.west);
     $('#mapSettings_south').val(this.mapSettings.south);
     $('#mapSettings_east').val(this.mapSettings.east);
@@ -773,7 +774,9 @@ kvm = {
 
     $('#newFeatureButton').on(
       'click',
-      this.controller.mapper.newFeature
+      function() {
+        kvm.activeLayer.newFeature()
+      }
     );
 
     /*
@@ -781,14 +784,8 @@ kvm = {
     */
     $('#editFeatureButton').on(
       'click',
-      { "context": this },
-      function(evt) {
-        var this_ = evt.data.context,
-            featureId = this_.activeLayer.activeFeature.id,
-            feature = this_.activeLayer.features[featureId];
-
-//        this_.activeLayer.loadFeatureToForm(feature, { editable: true });
-        kvm.activeLayer.editGeometry(featureId);
+      function() {
+        kvm.activeLayer.editFeature();
       }
     );
 

@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
   <head>
-    <TITLE>kvmobile 1.5.5</TITLE>
+    <TITLE>kvmobile 1.5.6</TITLE>
     <META charset="UTF-8">
     <meta name="format-detection" content="telephone=no">
     <meta name="msapplication-tap-highlight" content="no">
@@ -24,7 +24,7 @@
     <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-geoman/leaflet-geoman.css" />
     <link rel="stylesheet" type="text/css" href="css/style.css"/>
     <script src="cordova.js"></script>
-    <script src="3rdparty/jquery/3.2.1/jquery.min.js"></script>
+    <script src="3rdparty/jquery-3.5.1/jquery.min.js"></script>
     <script src="3rdparty/leaflet-1.3.1/leaflet.js"></script>
     <script src="3rdparty/leaflet-1.3.1/Leaflet.Editable.js"></script>
     <script src="3rdparty/leaflet-1.3.1/Path.Drag.js"></script>
@@ -58,7 +58,7 @@
   </head>
   <body onload="kvm.init()">
 
-    <div id="sperr_div" class="modal">
+    <div id="sperr_div" class="modal" ondblclick="$(this).hide()">
       <i class="fa fa-spinner fa-pulse fa-2x"></i><p id="sperr_div_content" style="margin-top: 20px">Lade Daten ...</p>
     </div>
 
@@ -167,7 +167,7 @@
     <div id="mapSettingsDiv">
       Startposition neuer Objekte<br>
       <div id="newPosDiv">
-        <select id="newPosSelect">
+        <select id="newPosSelect" name="newPosSelect" class="mapSetting">
           <option value="1" selected>An GPS-Position falls Signal vorhanden</option>
           <option value="2">Immer am aktuellen Kartenmittelpunkt</option>
         </select>
@@ -317,7 +317,7 @@
     <div>
       Datenbankname: <span id="dbnameText">...wird geladen</span><br>
       Anzahl Datensätze: <span id="numDatasetsText" style="display: none">... wird geladen</span><br>
-      <button id="showDeltasButton" class="settings-button" style="display: none">
+      <button id="showDeltasButton" class="settings-button">
         <i class="fa fa-pencil-square-o" aria-hidden="true"> Zeige Änderungen</i>
       </button>
       <i id="showDeltasWaiting" class="fa fa-spinner fa-pulse fa-3x fa-fw" style="display: none;"></i>

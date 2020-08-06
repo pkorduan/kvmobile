@@ -230,19 +230,25 @@ function Feature(
     $('.feature-item').removeClass('selected-feature-item');
   };
 
-  this.select = function() {
+  this.select = function(zoom) {
     kvm.log('Markiere Feature ' + this.id, 4);
 
-    kvm.log('Select feature in map ' + this.markerId,4 );
-    kvm.log('Set style %o',this.getSelectedCircleMarkerStyle());
-    kvm.map._layers[this.markerId].setStyle(this.getSelectedCircleMarkerStyle());
-    kvm.map.setZoom(18);
-    kvm.map.panTo(kvm.map._layers[this.markerId].getLatLng());
+    if (this.newGeom) {
+      kvm.log('Select feature in map ' + this.markerId, 4);
+      kvm.log('Set style %o',this.getSelectedCircleMarkerStyle());
+      kvm.map._layers[this.markerId].setStyle(this.getSelectedCircleMarkerStyle());
+      if (zoom) {
+        kvm.map.setZoom(17);
+      }
+      kvm.map.panTo(kvm.map._layers[this.markerId].getLatLng());
 
-    if (!this.showPopupButtons()) {
-      $('.popup-functions').hide();
+      if (!this.showPopupButtons()) {
+        $('.popup-functions').hide();
+      }
     }
-
+    else {
+      kvm.msg('Das Feature hat noch keine Geometrie und ist deshalb nicht in der Karte zu sehen!', 'Hinweis');
+    }
     kvm.log('Select feature in list ' + this.id, 4);
     $('#' + this.id).addClass('selected-feature-item');
     return this;
@@ -260,6 +266,10 @@ function Feature(
   */
   this.addListElement = function() {
     kvm.log('Feature.addListElement', 4);
+    console.log('this: ', this);
+    debug_t = this;
+    console.log('Add listelement: %o', this.listElement());
+
     $('#featurelistBody').prepend(this.listElement());
     kvm.log(this.id + ' zur Liste hinzugefügt.', 4);
 

@@ -25,20 +25,46 @@ config = {
     '3': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#26a7f1" }
   },
 
-  // LK-MSE
+/*
+  // GDI-Service pet_dev
   mapSettings: {
+    newPosSelect: 1,
     minZoom: 8,
     maxZoom: 18,
     startZoom: 8,
-    west: 311109,
-    south: 5894500,
-    east: 428034,
-    north: 5990606,
-    startCenterLat: 53.50467,
-    startCenterLon: 12.96181
+    west: 274300,
+    south: 5936055,
+    east: 360500,
+    north: 6023976,
+    startCenterLat: 53.095876,
+    startCenterLon: 12.20896
   },
-  kvwmapServerUrl: 'https://geoport-lk-mse.de/supergis',
-  kvwmapServerLoginName: 'peter.korduan',
+  kvwmapServerUrl: 'https://gdi-service.de/kvwmap_pet_dev',
+  kvwmapServerLoginName: 'korduan',
+  kvwmapServerPasswort: '3_]U$ao2e4',
+  backgroundLayerOnline: {
+    type: 'tile',
+    url: 'https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png',
+    params: {
+      attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
+    }
+  }
+*/
+  // LK-VG
+  mapSettings: {
+    newPosSelect: 1,
+    minZoom: 8,
+    maxZoom: 18,
+    startZoom: 8,
+    west: 339600,
+    south: 5894500,
+    east: 492200,
+    north: 6016500,
+    startCenterLat: 53.78441,
+    startCenterLon: 13.81898
+  },
+  kvwmapServerUrl: 'https://geoportal-vg.de/kvwmap_test',
+  kvwmapServerLoginName: 'kvmobile',
   kvwmapServerPasswort: '',
   backgroundLayerOnline: {
     type: 'tile',
@@ -47,4 +73,5 @@ config = {
       attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
     }
   }
+
 }

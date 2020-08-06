@@ -107,6 +107,39 @@ function Attribute(layer, settings = {}) {
     return (this.get('type').indexOf('_') == 0);
   };
 
+  /**
+  * Function return true if the Attribute shall get a value automatically per Definition
+  * Check
+  *      // Wenn es ein Auto attribut ist und
+  *      // nicht updated_at_server heißt und
+  *      // keine options angegeben wurde oder die option zur action passt
+  * @param array changes The array of changes made in formular
+  * @param string action insert or update used to determine if auto value shall be created pending on option of the attribute
+  * @return boolean true if auto else false
+  */
+  this.isAutoAttribute = function(action) {
+//    kvm.log('Attribute.isAutoAttribute for action ' + action, 4);
+/*
+    kvm.log('name ' + this.get('name') + ' ist user_name, updated_at_client oder created_at? ' + (['user_name', 'updated_at_client', 'created_at'].includes(this.get('name'))), 4);
+    kvm.log('form_element_type ' + this.get('form_element_type') + ' ist User, UserID oder Time? ' + (['User', 'UserID', 'Time'].includes(this.get('form_element_type'))), 4);
+    kvm.log('name ' + this.get('name') + ' ist nicht updated_at_server? ' + (this.get('name') != 'updated_at_server'), 4);
+    kvm.log('options ist leer? ' + (this.get('options') == ''), 4);
+    kvm.log('action == options? ' + (action == this.get('options').toLowerCase()), 4);
+    */
+    var answer = (
+        ['user_name', 'updated_at_client', 'created_at'].includes(this.get('name')) ||
+        ['User', 'UserID', 'Time'].includes(this.get('form_element_type'))
+      ) &&
+      this.get('name') != 'updated_at_server' &&
+      (
+        action == '' ||
+        this.get('options') == '' ||
+        action == this.get('options').toLowerCase()
+      );
+    kvm.log('Attribute ' + this.get('name') + ' is Autoattribute for action ' + action + '? ' + answer, 4);
+    return answer;
+  };
+
   this.toSqliteValue = function(pgType, pgValue) {
     kvm.alog('Attribute.toSqliteValue pgType: ' + pgType + ' pgValue: %o', pgValue, 5);
     var slType = this.getSqliteType();
@@ -130,6 +163,9 @@ function Attribute(layer, settings = {}) {
         break;
       case (slType == 'INTEGER') :
         slValue = pgValue;
+        break;
+      case (pgType == 'timestamp') :
+        slValue = "'" + this.formField.toISO(pgValue) + "'";
         break;
       default:
         slValue = "'" + pgValue + "'";
