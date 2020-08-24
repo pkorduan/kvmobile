@@ -1024,6 +1024,7 @@ function Layer(stelle, settings = {}) {
         attr.viewField.setValue(val);
       }).bind(feature)
     );
+    this.selectFeature(feature, true);
   };
 
   this.selectFeature = function(feature, zoom = true) {
@@ -1109,7 +1110,7 @@ function Layer(stelle, settings = {}) {
           <a\
             href="#"\
             title="Geometrie ändern"\
-            onclick="kvm.activeLayer.editFeature()"\
+            onclick="kvm.activeLayer.editFeature(\'' + feature.get(this.get('id_attribute')) + '\')"\
           ><span class="fa-stack fa-lg">\
               <i class="fa fa-square fa-stack-2x"></i>\
               <i class="fa fa-pencil fa-stack-1x fa-inverse"></i>\
@@ -1154,11 +1155,14 @@ function Layer(stelle, settings = {}) {
     this.editFeature();
   };
 
-  this.editFeature = function() {
+  this.editFeature = function(featureId = null) {
     kvm.log('Layer.editFeature', 4);
-    feature = this.activeFeature;
 
-    if (feature.geom) {
+    if (this.activeFeature == undefined && featureId != null) {
+      this.selectFeature(this.features[featureId], true);
+    }
+
+    if (this.activeFeature.geom) {
       this.startEditing();
     }
     else {
@@ -1999,12 +2003,15 @@ function Layer(stelle, settings = {}) {
           $.map(
             changes,
             function(change) {
-              if (change.newVal == null)
+              if (change.newVal == null) {
                 return change.key + " = null";
-              if (change.type == 'TEXT')
+              }
+              if (['TEXT', 'DATE'].includes(change.type)) {
                 return change.key + " = '" + change.newVal + "'";
-              else
+              }
+              else {
                 return change.key + " = " + change.newVal;
+              }
             }
           ).join(', ') + '\
         WHERE\
