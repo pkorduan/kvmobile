@@ -8,6 +8,9 @@ https://github.com/srahn/kvwmap/
 http://kvwmap.de
 
 # Change log
+## 1.5.7
+	* Datumsfelder als Formularfeld mit Datumspicker.
+	* Bessere Formatierung des Formulars mit besserer Unterscheidung von editier- und nicht editierbaren Feldern.
 ## 1.5.6
 	* Jetzt sind auch Datensätze, die keine Geometrie haben editierbar.
 	* Werte, die null sind, werden beim INSERT nicht mehr geschrieben.

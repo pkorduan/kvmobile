@@ -1142,7 +1142,7 @@ function Layer(stelle, settings = {}) {
     }
     // Erzeugt ein neues leeres Feature Objekt erstmal ohne Geometrie
     this.activeFeature = new Feature(
-      '{ "' + this.get('id_attribute') + '": "' + kvm.uuidv4() + '", "version": "' + (this.get('syncVersion') + 1) + '"}',
+      '{ "' + this.get('id_attribute') + '": "' + kvm.uuidv4() + '", "version": "' + ((this.get('syncVersion') == 'null' ? 0 : this.get('syncVersion')) + 1) + '"}',
       {
         id_attribute: 'uuid',
         geometry_type: this.get('geometry_type'),

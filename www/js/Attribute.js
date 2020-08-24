@@ -17,7 +17,7 @@ function Attribute(layer, settings = {}) {
   };
 
   this.getFormField = function() {
-    //console.log('Attribute.getFormField(' + this.get('form_element_type') + ')');
+    //console.log('Attribute.getFormField attr: ' + this.get('name') + ' type: ' + this.get('type') + ' form_element_type: ' + this.get('form_element_type'));
     var field = '';
 
     switch (this.get('form_element_type')) {
@@ -27,6 +27,9 @@ function Attribute(layer, settings = {}) {
       case 'Text' :
         if (this.get('type') == 'timestamp') {
           field = new DateTimeFormField('featureFormular', this.settings);
+        }
+        else if (this.get('type') == 'date') {
+          field = new DateFormField('featureFormular', this.settings);
         }
         else if (this.get('type').substr(0, 3) == 'int') {
           field = new ZahlFormField('featureFormular', this.settings);
@@ -93,6 +96,9 @@ function Attribute(layer, settings = {}) {
           'double precision'
         ]) > -1) :
         slType = 'REAL';
+      case (pgType == 'date') :
+        slType = 'DATE';
+        break;
       default : slType = 'TEXT';
     }
     return slType;
@@ -167,6 +173,8 @@ function Attribute(layer, settings = {}) {
       case (pgType == 'timestamp') :
         slValue = "'" + this.formField.toISO(pgValue) + "'";
         break;
+      case (pgType == 'date') :
+        slValue = "'" + this.formField.toDate(pgValue) + "'";
       default:
         slValue = "'" + pgValue + "'";
     }

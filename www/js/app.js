@@ -1,5 +1,5 @@
 kvm = {
-  version: '1.5.6',
+  version: '1.5.7',
   Buffer: require('buffer').Buffer,
   wkx: require('wkx'),
   controls: {},
@@ -81,26 +81,29 @@ kvm = {
 
       if (this.store.getItem('activeLayerId')) {
         var activeLayerId = this.store.getItem('activeLayerId'),
-            activeLayerSettings = this.store.getItem('layerSettings_' + activeStelleId + '_' + activeLayerId),
-            layer = new Layer(stelle, activeLayerSettings);
+            activeLayerSettings = this.store.getItem('layerSettings_' + activeStelleId + '_' + activeLayerId);
 
-        kvm.log('Aktiven Layer ' +  activeLayerId + ' gefunden.', 3);
+        if (activeLayerSettings != null) {
+          layer = new Layer(stelle, activeLayerSettings);
 
-        // ToDo do not createTable instead attach schema database for layer if not exists
-        // before create LayerList();
-        layer.createTable();
-        setTimeout(
-          function() {
-            kvm.controller.mapper.createLayerList(stelle);
-            kvm.log('Setze Layer: ' + layer.get('schema_name') + '.' + layer.get('table_name'), 3);
-            layer.setActive();
-            kvm.layerDataLoaded = false;
-            kvm.featureListLoaded = false;
-            //layer.loadFeaturesToMap();
-            layer.readData($('#limit').val(), $('#offset').val()); // load from loacl db to feature list
-          },
-          2000
-        );
+          kvm.log('Aktiven Layer ' +  activeLayerId + ' gefunden.', 3);
+
+          // ToDo do not createTable instead attach schema database for layer if not exists
+          // before create LayerList();
+          layer.createTable();
+          setTimeout(
+            function() {
+              kvm.controller.mapper.createLayerList(stelle);
+              kvm.log('Setze Layer: ' + layer.get('schema_name') + '.' + layer.get('table_name'), 3);
+              layer.setActive();
+              kvm.layerDataLoaded = false;
+              kvm.featureListLoaded = false;
+              //layer.loadFeaturesToMap();
+              layer.readData($('#limit').val(), $('#offset').val()); // load from loacl db to feature list
+            },
+            2000
+          );
+        }
       }
       else {
         kvm.msg('Laden Sie die Stellen und Layer vom Server.');
@@ -1536,6 +1539,11 @@ kvm = {
     var now = new Date();
     return now.getFullYear() + '-' + String('0' + parseInt(now.getMonth() + 1)).slice(-2) + '-' + String('0' + now.getDate()).slice(-2) + 'T'
       + String('0' + now.getHours()).slice(-2) + ':' + String('0' + now.getMinutes()).slice(-2) + ':' + String('0' + now.getSeconds()).slice(-2)  + 'Z';
+  },
+
+  today: function() {
+    var now = new Date();
+    return now.getFullYear() + '-' + String('0' + parseInt(now.getMonth() + 1)).slice(-2) + '-' + String('0' + now.getDate()).slice(-2);
   }
 
 };
