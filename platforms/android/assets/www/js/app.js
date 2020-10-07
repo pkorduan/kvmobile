@@ -727,7 +727,7 @@ kvm = {
                   else {
                     kvm.activeLayer.runUpdateStrategy();
                   }
-                  kvm.showGeomStatus();
+                  //kvm.showGeomStatus();
                 }
 
                 if (buttonIndex == 2) { // nein
@@ -781,7 +781,7 @@ kvm = {
       function() {
         kvm.activeLayer.newFeature();
         kvm.activeLayer.editFeature();
-        kvm.showGeomStatus();
+        //kvm.showGeomStatus();
       }
     );
 
@@ -1399,7 +1399,7 @@ kvm = {
   coalesce: function() {
     var i, undefined, arg;
 
-    for( i=0; i < arguments.length; i++ ) {
+    for( i = 0; i < arguments.length; i++ ) {
       arg = arguments[i];
       if (
         arg !== 'null' &&

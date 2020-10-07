@@ -36,7 +36,7 @@ function SelectFormField(formId, settings) {
 
   this.setValue = function(val) {
     //console.log('SelectFormField.setValue with value: ' + val);
-    if (!val && this.get('default')) {
+    if (kvm.coalesce(val) == null && this.get('default')) {
       val = this.get('default');
     }
     this.element.val(val == 'null' ? '' : val);

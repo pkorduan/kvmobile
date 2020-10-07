@@ -1052,7 +1052,16 @@ function Layer(stelle, settings = {}) {
         var key = attr.get('name'),
             val = this.get(key);
 
-        console.log('Set formField with value: %o', val);
+        // Set Default values if feature is new and not nullable
+        if (
+          this.options.new &&
+          attr.get('nullable') == 0 &&
+          attr.get('default') != ''
+        ) {
+          val = attr.get('default');
+        }
+        console.log('Feature is new? %s', this.options.new);
+        console.log('Set %s %s: %s', attr.get('form_element_type'), key, val);
         attr.formField.setValue(val);
       }).bind(feature)
     );
@@ -1388,7 +1397,7 @@ function Layer(stelle, settings = {}) {
       this.attributes,
       (function(attr) {
         console.log('attr.name: %s', attr.get('name'));
-        console.log('attr.privilege: %s', attr.get('privilege'));
+        //console.log('attr.privilege: %s', attr.get('privilege'));
         if (
           !attr.isAutoAttribute(action) &&
           attr.get('privilege') != '0'
