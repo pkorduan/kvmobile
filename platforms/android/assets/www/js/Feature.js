@@ -82,12 +82,14 @@ function Feature(
   };
 
   /*
-  * Setzt die Geometrie neu an Hand der übergebenen wkx Geometrie neu wenn sie sich gegenüber der vorherigen geändert hat.
+  * Setzt die Geometrie neu an Hand der übergebenen wkx Geometrie wenn sie sich gegenüber der vorherigen geändert hat.
   * und lößt den Trigger aus, der angibt, dass sich die Geom des Features geändert hat.
   */
   this.setGeom = function(wkx) {
     console.log('setGeom mit wkx: %o', wkx);
+    console.log('Überschreibe oldGeom: %o mit newGeom: %o', this.oldGeom, this.newGeom);
     var oldGeom = this.newGeom;
+    console.log('Überschreibe newGeom mit wkx: %o', wkx);
     this.newGeom = wkx;
     console.log('vergleiche oldGeom: %o mit newGeom: %o', oldGeom, this.newGeom);
 

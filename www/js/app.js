@@ -160,7 +160,7 @@ kvm = {
             minZoom: this.mapSettings.minZoom,
             maxZoom: this.mapSettings.maxZoom,
             layers: [
-              orka_offline,
+             // orka_offline,
               orka_online
             ]
           }
@@ -727,6 +727,7 @@ kvm = {
                   else {
                     kvm.activeLayer.runUpdateStrategy();
                   }
+                  kvm.showGeomStatus();
                 }
 
                 if (buttonIndex == 2) { // nein
@@ -778,7 +779,9 @@ kvm = {
     $('#newFeatureButton').on(
       'click',
       function() {
-        kvm.activeLayer.newFeature()
+        kvm.activeLayer.newFeature();
+        kvm.activeLayer.editFeature();
+        kvm.showGeomStatus();
       }
     );
 
@@ -1544,6 +1547,23 @@ kvm = {
   today: function() {
     var now = new Date();
     return now.getFullYear() + '-' + String('0' + parseInt(now.getMonth() + 1)).slice(-2) + '-' + String('0' + now.getDate()).slice(-2);
+  },
+
+  /*
+  * Zeigt die verschiedenen Werte der Geometrie
+  */
+  showGeomStatus: function() {
+    if (kvm.activeLayer && kvm.activeLayer.activeFeature) {
+      console.log('activeFeature.point %o', kvm.activeLayer.activeFeature.get('point'));
+      console.log('activeFeature.oldGeom %o', kvm.activeLayer.activeFeature.oldGeom);
+      console.log('activeFeature.geom %o', kvm.activeLayer.activeFeature.geom);
+      console.log('activeFeature.newGeom %o', kvm.activeLayer.activeFeature.newGeom);
+      console.log('form geom_wkt: %s', $('#geom_wkt').val());
+      console.log('form ' + kvm.activeLayer.get('geometry_attribute') + ': %s', $('.form-field [name="' + kvm.activeLayer.get('geometry_attribute') + '"]').val());
+    }
+    if (kvm.activeLayer.activeFeature.editableLayer) {
+      console.log('editableLayer: %o', kvm.activeLayer.activeFeature.editableLayer.getLatLng());
+    }
   }
 
 };

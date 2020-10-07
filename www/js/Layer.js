@@ -1052,6 +1052,7 @@ function Layer(stelle, settings = {}) {
         var key = attr.get('name'),
             val = this.get(key);
 
+        console.log('Set formField with value: %o', val);
         attr.formField.setValue(val);
       }).bind(feature)
     );
@@ -1131,9 +1132,9 @@ function Layer(stelle, settings = {}) {
   };
 
   /*
-  * Legt ein neues Feature Objekt an
-  * übernimmt die Geometrie vom GPS oder der Mitte der Karte
-  * und macht die Geometrie editierbar.
+  * Deselectiert das aktive Feature falls vorhanden
+  * Legt ein neues Feature Objekt ohne Geometry an und
+  * ordnet diese activeFeature zu
   */
   this.newFeature = function(evt) {
     kvm.log('Layer.newFeature', 4);
@@ -1141,7 +1142,6 @@ function Layer(stelle, settings = {}) {
     if (this.activeFeature) {
       this.activeFeature.unselect();
     }
-    // Erzeugt ein neues leeres Feature Objekt erstmal ohne Geometrie
     this.activeFeature = new Feature(
       '{ "' + this.get('id_attribute') + '": "' + kvm.uuidv4() + '", "version": "' + ((this.get('syncVersion') == 'null' ? 0 : this.get('syncVersion')) + 1) + '"}',
       {
@@ -1152,7 +1152,6 @@ function Layer(stelle, settings = {}) {
       }
     );
     console.log('Neues Feature mit id: %s erzeugt.', this.activeFeature.id);
-    this.editFeature();
   };
 
   this.editFeature = function(featureId = null) {
@@ -1379,7 +1378,7 @@ function Layer(stelle, settings = {}) {
   };
 
   this.collectChanges = function(action) {
-    kvm.log('Layer.collectChanges', 4);
+    kvm.log('Layer.collectChanges ' + (action ? ' with action: ' + action : ''), 4);
     var activeFeature = this.activeFeature,
         changes = [];
 
@@ -1396,11 +1395,17 @@ function Layer(stelle, settings = {}) {
         ) {
           var key = attr.get('name'),
               oldVal = activeFeature.get(key),
-              newVal = attr.formField.getValue(this.action);
+              newVal = attr.formField.getValue(action);
 
           if (typeof oldVal == 'string') oldVal = oldVal.trim();
           if (typeof newVal == 'string') newVal = newVal.trim();
-          if (oldVal == 'null' && newVal == null) newVal = 'null'; // null String und null Object sollen gleich sein beim Vergleich
+          if (oldVal == 'null' && newVal == null) {
+            newVal = 'null'; // null String und null Object sollen gleich sein beim Vergleich
+          }
+
+          if (attr.get('name') == this.geometry_attribute && action == 'insert') {
+            oldVal = '';
+          }
 
           kvm.log('Vergleiche ' + attr.get('form_element_type') + ' Attribut: ' + key + '(' + oldVal + ' (' + typeof oldVal + ') vs. ' + newVal + '(' + typeof newVal + '))');
 
@@ -1417,7 +1422,7 @@ function Layer(stelle, settings = {}) {
             }
           }
         }
-      }).bind({ action: action})
+      }).bind({ geometry_attribute: this.get('geometry_attribute') })
     );
 
     return changes;
