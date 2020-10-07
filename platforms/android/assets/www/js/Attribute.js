@@ -142,7 +142,7 @@ function Attribute(layer, settings = {}) {
         this.get('options') == '' ||
         action == this.get('options').toLowerCase()
       );
-    kvm.log('Attribute ' + this.get('name') + ' is Autoattribute for action ' + action + '? ' + answer, 4);
+    kvm.log('Attribute ' + this.get('name') + ' is Autoattribute' + (action ? ' for action ' + action : '') + '? ' + answer, 4);
     return answer;
   };
 

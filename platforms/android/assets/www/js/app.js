@@ -166,7 +166,7 @@ kvm = {
           }
         ),
         baseMaps = {
-          'Hintergrundkarte offline': orka_offline,
+//          'Hintergrundkarte offline': orka_offline,
           'Hintergrundkarte online': orka_online
         };
 
@@ -1326,7 +1326,7 @@ kvm = {
   },
 
   log: function(msg, level = 3, show_in_sperr_div = false) {
-    if (level <= config.logLevel) {
+    if (level <= config.logLevel && (typeof msg === 'string' || msg instanceof String)) {
       msg = this.replacePassword(msg);
       if (config.debug) {
         console.log('Log msg: ' + msg);

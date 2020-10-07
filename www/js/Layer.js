@@ -1080,7 +1080,7 @@ function Layer(stelle, settings = {}) {
           }).bindPopup(this.getPopup(feature));
           circleMarker.setStyle(feature.getNormalCircleMarkerStyle());
           circleMarker.on('click', function(evt) {
-            if (kvm.activeLayer.activeFeature.editable) {
+            if (kvm.activeLayer.activeFeature && kvm.activeLayer.activeFeature.editable) {
               $('.popup-functions').hide();
             }
             else {
@@ -1341,8 +1341,7 @@ function Layer(stelle, settings = {}) {
 
       console.log('Setze click event for marker');
       circleMarker.on('click', function(evt) {
-        kvm.log(kvm.activeLayer.activeFeature.editable, 4);
-        if (kvm.activeLayer.activeFeature.editable) {
+        if (kvm.activeLayer.activeFeature && kvm.activeLayer.activeFeature.editable) {
           $('.popup-functions').hide();
         }
         else {
@@ -1972,7 +1971,7 @@ function Layer(stelle, settings = {}) {
                   if (change.newVal == null) {
                     return 'null';
                   }
-                  if (change.type == 'TEXT') {
+                  if (['TEXT', 'DATE'].includes(change.type)) {
                     return "'" + change.newVal + "'";
                   }
                   else {
