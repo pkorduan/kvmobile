@@ -1072,6 +1072,22 @@ function Layer(stelle, settings = {}) {
     }
   };
 
+  this.loadTplFeatureToForm = function(tplId) {
+    kvm.log('Layer.loadTplFeatureToForm.', 4);
+    $.map(
+      this.attributes,
+      (function(attr) {
+        var key = attr.get('name'),
+            val = this.get(key); // this is here the tplFeature
+
+        if (!['uuid', 'version', this.options.geometry_attribute].includes(key)) {
+          console.log('Set %s %s: %s', attr.get('form_element_type'), key, val);
+          attr.formField.setValue(val);
+        }
+      }).bind(this.features[tplId])
+    );
+  };
+
   /*
   * Zeichnet die Features in die Karte
   */
@@ -1145,7 +1161,7 @@ function Layer(stelle, settings = {}) {
   * Legt ein neues Feature Objekt ohne Geometry an und
   * ordnet diese activeFeature zu
   */
-  this.newFeature = function(evt) {
+  this.newFeature = function() {
     kvm.log('Layer.newFeature', 4);
 
     if (this.activeFeature) {
@@ -1382,7 +1398,7 @@ function Layer(stelle, settings = {}) {
     layer.bindPopup(this.getPopup(feature));
 
     console.log('Zoome zum Feature');
-    this.selectFeature(feature);
+    this.selectFeature(feature, false);
 
   };
 

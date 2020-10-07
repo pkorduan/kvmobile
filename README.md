@@ -8,6 +8,12 @@ https://github.com/srahn/kvwmap/
 http://kvwmap.de
 
 # Change log
+## 1.5.8
+	* Fix bug bei Erzeugung neuer Feature. Die Geometrie wird jetzt korrekt übernommen und keine Fehler wegen fehlernder Werte.
+	* Default Werte werden korrekt gesetzt bei neuen Datensätzen
+	* Zoomeinstellung wird nach dem Speichern von Geometrien erhalten.
+	* Fehler beim Speichern von Date bei neuen Datensätzen behoben.
+	* Funktion zum Übernehmen der Werte vorhandener Features in Formular eines neuen Features.
 ## 1.5.7
 	* Datumsfelder als Formularfeld mit Datumspicker.
 	* Bessere Formatierung des Formulars mit besserer Unterscheidung von editier- und nicht editierbaren Feldern.

@@ -1,5 +1,5 @@
 kvm = {
-  version: '1.5.7',
+  version: '1.5.8',
   Buffer: require('buffer').Buffer,
   wkx: require('wkx'),
   controls: {},
@@ -785,6 +785,17 @@ kvm = {
       }
     );
 
+    $('#tplFeatureButton').on(
+      'click',
+      function() {
+        var tplId = kvm.activeLayer.activeFeature.id;
+        kvm.activeLayer.newFeature();
+        kvm.activeLayer.editFeature();
+        kvm.activeLayer.loadTplFeatureToForm(tplId);
+        //kvm.showGeomStatus();
+      }
+    );
+
     /*
     * Läd das Formular im Editiermodus
     */
@@ -1166,7 +1177,7 @@ kvm = {
           $('#restoreFeatureButton').show();
         }
         else {
-          $('#editFeatureButton').show();
+          $('#editFeatureButton, #tplFeatureButton').show();
         }
         $("#dataView").show().scrollTop(0);
         break;
