@@ -160,13 +160,13 @@ kvm = {
             minZoom: this.mapSettings.minZoom,
             maxZoom: this.mapSettings.maxZoom,
             layers: [
-             // orka_offline,
+              orka_offline,
               orka_online
             ]
           }
         ),
         baseMaps = {
-//          'Hintergrundkarte offline': orka_offline,
+          'Hintergrundkarte offline': orka_offline,
           'Hintergrundkarte online': orka_online
         };
 
