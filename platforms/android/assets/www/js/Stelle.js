@@ -211,14 +211,11 @@ function Stelle(settings = {}) {
                 var layerSettings = resultObj.layers.filter(function(layer) { return layer.id = layerId; })[0],
                     layer;
 
-                console.log('Layer.reloadLayer create layer with settings: %o', layerSettings);
-
                 kvm.activeLayer.clearData();
 
                 layer = new Layer(kvm.activeStelle, layerSettings);
                 layer.saveToStore();
                 layer.updateTable();
-                console.log('Store after save layer: %o', kvm.store);
                 layer.setActive();
               }
               else {
@@ -275,7 +272,7 @@ function Stelle(settings = {}) {
 
               if (resultObj.success) {
                 var layers = [];
-                kvm.log('Download erfolgreich.', 3);
+                kvm.alog('Download erfolgreich.', '', 3);
                 //console.log('resultObj: %o', resultObj);
                 $('#layer_list').html('');
                 if ('layerIds_' + kvm.activeStelle.get('id') in kvm.store) {

@@ -12,9 +12,9 @@ config = {
 //  localImgPath: 'file:///storage/' + 'BAB2-4AA9' + '/Android/data/de.gdiservice.kvmobile/cache/',
   localImgPath:    'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/',
   localTilePath:   'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/',
-  localBackupPath: 'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/',
+  localBackupPath: 'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/Backups/',
   projZone: 33,
-  logLevel: 4, // 0 off, 1 error, 2 waring, 3 info, 4 debug
+  logLevel: 3, // 0 off, 1 error, 2 waring, 3 info, 4 debug, 5 all
   debug: true,
   kvwmapServerId: 1,
   kvwmapServerName: 'kvwmap',
@@ -27,6 +27,7 @@ config = {
 
   // LK-VG
   mapSettings: {
+    newPosSelect: 2,
     minZoom: 8,
     maxZoom: 18,
     startZoom: 8,
@@ -47,4 +48,29 @@ config = {
       attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
     }
   }
+
+/*
+  // LK-EE
+  mapSettings: {
+    minZoom: 8,
+    maxZoom: 18,
+    startZoom: 8,
+    west: 339600,
+    south: 5894500,
+    east: 492200,
+    north: 6016500,
+    startCenterLat: 53.78441,
+    startCenterLon: 13.81898
+  },
+  kvwmapServerUrl: 'https://geoportal.lkee.de',
+  kvwmapServerLoginName: '',
+  kvwmapServerPasswort: '',
+  backgroundLayerOnline: {
+    type: 'tile',
+    url : 'https://isk.geobasis-bb.de/mapproxy/dop20c_wmts/service?service=WMTS&request=GetTile&version=1.0.0&layer=bebb_dop20c&style=default&format=image/png&TileMatrixSet=grid_25833&TileMatrix={z}&TileRow={x}&TileCol={y}',
+    params: {
+      attribution: "LGB WMTS DOP20c"
+    }
+  }
+*/
 }

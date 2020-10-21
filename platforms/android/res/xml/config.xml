@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<widget id="de.gdiservice.kvmobile" version="1.5.4" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+<widget id="de.gdiservice.kvmobile" version="1.5.9" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
     <feature name="Camera">
         <param name="android-package" value="org.apache.cordova.camera.CameraLauncher" />
     </feature>
@@ -51,6 +51,8 @@
     <access origin="https://geoportal-vg.de/kvwmap/*" />
     <access origin="https://geoportal-vg.de/kvwmap_test/*" />
     <access origin="https://geoport.lk-vr.de/kvwmap/*" />
+    <access origin="https://geoport-lk-mse.de/kvwmap/*" />
+    <access origin="https://geoport-lk-mse.de/supergis/*" />
     <access origin="https://geoportal.lkee.de/*" />
     <access origin="https://www.orka-mv.de/*" />
     <access origin="https://isk.geobasis-bb.de/mapproxy/*" />

@@ -79,15 +79,18 @@ function Feature(
   this.setData = function(data) {
     //console.log('Feature.setData %o', data);
     this.data = (typeof data == 'string' ? $.parseJSON(data) : data);
+    this.setGeomFromData();
   };
 
   /*
-  * Setzt die Geometrie neu an Hand der übergebenen wkx Geometrie neu wenn sie sich gegenüber der vorherigen geändert hat.
+  * Setzt die Geometrie neu an Hand der übergebenen wkx Geometrie wenn sie sich gegenüber der vorherigen geändert hat.
   * und lößt den Trigger aus, der angibt, dass sich die Geom des Features geändert hat.
   */
   this.setGeom = function(wkx) {
     console.log('setGeom mit wkx: %o', wkx);
+    console.log('Überschreibe oldGeom: %o mit newGeom: %o', this.oldGeom, this.newGeom);
     var oldGeom = this.newGeom;
+    console.log('Überschreibe newGeom mit wkx: %o', wkx);
     this.newGeom = wkx;
     console.log('vergleiche oldGeom: %o mit newGeom: %o', oldGeom, this.newGeom);
 
@@ -230,20 +233,29 @@ function Feature(
     $('.feature-item').removeClass('selected-feature-item');
   };
 
-  this.select = function() {
+  this.select = function(zoom) {
     kvm.log('Markiere Feature ' + this.id, 4);
 
-    kvm.log('Select feature in map ' + this.markerId,4 );
-    kvm.log('Set style %o',this.getSelectedCircleMarkerStyle());
-    kvm.map._layers[this.markerId].setStyle(this.getSelectedCircleMarkerStyle());
-    kvm.map.setZoom(18);
-    kvm.map.panTo(kvm.map._layers[this.markerId].getLatLng());
+    if (this.newGeom) {
+      console.log('Feature has newGeom');
+      kvm.log('Select feature in map ' + this.markerId, 4);
+      kvm.log('Set style %o',this.getSelectedCircleMarkerStyle());
+      kvm.map._layers[this.markerId].setStyle(this.getSelectedCircleMarkerStyle());
+      if (zoom) {
+        kvm.map.setZoom(17);
+      }
+      kvm.map.panTo(kvm.map._layers[this.markerId].getLatLng());
 
-    if (!this.showPopupButtons()) {
-      $('.popup-functions').hide();
+      if (!this.showPopupButtons()) {
+        console.log('hide popup-functinos in select because showPopupButtons is false');
+        $('.popup-functions').hide();
+      }
     }
-
-    kvm.log('Select feature in list' + this.id, 4);
+    else {
+      console.log('Feature hat noch eine newGeom und noch nicht in Karte');
+      kvm.msg('Das Feature hat noch keine Geometrie und ist deshalb nicht in der Karte zu sehen!', 'Hinweis');
+    }
+    kvm.log('Select feature in list ' + this.id, 4);
     $('#' + this.id).addClass('selected-feature-item');
     return this;
   };
@@ -260,6 +272,10 @@ function Feature(
   */
   this.addListElement = function() {
     kvm.log('Feature.addListElement', 4);
+    console.log('this: ', this);
+    debug_t = this;
+    console.log('Add listelement: %o', this.listElement());
+
     $('#featurelistBody').prepend(this.listElement());
     kvm.log(this.id + ' zur Liste hinzugefügt.', 4);
 
@@ -297,9 +313,14 @@ function Feature(
     return { color: "#666666", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#cccccc" };
   };
 
-  if (this.data[this.options.geometry_attribute]) {
-    //console.log('Setze geom des neuen Features mit data: %o', this.data);
-    this.geom = this.wkbToWkx(this.data[this.options.geometry_attribute]);
+  this.setGeomFromData = function() {
+    if (this.data[this.options.geometry_attribute]) {
+      //console.log('Setze geom des neuen Features mit data: %o', this.data);
+      this.geom = this.wkbToWkx(this.data[this.options.geometry_attribute]);
+    }
+    this.newGeom = this.geom; // Aktuelle WKX-Geometry beim Editieren. Entspricht this.geom wenn das Feature neu geladen wurde und Geometrie in Karte, durch GPS oder Formular noch nicht geändert wurde.
   }
-  this.newGeom = this.geom; // Aktuelle WKX-Geometry beim Editieren. Entspricht this.geom wenn das Feature neu geladen wurde und Geometrie in Karte, durch GPS oder Formular noch nicht geändert wurde.
+
+  this.setGeomFromData();
+
 }

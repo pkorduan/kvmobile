@@ -38,31 +38,17 @@ function DateTimeFormField(formId, settings) {
   };
 
   this.getValue = function(action = '') {
-   kvm.log('DateTimeFormField.getValue', 4);
+    kvm.log('DateTimeFormField.getValue', 4);
     var val = this.element.val();
-
     if (typeof val === "undefined" || val == '') {
       val = null;
     }
-
-    // return current time if attribut type is Time and (action is empty or equal to option)
-    kvm.log('name: ' + this.get('name') + ' formtype: ' + this.get('form_element_type') + ' action: ' + action + ' option: ' + this.get('options') + ' value: ' + this.element.val(), 4);
-    if (
-      this.get('form_element_type') == 'Time' &&
-      (
-        action == '' ||
-        action.toLowerCase() == this.get('options').toLowerCase()
-      ) &&
-      this.get('name') != 'updated_at_server'
-    ) {
-      var now = new Date();
-      val = now.getFullYear() + '-' + String('0' + parseInt(now.getMonth() + 1)).slice(-2) + '-' + String('0' + now.getDate()).slice(-2) + 'T'
-        + String('0' + now.getHours()).slice(-2) + ':' + String('0' + now.getMinutes()).slice(-2) + ':' + String('0' + now.getSeconds()).slice(-2)  + 'Z';
-     // val = (new Date()).toISOString()
-    }
-
-    //return this.fromISO(val);
     return val;
+  };
+
+  this.getAutoValue = function() {
+    kvm.log('DateTimeFormField.getAutoValue', 4);
+    return kvm.now();
   };
 
   this.bindEvents = function() {

@@ -1,5 +1,5 @@
 kvm = {
-  version: '1.5.4',
+  version: '1.5.9',
   Buffer: require('buffer').Buffer,
   wkx: require('wkx'),
   controls: {},
@@ -81,31 +81,35 @@ kvm = {
 
       if (this.store.getItem('activeLayerId')) {
         var activeLayerId = this.store.getItem('activeLayerId'),
-            activeLayerSettings = this.store.getItem('layerSettings_' + activeStelleId + '_' + activeLayerId),
-            layer = new Layer(stelle, activeLayerSettings);
+            activeLayerSettings = this.store.getItem('layerSettings_' + activeStelleId + '_' + activeLayerId);
 
-        kvm.log('Aktiven Layer ' +  activeLayerId + ' gefunden.', 3);
+        if (activeLayerSettings != null) {
+          layer = new Layer(stelle, activeLayerSettings);
 
-        // ToDo do not createTable instead attach schema database for layer if not exists
-        // before create LayerList();
-        layer.createTable();
-        setTimeout(
-          function() {
-            kvm.controller.mapper.createLayerList(stelle);
-            kvm.log('Setze Layer: ' + layer.get('schema_name') + '.' + layer.get('table_name'), 3);
-            layer.setActive();
-            kvm.layerDataLoaded = false;
-            kvm.featureListLoaded = false;
-            //layer.loadFeaturesToMap();
-            layer.readData($('#limit').val(), $('#offset').val()); // load from loacl db to feature list
-          },
-          2000
-        );
+          kvm.log('Aktiven Layer ' +  activeLayerId + ' gefunden.', 3);
+
+          // ToDo do not createTable instead attach schema database for layer if not exists
+          // before create LayerList();
+          layer.createTable();
+          setTimeout(
+            function() {
+              kvm.controller.mapper.createLayerList(stelle);
+              kvm.log('Setze Layer: ' + layer.get('schema_name') + '.' + layer.get('table_name'), 3);
+              layer.setActive();
+              kvm.layerDataLoaded = false;
+              kvm.featureListLoaded = false;
+              //layer.loadFeaturesToMap();
+              layer.readData($('#limit').val(), $('#offset').val()); // load from loacl db to feature list
+            },
+            2000
+          );
+        }
       }
       else {
-        kvm.msg('Laden Sie die Layer vom Server.');
+        kvm.msg('Laden Sie die Stellen und Layer vom Server.');
         $('#newFeatureButton, #showDeltasButton').hide();
         activeView = 'settings';
+        this.showSettingsDiv('server');
       }
     }
     else {
@@ -113,7 +117,7 @@ kvm = {
       var stelle = new Stelle('{}');
       stelle.viewDefaultSettings();
       activeView = 'settings';
-      $(document).scrollTop($('#serverSettingHeader').offset().top);
+      this.showSettingsDiv('server');
     };
 
     // ToDo
@@ -223,6 +227,7 @@ kvm = {
     if (!(this.mapSettings = JSON.parse(kvm.store.getItem('mapSettings')))) {
       this.saveMapSettings(config.mapSettings);
     }
+    $('#newPosSelect').val(this.mapSettings.newPosSelect);
     $('#mapSettings_west').val(this.mapSettings.west);
     $('#mapSettings_south').val(this.mapSettings.south);
     $('#mapSettings_east').val(this.mapSettings.east);
@@ -319,6 +324,16 @@ kvm = {
       false
     );
 
+    $('.h2-div').on(
+      'click',
+      function(evt) {
+        var h2 = $(evt.target)
+            h2div = h2.parent();
+        h2.toggleClass('b-collapsed b-expanded');
+        h2div.next().toggle();
+      }
+    );
+
     $('#showFormEdit').on(
       'click',
       function() {
@@ -393,6 +408,7 @@ kvm = {
           $('#saveServerSettingsButton').toggleClass('settings-button settings-button-active');
         }
         if (navigator.onLine) {
+          kvm.showSettingsDiv('layer');
           $('#requestLayersButton').show();
         }
         else {
@@ -461,8 +477,11 @@ kvm = {
       'click',
       function() {
         navigator.notification.prompt(
-          'Geben Sie einen Namen für die Sicherungsdatei an. Die Datenbank wird im Internen Speicher im Verzeichnis ' + kvm.store.getItem('localBackupPath') + ' mit der Dateiendung .db gespeichert.',
+          'Geben Sie einen Namen für die Sicherungsdatei an. Die Datenbank wird im Internen Speicher im Verzeichnis ' + kvm.store.getItem('localBackupPath') + ' mit der Dateiendung .db gespeichert. Ohne Eingabe wird der Name "Sicherung_" + aktuellem Zeitstempel + ".db" vergeben.',
           function(arg) {
+            if (arg.input1 == '') {
+              arg.input1 = 'Sicherung_' + kvm.now();
+            }
             kvm.controller.files.copyFile(
               'file:///data/user/0/de.gdiservice.kvmobile/databases/',
               'kvmobile.db',
@@ -544,35 +563,6 @@ kvm = {
         kvm.showItem('loggings');
       }
     )
-
-    /* wird nicht mehr benutzt
-    $('#backArrow').on(
-      'click',
-      function(evt) {
-        if ($('#saveFeatureButton').hasClass('active-button')) {
-          navigator.notification.confirm(
-            'Änderungen verwerfen?',
-            function(buttonIndex) {
-              if (buttonIndex == 1) { // ja
-                kvm.showItem('featurelist');
-                $('#saveFeatureButton').toggleClass('active-button inactive-button');
-                $('.popup-aendern-link').show();
-                kvm.controller.mapper.clearWatch();
-              }
-              if (buttonIndex == 2) { // nein
-                // Do nothing
-              }
-            },
-            'Formular',
-            ['ja', 'nein']
-          );
-        }
-        else {
-          kvm.showItem('featurelist');
-        }
-      }
-    );
-    */
 
     /*
     * Bricht Änderungen im Formular ab,
@@ -676,8 +666,8 @@ kvm = {
               if (buttonIndex == 1) { // ja
                 kvm.log('Lösche Feature uuid: ' + kvm.activeLayer.activeFeature.get('uuid'), 3);
                 kvm.controller.mapper.clearWatch();
-                kvm.activeLayer.createDeltas('DELETE', []);
-                kvm.activeLayer.createImgDeltas('DELETE',
+                kvm.activeLayer.runDeleteStrategy();
+                kvm.activeLayer.createImgDeltas(
                   $.map(
                     kvm.activeLayer.getDokumentAttributeNames(),
                     function(name) {
@@ -727,35 +717,17 @@ kvm = {
             navigator.notification.confirm(
               'Datensatz Speichern?',
               function(buttonIndex) {
-                var action = (kvm.activeLayer.activeFeature.options.new ? 'INSERT' : 'UPDATE');
+                var action = (kvm.activeLayer.activeFeature.options.new ? 'insert' : 'update');
                 kvm.log('Action: ' + action, 4);
                 if (buttonIndex == 1) { // ja
                   kvm.log('Speichern', 3);
-                  changes = kvm.activeLayer.collectChanges(action);
-
-                  if (changes.length > 0) {
-                    // more than created_at or updated_at_client
-                    kvm.activeLayer.createDeltas(action, changes);
-                    imgChanges = changes.filter(
-                      function(change) {
-                        return ($.inArray(change.key, kvm.activeLayer.getDokumentAttributeNames()) > -1);
-                      }
-                    );
-                    if (imgChanges.length > 0) {
-                      kvm.activeLayer.createImgDeltas(action, imgChanges);
-                    }
-                    else {
-                      console.log('no imgChanges');
-                    }
+                  if (action == 'insert') {
+                    kvm.activeLayer.runInsertStrategy();
                   }
                   else {
-                    kvm.log('Keine Änderungen.', 2);
-                    kvm.msg('Keine Änderungen!');
+                    kvm.activeLayer.runUpdateStrategy();
                   }
-
-                  $('.popup-aendern-link').show();
-                  saveButton.toggleClass('active-button inactive-button');
-                  kvm.controller.mapper.clearWatch();
+                  //kvm.showGeomStatus();
                 }
 
                 if (buttonIndex == 2) { // nein
@@ -806,7 +778,22 @@ kvm = {
 
     $('#newFeatureButton').on(
       'click',
-      this.controller.mapper.newFeature
+      function() {
+        kvm.activeLayer.newFeature();
+        kvm.activeLayer.editFeature();
+        //kvm.showGeomStatus();
+      }
+    );
+
+    $('#tplFeatureButton').on(
+      'click',
+      function() {
+        var tplId = kvm.activeLayer.activeFeature.id;
+        kvm.activeLayer.newFeature();
+        kvm.activeLayer.editFeature();
+        kvm.activeLayer.loadTplFeatureToForm(tplId);
+        //kvm.showGeomStatus();
+      }
     );
 
     /*
@@ -814,14 +801,32 @@ kvm = {
     */
     $('#editFeatureButton').on(
       'click',
-      { "context": this },
-      function(evt) {
-        var this_ = evt.data.context,
-            featureId = this_.activeLayer.activeFeature.id,
-            feature = this_.activeLayer.features[featureId];
+      function() {
+        kvm.activeLayer.editFeature();
+      }
+    );
 
-//        this_.activeLayer.loadFeatureToForm(feature, { editable: true });
-        kvm.activeLayer.editGeometry(featureId);
+    $('#restoreFeatureButton').on(
+      'click',
+      function() {
+        navigator.notification.confirm(
+          'Wollen Sie den Datensatz wiederherstellen? Ein vorhandener mit der gleichen uuid wird dabei überschrieben!',
+          function(buttonIndex) {
+            if (buttonIndex == 2) { // ja
+              $('#sperr_div_content').html('Wiederherstellung von Datensätzen ist noch nicht implementiert!');
+              kvm.activeLayer.runRestoreStrategy();
+              $('#sperr_div').show();
+              setTimeout(function() {
+                $('#sperr_div').hide();
+              }, 3000);
+            }
+            else {
+              $('#sperr_div').hide();
+            }
+          },
+          'Datensatz wiederherstellen',
+          ['nein', 'ja']
+        );
       }
     );
 
@@ -909,23 +914,25 @@ kvm = {
       }
     );
 
-    $('#layerFunctionsButton').on(
+    $('.layer-functions-button').on(
       'click',
       function(evt) {
-        var target = evt.target;
-        //zeige alle darunter liegenden layer-functions-div
-        $(target).parent().children().filter('.layer-functions-div').toggle();
-        $(target).children().toggleClass('fa-ellipsis-v fa-window-close-o');
+        console.log()
+        var target = $(evt.target);
+        target.parent().children().filter('.layer-functions-div').toggle();
+        target.toggleClass('fa-ellipsis-v fa-window-close-o');
       }
     );
 
     $('.sync-layer-button' + (layerGlobalId > 0 ? "[id='syncLayerButton_" + layerGlobalId + "']" : '')).on(
       'click',
       function(evt) {
-        var layer = kvm.activeLayer;
+        var layer = kvm.activeLayer,
+            target = $(evt.target);
+
         $('#sperr_div_content').html('');
 
-        if ($('.sync-layer-button').hasClass('inactive-button')) {
+        if (target.hasClass('inactive-button')) {
           kvm.msg('Keine Internetverbindung! Kann Layer jetzt nicht synchronisieren.');
         }
         else {
@@ -971,9 +978,10 @@ kvm = {
     $('.sync-images-button' + (layerGlobalId > 0 ? "[id='syncImagesButton_" + layerGlobalId + "']" : '')).on(
       'click',
       function(evt) {
-        var layer = kvm.activeLayer;
+        var layer = kvm.activeLayer,
+            target = $(evt.target);
 
-        if ($('.sync-images-button').hasClass('inactive-button')) {
+        if (target.hasClass('inactive-button')) {
           kvm.msg('Keine Internetverbindung! Kann Bilder jetzt nicht synchronisieren.');
         }
         else {
@@ -1164,7 +1172,13 @@ kvm = {
         break;
       case "dataView":
         $(".menu-button").hide();
-        $("#showSettings, #showFeatureList, #showMap, #editFeatureButton").show();
+        $("#showSettings, #showFeatureList, #showMap").show();
+        if ($('#historyFilter').is(':checked')) {
+          $('#restoreFeatureButton').show();
+        }
+        else {
+          $('#editFeatureButton, #tplFeatureButton').show();
+        }
         $("#dataView").show().scrollTop(0);
         break;
       case "formular":
@@ -1179,6 +1193,31 @@ kvm = {
         kvm.showDefaultMenu();
         $("#settings").show();
     }
+  },
+
+  collapseAllSettingsDiv: function() {
+    $('.h2-div > h2').removeClass('b-expanded').addClass('b-collapsed');
+    $('.h2-div + div').hide();
+  },
+
+  expandAllSettingsDiv: function() {
+    $('.h2-div > h2').removeClass('b-collapsed').addClass('b-expanded'),
+    $('.h2-div + div').show();
+  },
+
+  hideSettingsDiv: function(name) {
+    var target = $('.h2_' + name);
+    this.collapseAllSettingsDiv();
+    target.removeClass('b-expanded').addClass('b-collapsed');
+    target.parent().next().hide();
+  },
+
+  showSettingsDiv: function(name) {
+    var target = $('#h2_' + name);
+    this.collapseAllSettingsDiv();
+    target.removeClass('b-collapsed').addClass('b-expanded');
+    target.parent().next().show();
+    $('#settings').scrollTop(target.offset().top)
   },
 
   showDefaultMenu: function() {
@@ -1262,7 +1301,6 @@ kvm = {
   },
 
   paginate: function(evt) {
-    debug_e = evt;
     var limit = 25,
         target = $(evt),
         page = parseInt(target.attr('page')),
@@ -1302,10 +1340,45 @@ kvm = {
   },
 
   log: function(msg, level = 3, show_in_sperr_div = false) {
-    if (level <= config.logLevel) {
+    if (level <= config.logLevel && (typeof msg === 'string' || msg instanceof String)) {
       msg = this.replacePassword(msg);
       if (config.debug) {
         console.log('Log msg: ' + msg);
+      }
+      setTimeout(function() {
+        $('#logText').append('<br>' + msg);
+        if (show_in_sperr_div) {
+          $('#sperr_div_content').html(msg);
+        }
+      });
+    }
+  },
+
+  alog: function(msg, arg = '', level = 3, show_in_sperr_div = false) {
+    if (level <= config.logLevel) {
+      msg = this.replacePassword(msg);
+      if (config.debug) {
+        var e = new Error();
+        if (!e.stack)
+            try {
+                // IE requires the Error to actually be thrown or else the 
+                // Error's 'stack' property is undefined.
+                throw e;
+            } catch (e) {
+                if (!e.stack) {
+                    //return 0; // IE < 10, likely
+                }
+            }
+        var stack = e.stack.toString().split(/\r\n|\n/);
+        if (msg === '') {
+            msg = '""';
+        }
+        if (arg != '') {
+          console.log('Log msg: ' + msg, arg);
+        }
+        else {
+          console.log('Log msg: ' + msg);
+        }
       }
       setTimeout(function() {
         $('#logText').append('<br>' + msg);
@@ -1337,7 +1410,7 @@ kvm = {
   coalesce: function() {
     var i, undefined, arg;
 
-    for( i=0; i < arguments.length; i++ ) {
+    for( i = 0; i < arguments.length; i++ ) {
       arg = arguments[i];
       if (
         arg !== 'null' &&
@@ -1455,7 +1528,6 @@ kvm = {
   * @return string If it is a string returns a single quotation mark "'" if not or unknown returns an empty string ""
   */
   bracketForType: function(type) {
-    kvm.log('Frage an ob type: ' + type + ' Hochkommas braucht.');
     return (['bpchar', 'varchar', 'text', 'date', 'timestamp', 'geometry'].indexOf(type) > -1 ? "'" : "");
   },
 
@@ -1475,8 +1547,35 @@ kvm = {
         operator: cur.operator
       }}), {});
     return filter;
-  }
+  },
 
+  now: function() {
+    var now = new Date();
+    return now.getFullYear() + '-' + String('0' + parseInt(now.getMonth() + 1)).slice(-2) + '-' + String('0' + now.getDate()).slice(-2) + 'T'
+      + String('0' + now.getHours()).slice(-2) + ':' + String('0' + now.getMinutes()).slice(-2) + ':' + String('0' + now.getSeconds()).slice(-2)  + 'Z';
+  },
+
+  today: function() {
+    var now = new Date();
+    return now.getFullYear() + '-' + String('0' + parseInt(now.getMonth() + 1)).slice(-2) + '-' + String('0' + now.getDate()).slice(-2);
+  },
+
+  /*
+  * Zeigt die verschiedenen Werte der Geometrie
+  */
+  showGeomStatus: function() {
+    if (kvm.activeLayer && kvm.activeLayer.activeFeature) {
+      console.log('activeFeature.point %o', kvm.activeLayer.activeFeature.get('point'));
+      console.log('activeFeature.oldGeom %o', kvm.activeLayer.activeFeature.oldGeom);
+      console.log('activeFeature.geom %o', kvm.activeLayer.activeFeature.geom);
+      console.log('activeFeature.newGeom %o', kvm.activeLayer.activeFeature.newGeom);
+      console.log('form geom_wkt: %s', $('#geom_wkt').val());
+      console.log('form ' + kvm.activeLayer.get('geometry_attribute') + ': %s', $('.form-field [name="' + kvm.activeLayer.get('geometry_attribute') + '"]').val());
+    }
+    if (kvm.activeLayer.activeFeature.editableLayer) {
+      console.log('editableLayer: %o', kvm.activeLayer.activeFeature.editableLayer.getLatLng());
+    }
+  }
 
 };
 
