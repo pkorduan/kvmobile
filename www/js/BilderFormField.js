@@ -8,7 +8,7 @@ function BilderFormField(formId, settings) {
 
   this.selector = '#' + formId + ' input[id=' + this.get('index') + ']',
 
-  this.element = $('\
+  this.element = $('<div class="form-value">').append('\
     <input\
       type="hidden"\
       id="' + this.get('index') + '"\
@@ -42,11 +42,11 @@ function BilderFormField(formId, settings) {
     }
     else {
       kvm.log('Add images to previews div: ' + val, 4);
-      images = this.removeBraces(val).split(',');
+      images = kvm.removeBraces(val).split(',');
       kvm.log('images: ' + JSON.stringify(images), 4);
       for (i = 0; i < images.length; i++) {
         remoteFile = images[i];
-        localFile = this.removeOriginalName(this.serverToLocalPath(remoteFile));
+        localFile = kvm.removeOriginalName(kvm.serverToLocalPath(remoteFile));
         kvm.log('images[' + i + ']: ' + remoteFile, 4);
 
         window.resolveLocalFileSystemURL(
@@ -78,54 +78,6 @@ function BilderFormField(formId, settings) {
     }
 
     return val;
-  };
-
-  /*
-  * Remove the part with original name of image in val
-  * Return the first part before & delimiter
-  */
-  this.removeOriginalName = function(val) {
-    kvm.log('BilderFormField.removeOriginalName: ' + val, 4);
-    return val.split('&').shift();
-  }
-
-  /*
-  * Remove first and last caracter from string
-  * in this class used to remove the braces {...} from array values
-  * but can be used also for all other enclosing character
-  */
-  this.removeBraces = function(val) {
-    kvm.log('BilderFormField.removeBraces ' + val, 4);
-    var result = val.substring(1, val.length-1)
-    return result;
-  }
-
-  /*
-  * Add braces around the value to make an array
-  */
-  this.addBraces = function(val) {
-    kvm.log('BilderformField.addBraces ' + val, 4);
-    var result = '{' + val + '}';
-    return result
-  }
-
-  /*
-  * Replace server image path by local image path
-  */
-  this.serverToLocalPath = function(src) {
-    kvm.log('BilderFormField.serverToLocalPath ' + src, 4);
-    var result = config.localImgPath + src.substring(src.lastIndexOf('/') + 1);
-    return result
-  };
-
-  /*
-  * Replace local image path by servers image path
-  */
-  this.localToServerPath = function(src) {
-    kvm.log('BilderFormField.localToServerPath src: ' + src, 4);
-    var result = kvm.activeLayer.get('document_path') + src.substring(src.lastIndexOf('/') + 1);
-    kvm.log('Result: ' + result,4);
-    return result
   };
 
   /*
@@ -210,8 +162,8 @@ function BilderFormField(formId, settings) {
     var val = this.getValue();
     val = (
       val == null
-        ? this.addBraces(newImg)
-        : this.addBraces(this.removeBraces(val) + ',' + newImg)
+        ? kvm.addBraces(newImg)
+        : kvm.addBraces(kvm.removeBraces(val) + ',' + newImg)
     );
     this.element.val(val);
     this.element.trigger('change');
@@ -232,8 +184,8 @@ function BilderFormField(formId, settings) {
     // ToDo implement this function and bind to delte choice of after dialog from image click
     // remove image string from field value
     imageField.val(
-      this.addBraces($.map(
-        this.removeBraces(imageField.val()).split(','),
+      kvm.addBraces($.map(
+        kvm.removeBraces(imageField.val()).split(','),
         function(path) {
           if (path.indexOf(src.substring(src.lastIndexOf('/') + 1)) < 0) {
             return path;
@@ -297,24 +249,34 @@ function BilderFormField(formId, settings) {
     );
   };
 
+  /**
+  * capture a picture
+  */
   this.takePicture = function(evt) {
     kvm.log('BilderFormField.takePicture: ' + JSON.stringify(evt), 4);
 
     navigator.camera.getPicture(
       (function(cameraPicture) {
         kvm.log('this.addImage(' + cameraPicture + ');', 4);
-        this.moveFile(cameraPicture, config.localImgPath);
-        $('#featureFormular input[id=2]').val((new Date()).toISOString().replace('Z', '')).show();
+
+        if (kvm.hasFilePath(cameraPicture, config.localImgPath)) {
+          this.addImage(cameraPicture);
+          this.addImgNameToVal(kvm.localToServerPath(cameraPicture));
+        }
+        else {
+          this.moveFile(cameraPicture, config.localImgPath);
+        }
+        $('#featureFormular input[name=bilder_updated_at]').val((new Date()).toISOString().replace('Z', '')).show();
       }).bind(evt.data.context),
       function(message) {
-        alert('Fehler wegen: ' + message);
+        kvm.msg('Keine Aufnahme gemacht! ' + message);
       }, {
-        quality: 25,
-        correctOrientation: true,
-        allowEdit: true,
+        quality: $('#cameraOptionsQualitySlider').val(),
+        correctOrientation: $('#cameraOptionsCorrectOrientation').is(':checked'),
+        allowEdit: $('#cameraOptionsAllowEdit').is(':checked'),
         sourceType: Camera.PictureSourceType.CAMERA,
         destinationType: Camera.DestinationType.FILE_URI,
-        saveToPhotoAlbum: false
+        saveToPhotoAlbum: $('#cameraOptionsSaveToPhotoAlbum').is(':checked')
       }
     );
   };
@@ -326,38 +288,38 @@ function BilderFormField(formId, settings) {
   * @return String Path and name of the file at destination directory
   */
   this.moveFile = (function(srcFile, dstDir) {
-    var dstFile = dstDir + srcFile.substring(srcFile.lastIndexOf('/') + 1),
-        dstDirEntry;
+    var dstFile = dstDir + srcFile.substring(srcFile.lastIndexOf('/') + 1);
 
+    kvm.log('moveFile ' + srcFile + ' nach ' + dstDir, 4);
     window.resolveLocalFileSystemURL(
       dstDir,
-      function success(dirEntry) {
-        dstDirEntry = dirEntry;
-      },
-      function (e) {
-        console.log('could not resolveLocalFileSystemURL: ' + dstDir);
-        console.log(JSON.stringify(e));
-      }
-    );
-
-    window.resolveLocalFileSystemURL(
-      srcFile,
-      (function success(fileEntry) {
-        fileEntry.moveTo(
-          dstDirEntry,
-          fileEntry.name,
-          (function() {
-            kvm.log('Datei: ' + fileEntry.name + ' nach: ' + dstDirEntry.toURL() + ' verschoben.');
-            this.addImage(dstFile);
-            this.addImgNameToVal(this.localToServerPath(dstFile));
+      (function success(dirEntry) {
+        kvm.log('Erzeuge dirEntry', 4);
+        console.log('Kopiere nach dstDirEntry: %o', dirEntry);
+        window.resolveLocalFileSystemURL(
+          srcFile,
+          (function success(fileEntry) {
+            fileEntry.moveTo(
+              dirEntry,
+              fileEntry.name,
+              (function() {
+                kvm.log('Datei: ' + fileEntry.name + ' nach: ' + dstDirEntry.toURL() + ' verschoben.');
+                this.addImage(dstFile);
+                this.addImgNameToVal(kvm.localToServerPath(dstFile));
+              }).bind(this),
+              function() {
+                console.log('copying FAILED');
+              }
+            );
           }).bind(this),
-          function() {
-            console.log('copying FAILED');
+          function (e) {
+            console.log('could not resolveLocalFileSystemURL: ' + srcFile);
+            console.log(JSON.stringify(e));
           }
         );
       }).bind(this),
       function (e) {
-        console.log('could not resolveLocalFileSystemURL: ' + srcFile);
+        console.log('could not resolveLocalFileSystemURL: ' + dstDir);
         console.log(JSON.stringify(e));
       }
     );
@@ -373,20 +335,6 @@ function BilderFormField(formId, settings) {
     kvm.log('getLocalImgPath for imageData: ' + imageData);
     result = 'file:///storage/' + imageData.split('file:///storage/')[1].split('/Android/data/de.gdiservice.kvmobile/files/')[0] + '/Android/data/de.gdiservice.kvmobile/files/';
     kvm.log('getLocalImgPath returning: ' + result);
-  };
-
-  this.withLabel = function() {
-    return $('\
-      <div class="form-field">\
-        <i id="takePictureButton_' + this.get('index') + '" class="fa fa-camera fa-2x" style="color: rgb(38, 50, 134)"/>\
-        <!--i id="selectPictureButton_' + this.get('index') + '" class="fa fa-picture-o fa-2x" style="color: rgb(38, 50, 134)"/-->\
-        <i id="dropAllPictureButton_' + this.get('index') + '" class="fa fa-trash fa-2x" style="color: rgb(238, 50, 50); float: right; display: none;"/>\
-        <div id="' + this.images_div_id + '"></div>\
-      </div><div class="clear"></div>\
-    ')
-    .append(
-      this.element
-    );
   };
 
   return this;

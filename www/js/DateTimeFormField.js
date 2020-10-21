@@ -1,3 +1,14 @@
+/*
+* create a dateTime form field in the structure
+*   <div class="form-field">
+*     <div class="form-label">
+*       <label for="name"/>
+*     </div>
+*     <div class="form-value">
+*       <input type="text" id="1" name="bezeichnung" value="Wert"/>
+*     </div>
+*   </div>
+*/
 function DateTimeFormField(formId, settings) {
   //console.log('Erzeuge DateTimeFormField with settings %o', settings);
   this.settings = settings,
@@ -44,10 +55,14 @@ function DateTimeFormField(formId, settings) {
       ) &&
       this.get('name') != 'updated_at_server'
     ) {
-      val = (new Date()).toISOString()
+      var now = new Date();
+      val = now.getFullYear() + '-' + String('0' + parseInt(now.getMonth() + 1)).slice(-2) + '-' + String('0' + now.getDate()).slice(-2) + 'T'
+        + String('0' + now.getHours()).slice(-2) + ':' + String('0' + now.getMinutes()).slice(-2) + ':' + String('0' + now.getSeconds()).slice(-2)  + 'Z';
+     // val = (new Date()).toISOString()
     }
 
-    return this.fromISO(val);
+    //return this.fromISO(val);
+    return val;
   };
 
   this.bindEvents = function() {
@@ -60,18 +75,6 @@ function DateTimeFormField(formId, settings) {
         }
       }
     );
-  };
-
-  this.withLabel = function() {
-    return $('<div class="form-field">').append(
-      $('<label for="' + this.get('name') + '"/>')
-        .html(
-          (this.get('alias') ? this.get('alias') : this.get('name')) + '<br>' 
-        )
-        .append(
-          this.element
-        )
-    )
   };
 
   this.toISO = function(datetime) {
