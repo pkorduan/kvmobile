@@ -1,5 +1,5 @@
 kvm = {
-  version: '1.5.8',
+  version: '1.5.9',
   Buffer: require('buffer').Buffer,
   wkx: require('wkx'),
   controls: {},

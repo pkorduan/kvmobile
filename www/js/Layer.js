@@ -1094,6 +1094,7 @@ function Layer(stelle, settings = {}) {
   this.drawFeatures = function() {
     kvm.log('Erzeuge Geometrieobjekte in der Karte: ', 3);
     kvm.log('Erzeuge ' + Object.keys(this.features).length + ' CircleMarker', 3);
+    console.log('drawFeatures mit showPopupButton: %s', this.showPopupButtons);
     $.each(
       this.features,
       (function (key, feature) {
@@ -1106,7 +1107,11 @@ function Layer(stelle, settings = {}) {
           }).bindPopup(this.getPopup(feature));
           circleMarker.setStyle(feature.getNormalCircleMarkerStyle());
           circleMarker.on('click', function(evt) {
+            console.log('open popup defined in drawFeatures');
+            console.log('activeFeature %s', kvm.activeLayer.activeFeature);
+            console.log('activeFeature.editable %s', kvm.activeLayer.activeFeature.editable);
             if (kvm.activeLayer.activeFeature && kvm.activeLayer.activeFeature.editable) {
+              console.log('hide all popup-functions with hide function defined in drawFeatures');
               $('.popup-functions').hide();
             }
             else {
@@ -1130,7 +1135,10 @@ function Layer(stelle, settings = {}) {
     var html;
 
     html = feature.get(this.get('name_attribute'));
+    console.log('getPopup');
+    console.log('showPopupButtons: %s', feature.showPopupButtons());
     if (feature.showPopupButtons()) {
+      console.log('showPopupButtons');
       html = html + '<br>\
         <div class="popup-functions">\
           <a\
@@ -1332,7 +1340,7 @@ function Layer(stelle, settings = {}) {
     if (feature.markerId) {
       console.log('feature.markerId: %s', feature.markerId);
       var layer = kvm.map._layers[feature.markerId];
-      console.log('layer extrahiert: %o'. layer);
+      console.log('layer extrahiert: %o', layer);
     }
 
     $('#sperr_div_content').html('Aktualisiere die Geometrie');
@@ -1353,53 +1361,50 @@ function Layer(stelle, settings = {}) {
       layer.setStyle(feature.getNormalCircleMarkerStyle());
     }
     else {
-      console.log('Lege neuen CircleMarker an.');
-      // circleMarker erzeugen mit Popup Eventlistener
-      var circleMarker = L.circleMarker(feature.wkxToLatLngs(feature.newGeom), {
-        renderer: kvm.myRenderer,
-        featureId: feature.id
-      }).bindPopup(this.getPopup(feature));
-
-      console.log('Style der neuen Geometrie auf default setzen');
-      circleMarker.setStyle(feature.getNormalCircleMarkerStyle());
-
-      console.log('Setze click event for marker');
-      circleMarker.on('click', function(evt) {
-        if (kvm.activeLayer.activeFeature && kvm.activeLayer.activeFeature.editable) {
-          $('.popup-functions').hide();
-        }
-        else {
-          kvm.activeLayer.selectFeature(kvm.activeLayer.features[evt.target.options.featureId]);
-        }
-      });
-
-      console.log('Füge circleMarker zur layerGroup hinzu.');
-      // circleMarker als Layer zur Layergruppe hinzufügen
-      this.layerGroup.addLayer(circleMarker);
-
-      console.log('Frage markerId ab und ordne feature zu.');
-      // layer_id abfragen und in Feature als markerId speichern
-      feature.markerId = this.layerGroup.getLayerId(circleMarker);
-
-      console.log('setze layer variable mit circleMarker id: %s', feature.markerId);
-      layer = kvm.map._layers[feature.markerId];
-      console.log('layer variable jetzt: %o', layer);
+      this.layerGroup.removeLayer(feature.markerId);
     }
+    console.log('Lege neuen CircleMarker an.');
+    // circleMarker erzeugen mit Popup Eventlistener
+    var circleMarker = L.circleMarker(feature.wkxToLatLngs(feature.newGeom), {
+      renderer: kvm.myRenderer,
+      featureId: feature.id
+    }).bindPopup(this.getPopup(feature));
+
+    console.log('Style der neuen Geometrie auf default setzen');
+    circleMarker.setStyle(feature.getNormalCircleMarkerStyle());
+
+    console.log('Setze click event for marker');
+    circleMarker.on('click', function(evt) {
+      console.log('open popup gesetzt in save Geometry');
+      console.log('activeFeature is editable: %s', kvm.activeLayer.activeFeature.editable);
+      if (kvm.activeLayer.activeFeature && kvm.activeLayer.activeFeature.editable) {
+        console.log('hide all popup-functions with hide function');
+        $('.popup-functions').hide();
+      }
+      else {
+        console.log('select Feature');
+        kvm.activeLayer.selectFeature(kvm.activeLayer.features[evt.target.options.featureId]);
+      }
+    });
+
+    console.log('Füge circleMarker zur layerGroup hinzu.');
+    // circleMarker als Layer zur Layergruppe hinzufügen
+    this.layerGroup.addLayer(circleMarker);
+
+    console.log('Frage markerId ab und ordne feature zu.');
+    // layer_id abfragen und in Feature als markerId speichern
+    feature.markerId = this.layerGroup.getLayerId(circleMarker);
+
+    console.log('setze layer variable mit circleMarker id: %s', feature.markerId);
+    layer = kvm.map._layers[feature.markerId];
+    console.log('layer variable jetzt: %o', layer);
 
     console.log('Setze feature auf nicht mehr editierbar.');
     // editierbare Geometrie aus der Karte löschen und damit Popup der editierbaren Geometrie schließen
     feature.setEditable(false);
 
-    console.log('schließe Popup (falls vorhanden)');
-    kvm.map.closePopup();
-
-    console.log('Binde default Popup für layer');
-    // Binded das default Popup an den dazugehörigen Layer
-    layer.bindPopup(this.getPopup(feature));
-
     console.log('Zoome zum Feature');
     this.selectFeature(feature, false);
-
   };
 
   this.collectChanges = function(action) {
@@ -1576,10 +1581,11 @@ function Layer(stelle, settings = {}) {
   * Function, die nach dem erfolgreichen Eintragen eines INSERT - Deltas Entrages ausgeführt werden soll
   */
   this.afterCreateDataset = function(rs) {
-    console.log('afterCreateDataset rs: %o', rs);
+    console.log('afterCreateDataset rs: %o', rs.rows.item(0));
     var layer = this.context;
 
     console.log('set data for activeFeature: %o', rs.rows.item(0));
+    console.log('with geom: %o', rs.rows.item(0).geom);
     layer.activeFeature.setData(rs.rows.item(0));
     layer.addActiveFeature();
     layer.activeFeature.options.new = false;

@@ -79,6 +79,7 @@ function Feature(
   this.setData = function(data) {
     //console.log('Feature.setData %o', data);
     this.data = (typeof data == 'string' ? $.parseJSON(data) : data);
+    this.setGeomFromData();
   };
 
   /*
@@ -236,6 +237,7 @@ function Feature(
     kvm.log('Markiere Feature ' + this.id, 4);
 
     if (this.newGeom) {
+      console.log('Feature has newGeom');
       kvm.log('Select feature in map ' + this.markerId, 4);
       kvm.log('Set style %o',this.getSelectedCircleMarkerStyle());
       kvm.map._layers[this.markerId].setStyle(this.getSelectedCircleMarkerStyle());
@@ -245,10 +247,12 @@ function Feature(
       kvm.map.panTo(kvm.map._layers[this.markerId].getLatLng());
 
       if (!this.showPopupButtons()) {
+        console.log('hide popup-functinos in select because showPopupButtons is false');
         $('.popup-functions').hide();
       }
     }
     else {
+      console.log('Feature hat noch eine newGeom und noch nicht in Karte');
       kvm.msg('Das Feature hat noch keine Geometrie und ist deshalb nicht in der Karte zu sehen!', 'Hinweis');
     }
     kvm.log('Select feature in list ' + this.id, 4);
@@ -309,9 +313,14 @@ function Feature(
     return { color: "#666666", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#cccccc" };
   };
 
-  if (this.data[this.options.geometry_attribute]) {
-    //console.log('Setze geom des neuen Features mit data: %o', this.data);
-    this.geom = this.wkbToWkx(this.data[this.options.geometry_attribute]);
+  this.setGeomFromData = function() {
+    if (this.data[this.options.geometry_attribute]) {
+      //console.log('Setze geom des neuen Features mit data: %o', this.data);
+      this.geom = this.wkbToWkx(this.data[this.options.geometry_attribute]);
+    }
+    this.newGeom = this.geom; // Aktuelle WKX-Geometry beim Editieren. Entspricht this.geom wenn das Feature neu geladen wurde und Geometrie in Karte, durch GPS oder Formular noch nicht geändert wurde.
   }
-  this.newGeom = this.geom; // Aktuelle WKX-Geometry beim Editieren. Entspricht this.geom wenn das Feature neu geladen wurde und Geometrie in Karte, durch GPS oder Formular noch nicht geändert wurde.
+
+  this.setGeomFromData();
+
 }
