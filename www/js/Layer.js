@@ -1337,6 +1337,7 @@ function Layer(stelle, settings = {}) {
     var layer,
         latlng = feature.editableLayer.getLatLng();
 
+    console.log('latlng: %o', latlng);
     if (feature.markerId) {
       console.log('feature.markerId: %s', feature.markerId);
       var layer = kvm.map._layers[feature.markerId];
@@ -1352,6 +1353,9 @@ function Layer(stelle, settings = {}) {
 //    feature.geom = feature.newGeom;
 
     if (layer) {
+      this.layerGroup.removeLayer(feature.markerId);
+    }
+/*
       // Ursprüngliche durch neue Geometrie ersetzen
       //  - im Layerobjekt (z.B. circleMarker)
       console.log('setLatLng from editable layer');
@@ -1359,10 +1363,8 @@ function Layer(stelle, settings = {}) {
 
       console.log('Style der ursprünglichen Geometrie auf default setzen');
       layer.setStyle(feature.getNormalCircleMarkerStyle());
-    }
-    else {
-      this.layerGroup.removeLayer(feature.markerId);
-    }
+*/
+
     console.log('Lege neuen CircleMarker an.');
     // circleMarker erzeugen mit Popup Eventlistener
     var circleMarker = L.circleMarker(feature.wkxToLatLngs(feature.newGeom), {
