@@ -133,7 +133,12 @@ function Layer(stelle, settings = {}) {
         kvm.log('Anzahl Rows: ' + numRows);
 
         if (numRows == 0) {
-          kvm.msg('Filter liefert keine Ergebnisse.', 'Datenfilter');
+          if (filter.length > 0) {
+            kvm.msg('Filter liefert keine Ergebnisse.', 'Datenfilter');
+          }
+          else {
+            kvm.msg('Tabelle ist leer. Unter Einstellungen des Layers können Daten synchronisiert werden.', 'Datenbank')
+          }
         }
 
         for (i = 0; i < numRows; i++) {

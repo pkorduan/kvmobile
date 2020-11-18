@@ -25,6 +25,31 @@ config = {
     '3': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#26a7f1" }
   },
 
+  // LK-MSE
+  mapSettings: {
+    newPosSelect: 2,
+    minZoom: 8,
+    maxZoom: 18,
+    startZoom: 8,
+    west: 311109,
+    south: 5894500,
+    east: 428034,
+    north: 5990606,
+    startCenterLat: 53.50467,
+    startCenterLon: 12.96181
+  },
+  kvwmapServerUrl: 'https://geoport-lk-mse.de/supergis',
+  kvwmapServerLoginName: 'paulmobil',
+  kvwmapServerPasswort: '',
+  backgroundLayerOnline: {
+    type: 'tile',
+    url: 'https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png',
+    params: {
+      attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
+    }
+  }
+
+/*
   // LK-VG
   mapSettings: {
     newPosSelect: 2,
@@ -48,7 +73,7 @@ config = {
       attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
     }
   }
-
+*/
 /*
   // LK-EE
   mapSettings: {
