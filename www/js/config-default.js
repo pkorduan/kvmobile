@@ -35,13 +35,38 @@ config = {
   kvwmapServerUrl: 'https://gdi-service.de/kvwmap_pet_dev',
   kvwmapServerLoginName: 'korduan',
   kvwmapServerPasswort: '',
-  backgroundLayerOnline: {
-    type: 'tile',
-    url: 'https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png'
-    params: {
-      attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
+  backgroundLayers: [{
+      label: 'Hintergrundkarte offline',
+      type: 'tile',
+      url: 'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/orka-tiles-vg/{z}/{x}/{y}.png',
+      params: {
+        attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
+      }
+    }, {
+      label: 'Hintergrundkarte online',
+      type: 'tile',
+      url: 'https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png',
+      params: {
+        attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
+      }
+    }, {
+      label: 'Luftbild online',
+      type: 'wms',
+      url: 'https://www.geodaten-mv.de/dienste/adv_dop',
+      params: {
+        layers: 'mv_dop',
+        format: 'image/png',
+        attribution: "Geoportal-MV DOP WMS"
+      }
+    }, {
+      label: 'Luftbildkacheln online',
+      type: 'tile',
+      url: 'https://www.geodaten-mv.de/dienste/dop_wmts/wmts/mv_dop/ETRS89UTM33/{z}/{x}/{y}.png',
+      params: {
+        attribution: "Geoportal-MV DOP WMST"
+      }
     }
-  }
+  ]
 */
 /*
   // LK-VG
