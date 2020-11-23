@@ -137,38 +137,29 @@ kvm = {
     kvm.log('initialisiere Mapsettings', 3);
     this.initMapSettings();
 
-    kvm.log('initialisiere backgroundLayersettings', 3);
-    this.initBackgroundLayerOnline();
+    kvm.log('initialisiere backgroundLayers', 3);
+    this.initBackgroundLayers();
 
-    var orka_offline = L.tileLayer(config.localTilePath + 'orka-tiles-vg/{z}/{x}/{y}.png', {
-      attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
+    var crs25833 = new L.Proj.CRS('EPSG:25833', '+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs', {
+      origin: [-464849.38, 6310160.14],
+      resolutions: [16384, 8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1]
     });
 
-    if (this.backgroundLayerOnline.type == 'tile') {
-      var orka_online = L.tileLayer(this.backgroundLayerOnline.url, this.backgroundLayerOnline.params);
-    };
+    var map = L.map('map', {
+//        crs: crs25833,
+        editable: true,
+        center: L.latLng(this.mapSettings.startCenterLat, this.mapSettings.startCenterLon),
+        zoom: this.mapSettings.startZoom,
+        minZoom: this.mapSettings.minZoom,
+        maxZoom: this.mapSettings.maxZoom,
+        layers: this.backgroundLayers
+      }
+    ),
+    baseMaps = {};
 
-    if (this.backgroundLayerOnline.type == 'wms') {
-      var orka_online = L.tileLayer.wms(this.backgroundLayerOnline.url, this.backgroundLayerOnline.params);
-    };
-
-    var map = L.map(
-          'map', {
-            editable: true,
-            center: L.latLng(this.mapSettings.startCenterLat, this.mapSettings.startCenterLon),
-            zoom: this.mapSettings.startZoom,
-            minZoom: this.mapSettings.minZoom,
-            maxZoom: this.mapSettings.maxZoom,
-            layers: [
-              orka_offline,
-              orka_online
-            ]
-          }
-        ),
-        baseMaps = {
-          'Hintergrundkarte offline': orka_offline,
-          'Hintergrundkarte online': orka_online
-        };
+    for (var i = 0; i < this.backgroundLayers.length; i++) {
+      baseMaps[this.backgroundLayerSettings[i].label] = this.backgroundLayers[i];
+    }
 
 //    L.PM.initialize({ optIn: true });
     kvm.myRenderer = L.canvas({ padding: 0.5 });
@@ -244,18 +235,30 @@ kvm = {
     kvm.store.setItem('mapSettings', JSON.stringify(mapSettings));
   },
 
-  initBackgroundLayerOnline: function() {
-    if (!(this.backgroundLayerOnline = JSON.parse(kvm.store.getItem('backgroundLayerOnline')))) {
-      this.saveBackgroundLayerOnline(config.backgroundLayerOnline);
+  initBackgroundLayers: function() {
+    if (!(this.backgroundLayerSettings = JSON.parse(kvm.store.getItem('backgroundLayerSettings')))) {
+      this.saveBackgroundLayerSettings(config.backgroundLayerSettings);
     }
-    $('#backgroundLayerOnline_url').val(this.backgroundLayerOnline.url);
-    $('#backgroundLayerOnline_type').val(this.backgroundLayerOnline.type);
-    $('#backgroundLayerOnline_layers').val(this.backgroundLayerOnline.params.layers);
+    $('#backgroundLayersTextarea').val(kvm.store.getItem('backgroundLayerSettings'));
+    this.backgroundLayers = [];
+    for ( var i = 0; i < this.backgroundLayerSettings.length; ++i) {
+      this.backgroundLayers.push(this.createBackgroundLayer(this.backgroundLayerSettings[i]));
+    }
   },
 
-  saveBackgroundLayerOnline: function(backgroundLayerOnline) {
-    this.backgroundLayerOnline = backgroundLayerOnline;
-    kvm.store.setItem('backgroundLayerOnline', JSON.stringify(backgroundLayerOnline));
+  saveBackgroundLayerSettings: function(backgroundLayerSettings) {
+    this.backgroundLayerSettings = backgroundLayerSettings;
+    kvm.store.setItem('backgroundLayerSettings', JSON.stringify(backgroundLayerSettings));
+  },
+
+  createBackgroundLayer: function(backgroundLayerSetting) {
+    if (backgroundLayerSetting.type == 'tile') {
+      return L.tileLayer(backgroundLayerSetting.url, backgroundLayerSetting.params);
+    }
+    else {
+      //backgroundLayerSetting.type == 'wms'
+      return L.tileLayer.wms(backgroundLayerSetting.url, backgroundLayerSetting.params);
+    }
   },
 
   addColorSelector: function(style, i) {
