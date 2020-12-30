@@ -8,6 +8,8 @@ https://github.com/srahn/kvwmap/
 http://kvwmap.de
 
 # Change log
+## 1.6.0
+	* Unterstützung von abhängigen Auswahllisten
 ## 1.5.9
 	* Fix bug bei Positionierung des Markers nach dem Erzeugen oder Ändern von Featurs und dem Zeigen der Funktions-Buttons im Popup-Fenster
 ## 1.5.8
