@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
   <head>
-    <TITLE>kvmobile 1.5.5</TITLE>
+    <TITLE>kvmobile 1.6.0</TITLE>
     <META charset="UTF-8">
     <meta name="format-detection" content="telephone=no">
     <meta name="msapplication-tap-highlight" content="no">
@@ -21,7 +21,7 @@
     <!--link rel="stylesheet" type="text/css" href="3rdparty/leaflet-gps-master/dist/leaflet-gps.min.css"/-->
     <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-locatecontrol-gh-pages/dist/L.Control.Locate.min.css"/>
     <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-betterscale-master/L.Control.BetterScale.css"/>
-    <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-geoman/leaflet-geoman.css" />
+    <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-geoman/leaflet-geoman.css"/>
     <link rel="stylesheet" type="text/css" href="css/style.css"/>
     <script src="cordova.js"></script>
     <script src="3rdparty/jquery-3.5.1/jquery.min.js"></script>
@@ -33,6 +33,9 @@
     <script src="3rdparty/leaflet-locatecontrol-gh-pages/dist/L.Control.Locate.min.js"></script>
     <script src="3rdparty/leaflet-betterscale-master/L.Control.BetterScale.js"></script>
     <script src="3rdparty/leaflet-geoman/leaflet-geoman.min.js"></script>
+    <script src="3rdparty/proj4js-2.3.12/proj4.js"></script>
+    <script src="3rdparty/leaflet-proj4/proj4leaflet.js"></script>
+    <script src="3rdparty/leaflet-tilelayer-cordova/leaflet-tilelayer-cordova.js"></script>
     <script src="3rdparty/wkx-0.4.2/dist/wkx.min.js"></script>
     <script src="js/config.js"></script>
     <script src="js/Layer.js"></script>
@@ -43,6 +46,7 @@
     <script src="js/TextfeldFormField.js"></script>
     <script src="js/TextFormField.js"></script>
     <script src="js/DateTimeFormField.js"></script>
+    <script src="js/DateFormField.js"></script>
     <script src="js/ZahlFormField.js"></script>
     <script src="js/UserFormField.js"></script>
     <script src="js/UserIDFormField.js"></script>
@@ -58,7 +62,7 @@
   </head>
   <body onload="kvm.init()">
 
-    <div id="sperr_div" class="modal">
+    <div id="sperr_div" class="modal" ondblclick="$(this).hide()">
       <i class="fa fa-spinner fa-pulse fa-2x"></i><p id="sperr_div_content" style="margin-top: 20px">Lade Daten ...</p>
     </div>
 
@@ -99,6 +103,7 @@
         </a //-->
         <i id="newFeatureButton" class="fa fa-plus-square fa-2x menu-button" aria-hidden="true" style="display: none;"></i>
         <i id="editFeatureButton" class="fa fa-pencil fa-2x menu-button" aria-hidden="true" style="display: none;"></i>
+        <i id="tplFeatureButton" class="fa fa-clone fa-2x menu-button" aria-hidden="true" style="display: none;"></i>
         <i id="restoreFeatureButton" class="fa fa-undo fa-2x menu-button" aria-hidden="true" style="display: none;"></i>
         <i id="deleteFeatureButton" class="fa fa-trash fa-2x menu-button" aria-hidden="true" style="display: none;"></i>
       </div>
@@ -167,7 +172,7 @@
     <div id="mapSettingsDiv">
       Startposition neuer Objekte<br>
       <div id="newPosDiv">
-        <select id="newPosSelect">
+        <select id="newPosSelect" name="newPosSelect" class="mapSetting">
           <option value="1" selected>An GPS-Position falls Signal vorhanden</option>
           <option value="2">Immer am aktuellen Kartenmittelpunkt</option>
         </select>
@@ -283,18 +288,9 @@
     <hr>
 
     <div class="h2-div"><h2 class="b-collapsed">Hinergrundlayer</h2></div>
-    <div id="backgroundLayerOnlineDiv">
-      URL:<br>
-      <input id="backgroundLayerOnline_url" type="text" name="url"/><br>
-      <div class="settings-label">Typ</div>
-      <select id="backgroundLayerOnline_type" name="type" class="mapSetting">
-        <option value="tile">Tile-Layer</option>
-        <option value="wms">WMS-Layer</option>
-      </select>
-      <div style="clear: both"></div>
-      <div class="settings-label">Layername</div>
-      <input id="backgroundLayerOnline_layers" type="text" name="layers" class="mapSetting"/>
-      <div style="clear: both"></div>
+    <div id="backgroundLayersDiv">
+      <textarea id="backgroundLayersTextarea" style="height: 200px">
+      </textarea>
     </div>
     <hr>
 
@@ -317,7 +313,7 @@
     <div>
       Datenbankname: <span id="dbnameText">...wird geladen</span><br>
       Anzahl Datensätze: <span id="numDatasetsText" style="display: none">... wird geladen</span><br>
-      <button id="showDeltasButton" class="settings-button" style="display: none">
+      <button id="showDeltasButton" class="settings-button">
         <i class="fa fa-pencil-square-o" aria-hidden="true"> Zeige Änderungen</i>
       </button>
       <i id="showDeltasWaiting" class="fa fa-spinner fa-pulse fa-3x fa-fw" style="display: none;"></i>

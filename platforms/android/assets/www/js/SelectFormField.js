@@ -22,13 +22,21 @@ function SelectFormField(formId, settings) {
     <select\
       id="' + this.get('index') + '"\
       name="' + this.get('name') + '"' +
-      (this.get('privilege') == '0' ? ' disabled' : '') + '>\
+      (this.get('privilege') == '0' ? ' disabled' : '') + 
+      (kvm.coalesce(this.get('req_by')) != null ? ' req_by="' + this.get('req_by') + '"' : '') +
+      (kvm.coalesce(this.get('requires')) != null ? ' requires="' + this.get('requires') + '"' : '') + '>\
       <option value="">Bitte wählen</option>' +
       $.map(
         this.get('options'),
         function(option) {
 //          option = option.replace(/(^')|('$)/g, '')
-          return '<option value="' + option['value'] + '">' + option['output'] + '</option>';
+          return '\
+            <option\
+              value="' + option.value + '"' +
+              (kvm.coalesce(option.requires) != null ? ' requires="' + option.requires + '"' : '') +
+            '>' +
+              option.output + '\
+            </option>';
         }
       ).join('\n') + '\
     </select>'
@@ -36,7 +44,7 @@ function SelectFormField(formId, settings) {
 
   this.setValue = function(val) {
     //console.log('SelectFormField.setValue with value: ' + val);
-    if (!val && this.get('default')) {
+    if (kvm.coalesce(val) == null && this.get('default')) {
       val = this.get('default');
     }
     this.element.val(val == 'null' ? '' : val);
@@ -52,13 +60,42 @@ function SelectFormField(formId, settings) {
     return val;
   };
 
+  this.filter_by_required = function(attribute, value) {
+    console.log('filter_by_requiered attribute %s with %s="%s"', this.get('name'), attribute, value);
+    this.element.children().each(
+      function(i, option) {
+        if (option.value != '') {
+          console.log('Vergleiche requires %s mit Wert %s', option.getAttribute('requires'), value);
+          if (option.getAttribute('requires') == value) {
+            $(option).show();
+          }
+          else {
+            if (option.selected) {
+              option.selected = false;
+            }
+            $(option).hide();
+          }
+        }
+      }
+    );
+  };
+
   this.bindEvents = function() {
     //console.log('SelectFormField.bindEvents');
     $('#featureFormular select[id=' + this.get('index') + ']').on(
       'change',
-      function() {
+      function(evt) {
         if (!$('#saveFeatureButton').hasClass('active-button')) {
           $('#saveFeatureButton').toggleClass('active-button inactive-button');
+        }
+        if (this.hasAttribute('req_by')) {
+          var req_by_idx = kvm.activeLayer.attribute_index[this.getAttribute('req_by')];
+          console.log('Select Feld %s hat abhängiges Auswahlfeld %s', this.name, this.getAttribute('req_by'));
+          kvm.activeLayer.attributes[req_by_idx].formField.filter_by_required(
+            this.getAttribute('name'), this.value
+          );
+          // find attribute with the name in req_by
+          // apply the filter on the options, call filter_by_required
         }
       }
     );

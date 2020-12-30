@@ -30,7 +30,7 @@ function TextfeldFormField(formId, settings) {
 
   this.setValue = function(val) {
     //console.log('TextFormField.setValue with value: ' + val);
-    if (!val && this.get('default')) {
+    if (kvm.coalesce(val) == null && this.get('default')) {
       val = this.get('default');
     }
 

@@ -25,9 +25,9 @@ config = {
     '3': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#26a7f1" }
   },
 
-
-  // GDI-Service pet_dev
-  mapSettings: {
+  // GDI-Service
+  mapSettings : {
+    newPosSelect: 1,
     minZoom: 8,
     maxZoom: 18,
     startZoom: 8,
@@ -40,7 +40,77 @@ config = {
   },
   kvwmapServerUrl: 'https://gdi-service.de/kvwmap_pet_dev',
   kvwmapServerLoginName: 'korduan',
-  kvwmapServerPasswort: '3_]U$ao2e4',
+  kvwmapServerPasswort: '',
+  backgroundLayerSettings: [
+    {
+      label: 'ORKa offline',
+      online: false,
+      type: 'cordova',
+      url: 'https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png',
+      params: {
+        maxZoom: 12,
+        attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV',
+        folder: 'kvmobile_tiles_osm',
+        name:   'example',
+        debug:   false
+      }
+    }, {
+      label: 'Topo online',
+      online: true,
+      type: 'tile',
+      url: 'https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png',
+      params: {
+        attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
+      }
+    }, {
+      label: 'Luftbild online',
+      online: true,
+      type: 'wms',
+      url: 'https://www.geodaten-mv.de/dienste/adv_dop',
+      params: {
+        layers: 'mv_dop',
+        format: 'image/png',
+        attribution: "Geoportal-MV DOP WMS"
+      }
+    }, {
+      label: 'Luftbilder',
+      online: true,
+      type: 'tile',
+      url: 'https://www.geodaten-mv.de/dienste/dop_wmts/wmts/mv_dop/ETRS89UTM33/{z}/{x}/{y}.png',
+      params: {
+        attribution: "Geoportal-MV DOP WMST"
+      }
+    } /*, {
+      label: 'Luftbilder WMTS',
+      online: true,
+      type: 'wmts',
+      url: 'https://www.geodaten-mv.de/dienste/dop_wmts/wmts/mv_dop/ETRS89UTM33/{z}/{x}/{y}.png',
+      params: {
+        layer: "Digitale Orthophotos",
+        style: "default",
+        tilematrixSet: "ETRS89UTM33",
+        format: "image/png",
+        attributation: "<a href=\"http://www.laiv-mv.de\">LaiV</a>"
+      }
+    }*/
+  ]
+/*
+  // LK-VG
+  mapSettings: {
+    newPosSelect: 1,
+    minZoom: 8,
+    maxZoom: 18,
+    startZoom: 8,
+    west: 339600,
+    south: 5894500,
+    east: 492200,
+    north: 6016500,
+    startCenterLat: 53.78441,
+    startCenterLon: 13.81898
+  },
+  kvwmapServerUrl: 'https://geoportal-vg.de/kvwmap_test',
+  kvwmapServerLoginName: 'kvmobile',
+  kvwmapServerPasswort: '',
   backgroundLayerOnline: {
     type: 'tile',
     url: 'https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png',
@@ -48,4 +118,5 @@ config = {
       attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
     }
   }
+*/
 }

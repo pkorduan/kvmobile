@@ -1,5 +1,5 @@
 kvm = {
-  version: '1.5.6',
+  version: '1.6.0',
   Buffer: require('buffer').Buffer,
   wkx: require('wkx'),
   controls: {},
@@ -81,26 +81,29 @@ kvm = {
 
       if (this.store.getItem('activeLayerId')) {
         var activeLayerId = this.store.getItem('activeLayerId'),
-            activeLayerSettings = this.store.getItem('layerSettings_' + activeStelleId + '_' + activeLayerId),
-            layer = new Layer(stelle, activeLayerSettings);
+            activeLayerSettings = this.store.getItem('layerSettings_' + activeStelleId + '_' + activeLayerId);
 
-        kvm.log('Aktiven Layer ' +  activeLayerId + ' gefunden.', 3);
+        if (activeLayerSettings != null) {
+          layer = new Layer(stelle, activeLayerSettings);
 
-        // ToDo do not createTable instead attach schema database for layer if not exists
-        // before create LayerList();
-        layer.createTable();
-        setTimeout(
-          function() {
-            kvm.controller.mapper.createLayerList(stelle);
-            kvm.log('Setze Layer: ' + layer.get('schema_name') + '.' + layer.get('table_name'), 3);
-            layer.setActive();
-            kvm.layerDataLoaded = false;
-            kvm.featureListLoaded = false;
-            //layer.loadFeaturesToMap();
-            layer.readData($('#limit').val(), $('#offset').val()); // load from loacl db to feature list
-          },
-          2000
-        );
+          kvm.log('Aktiven Layer ' +  activeLayerId + ' gefunden.', 3);
+
+          // ToDo do not createTable instead attach schema database for layer if not exists
+          // before create LayerList();
+          layer.createTable();
+          setTimeout(
+            function() {
+              kvm.controller.mapper.createLayerList(stelle);
+              kvm.log('Setze Layer: ' + layer.get('schema_name') + '.' + layer.get('table_name'), 3);
+              layer.setActive();
+              kvm.layerDataLoaded = false;
+              kvm.featureListLoaded = false;
+              //layer.loadFeaturesToMap();
+              layer.readData($('#limit').val(), $('#offset').val()); // load from loacl db to feature list
+            },
+            2000
+          );
+        }
       }
       else {
         kvm.msg('Laden Sie die Stellen und Layer vom Server.');
@@ -134,38 +137,29 @@ kvm = {
     kvm.log('initialisiere Mapsettings', 3);
     this.initMapSettings();
 
-    kvm.log('initialisiere backgroundLayersettings', 3);
-    this.initBackgroundLayerOnline();
+    kvm.log('initialisiere backgroundLayers', 3);
+    this.initBackgroundLayers();
 
-    var orka_offline = L.tileLayer(config.localTilePath + 'orka-tiles-vg/{z}/{x}/{y}.png', {
-      attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
+    var crs25833 = new L.Proj.CRS('EPSG:25833', '+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs', {
+      origin: [-464849.38, 6310160.14],
+      resolutions: [16384, 8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1]
     });
 
-    if (this.backgroundLayerOnline.type == 'tile') {
-      var orka_online = L.tileLayer(this.backgroundLayerOnline.url, this.backgroundLayerOnline.params);
-    };
+    var map = L.map('map', {
+//        crs: crs25833,
+        editable: true,
+        center: L.latLng(this.mapSettings.startCenterLat, this.mapSettings.startCenterLon),
+        zoom: this.mapSettings.startZoom,
+        minZoom: this.mapSettings.minZoom,
+        maxZoom: this.mapSettings.maxZoom,
+        layers: this.backgroundLayers
+      }
+    ),
+    baseMaps = {};
 
-    if (this.backgroundLayerOnline.type == 'wms') {
-      var orka_online = L.tileLayer.wms(this.backgroundLayerOnline.url, this.backgroundLayerOnline.params);
-    };
-
-    var map = L.map(
-          'map', {
-            editable: true,
-            center: L.latLng(this.mapSettings.startCenterLat, this.mapSettings.startCenterLon),
-            zoom: this.mapSettings.startZoom,
-            minZoom: this.mapSettings.minZoom,
-            maxZoom: this.mapSettings.maxZoom,
-            layers: [
-              orka_offline,
-              orka_online
-            ]
-          }
-        ),
-        baseMaps = {
-          'Hintergrundkarte offline': orka_offline,
-          'Hintergrundkarte online': orka_online
-        };
+    for (var i = 0; i < this.backgroundLayers.length; i++) {
+      baseMaps[this.backgroundLayerSettings[i].label] = this.backgroundLayers[i];
+    }
 
 //    L.PM.initialize({ optIn: true });
     kvm.myRenderer = L.canvas({ padding: 0.5 });
@@ -224,6 +218,7 @@ kvm = {
     if (!(this.mapSettings = JSON.parse(kvm.store.getItem('mapSettings')))) {
       this.saveMapSettings(config.mapSettings);
     }
+    $('#newPosSelect').val(this.mapSettings.newPosSelect);
     $('#mapSettings_west').val(this.mapSettings.west);
     $('#mapSettings_south').val(this.mapSettings.south);
     $('#mapSettings_east').val(this.mapSettings.east);
@@ -240,18 +235,30 @@ kvm = {
     kvm.store.setItem('mapSettings', JSON.stringify(mapSettings));
   },
 
-  initBackgroundLayerOnline: function() {
-    if (!(this.backgroundLayerOnline = JSON.parse(kvm.store.getItem('backgroundLayerOnline')))) {
-      this.saveBackgroundLayerOnline(config.backgroundLayerOnline);
+  initBackgroundLayers: function() {
+    if (!(this.backgroundLayerSettings = JSON.parse(kvm.store.getItem('backgroundLayerSettings')))) {
+      this.saveBackgroundLayerSettings(config.backgroundLayerSettings);
     }
-    $('#backgroundLayerOnline_url').val(this.backgroundLayerOnline.url);
-    $('#backgroundLayerOnline_type').val(this.backgroundLayerOnline.type);
-    $('#backgroundLayerOnline_layers').val(this.backgroundLayerOnline.params.layers);
+    $('#backgroundLayersTextarea').val(kvm.store.getItem('backgroundLayerSettings'));
+    this.backgroundLayers = [];
+    for ( var i = 0; i < this.backgroundLayerSettings.length; ++i) {
+      this.backgroundLayers.push(this.createBackgroundLayer(this.backgroundLayerSettings[i]));
+    }
   },
 
-  saveBackgroundLayerOnline: function(backgroundLayerOnline) {
-    this.backgroundLayerOnline = backgroundLayerOnline;
-    kvm.store.setItem('backgroundLayerOnline', JSON.stringify(backgroundLayerOnline));
+  saveBackgroundLayerSettings: function(backgroundLayerSettings) {
+    this.backgroundLayerSettings = backgroundLayerSettings;
+    kvm.store.setItem('backgroundLayerSettings', JSON.stringify(backgroundLayerSettings));
+  },
+
+  createBackgroundLayer: function(backgroundLayerSetting) {
+    if (backgroundLayerSetting.type == 'tile') {
+      return L.tileLayer(backgroundLayerSetting.url, backgroundLayerSetting.params);
+    }
+    else {
+      //backgroundLayerSetting.type == 'wms'
+      return L.tileLayer.wms(backgroundLayerSetting.url, backgroundLayerSetting.params);
+    }
   },
 
   addColorSelector: function(style, i) {
@@ -723,6 +730,7 @@ kvm = {
                   else {
                     kvm.activeLayer.runUpdateStrategy();
                   }
+                  //kvm.showGeomStatus();
                 }
 
                 if (buttonIndex == 2) { // nein
@@ -773,7 +781,22 @@ kvm = {
 
     $('#newFeatureButton').on(
       'click',
-      this.controller.mapper.newFeature
+      function() {
+        kvm.activeLayer.newFeature();
+        kvm.activeLayer.editFeature();
+        //kvm.showGeomStatus();
+      }
+    );
+
+    $('#tplFeatureButton').on(
+      'click',
+      function() {
+        var tplId = kvm.activeLayer.activeFeature.id;
+        kvm.activeLayer.newFeature();
+        kvm.activeLayer.editFeature();
+        kvm.activeLayer.loadTplFeatureToForm(tplId);
+        //kvm.showGeomStatus();
+      }
     );
 
     /*
@@ -787,7 +810,8 @@ kvm = {
             featureId = this_.activeLayer.activeFeature.id,
             feature = this_.activeLayer.features[featureId];
 
-        kvm.activeLayer.editGeometry(featureId);
+        kvm.activeLayer.editFeature();
+        //kvm.activeLayer.editGeometry(featureId); # von dev-3 ToDo vergl. editFeature und editGeometry
       }
     );
 
@@ -1162,7 +1186,7 @@ kvm = {
           $('#restoreFeatureButton').show();
         }
         else {
-          $('#editFeatureButton').show();
+          $('#editFeatureButton, #tplFeatureButton').show();
         }
         $("#dataView").show().scrollTop(0);
         break;
@@ -1325,7 +1349,7 @@ kvm = {
   },
 
   log: function(msg, level = 3, show_in_sperr_div = false) {
-    if (level <= config.logLevel) {
+    if (level <= config.logLevel && (typeof msg === 'string' || msg instanceof String)) {
       msg = this.replacePassword(msg);
       if (config.debug) {
         console.log('Log msg: ' + msg);
@@ -1395,7 +1419,7 @@ kvm = {
   coalesce: function() {
     var i, undefined, arg;
 
-    for( i=0; i < arguments.length; i++ ) {
+    for( i = 0; i < arguments.length; i++ ) {
       arg = arguments[i];
       if (
         arg !== 'null' &&
@@ -1538,6 +1562,28 @@ kvm = {
     var now = new Date();
     return now.getFullYear() + '-' + String('0' + parseInt(now.getMonth() + 1)).slice(-2) + '-' + String('0' + now.getDate()).slice(-2) + 'T'
       + String('0' + now.getHours()).slice(-2) + ':' + String('0' + now.getMinutes()).slice(-2) + ':' + String('0' + now.getSeconds()).slice(-2)  + 'Z';
+  },
+
+  today: function() {
+    var now = new Date();
+    return now.getFullYear() + '-' + String('0' + parseInt(now.getMonth() + 1)).slice(-2) + '-' + String('0' + now.getDate()).slice(-2);
+  },
+
+  /*
+  * Zeigt die verschiedenen Werte der Geometrie
+  */
+  showGeomStatus: function() {
+    if (kvm.activeLayer && kvm.activeLayer.activeFeature) {
+      console.log('activeFeature.point %o', kvm.activeLayer.activeFeature.get('point'));
+      console.log('activeFeature.oldGeom %o', kvm.activeLayer.activeFeature.oldGeom);
+      console.log('activeFeature.geom %o', kvm.activeLayer.activeFeature.geom);
+      console.log('activeFeature.newGeom %o', kvm.activeLayer.activeFeature.newGeom);
+      console.log('form geom_wkt: %s', $('#geom_wkt').val());
+      console.log('form ' + kvm.activeLayer.get('geometry_attribute') + ': %s', $('.form-field [name="' + kvm.activeLayer.get('geometry_attribute') + '"]').val());
+    }
+    if (kvm.activeLayer.activeFeature.editableLayer) {
+      console.log('editableLayer: %o', kvm.activeLayer.activeFeature.editableLayer.getLatLng());
+    }
   }
 
 };
