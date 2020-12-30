@@ -12,9 +12,9 @@ config = {
 //  localImgPath: 'file:///storage/' + 'BAB2-4AA9' + '/Android/data/de.gdiservice.kvmobile/cache/',
   localImgPath:    'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/',
   localTilePath:   'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/',
-  localBackupPath: 'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/Backups/',
+  localBackupPath: 'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/',
   projZone: 33,
-  logLevel: 3, // 0 off, 1 error, 2 waring, 3 info, 4 debug, 5 all
+  logLevel: 4, // 0 off, 1 error, 2 waring, 3 info, 4 debug, 5 all
   debug: true,
   kvwmapServerId: 1,
   kvwmapServerName: 'kvwmap',
@@ -25,34 +25,79 @@ config = {
     '3': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#26a7f1" }
   },
 
-  // LK-MSE
-  mapSettings: {
-    newPosSelect: 2,
+  // GDI-Service
+  mapSettings : {
+    newPosSelect: 1,
     minZoom: 8,
     maxZoom: 18,
     startZoom: 8,
-    west: 311109,
-    south: 5894500,
-    east: 428034,
-    north: 5990606,
-    startCenterLat: 53.50467,
-    startCenterLon: 12.96181
+    west: 274300,
+    south: 5936055,
+    east: 360500,
+    north: 6023976,
+    startCenterLat: 53.095876,
+    startCenterLon: 12.20896
   },
-  kvwmapServerUrl: 'https://geoport-lk-mse.de/supergis',
-  kvwmapServerLoginName: 'paulmobil',
+  kvwmapServerUrl: 'https://gdi-service.de/kvwmap_pet_dev',
+  kvwmapServerLoginName: 'korduan',
   kvwmapServerPasswort: '',
-  backgroundLayerOnline: {
-    type: 'tile',
-    url: 'https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png',
-    params: {
-      attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
-    }
-  }
-
+  backgroundLayerSettings: [
+    {
+      label: 'ORKa offline',
+      online: false,
+      type: 'cordova',
+      url: 'https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png',
+      params: {
+        maxZoom: 12,
+        attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV',
+        folder: 'kvmobile_tiles_osm',
+        name:   'example',
+        debug:   false
+      }
+    }, {
+      label: 'Topo online',
+      online: true,
+      type: 'tile',
+      url: 'https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png',
+      params: {
+        attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
+      }
+    }, {
+      label: 'Luftbild online',
+      online: true,
+      type: 'wms',
+      url: 'https://www.geodaten-mv.de/dienste/adv_dop',
+      params: {
+        layers: 'mv_dop',
+        format: 'image/png',
+        attribution: "Geoportal-MV DOP WMS"
+      }
+    }, {
+      label: 'Luftbilder',
+      online: true,
+      type: 'tile',
+      url: 'https://www.geodaten-mv.de/dienste/dop_wmts/wmts/mv_dop/ETRS89UTM33/{z}/{x}/{y}.png',
+      params: {
+        attribution: "Geoportal-MV DOP WMST"
+      }
+    } /*, {
+      label: 'Luftbilder WMTS',
+      online: true,
+      type: 'wmts',
+      url: 'https://www.geodaten-mv.de/dienste/dop_wmts/wmts/mv_dop/ETRS89UTM33/{z}/{x}/{y}.png',
+      params: {
+        layer: "Digitale Orthophotos",
+        style: "default",
+        tilematrixSet: "ETRS89UTM33",
+        format: "image/png",
+        attributation: "<a href=\"http://www.laiv-mv.de\">LaiV</a>"
+      }
+    }*/
+  ]
 /*
   // LK-VG
   mapSettings: {
-    newPosSelect: 2,
+    newPosSelect: 1,
     minZoom: 8,
     maxZoom: 18,
     startZoom: 8,
@@ -71,30 +116,6 @@ config = {
     url: 'https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png',
     params: {
       attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
-    }
-  }
-*/
-/*
-  // LK-EE
-  mapSettings: {
-    minZoom: 8,
-    maxZoom: 18,
-    startZoom: 8,
-    west: 339600,
-    south: 5894500,
-    east: 492200,
-    north: 6016500,
-    startCenterLat: 53.78441,
-    startCenterLon: 13.81898
-  },
-  kvwmapServerUrl: 'https://geoportal.lkee.de',
-  kvwmapServerLoginName: '',
-  kvwmapServerPasswort: '',
-  backgroundLayerOnline: {
-    type: 'tile',
-    url : 'https://isk.geobasis-bb.de/mapproxy/dop20c_wmts/service?service=WMTS&request=GetTile&version=1.0.0&layer=bebb_dop20c&style=default&format=image/png&TileMatrixSet=grid_25833&TileMatrix={z}&TileRow={x}&TileCol={y}',
-    params: {
-      attribution: "LGB WMTS DOP20c"
     }
   }
 */

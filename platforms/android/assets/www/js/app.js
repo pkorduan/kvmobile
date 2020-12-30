@@ -137,38 +137,29 @@ kvm = {
     kvm.log('initialisiere Mapsettings', 3);
     this.initMapSettings();
 
-    kvm.log('initialisiere backgroundLayersettings', 3);
-    this.initBackgroundLayerOnline();
+    kvm.log('initialisiere backgroundLayers', 3);
+    this.initBackgroundLayers();
 
-    var orka_offline = L.tileLayer(config.localTilePath + 'orka-tiles-vg/{z}/{x}/{y}.png', {
-      attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
+    var crs25833 = new L.Proj.CRS('EPSG:25833', '+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs', {
+      origin: [-464849.38, 6310160.14],
+      resolutions: [16384, 8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1]
     });
 
-    if (this.backgroundLayerOnline.type == 'tile') {
-      var orka_online = L.tileLayer(this.backgroundLayerOnline.url, this.backgroundLayerOnline.params);
-    };
+    var map = L.map('map', {
+//        crs: crs25833,
+        editable: true,
+        center: L.latLng(this.mapSettings.startCenterLat, this.mapSettings.startCenterLon),
+        zoom: this.mapSettings.startZoom,
+        minZoom: this.mapSettings.minZoom,
+        maxZoom: this.mapSettings.maxZoom,
+        layers: this.backgroundLayers
+      }
+    ),
+    baseMaps = {};
 
-    if (this.backgroundLayerOnline.type == 'wms') {
-      var orka_online = L.tileLayer.wms(this.backgroundLayerOnline.url, this.backgroundLayerOnline.params);
-    };
-
-    var map = L.map(
-          'map', {
-            editable: true,
-            center: L.latLng(this.mapSettings.startCenterLat, this.mapSettings.startCenterLon),
-            zoom: this.mapSettings.startZoom,
-            minZoom: this.mapSettings.minZoom,
-            maxZoom: this.mapSettings.maxZoom,
-            layers: [
-              orka_offline,
-              orka_online
-            ]
-          }
-        ),
-        baseMaps = {
-          'Hintergrundkarte offline': orka_offline,
-          'Hintergrundkarte online': orka_online
-        };
+    for (var i = 0; i < this.backgroundLayers.length; i++) {
+      baseMaps[this.backgroundLayerSettings[i].label] = this.backgroundLayers[i];
+    }
 
 //    L.PM.initialize({ optIn: true });
     kvm.myRenderer = L.canvas({ padding: 0.5 });
@@ -244,18 +235,45 @@ kvm = {
     kvm.store.setItem('mapSettings', JSON.stringify(mapSettings));
   },
 
-  initBackgroundLayerOnline: function() {
-    if (!(this.backgroundLayerOnline = JSON.parse(kvm.store.getItem('backgroundLayerOnline')))) {
-      this.saveBackgroundLayerOnline(config.backgroundLayerOnline);
+  initBackgroundLayers: function() {
+    var downloadLink = '';
+    this.saveBackgroundLayerSettings(config.backgroundLayerSettings);
+    $('#backgroundLayersTextarea').val(kvm.store.getItem('backgroundLayerSettings'));
+    this.backgroundLayers = [];
+    for ( var i = 0; i < this.backgroundLayerSettings.length; ++i) {
+      if (this.backgroundLayerSettings[i].type == 'cordova') {
+        downloadLink = '<div style="float: right" onclick="kvm.downloadLayerTiles(' + i + ')"><i class="fa fa-download" aria-hidden="true"></i></div>';
+      }
+      else {
+        downloadLink = '';
+      }
+      $('#backgroundLayersDiv').append('<div style="float:left">' + this.backgroundLayerSettings[i].label + '</div>' + downloadLink).append('<div style="clear: both">');
+      this.backgroundLayers.push(this.createBackgroundLayer(this.backgroundLayerSettings[i]));
     }
-    $('#backgroundLayerOnline_url').val(this.backgroundLayerOnline.url);
-    $('#backgroundLayerOnline_type').val(this.backgroundLayerOnline.type);
-    $('#backgroundLayerOnline_layers').val(this.backgroundLayerOnline.params.layers);
   },
 
-  saveBackgroundLayerOnline: function(backgroundLayerOnline) {
-    this.backgroundLayerOnline = backgroundLayerOnline;
-    kvm.store.setItem('backgroundLayerOnline', JSON.stringify(backgroundLayerOnline));
+  saveBackgroundLayerSettings: function(backgroundLayerSettings) {
+    this.backgroundLayerSettings = backgroundLayerSettings;
+    kvm.store.setItem('backgroundLayerSettings', JSON.stringify(backgroundLayerSettings));
+  },
+
+  createBackgroundLayer: function(backgroundLayerSetting) {
+    var backgroundLayer;
+    switch (backgroundLayerSetting.type) {
+      case 'wms':
+        backgroundLayer = L.tileLayer.wms(backgroundLayerSetting.url, backgroundLayerSetting.params);
+        break;
+      case 'wmts':
+        backgroundLayer = L.TileLayer.WMTS(backgroundLayerSetting.url, backgroundLayerSetting.params);
+        break;
+      case 'cordova':
+        console.log(backgroundLayerSetting.params);
+        backgroundLayer = L.tileLayerCordova(backgroundLayerSetting.url, backgroundLayerSetting.params);
+        break;
+      default: // 'tile'
+        backgroundLayer = L.tileLayer(backgroundLayerSetting.url, backgroundLayerSetting.params);
+    }
+    return backgroundLayer;
   },
 
   addColorSelector: function(style, i) {
@@ -1255,6 +1273,29 @@ kvm = {
     var url = context.getSyncUrl();
   },
 
+  downloadLayerTiles: function(i) {
+    $('#sperr_div').show();
+    $('#sperr_div_content').html('Lade');
+    var tileList = kvm.backgroundLayers[i].calculateXYZListFromPyramid(kvm.mapSettings.startCenterLat, kvm.mapSettings.startCenterLon, kvm.mapSettings.minZoom, kvm.backgroundLayers[i].options.maxZoom);
+    $('#sperr_div_content').html(' ' + tileList.length + ' Kacheln an (' + kvm.mapSettings.startCenterLat + ', ' + kvm.mapSettings.startCenterLon + ') von Zoom ' + kvm.mapSettings.minZoom + ' bis ' + kvm.backgroundLayers[i].options.maxZoom);
+    kvm.backgroundLayers[i].downloadXYZList(
+      tileList,
+      true,
+      function() {
+        kvm.backgroundLayers[i].getDiskUsage(
+          function (filecount, bytes) {
+            var kilobytes = Math.round( bytes / 1024 );
+            $('#sperr_div_content').html('Lade Kachel<br>' + filecount + " von " + tileList.length + "<br/>" + kilobytes + " kB");
+            if (filecount == tileList.length) {
+              $('#sperr_div_content').html('fertig');
+              $('#sperr_div').hide();
+            }
+          }
+        );
+      }
+    );
+  },
+
   downloadData: function(context) {
     kvm.log('download data');
     var fileTransfer = new FileTransfer(),
@@ -1565,7 +1606,11 @@ kvm = {
   */
   showGeomStatus: function() {
     if (kvm.activeLayer && kvm.activeLayer.activeFeature) {
-      console.log('activeFeature.point %o', kvm.activeLayer.activeFeature.get('point'));
+      console.log(
+        'activeFeature.%s %o',
+        kvm.activeLayer.get('geometry_attribute'),
+        kvm.activeLayer.activeFeature.get(kvm.activeLayer.get('geometry_attribute'))
+      );
       console.log('activeFeature.oldGeom %o', kvm.activeLayer.activeFeature.oldGeom);
       console.log('activeFeature.geom %o', kvm.activeLayer.activeFeature.geom);
       console.log('activeFeature.newGeom %o', kvm.activeLayer.activeFeature.newGeom);

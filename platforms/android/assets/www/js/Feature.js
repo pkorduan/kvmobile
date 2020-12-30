@@ -261,9 +261,11 @@ function Feature(
   };
 
   this.listElement = function() {
-    var markerStyles = JSON.parse(kvm.store.getItem('markerStyles'));
+    var markerStyles = JSON.parse(kvm.store.getItem('markerStyles')),
+        numStyles = Object.keys(markerStyles).length,
+        markerStyleIndex = ((this.get('status') >= 0 && this.get('status') < numStyles) ? this.get('status') : 0);
     return '\
-      <div class="feature-item" id="' + this.get(this.options.id_attribute) + '" style="background-color: ' + markerStyles[this.get('status')].fillColor + '">' + kvm.coalesce(this.get(kvm.activeLayer.get('name_attribute')), 'Datensatz ' + this.get(this.options.id_attribute)) + '</div>\
+      <div class="feature-item" id="' + this.get(this.options.id_attribute) + '" style="background-color: ' + markerStyles[markerStyleIndex].fillColor + '">' + kvm.coalesce(this.get(kvm.activeLayer.get('name_attribute')), 'Datensatz ' + this.get(this.options.id_attribute)) + '</div>\
     ';
   };
 
@@ -297,9 +299,10 @@ function Feature(
 
   this.getNormalCircleMarkerStyle = function() {
     //kvm.log('getNormalCircleMarkerStyle for status: ' + this.get('status'), 4);
-    var status = ((this.get('status') && this.get('status') != 'null') ? this.get('status') : 0),
-        markerStyles = JSON.parse(kvm.store.getItem('markerStyles'));
-    return markerStyles[status];
+    var markerStyles = JSON.parse(kvm.store.getItem('markerStyles')),
+        numStyles = Object.keys(markerStyles).length,
+        markerStyleIndex = ((this.get('status') >= 0 && this.get('status') < numStyles) ? this.get('status') : 0);
+    return markerStyles[markerStyleIndex];
   };
 
   this.getSelectedCircleMarkerStyle = function() {

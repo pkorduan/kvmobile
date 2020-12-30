@@ -236,12 +236,18 @@ kvm = {
   },
 
   initBackgroundLayers: function() {
-    if (!(this.backgroundLayerSettings = JSON.parse(kvm.store.getItem('backgroundLayerSettings')))) {
-      this.saveBackgroundLayerSettings(config.backgroundLayerSettings);
-    }
+    var downloadLink = '';
+    this.saveBackgroundLayerSettings(config.backgroundLayerSettings);
     $('#backgroundLayersTextarea').val(kvm.store.getItem('backgroundLayerSettings'));
     this.backgroundLayers = [];
     for ( var i = 0; i < this.backgroundLayerSettings.length; ++i) {
+      if (this.backgroundLayerSettings[i].type == 'cordova') {
+        downloadLink = '<div style="float: right" onclick="kvm.downloadLayerTiles(' + i + ')"><i class="fa fa-download" aria-hidden="true"></i></div>';
+      }
+      else {
+        downloadLink = '';
+      }
+      $('#backgroundLayersDiv').append('<div style="float:left">' + this.backgroundLayerSettings[i].label + '</div>' + downloadLink).append('<div style="clear: both">');
       this.backgroundLayers.push(this.createBackgroundLayer(this.backgroundLayerSettings[i]));
     }
   },
@@ -252,13 +258,22 @@ kvm = {
   },
 
   createBackgroundLayer: function(backgroundLayerSetting) {
-    if (backgroundLayerSetting.type == 'tile') {
-      return L.tileLayer(backgroundLayerSetting.url, backgroundLayerSetting.params);
+    var backgroundLayer;
+    switch (backgroundLayerSetting.type) {
+      case 'wms':
+        backgroundLayer = L.tileLayer.wms(backgroundLayerSetting.url, backgroundLayerSetting.params);
+        break;
+      case 'wmts':
+        backgroundLayer = L.TileLayer.WMTS(backgroundLayerSetting.url, backgroundLayerSetting.params);
+        break;
+      case 'cordova':
+        console.log(backgroundLayerSetting.params);
+        backgroundLayer = L.tileLayerCordova(backgroundLayerSetting.url, backgroundLayerSetting.params);
+        break;
+      default: // 'tile'
+        backgroundLayer = L.tileLayer(backgroundLayerSetting.url, backgroundLayerSetting.params);
     }
-    else {
-      //backgroundLayerSetting.type == 'wms'
-      return L.tileLayer.wms(backgroundLayerSetting.url, backgroundLayerSetting.params);
-    }
+    return backgroundLayer;
   },
 
   addColorSelector: function(style, i) {
@@ -1258,6 +1273,29 @@ kvm = {
     var url = context.getSyncUrl();
   },
 
+  downloadLayerTiles: function(i) {
+    $('#sperr_div').show();
+    $('#sperr_div_content').html('Lade');
+    var tileList = kvm.backgroundLayers[i].calculateXYZListFromPyramid(kvm.mapSettings.startCenterLat, kvm.mapSettings.startCenterLon, kvm.mapSettings.minZoom, kvm.backgroundLayers[i].options.maxZoom);
+    $('#sperr_div_content').html(' ' + tileList.length + ' Kacheln an (' + kvm.mapSettings.startCenterLat + ', ' + kvm.mapSettings.startCenterLon + ') von Zoom ' + kvm.mapSettings.minZoom + ' bis ' + kvm.backgroundLayers[i].options.maxZoom);
+    kvm.backgroundLayers[i].downloadXYZList(
+      tileList,
+      true,
+      function() {
+        kvm.backgroundLayers[i].getDiskUsage(
+          function (filecount, bytes) {
+            var kilobytes = Math.round( bytes / 1024 );
+            $('#sperr_div_content').html('Lade Kachel<br>' + filecount + " von " + tileList.length + "<br/>" + kilobytes + " kB");
+            if (filecount == tileList.length) {
+              $('#sperr_div_content').html('fertig');
+              $('#sperr_div').hide();
+            }
+          }
+        );
+      }
+    );
+  },
+
   downloadData: function(context) {
     kvm.log('download data');
     var fileTransfer = new FileTransfer(),
@@ -1568,7 +1606,11 @@ kvm = {
   */
   showGeomStatus: function() {
     if (kvm.activeLayer && kvm.activeLayer.activeFeature) {
-      console.log('activeFeature.point %o', kvm.activeLayer.activeFeature.get('point'));
+      console.log(
+        'activeFeature.%s %o',
+        kvm.activeLayer.get('geometry_attribute'),
+        kvm.activeLayer.activeFeature.get(kvm.activeLayer.get('geometry_attribute'))
+      );
       console.log('activeFeature.oldGeom %o', kvm.activeLayer.activeFeature.oldGeom);
       console.log('activeFeature.geom %o', kvm.activeLayer.activeFeature.geom);
       console.log('activeFeature.newGeom %o', kvm.activeLayer.activeFeature.newGeom);
