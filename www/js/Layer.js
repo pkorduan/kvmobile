@@ -24,7 +24,14 @@ function Layer(stelle, settings = {}) {
       function(attribute) {
         return new Attribute(layer_, attribute);
       }
-    )
+    );
+    this.attribute_index = this.attributes.reduce(
+      (hash, elem) => {
+        hash[elem.settings.name] = Object.keys(hash).length;
+        return hash
+      },
+      {}
+    );
   };
 
   this.features = {};
@@ -1055,7 +1062,8 @@ function Layer(stelle, settings = {}) {
       this.attributes,
       (function(attr) {
         var key = attr.get('name'),
-            val = this.get(key);
+            val = this.get(key),
+            req_by_idx;
 
         // Set Default values if feature is new and not nullable
         if (
@@ -1068,6 +1076,13 @@ function Layer(stelle, settings = {}) {
         console.log('Feature is new? %s', this.options.new);
         console.log('Set %s %s: %s', attr.get('form_element_type'), key, val);
         attr.formField.setValue(val);
+        if (kvm.coalesce(attr.get('req_by')) != null) {
+          req_by_idx = kvm.activeLayer.attribute_index[attr.get('req_by')];
+          kvm.activeLayer.attributes[req_by_idx].formField.filter_by_required(
+            attr.get('name'),
+            val
+          );
+        }
       }).bind(feature)
     );
     $('#geom_wkt').val(feature.geom.toWkt());
