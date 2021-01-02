@@ -36,7 +36,11 @@ function Feature(
   this.options = options; // Optionen, die beim Erzeugen des Features mit übergeben wurden. Siehe Default-Argument in init-Klasse.
   this.id = this.data[options.id_attribute];
   this.markerId = ''; // Id des Layers (z.B. circleMarkers) in dem das Feature gezeichnet ist
-  this.editableLayer = L.marker(kvm.map.getCenter()); // Leaflet Layer-Objekt in dem die editierbare Geometrie ist //ToDo starte an vorhandener Position
+  /*
+  console.log('Erzeuge eine editierbare Geometrie vom Feature');
+  this.editableLayer = kvm.controller.mapper.createEditable(this); // In vorheriger Version wurde hier L.marker(kvm.map.getCenter()) verwendet. ToDo: muss das hier überhaupt gesetzt werden, wenn es denn dann doch beim setEditable erzeugt wird?
+  */
+  console.log('Setze Feature auf im Moment nicht editierbar.');
   this.editable = false; // Feature ist gerade im Modus editierbar oder nicht
 
   this.get = function(key) {
@@ -47,6 +51,8 @@ function Feature(
     if (editable) {
       console.log('Setze feature: %s editierbar.', this.id);
       this.editableLayer = kvm.controller.mapper.createEditable(this);
+      this.editableLayer.enableEdit();
+      kvm.controller.mapper.bindEventHandler(this);
     }
     else {
       console.log('Entferne editierbare Geometrie von feature: %s.', this.id);
@@ -138,10 +144,15 @@ function Feature(
   * Gibt von einem WKX Geometry Objekt ein Array mit latlng Werten aus.
   */
   this.wkxToLatLngs = function(geom = this.geom) {
-    // ToDo hier ggf. den Geometrietyp auch aus this.geometry_type auslesen und nicht aus der übergebenen geom
-    // Problem dann, dass man die Funktion nur benutzen kann für den Geometrietype des activeLayer
-    var coordsLevelDeep = kvm.controller.mapper.coordsLevelsDeep[geom.toWkt().split('(')[0].toUpperCase()];
-    return (coordsLevelDeep == 0 ? L.GeoJSON.coordsToLatLng(geom.toGeoJSON().coordinates) : L.GeoJSON.coordsToLatLngs(geom.toGeoJSON().coordinates, coordsLevelDeep));
+    if (this.options.geometry_type == 'Point') {
+      // ToDo hier ggf. den Geometrietyp auch aus this.geometry_type auslesen und nicht aus der übergebenen geom
+      // Problem dann, dass man die Funktion nur benutzen kann für den Geometrietype des activeLayer
+      var coordsLevelDeep = kvm.controller.mapper.coordsLevelsDeep[geom.toWkt().split('(')[0].toUpperCase()];
+      return (coordsLevelDeep == 0 ? L.GeoJSON.coordsToLatLng(geom.toGeoJSON().coordinates) : L.GeoJSON.coordsToLatLngs(geom.toGeoJSON().coordinates, coordsLevelDeep));
+    }
+    else if (this.options.geometry_type == 'Line') {
+      return geom.points.map(function(p) { return [p.y, p.x]; });
+    }
   };
 
   /*
@@ -235,17 +246,22 @@ function Feature(
 
   this.select = function(zoom) {
     kvm.log('Markiere Feature ' + this.id, 4);
+    var layer = kvm.map._layers[this.markerId];
 
     if (this.newGeom) {
       console.log('Feature has newGeom');
       kvm.log('Select feature in map ' + this.markerId, 4);
-      kvm.log('Set style %o',this.getSelectedCircleMarkerStyle());
-      kvm.map._layers[this.markerId].setStyle(this.getSelectedCircleMarkerStyle());
+      kvm.log('Set style %o',this.getSelectedStyle());
+      layer.setStyle(this.getSelectedStyle());
+
+      kvm.map.fitBounds(layer.getBounds());
+
+/*
       if (zoom) {
         kvm.map.setZoom(17);
       }
       kvm.map.panTo(kvm.map._layers[this.markerId].getLatLng());
-
+*/
       if (!this.showPopupButtons()) {
         console.log('hide popup-functinos in select because showPopupButtons is false');
         $('.popup-functions').hide();
@@ -297,7 +313,28 @@ function Feature(
     $("#" + this.id).html(kvm.coalesce(this.get(kvm.activeLayer.get('name_attribute')), 'Datensatz ' + this.id));
   };
 
+  this.getNormalStyle = function() {
+    if (this.options.geometry_type == 'Point') {
+      this.getNormalCircleMarkerStyle();
+    }
+    else if (this.options.geometry_type == 'Line') {
+      this.getNormalPolylineStyle();
+    }
+  };
+
+  this.getNormalPolylineStyle = function() {
+    console.log('getNormalPolygonStyle');
+    return {
+      stroke: true,
+      fill: false,
+      color: '#3388ff',
+      weight: 3,
+      opacity: 0.7
+    }
+  };
+
   this.getNormalCircleMarkerStyle = function() {
+    console.log('getNormalCircleMarkerStyle');
     //kvm.log('getNormalCircleMarkerStyle for status: ' + this.get('status'), 4);
     var markerStyles = JSON.parse(kvm.store.getItem('markerStyles')),
         numStyles = Object.keys(markerStyles).length,
@@ -305,11 +342,32 @@ function Feature(
     return markerStyles[markerStyleIndex];
   };
 
+  this.getSelectedStyle = function() {
+    if (this.options.geometry_type == 'Point') {
+      this.getSelectedCircleMarkerStyle();
+    }
+    else if (this.options.geometry_type == 'Line') {
+      this.getSelectedPolylineStyle();
+    }
+  };
+
   this.getSelectedCircleMarkerStyle = function() {
+    console.log('getSelectedCircleMarkerStyle');
     var style = JSON.parse(JSON.stringify(this.getNormalCircleMarkerStyle()));
     style.weight = 5;
     style.color = '#ff2828';
     return style;
+  };
+
+  this.getSelectedPolylineStyle = function() {
+    console.log('getSelectedPolylineStyle');
+    return {
+      stroke: true,
+      fill: false,
+      color: '#ff2828',
+      weight: 5,
+      opacity: 0.7
+    }
   };
 
   this.getEditModeCircleMarkerStyle = function() {
@@ -317,8 +375,9 @@ function Feature(
   };
 
   this.setGeomFromData = function() {
+    console.log('setGeomFromData');
     if (this.data[this.options.geometry_attribute]) {
-      //console.log('Setze geom des neuen Features mit data: %o', this.data);
+      console.log('Setze geom des neuen Features mit data: %o', this.data);
       this.geom = this.wkbToWkx(this.data[this.options.geometry_attribute]);
     }
     this.newGeom = this.geom; // Aktuelle WKX-Geometry beim Editieren. Entspricht this.geom wenn das Feature neu geladen wurde und Geometrie in Karte, durch GPS oder Formular noch nicht geändert wurde.

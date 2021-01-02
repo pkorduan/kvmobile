@@ -545,3 +545,7 @@ a.hover {
   background: #4CAF50; /* Green background */
   cursor: pointer; /* Cursor on hover */
 }
+
+.fa-2x {
+	font-size: 30px;
+}

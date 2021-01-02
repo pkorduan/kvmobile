@@ -10,6 +10,7 @@ kvm = {
   mapSettings: {},
 
   loadHeadFile: function(filename, filetype) {
+    console.log('Lade filename %s, filetype: %s', filename, filetype);
     if (filetype=="js"){ //if filename is a external JavaScript file
       var fileref=document.createElement('script')
       fileref.setAttribute("type","text/javascript")

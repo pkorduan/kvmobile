@@ -25,6 +25,7 @@ config = {
     '3': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#26a7f1" }
   },
 
+/*
   // GDI-Service
   mapSettings : {
     newPosSelect: 1,
@@ -80,7 +81,7 @@ config = {
       params: {
         attribution: "Geoportal-MV DOP WMST"
       }
-    } /*, {
+    }, {
       label: 'Luftbilder WMTS',
       online: true,
       type: 'wmts',
@@ -92,8 +93,48 @@ config = {
         format: "image/png",
         attributation: "<a href=\"http://www.laiv-mv.de\">LaiV</a>"
       }
-    }*/
+    }
+  ]*/
+
+  // LK-EE
+  mapSettings : {
+    newPosSelect: 1,
+    minZoom: 8,
+    maxZoom: 18,
+    startZoom: 8,
+    west: 331592,
+    south: 5677145,
+    east: 461195,
+    north: 5767560,
+    startCenterLat: 51.6128,
+    startCenterLon: 13.4658
+  },
+  kvwmapServerUrl: 'https://geoportal.lkee.de/kvwmap',
+  kvwmapServerLoginName: 'korduanpeter',
+  kvwmapServerPasswort: '',
+  backgroundLayerSettings: [
+    {
+      label: 'Hintergrundkarte online',
+      online: true,
+      type: 'tile',
+      url : 'https://isk.geobasis-bb.de/mapproxy/dop20c_wmts/service?service=WMTS&request=GetTile&version=1.0.0&layer=bebb_dop20c&style=default&format=image/png&TileMatrixSet=grid_25833&TileMatrix={z}&TileRow={x}&TileCol={y}',
+      params: {
+        attribution: "LGB WMTS DOP20c"
+      }
+    }, {
+      label: 'Hintergrundkarte online',
+      online: true,
+      type: 'wms',
+      url: 'https://isk.geobasis-bb.de/ows/dop20c_wms',
+      params: {
+        layers: 'bebb_dop20c',
+        format: 'image/png',
+        transparent: true,
+        attribution: "LGB WMS DOP20"
+      }
+    }
   ]
+
 /*
   // LK-VG
   mapSettings: {

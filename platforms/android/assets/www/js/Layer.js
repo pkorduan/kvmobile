@@ -152,6 +152,8 @@ function Layer(stelle, settings = {}) {
           var item = rs.rows.item(i);
           //console.log('Item ' + i + ': %o', item);
           //console.log('Erzeuge Feature %s: ', i);
+          console.log('Erzeuge Feature von item %o', item);
+          debug_i = item;
           this.features[item[this.get('id_attribute')]] = new Feature(
             item, {
               id_attribute: this.get('id_attribute'),
@@ -187,6 +189,7 @@ function Layer(stelle, settings = {}) {
 
   this.writeData = function(items) {
     kvm.log('Schreibe die empfangenen Daten in die lokale Datebank...', 3, true);
+    debug_is = items;
     var tableName = this.get('schema_name') + '_' + this.get('table_name'),
         keys = this.getTableColumns().join(', '),
         values = '(' +
@@ -445,7 +448,7 @@ function Layer(stelle, settings = {}) {
                   collection = {},
                   errMsg = '';
 
-              //console.log('Download Ergebnis (Head 1000): %s', this.result.substring(1, 1000));
+                console.log('Download Ergebnis (Head 1000): %s', this.result.substring(1, 1000));
 //              try {
                 collection = $.parseJSON(this.result);
                 if (collection.features.length > 0) {
@@ -1120,15 +1123,27 @@ function Layer(stelle, settings = {}) {
     $.each(
       this.features,
       (function (key, feature) {
+        var vectorLayer;
+
         if (feature.newGeom) {
           //console.log('Zeichne Feature: %o', feature);
-          // circleMarker erzeugen mit Popup Eventlistener
-          var circleMarker = L.circleMarker(feature.wkxToLatLngs(feature.newGeom), {
-            renderer: kvm.myRenderer,
-            featureId: feature.id
-          }).bindPopup(this.getPopup(feature));
-          circleMarker.setStyle(feature.getNormalCircleMarkerStyle());
-          circleMarker.on('click', function(evt) {
+          if (feature.options.geometry_type == 'Point') {
+            vectorLayer = L.circleMarker(feature.wkxToLatLngs(feature.newGeom), {
+              renderer: kvm.myRenderer,
+              featureId: feature.id
+            });
+          }
+          else if (feature.options.geometry_type == 'Line') {
+            vectorLayer = L.polyline(feature.wkxToLatLngs(feature.newGeom), {
+              featureId: feature.id
+            });
+          }
+
+          // Popup zum Kartenobjekt hinzufügen
+          vectorLayer.bindPopup(this.getPopup(feature));
+
+          // Bind click Event an Kartenobjekt
+          vectorLayer.on('click', function(evt) {
             console.log('open popup defined in drawFeatures');
             console.log('activeFeature %s', kvm.activeLayer.activeFeature);
             console.log('activeFeature.editable %s', kvm.activeLayer.activeFeature.editable);
@@ -1141,14 +1156,18 @@ function Layer(stelle, settings = {}) {
             }
           });
 
-          // circleMarker als Layer zur Layergruppe hinzufügen
-          this.layerGroup.addLayer(circleMarker);
+          // Setze default Style für Kartenobjekt
+          vectorLayer.setStyle(feature.getNormalStyle());
+
+          // Kartenobjekt als Layer zur Layergruppe hinzufügen
+          this.layerGroup.addLayer(vectorLayer);
+
           // layer_id abfragen und in Feature als markerId speichern
-          feature.markerId = this.layerGroup.getLayerId(circleMarker);
+          feature.markerId = this.layerGroup.getLayerId(vectorLayer);
         }
       }).bind(this)
     );
-    kvm.log('Marker gezeichnet', 4);
+    kvm.log('Featuregeometrie gezeichnet', 4);
     this.layerGroup.addTo(kvm.map);
     kvm.log('layerGroup zur Karte hinzugefügt.', 4)
   };
@@ -2447,7 +2466,7 @@ function Layer(stelle, settings = {}) {
       $('#newFeatureButton').show();
     }
     kvm.controls.layers.removeLayer(this.layerGroup);
-    kvm.controls.layers.addOverlay(this.layerGroup, this.get('alias'));
+    kvm.controls.layers.addOverlay(this.layerGroup, kvm.coalesce(this.get('alias'), this.get('title'), this.get('table_name')));
   };
 
   this.createLayerFilterForm = function() {
