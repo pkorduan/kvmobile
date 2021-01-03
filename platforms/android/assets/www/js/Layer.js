@@ -1162,8 +1162,8 @@ function Layer(stelle, settings = {}) {
           // Kartenobjekt als Layer zur Layergruppe hinzufügen
           this.layerGroup.addLayer(vectorLayer);
 
-          // layer_id abfragen und in Feature als markerId speichern
-          feature.markerId = this.layerGroup.getLayerId(vectorLayer);
+          // layer_id abfragen und in Feature als layerId speichern
+          feature.layerId = this.layerGroup.getLayerId(vectorLayer);
         }
       }).bind(this)
     );
@@ -1287,7 +1287,8 @@ function Layer(stelle, settings = {}) {
   */
   this.startEditing = function(alatlng = []) {
     kvm.log('Layer.startEditing', 4);
-    var feature = this.activeFeature;
+    var feature = this.activeFeature,
+        vectorLayer;
 
     if (alatlng.length > 0) {
       kvm.alog('Setzte Geometry für Feature %o', alatlng, 4);
@@ -1300,14 +1301,14 @@ function Layer(stelle, settings = {}) {
     }
     this.loadFeatureToForm(feature, { editable: true });
     kvm.map.closePopup();
-    if (feature.markerId) {
-      circleMarker = this.layerGroup.getLayer(feature.markerId);
-      console.log('Edit CircleMarker: %o in Layer Id: %s von Feature Id: %s.', circleMarker, feature.markerId, feature.id);
-      circleMarker.unbindPopup();
-      circleMarker.setStyle(feature.getEditModeCircleMarkerStyle());
+    if (feature.layerId) {
+      vectorLayer = this.layerGroup.getLayer(feature.layerId);
+      console.log('Edit VectorLayer: %o in Layer Id: %s von Feature Id: %s.', vectorLayer, feature.layerId, feature.id);
+      vectorLayer.unbindPopup();
+      vectorLayer.setStyle(feature.getEditModeStyle());
     }
     feature.setEditable(true);
-    kvm.map.flyTo(feature.editableLayer.getLatLng(), 18);
+    kvm.map.flyToBounds(feature.editableLayer.getBounds());
 
     if ($('#dataView').is(':visible')) {
       console.log('Map Is not Visible, open in formular');
@@ -1331,16 +1332,16 @@ function Layer(stelle, settings = {}) {
     var feature = this.activeFeature;
     if (featureId) {
       // Ermittelt die layer_id des circleMarkers des Features
-      var layer = kvm.map._layers[feature.markerId];
+      var layer = kvm.map._layers[feature.layerId];
 
       // Zoom zur ursprünglichen Geometrie
-      kvm.map.panTo(kvm.map._layers[feature.markerId].getLatLng());
+      kvm.map.flyToBounds(kvm.map._layers[feature.layerId].getBounds());
 
       //Setzt den Style des circle Markers auf den alten zurück
-      kvm.map._layers[feature.markerId].setStyle(feature.getNormalCircleMarkerStyle());
+      kvm.map._layers[feature.layerId].setStyle(feature.getNormalStyle());
 
       // Binded das Popup an den dazugehörigen Layer
-      kvm.map._layers[feature.markerId].bindPopup(this.getPopup(feature));
+      kvm.map._layers[feature.layerId].bindPopup(this.getPopup(feature));
       this.selectFeature(feature);
     }
     else {
@@ -1374,14 +1375,22 @@ function Layer(stelle, settings = {}) {
   * Überarbeiten für neue Features evtl.
   */
   this.saveGeometry = function(feature) {
-    console.log('saveGeometry mit feature: %s', feature);
+    console.log('saveGeometry mit feature: %o', feature);
     var layer,
-        latlng = feature.editableLayer.getLatLng();
+        vectorLayer;
 
-    console.log('latlng: %o', latlng);
-    if (feature.markerId) {
-      console.log('feature.markerId: %s', feature.markerId);
-      var layer = kvm.map._layers[feature.markerId];
+    if (feature.options.geometry_type == 'Point') {
+      latlng = feature.editableLayer.getLatLng();
+      console.log('latlng: %o', latlng);
+    }
+    else if (feature.options.geometry_type == 'Line') {
+      latlngs = feature.editableLayer.getLatLngs();
+      console.log('latlngs: %o', latlngs);
+    }
+
+    if (feature.layerId) {
+      console.log('feature.layerId: %s', feature.layerId);
+      var layer = kvm.map._layers[feature.layerId];
       console.log('layer extrahiert: %o', layer);
     }
 
@@ -1394,7 +1403,7 @@ function Layer(stelle, settings = {}) {
 //    feature.geom = feature.newGeom;
 
     if (layer) {
-      this.layerGroup.removeLayer(feature.markerId);
+      this.layerGroup.removeLayer(feature.layerId);
     }
 /*
       // Ursprüngliche durch neue Geometrie ersetzen
@@ -1403,21 +1412,32 @@ function Layer(stelle, settings = {}) {
       layer.setLatLng(feature.editableLayer.getLatLng());
 
       console.log('Style der ursprünglichen Geometrie auf default setzen');
-      layer.setStyle(feature.getNormalCircleMarkerStyle());
+      layer.setStyle(feature.getNormalStyle());
 */
 
-    console.log('Lege neuen CircleMarker an.');
-    // circleMarker erzeugen mit Popup Eventlistener
-    var circleMarker = L.circleMarker(feature.wkxToLatLngs(feature.newGeom), {
-      renderer: kvm.myRenderer,
-      featureId: feature.id
-    }).bindPopup(this.getPopup(feature));
+    if (feature.options.geometry_type == 'Point') {
+
+      console.log('Lege neuen CircleMarker an.');
+      // circleMarker erzeugen mit Popup Eventlistener
+      vectorLayer = L.circleMarker(feature.wkxToLatLngs(feature.newGeom), {
+        renderer: kvm.myRenderer,
+        featureId: feature.id
+      });
+    }
+    else if (feature.options.geometry_type == 'Line') {
+      vectorLayer = L.polyline(feature.wkxToLatLngs(feature.newGeom), {
+        featureId: feature.id
+      });
+    }
+
+    console.log('Bind Popup for vectorLayer');
+    vectorLayer.bindPopup(this.getPopup(feature));
 
     console.log('Style der neuen Geometrie auf default setzen');
-    circleMarker.setStyle(feature.getNormalCircleMarkerStyle());
+    vectorLayer.setStyle(feature.getNormalStyle());
 
-    console.log('Setze click event for marker');
-    circleMarker.on('click', function(evt) {
+    console.log('Setze click event for vectorLayer');
+    vectorLayer.on('click', function(evt) {
       console.log('open popup gesetzt in save Geometry');
       console.log('activeFeature is editable: %s', kvm.activeLayer.activeFeature.editable);
       if (kvm.activeLayer.activeFeature && kvm.activeLayer.activeFeature.editable) {
@@ -1430,16 +1450,16 @@ function Layer(stelle, settings = {}) {
       }
     });
 
-    console.log('Füge circleMarker zur layerGroup hinzu.');
-    // circleMarker als Layer zur Layergruppe hinzufügen
-    this.layerGroup.addLayer(circleMarker);
+    console.log('Füge vectorLayer zur layerGroup hinzu.');
+    // vectorLayer als Layer zur Layergruppe hinzufügen
+    this.layerGroup.addLayer(vectorLayer);
 
-    console.log('Frage markerId ab und ordne feature zu.');
-    // layer_id abfragen und in Feature als markerId speichern
-    feature.markerId = this.layerGroup.getLayerId(circleMarker);
+    console.log('Frage layerId ab und ordne feature zu.');
+    // layer_id abfragen und in Feature als layerId speichern
+    feature.layerId = this.layerGroup.getLayerId(vectorLayer);
 
-    console.log('setze layer variable mit circleMarker id: %s', feature.markerId);
-    layer = kvm.map._layers[feature.markerId];
+    console.log('setze layer variable mit vectorLayer id: %s', feature.layerId);
+    layer = kvm.map._layers[feature.layerId];
     console.log('layer variable jetzt: %o', layer);
 
     console.log('Setze feature auf nicht mehr editierbar.');
@@ -1839,15 +1859,15 @@ function Layer(stelle, settings = {}) {
     console.log('afterDeleteDataset');
     var layer = this.context,
         featureId = layer.activeFeature.id,
-        markerId = layer.activeFeature.markerId;
+        layerId = layer.activeFeature.layerId;
 
     console.log('Datensatz erfolgreich gesichert und aktueller gelöscht.')
 
     console.log('Remove Editable Geometrie');
     kvm.controller.mapper.removeEditable(layer.activeFeature);
 
-    console.log('Löscht Layer mit markerId: %s aus Layergroup', layer.activeFeature.markerId);
-    layer.layerGroup.removeLayer(markerId);
+    console.log('Löscht Layer mit layerId: %s aus Layergroup', layer.activeFeature.layerId);
+    layer.layerGroup.removeLayer(layerId);
 
     console.log('Löscht Feature aus FeatureList : %o', layer.activeFeature);
     $('#' + layer.activeFeature.id).remove();

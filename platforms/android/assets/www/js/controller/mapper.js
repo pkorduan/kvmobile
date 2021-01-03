@@ -47,7 +47,7 @@ kvm.controller.mapper = {
 
   createEditable: function(feature) {
     //ToDo auch implementieren für polyongs
-    console.log('Erzeuge Editierbare Geometrie für %s: %o', feature.geometry_type, feature);
+    console.log('Erzeuge Editierbare Geometrie für %s: %o', feature.options.geometry_type, feature);
     var editableLayer;
 
     // Erzeugt eine editierbare Geometrie der Featuregeometrie
@@ -61,7 +61,11 @@ kvm.controller.mapper = {
     else if (feature.options.geometry_type == 'Line') {
       editableLayer = L.polyline(
         feature.wkxToLatLngs(), {
-          width: '3px'
+          stroke: true,
+          fill: false,
+          color: '#ffff50',
+          weight: 3,
+          opacity: 0.7
         }
       ).addTo(kvm.map);
     }
@@ -69,26 +73,33 @@ kvm.controller.mapper = {
   },
 
   bindEventHandler: function(feature) {
+    console.log('bindEventHandler für feature: %o', feature);
     //ToDo auch implementieren für polyongs
 
 //    draggableId = draggable._leaflet_id;
     // kein Popup am Draggable, ist nicht notwendig wegen der Button im Menü   kvm.map._layers[draggable._leaflet_id].bindPopup(this.getDraggablePopup(feature, draggable));
-
-    kvm.map._layers[feature.editableLayer._leaflet_id].on(
-      'dragend',
-      function(evt) {
-        if (feature.options.geometry_type == 'Point') {
+    if (feature.options.geometry_type == 'Point') {
+      kvm.map._layers[feature.editableLayer._leaflet_id].on(
+        'dragend',
+        function(evt) {
+          console.log('draged');
           var latlng = feature.editableLayer.getLatLng();
           console.log('trigger geomChanged mit latlng: %o', latlng);
           $(document).trigger('geomChanged', [{ geom: feature.aLatLngsToWkx([[latlng.lat, latlng.lng]]), exclude: 'latlngs'}]);
         }
-        else if (feature.options.geometry_type == 'Line') {
+      );
+    }
+    else if (feature.options.geometry_type == 'Line') {
+      kvm.map._layers[feature.editableLayer._leaflet_id].on(
+        'isChanged',
+        function(evt) {
+          console.log('isChanged');
           var latlngs = feature.editableLayer.getLatLngs();
           console.log('trigger geomChange mit latlngs: %o', latlngs);
           $(document).trigger('geomChanged', [{ geom: feature.aLatLngsToWkx(latlngs), exclude: 'latlngs'}]);
         }
-      }
-    );
+      );
+    }
   },
 
   removeEditable: function(feature) {

@@ -35,7 +35,7 @@ function Feature(
   this.data = (typeof data == 'string' ? $.parseJSON(data) : data);
   this.options = options; // Optionen, die beim Erzeugen des Features mit übergeben wurden. Siehe Default-Argument in init-Klasse.
   this.id = this.data[options.id_attribute];
-  this.markerId = ''; // Id des Layers (z.B. circleMarkers) in dem das Feature gezeichnet ist
+  this.layerId = ''; // Id des Layers (z.B. circleMarkers) in dem das Feature gezeichnet ist
   /*
   console.log('Erzeuge eine editierbare Geometrie vom Feature');
   this.editableLayer = kvm.controller.mapper.createEditable(this); // In vorheriger Version wurde hier L.marker(kvm.map.getCenter()) verwendet. ToDo: muss das hier überhaupt gesetzt werden, wenn es denn dann doch beim setEditable erzeugt wird?
@@ -180,8 +180,8 @@ function Feature(
       break;
       case 'MultiPoint' : result = kvm.wkx.Geometry.parse('SRID=4326;MULTIPOINT(' + alatlngs.map(function(point) { return point[1] + ' ' + point[0]; }).join(', ') + ')');
       break;
-      case 'Linestring' : result = kvm.wkx.Geometry.parse('SRID=4326;LINESTRING(' + alatlngs.map(function(point) { return point[1] + ' ' + point[0]; }).join(', ') + ')');
-      break; 
+      case 'Line' : result = kvm.wkx.Geometry.parse('SRID=4326;LINESTRING(' + alatlngs.map(function(point) { return point.lng + ' ' + point.lat; }).join(', ') + ')');
+      break;
       case 'MultiLinestring' : result = kvm.wkx.Geometry.parse('SRID=4326;MULTILINESTRING(' + alatlngs.map(function(linestring) { return '(' + linestring.map(function(point) { return point[1] + ' ' + point[0]; }).join(', ') + ')'; }).join(', ') + ')');
       break;
       case 'Polygon' : result = kvm.wkx.Geometry.parse('SRID=4326;POLYGON(' + alatlngs.map(function(polyline) { return '(' + polyline.map(function(point) { return point[1] + ' ' + point[0]; }).join(', ') + ')'; }).join(', ') + ')');
@@ -237,20 +237,20 @@ function Feature(
   };
 
   this.unselect = function() {
-    kvm.log('Deselektiere Feature ' + this.markerId, 4);
-    if (this.markerId) {
-      kvm.map._layers[this.markerId].setStyle(this.getNormalCircleMarkerStyle());
+    kvm.log('Deselektiere Feature ' + this.layerId, 4);
+    if (this.layerId) {
+      kvm.map._layers[this.layerId].setStyle(this.getNormalStyle());
     }
     $('.feature-item').removeClass('selected-feature-item');
   };
 
   this.select = function(zoom) {
     kvm.log('Markiere Feature ' + this.id, 4);
-    var layer = kvm.map._layers[this.markerId];
+    var layer = kvm.map._layers[this.layerId];
 
     if (this.newGeom) {
       console.log('Feature has newGeom');
-      kvm.log('Select feature in map ' + this.markerId, 4);
+      kvm.log('Select feature in map ' + this.layerId, 4);
       kvm.log('Set style %o',this.getSelectedStyle());
       layer.setStyle(this.getSelectedStyle());
 
@@ -260,7 +260,7 @@ function Feature(
       if (zoom) {
         kvm.map.setZoom(17);
       }
-      kvm.map.panTo(kvm.map._layers[this.markerId].getLatLng());
+      kvm.map.panTo(kvm.map._layers[this.layerId].getLatLng());
 */
       if (!this.showPopupButtons()) {
         console.log('hide popup-functinos in select because showPopupButtons is false');
@@ -370,8 +370,38 @@ function Feature(
     }
   };
 
+  this.getEditModeStyle = function() {
+    console.log('getEditModeStyle');
+    if (this.options.geometry_type == 'Point') {
+      this.getEditModeCircleMarkerStyle();
+    }
+    else if (this.options.geometry_type == 'Line') {
+      this.getEditModePolylineStyle();
+    }
+  };
+
   this.getEditModeCircleMarkerStyle = function() {
-    return { color: "#666666", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#cccccc" };
+    console.log('getEditModeCircleMarkerStyle');
+    return {
+      color: "#666666",
+      weight: 4,
+      fill: true,
+      fillOpacity: 0.8,
+      fillColor: "#cccccc"
+    };
+  };
+
+  this.getEditModePolylineStyle = function() {
+    console.log('getEditModePolylineStyle');
+    var style = {
+      stroke: true,
+      fill: false,
+      color: '#666666',
+      weight: 5,
+      opacity: 0.8
+    }
+    console.log('style: %o', style);
+    return style;
   };
 
   this.setGeomFromData = function() {

@@ -76,7 +76,7 @@ function GeometrieFormField(formId, settings) {
         kvm.log('Gehe zu Gps Position.', 3);
         var featureId = $('#featureFormular input[name=' + kvm.activeLayer.get('id_attribute') + ']').val(),
             feature = kvm.activeLayer.features[featureId],
-            marker = kvm.map._layers[feature.markerId];
+            marker = kvm.map._layers[feature.layerId];
 
         kvm.controller.mapper.zoomToFeature(featureId)
         marker.openPopup();

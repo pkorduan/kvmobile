@@ -721,10 +721,20 @@ kvm = {
             navigator.notification.confirm(
               'Datensatz Speichern?',
               function(buttonIndex) {
-                var action = (kvm.activeLayer.activeFeature.options.new ? 'insert' : 'update');
+                var action = (kvm.activeLayer.activeFeature.options.new ? 'insert' : 'update'),
+                    activeFeature = kvm.activeLayer.activeFeature,
+                    activeLayer = kvm.map._layers[activeFeature.layerId],
+                    editableLayer = kvm.activeLayer.activeFeature.editableLayer;
+
                 kvm.log('Action: ' + action, 4);
                 if (buttonIndex == 1) { // ja
                   kvm.log('Speichern', 3);
+                  if (
+                    activeFeature.options.geometry_type == 'Line' &&
+                    activeLayer.getLatLngs() != editableLayer.getLatLngs()
+                  ) {
+                    editableLayer.fireEvent('isChanged', editableLayer.getLatLngs());
+                  }
                   if (action == 'insert') {
                     kvm.activeLayer.runInsertStrategy();
                   }
