@@ -1157,6 +1157,7 @@ function Layer(stelle, settings = {}) {
           });
 
           // Setze default Style für Kartenobjekt
+          console.log('setStyle %o', feature.getNormalStyle());
           vectorLayer.setStyle(feature.getNormalStyle());
 
           // Kartenobjekt als Layer zur Layergruppe hinzufügen

@@ -315,22 +315,26 @@ function Feature(
 
   this.getNormalStyle = function() {
     if (this.options.geometry_type == 'Point') {
-      this.getNormalCircleMarkerStyle();
+      return this.getNormalCircleMarkerStyle();
     }
     else if (this.options.geometry_type == 'Line') {
-      this.getNormalPolylineStyle();
+      return this.getNormalPolylineStyle();
     }
   };
 
   this.getNormalPolylineStyle = function() {
-    console.log('getNormalPolygonStyle');
-    return {
-      stroke: true,
-      fill: false,
-      color: '#3388ff',
-      weight: 3,
-      opacity: 0.7
-    }
+    console.log('getNormalPolylineStyle');
+    var markerStyles = JSON.parse(kvm.store.getItem('markerStyles')),
+        numStyles = Object.keys(markerStyles).length,
+        markerStyleIndex = ((this.get('status') >= 0 && this.get('status') < numStyles) ? this.get('status') : 0),
+        style = markerStyles[markerStyleIndex];
+
+    style.color = style.fillColor;
+    style.stroke = true;
+    style.fill = false;
+    style.opacity = 0.8;
+
+    return style;
   };
 
   this.getNormalCircleMarkerStyle = function() {
@@ -344,10 +348,10 @@ function Feature(
 
   this.getSelectedStyle = function() {
     if (this.options.geometry_type == 'Point') {
-      this.getSelectedCircleMarkerStyle();
+      return this.getSelectedCircleMarkerStyle();
     }
     else if (this.options.geometry_type == 'Line') {
-      this.getSelectedPolylineStyle();
+      return this.getSelectedPolylineStyle();
     }
   };
 
@@ -373,10 +377,10 @@ function Feature(
   this.getEditModeStyle = function() {
     console.log('getEditModeStyle');
     if (this.options.geometry_type == 'Point') {
-      this.getEditModeCircleMarkerStyle();
+      return this.getEditModeCircleMarkerStyle();
     }
     else if (this.options.geometry_type == 'Line') {
-      this.getEditModePolylineStyle();
+      return this.getEditModePolylineStyle();
     }
   };
 
