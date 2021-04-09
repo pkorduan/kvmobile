@@ -12,6 +12,7 @@
   "dependencies": {
     "com.ionic.keyboard": "https://github.com/Telerik-Verified-Plugins/Keyboard",
     "cordova-android": "^6.4.0",
+    "cordova-plugin-android-fingerprint-auth": "^1.5.0",
     "cordova-plugin-camera": "^2.4.1",
     "cordova-plugin-compat": "^1.1.0",
     "cordova-plugin-device": "^1.1.6",
@@ -23,6 +24,7 @@
     "cordova-plugin-network-information": "^1.3.3",
     "cordova-plugin-whitelist": "^1.3.3",
     "cordova-sqlite-evplus-legacy-attach-detach-free": "git+https://github.com/litehelpers/Cordova-sqlite-evplus-legacy-attach-detach-free.git#evplus-legacy-attach-detach-master",
+    "cordova-sqlite-storage": "^5.1.0",
     "ionic-plugin-keyboard": "git+https://github.com/Telerik-Verified-Plugins/Keyboard.git"
   },
   "cordova": {
@@ -37,10 +39,12 @@
       "cordova-sqlite-evplus-legacy-attach-detach-free": {},
       "cordova-plugin-whitelist": {},
       "com.ionic.keyboard": {},
-      "cordova-plugin-file-opener2": {}
+      "cordova-plugin-file-opener2": {},
+      "cordova-sqlite-storage": {}
     },
     "platforms": [
       "android"
     ]
-  }
+  },
+  "devDependencies": {}
 }

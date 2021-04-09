@@ -25,7 +25,6 @@ config = {
     '3': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#26a7f1" }
   },
 
-/*
   // GDI-Service
   mapSettings : {
     newPosSelect: 1,
@@ -94,8 +93,8 @@ config = {
         attributation: "<a href=\"http://www.laiv-mv.de\">LaiV</a>"
       }
     }
-  ]*/
-
+  ]
+/*
   // LK-EE
   mapSettings : {
     newPosSelect: 1,
@@ -134,7 +133,7 @@ config = {
       }
     }
   ]
-
+*/
 /*
   // LK-VG
   mapSettings: {

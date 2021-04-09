@@ -300,6 +300,14 @@ module.exports = [
         "clobbers": [
             "cordova.plugins.fileOpener2"
         ]
+    },
+    {
+        "id": "cordova-plugin-android-fingerprint-auth.FingerprintAuth",
+        "file": "plugins/cordova-plugin-android-fingerprint-auth/www/FingerprintAuth.js",
+        "pluginId": "cordova-plugin-android-fingerprint-auth",
+        "clobbers": [
+            "FingerprintAuth"
+        ]
     }
 ];
 module.exports.metadata = 
@@ -316,7 +324,8 @@ module.exports.metadata =
     "cordova-sqlite-evplus-legacy-attach-detach-free": "0.8.3-pre5",
     "cordova-plugin-whitelist": "1.3.3",
     "com.ionic.keyboard": "2.0.1",
-    "cordova-plugin-file-opener2": "2.0.19"
+    "cordova-plugin-file-opener2": "2.0.19",
+    "cordova-plugin-android-fingerprint-auth": "1.5.0"
 };
 // BOTTOM OF METADATA
 });

@@ -32,19 +32,83 @@ kvm = {
   },
 
   onDeviceReady: function() {
+    this.db = window.sqlitePlugin.openDatabase(
+      {
+        name: config.dbname + '.db',
+        location: 'default',
+        androidDatabaseImplementation: 2
+      },
+      function (db) {
+        kvm.log('Lokale Datenbank geöffnet.', 3);
+        $('#dbnameText').html(config.dbname + '.db');
+
+        // Check if device supports fingerprint
+        /**
+        * @return {
+        *      isAvailable:boolean,
+        *      isHardwareDetected:boolean,
+        *      hasEnrolledFingerprints:boolean
+        *   }
+        */
+        FingerprintAuth.isAvailable(
+          function (result) {
+            console.log("FingerprintAuth available: " + JSON.stringify(result));
+            // Check the docs to know more about the encryptConfig object
+            var encryptConfig = {
+                clientId: "myAppName",
+                username: "currentUser",
+                password: "currentUserPassword",
+                maxAttempts: 5,
+                locale: "de_DE",
+                dialogTitle: "Authentifizierung mit Fingerabdruck",
+                dialogMessage: "Lege Finger auf den Sensor",
+                dialogHint: "Diese Methode ist nur Verfügbar mit Fingerabdrucksensor"
+            }; // See config object for required parameters
+
+            // Set config and success callback
+            //https://www.npmjs.com/package/cordova-plugin-android-fingerprint-auth
+            FingerprintAuth.encrypt(
+              encryptConfig,
+              function(_fingerResult){
+                console.log("successCallback(): " + JSON.stringify(_fingerResult));
+                if (_fingerResult.withFingerprint) {
+                  console.log("Successfully encrypted credentials.");
+                  console.log("Encrypted credentials: " + result.token);  
+                  kvm.startApplication();
+                }
+                else if (_fingerResult.withBackup) {
+                  console.log("Authenticated with backup password");
+                  kvm.startApplication();
+                }
+                // Error callback
+              },
+              function(err){
+                if (err === "Cancelled") {
+                  console.log("FingerprintAuth Dialog Cancelled!");
+                }
+                else {
+                  console.log("FingerprintAuth Error: " + err);
+                }
+              }
+            );
+          },
+          function (message) {
+            console.log("isAvailableError(): " + message);
+          }
+        );
+      },
+      function (error) {
+        console.log('Open database ERROR: ' + JSON.stringify(error));
+      }
+    );
+  },
+
+  startApplication: function() {
     var activeView = 'featurelist'
     kvm.log('onDeviceReady', 4);
 
     this.store = window.localStorage;
     kvm.log('Lokaler Speicher verfügbar', 3);
-
-    this.db = window.sqlitePlugin.openDatabase({
-      name: config.dbname + '.db',
-      location: 'default',
-      androidDatabaseImplementation: 2
-    });
-    kvm.log('Lokale Datenbank geöffnet.', 3);
-    $('#dbnameText').html(config.dbname + '.db');
 
     kvm.log('Lade Gerätedaten.', 3);
     this.loadDeviceData();
@@ -1098,6 +1162,47 @@ kvm = {
       }
     );
 
+    $('#short_password_field').on(
+      'keyup',
+      function(e) {
+        if (e.target.value.length == 4) {
+          console.log('login with short password');
+        }
+      }
+    );
+
+    $('#password_field').on(
+      'keyup',
+      function(e) {
+        if (e.target.value.length > 0) {
+          $('#password_ok_button').show();
+        }
+        else {
+          $('#password_ok_button').hide();
+        }
+      }
+    );
+
+    $('#password_view_checkbox').on(
+      'change',
+      function(e) {
+        console.log('checkbox changed');
+        debug_e = e;
+        if (e.target.checked) {
+          $('#password_field').attr('type', 'text');
+        }
+        else {
+          $('#password_field').attr('type', 'password');
+        }
+      }
+    );
+
+    $('#password_ok_button').on(
+      'click',
+      function(e) {
+        console.log('login with password');
+      }
+    );
   },
 
   setConnectionStatus: function() {

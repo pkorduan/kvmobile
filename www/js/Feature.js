@@ -251,11 +251,15 @@ function Feature(
     if (this.newGeom) {
       console.log('Feature has newGeom');
       kvm.log('Select feature in map ' + this.layerId, 4);
-      kvm.log('Set style %o',this.getSelectedStyle());
       layer.setStyle(this.getSelectedStyle());
 
-      kvm.map.fitBounds(layer.getBounds());
-
+      if (this.options.geometry_type == 'Point') {
+        kvm.map.setZoom(18);
+        kvm.map.panTo(layer.getLatLng());
+      }
+      else {
+        kvm.map.fitBounds(layer.getBounds());
+      }
 /*
       if (zoom) {
         kvm.map.setZoom(17);
@@ -347,6 +351,7 @@ function Feature(
   };
 
   this.getSelectedStyle = function() {
+    console.log('Feature.getSelectedStyle');
     if (this.options.geometry_type == 'Point') {
       return this.getSelectedCircleMarkerStyle();
     }
@@ -415,7 +420,7 @@ function Feature(
       this.geom = this.wkbToWkx(this.data[this.options.geometry_attribute]);
     }
     this.newGeom = this.geom; // Aktuelle WKX-Geometry beim Editieren. Entspricht this.geom wenn das Feature neu geladen wurde und Geometrie in Karte, durch GPS oder Formular noch nicht geändert wurde.
-  }
+  };
 
   this.setGeomFromData();
 
