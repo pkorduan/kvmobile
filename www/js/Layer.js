@@ -1176,7 +1176,7 @@ function Layer(stelle, settings = {}) {
   this.getPopup = function(feature) {
     var html;
 
-    html = feature.get(this.get('name_attribute'));
+    html = feature.get(this.get('name_attribute') || this.get('id_attribute'));
     console.log('getPopup');
     console.log('showPopupButtons: %s', feature.showPopupButtons());
     if (feature.showPopupButtons()) {
@@ -1309,7 +1309,8 @@ function Layer(stelle, settings = {}) {
       vectorLayer.setStyle(feature.getEditModeStyle());
     }
     feature.setEditable(true);
-    kvm.map.flyToBounds(feature.editableLayer.getBounds());
+
+    feature.zoomTo(feature.editableLayer);
 
     if ($('#dataView').is(':visible')) {
       console.log('Map Is not Visible, open in formular');
@@ -1336,7 +1337,7 @@ function Layer(stelle, settings = {}) {
       var layer = kvm.map._layers[feature.layerId];
 
       // Zoom zur ursprünglichen Geometrie
-      kvm.map.flyToBounds(kvm.map._layers[feature.layerId].getBounds());
+      feature.zoomTo(kvm.map._layers[feature.layerId]);
 
       //Setzt den Style des circle Markers auf den alten zurück
       kvm.map._layers[feature.layerId].setStyle(feature.getNormalStyle());

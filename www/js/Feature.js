@@ -244,6 +244,17 @@ function Feature(
     $('.feature-item').removeClass('selected-feature-item');
   };
 
+  this.zoomTo = function(layer) {
+    if (this.options.geometry_type == 'Point') {
+      kvm.map.setZoom(18);
+      kvm.map.panTo(layer.getLatLng());
+    }
+    else {
+      kvm.map.flyToBounds(layer.getBounds());
+     // kvm.map.fitBounds(layer.getBounds());
+    }
+  };
+
   this.select = function(zoom) {
     kvm.log('Markiere Feature ' + this.id, 4);
     var layer = kvm.map._layers[this.layerId];
@@ -253,13 +264,7 @@ function Feature(
       kvm.log('Select feature in map ' + this.layerId, 4);
       layer.setStyle(this.getSelectedStyle());
 
-      if (this.options.geometry_type == 'Point') {
-        kvm.map.setZoom(18);
-        kvm.map.panTo(layer.getLatLng());
-      }
-      else {
-        kvm.map.fitBounds(layer.getBounds());
-      }
+      this.zoomTo(layer);
 /*
       if (zoom) {
         kvm.map.setZoom(17);

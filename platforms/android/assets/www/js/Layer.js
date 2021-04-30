@@ -1309,7 +1309,8 @@ function Layer(stelle, settings = {}) {
       vectorLayer.setStyle(feature.getEditModeStyle());
     }
     feature.setEditable(true);
-    kvm.map.flyToBounds(feature.editableLayer.getBounds());
+
+    feature.zoomTo(feature.editableLayer);
 
     if ($('#dataView').is(':visible')) {
       console.log('Map Is not Visible, open in formular');
