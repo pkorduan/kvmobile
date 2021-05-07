@@ -108,26 +108,27 @@ function Feature(
 
   /*
   * Setzt die LatLngs des editableLayers auf die übergebene Geometrie
-  * wenn sich der Wert zu dem vorherigen geändert hat und
-  * lößt einen Trigger aus, der angibt, dass sich die Geom des Features geändert hat.
+  * falls das Feature schon einen editableLayer zugewiesen bekommen hat.
   */
   this.setLatLngs = function(geom) {
     console.log('setLatLngs in feature with geom: %o', geom);
-    var newLatLngs = this.wkxToLatLngs(geom),
-        oldLatLngs = this.getLatLngs();
+    if (this.editableLayer) {
+      var newLatLngs = this.wkxToLatLngs(geom),
+          oldLatLngs = this.getLatLngs();
 
-    console.log('vergleiche alte mit neuer coord');
-    if (oldLatLngs != newLatLngs) {
-      console.log('Ändere alte latlngs: %o auf neue: %o', oldLatLngs, newLatLngs);
-      if (this.options.geometry_type == 'Point') {
-        this.editableLayer.setLatLng(newLatLngs);
+      console.log('vergleiche alte mit neuer coord');
+      if (oldLatLngs != newLatLngs) {
+        console.log('Ändere alte latlngs: %o auf neue: %o', oldLatLngs, newLatLngs);
+        if (this.options.geometry_type == 'Point') {
+          this.editableLayer.setLatLng(newLatLngs);
+        }
+        else {
+          this.editableLayer.setLatLngs(newLatLngs);
+        }
+        $(document).trigger('geomChanged', [{ geom: geom, exclude: 'latlngs'}]);
       }
-      else {
-        this.editableLayer.setLatLngs(newLatLngs);
-      }
-      $(document).trigger('geomChanged', [{ geom: geom, exclude: 'latlngs'}]);
+      console.log('Neue latLngs für die Editable Geometry in der Karte: %o', newLatLngs);
     }
-    console.log('Neue latLngs für die Editable Geometry in der Karte: %o', newLatLngs);
   };
 
   this.getLatLngs = function() {
@@ -141,7 +142,7 @@ function Feature(
   };
 
   /*
-  * Gibt von einem WKX Geometry Objekt ein Array mit latlng Werten aus.
+  * Gibt von einem WKX Geometry Objekt ein Array mit latlng Werten aus wie es für Leaflet Objekte gebraucht wird.
   */
   this.wkxToLatLngs = function(geom = this.geom) {
     if (this.options.geometry_type == 'Point') {
@@ -425,6 +426,8 @@ function Feature(
       this.geom = this.wkbToWkx(this.data[this.options.geometry_attribute]);
     }
     this.newGeom = this.geom; // Aktuelle WKX-Geometry beim Editieren. Entspricht this.geom wenn das Feature neu geladen wurde und Geometrie in Karte, durch GPS oder Formular noch nicht geändert wurde.
+    console.log('new feature newGeom: %o', this.newGeom);
+    console.log('new feature geom: %o', this.geom);
   };
 
   this.setGeomFromData();
