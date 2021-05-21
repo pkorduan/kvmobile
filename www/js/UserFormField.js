@@ -29,7 +29,7 @@ function UserFormField(formId, settings) {
   );
 
   this.setValue = function(val) {
-    if (!val && this.get('default')) {
+    if (kvm.coalesce(val) == null && this.get('default')) {
       val = this.get('default');
     }
 
@@ -39,31 +39,15 @@ function UserFormField(formId, settings) {
   this.getValue = function(action = '') {
     kvm.log('UserFormField.getValue', 4);
     var val = this.element.val();
-
-
     if (typeof val === "undefined" || val == '') {
       val = null;
     }
-
-    // return kvm.store.userName if attribut type is User and (action is empty or equal to option)
-    kvm.log('name: ' + this.get('name') + ' formtype: ' + this.get('form_element_type') + ' action: ' + action + ' option: ' + this.get('options') + ' value: ' + this.element.val(), 4);
-    console.log('action == leer: ', action == '');
-    console.log('this.get(form_element_type == User: ', this.get('form_element_type') == 'User');
-
-    if (
-      this.get('form_element_type') == 'User' &&
-      (
-        action == '' ||
-        this.get('options') == '' ||
-        action.toLowerCase() == this.get('options').toLowerCase()
-      )
-    ) {
-      console.log('hier ist true, bitte setze jetzt val');
-      val = kvm.store.getItem('userName');
-    }
-    console.log('val vor übergabe: %s und in store: %s', val, kvm.store.getItem('userName'));
-    kvm.log('UserFormField.getValue return: ' + val, 4);
     return val;
+  };
+
+  this.getAutoValue = function() {
+    kvm.log('UserFormField.getAutoValue');
+    return kvm.store.getItem('userName');
   };
 
   this.bindEvents = function() {

@@ -67,6 +67,20 @@ function DataViewField(divId, settings) {
         }
       }
     } // end of document
+    else if (this.get('form_element_type') == 'SubFormEmbeddedPK') {
+      var options = this.get('options').split(';')[0].split(','),
+          stelleId = kvm.activeStelle.get('id'),
+          subFormLayerId = options[0],
+          subFormFK = options[1],
+          subFormPreviewAttribute = options[2],
+          subFormTable = $.parseJSON(kvm.store.getItem('layerSettings_' + stelleId + '_' + subFormLayerId)).table_name;
+      sql = "\
+        SELECT\
+        FROM\
+          " + subFormTable + "\
+      ";
+      console.log('SQL: %s', sql);
+    }
     else {
       this.element.html(kvm.coalesce(val, ''));
     }

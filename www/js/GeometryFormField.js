@@ -76,7 +76,7 @@ function GeometrieFormField(formId, settings) {
         kvm.log('Gehe zu Gps Position.', 3);
         var featureId = $('#featureFormular input[name=' + kvm.activeLayer.get('id_attribute') + ']').val(),
             feature = kvm.activeLayer.features[featureId],
-            marker = kvm.map._layers[feature.markerId];
+            marker = kvm.map._layers[feature.layerId];
 
         kvm.controller.mapper.zoomToFeature(featureId)
         marker.openPopup();
@@ -146,13 +146,13 @@ function GeometrieFormField(formId, settings) {
             geom = options.geom,
             exclude = options.exclude;
 
-        console.log('Event geomChanged mit geom: %o und exclude: %s', geom, exclude);
+        console.log('Trigger Funktion geomChanged: geom: %o und exclude: %s', geom, exclude);
         if (exclude != 'wkx') {
           var oldGeom = feature.newGeom,
               newGeom = geom;
           if (newGeom != oldGeom) {
             feature.newGeom = newGeom;
-            console.log('Neue WKX Geometrie im Feature: %o', feature);
+            console.log('Trigger Funktion geomChanged: Neue WKX Geometrie im Feature: %o', feature);
           }
         }
 
@@ -161,12 +161,12 @@ function GeometrieFormField(formId, settings) {
           var oldGeom = $('#featureFormular input[name=' + kvm.activeLayer.get('geometry_attribute') + ']').val(),
               newGeom = geom.toEwkb().toString('hex');
 
-          kvm.log('newGeom: ' + newGeom);
-          kvm.log('oldGeom: ' + oldGeom);
+          kvm.log('Trigger Funktion geomChanged: newGeom: ' + newGeom);
+          kvm.log('Trigger Funktion geomChanged: oldGeom: ' + oldGeom);
           if (newGeom != oldGeom) {
             $('#featureFormular input[name=' + kvm.activeLayer.get('geometry_attribute') + ']').val(newGeom).change();
-            console.log('Neue WKB Geometrie im Hidden-Field von geom_attribut im Formular: %s', newGeom);
-            kvm.deb('Neue WKB Geometrie im Formular Attribut ' + kvm.activeLayer.get('geometry_attribute') + ': ' + newGeom);
+            console.log('Trigger Funktion geomChanged: Neue WKB Geometrie im Hidden-Field von geom_attribut im Formular: %s', newGeom);
+            kvm.deb('Trigger Funktion geomChanged: Neue WKB Geometrie im Formular Attribut ' + kvm.activeLayer.get('geometry_attribute') + ': ' + newGeom);
           }
         }
 
@@ -174,10 +174,10 @@ function GeometrieFormField(formId, settings) {
           var oldGeom = $('#geom_wkt').val(),
               newGeom = geom.toWkt();
 
-          console.log('Vergleiche alt: %s mit neu: %s', oldGeom, newGeom);
+          console.log('Trigger Funktion geomChanged: Vergleiche alt: %s mit neu: %s', oldGeom, newGeom);
           if (newGeom != oldGeom) {
             $('#geom_wkt').val(newGeom);
-            console.log('Neue WKT Geometrie für die Anzeige als Text im Formular: %s', newGeom);
+            console.log('Trigger Funktion geomChanged: Neue WKT Geometrie für die Anzeige als Text im Formular: %s', newGeom);
           }
         }
 
@@ -186,7 +186,7 @@ function GeometrieFormField(formId, settings) {
         }
 //        kvm.activeLayer.features[feature.id] = feature;
 //        kvm.activeLayer.activeFeature = feature;
-        console.log('fertig mit Trigger geomChanged');
+        console.log('Trigger Funktion geomChanged: fertig');
       }
     );
 

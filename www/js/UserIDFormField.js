@@ -29,7 +29,7 @@ function UserIDFormField(formId, settings) {
   );
 
   this.setValue = function(val) {
-    if (!val && this.get('default')) {
+    if (kvm.coalesce(val) == null && this.get('default')) {
       val = this.get('default');
     }
 
@@ -39,24 +39,15 @@ function UserIDFormField(formId, settings) {
   this.getValue = function(action = '') {
    kvm.log('UserIDFormField.getValue', 4);
     var val = this.element.val();
-
     if (typeof val === "undefined" || val == '') {
       val = null;
     }
-
-    // return kvm.store.userName if attribut type is User and (action is empty or equal to option)
-    kvm.log('name: ' + this.get('name') + ' formtype: ' + this.get('form_element_type') + ' action: ' + action + ' option: ' + this.get('options') + ' value: ' + this.element.val(), 4);
-    if (
-      this.get('form_element_type') == 'UsUserID' &&
-      (
-        action == '' ||
-        action.toLowerCase() == this.get('options').toLowerCase()
-      )
-    ) {
-      val = kvm.store.userName;
-    }
-
     return val;
+  };
+
+  this.getAutoValue = function() {
+    kvm.log('UserIDFormField.getAutoValue');
+    return kvm.store.getItem('userId');
   };
 
   this.bindEvents = function() {

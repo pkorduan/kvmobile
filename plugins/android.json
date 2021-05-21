@@ -39,6 +39,9 @@
     },
     "cordova-plugin-file-opener2": {
       "PACKAGE_NAME": "de.gdiservice.kvmobile"
+    },
+    "cordova-plugin-android-fingerprint-auth": {
+      "PACKAGE_NAME": "de.gdiservice.kvmobile"
     }
   },
   "dependent_plugins": {
