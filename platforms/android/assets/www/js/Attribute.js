@@ -162,16 +162,16 @@ function Attribute(layer, settings = {}) {
         slValue = "'f'";
         break;
       case (pgType == 'geometry') :
-				if (this.layer.get('geometry_type') == 'Point') {
-        	slValue = "'" + kvm.wkx.Geometry.parse('SRID=4326;POINT(' + pgValue.coordinates.toString().replace(',', ' ') + ')').toEwkb().toString('hex', 0, maxByte).match(/.{2}/g).join('') + "'";
-				}
-				if (this.layer.get('geometry_type') == 'Line') {
-        	slValue = "'" + kvm.wkx.Geometry.parse('SRID=4326;LINESTRING(' + pgValue.coordinates[0].map(function(p) { return p.join(' '); }).join(', ') + ')').toEwkb().toString('hex', 0, maxByte).match(/.{2}/g).join('') + "'";
-				}
-				if (this.layer.get('geometry_type') == 'Polygon') {
-        	slValue = "'" + kvm.wkx.Geometry.parse('SRID=4326;POLYGON((' + pgValue.coordinates.toString().replace(',', ' ') + '))').toEwkb().inspect().replace(/<|Buffer| |>/g, '') + "'";
-				}
-				break;
+        if (this.layer.get('geometry_type') == 'Point') {
+          slValue = "'" + kvm.wkx.Geometry.parse('SRID=4326;POINT(' + pgValue.coordinates.toString().replace(',', ' ') + ')').toEwkb().toString('hex', 0, maxByte).match(/.{2}/g).join('') + "'";
+        }
+        if (this.layer.get('geometry_type') == 'Line') {
+          slValue = "'" + kvm.wkx.Geometry.parse('SRID=4326;LINESTRING(' + pgValue.coordinates[0].map(function(p) { return p.join(' '); }).join(', ') + ')').toEwkb().toString('hex', 0, maxByte).match(/.{2}/g).join('') + "'";
+        }
+        if (this.layer.get('geometry_type') == 'Polygon') {
+          slValue = "'" + kvm.wkx.Geometry.parse('SRID=4326;POLYGON((' + pgValue.coordinates[0].map(function(p) { return p.join(' '); }).join(', ') + '))').toEwkb().toString('hex', 0, maxByte).match(/.{2}/g).join('') + "'";
+        }
+        break;
       case (this.isArrayType()) :
         //console.log('value of arraytype: %o', pgValue);
         slValue = "'{" + pgValue + "}'";
@@ -208,7 +208,8 @@ function Attribute(layer, settings = {}) {
           </g>\
         </svg>\
         <i id="goToGpsPositionButton" class="fa fa-pencil fa-2x" aria-hidden="true" style="float: right; margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>\
-        <input type="text" id="geom_wkt" value=""/>');
+        <!--input type="text" id="geom_wkt" value=""//-->\
+        <textarea cols="40" rows="5" id="geom_wkt"></textarea>');
     }
 
     if (this.get('form_element_type') == 'Dokument') {

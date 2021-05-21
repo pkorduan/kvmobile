@@ -152,8 +152,7 @@ function Layer(stelle, settings = {}) {
           var item = rs.rows.item(i);
           //console.log('Item ' + i + ': %o', item);
           //console.log('Erzeuge Feature %s: ', i);
-          console.log('Erzeuge Feature von item %o', item);
-          debug_i = item;
+          //console.log('Erzeuge Feature von item %o', item);
           this.features[item[this.get('id_attribute')]] = new Feature(
             item, {
               id_attribute: this.get('id_attribute'),
@@ -1004,7 +1003,7 @@ function Layer(stelle, settings = {}) {
       <div id="dataViewDiv"></div>'
     );
     $.map(
-      this.attributes,
+      this.attributes.filter(function(attribute) { return attribute.get('type') != 'geometry'; }),
       function(attr) {
         $('#dataViewDiv').append(
           attr.viewField.withLabel()
@@ -1033,7 +1032,7 @@ function Layer(stelle, settings = {}) {
   this.loadFeatureToView = function(feature, options = {}) {
     kvm.log('Lade Feature in View.', 4);
     $.map(
-      this.attributes,
+      this.attributes.filter(function(attribute) { return attribute.get('type') != 'geometry'; }),
       (function(attr) {
         var key = attr.get('name'),
             val = this.get(key);
@@ -1126,7 +1125,7 @@ function Layer(stelle, settings = {}) {
         var vectorLayer;
 
         if (feature.newGeom) {
-          //console.log('Zeichne Feature: %o', feature);
+          console.log('Zeichne Feature: %o', feature);
           if (feature.options.geometry_type == 'Point') {
             vectorLayer = L.circleMarker(feature.wkxToLatLngs(feature.newGeom), {
               renderer: kvm.myRenderer,
@@ -1135,6 +1134,11 @@ function Layer(stelle, settings = {}) {
           }
           else if (feature.options.geometry_type == 'Line') {
             vectorLayer = L.polyline(feature.wkxToLatLngs(feature.newGeom), {
+              featureId: feature.id
+            });
+          }
+          else if (feature.options.geometry_type == 'Polygon') {
+            vectorLayer = L.polygon(feature.wkxToLatLngs(feature.newGeom), {
               featureId: feature.id
             });
           }
@@ -1383,11 +1387,15 @@ function Layer(stelle, settings = {}) {
 
     if (feature.options.geometry_type == 'Point') {
       latlng = feature.editableLayer.getLatLng();
-      console.log('latlng: %o', latlng);
+//      console.log('latlng: %o', latlng);
     }
     else if (feature.options.geometry_type == 'Line') {
       latlngs = feature.editableLayer.getLatLngs();
-      console.log('latlngs: %o', latlngs);
+//      console.log('latlngs: %o', latlngs);
+    }
+    else if (feature.options.geometry_type == 'Polygon') {
+      latlngs = feature.editableLayer.getLatLngs();
+//      console.log('latlngs: %o', latlngs);
     }
 
     if (feature.layerId) {
@@ -1428,6 +1436,11 @@ function Layer(stelle, settings = {}) {
     }
     else if (feature.options.geometry_type == 'Line') {
       vectorLayer = L.polyline(feature.wkxToLatLngs(feature.newGeom), {
+        featureId: feature.id
+      });
+    }
+    else if (feature.options.geometry_type == 'Polygon') {
+      vectorLayer = L.polygon(feature.wkxToLatLngs(feature.newGeom), {
         featureId: feature.id
       });
     }

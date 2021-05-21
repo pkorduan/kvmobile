@@ -488,7 +488,6 @@ kvm = {
     $('.mapSetting').on(
       'change',
       function() {
-        kvm.msg('Karteneinstellung gespeichert');
         kvm.mapSettings[this.name] = this.value;
         kvm.saveMapSettings(kvm.mapSettings);
       }
@@ -498,6 +497,7 @@ kvm = {
       'change',
       function() {
         kvm.map.setMaxZoom(this.value);
+        kvm.msg('maximale Zoomstufe auf ' + this.value + ' begrenzt!', 'Karteneinstellung');
       }
     );
 
@@ -505,6 +505,7 @@ kvm = {
       'change',
       function() {
         kvm.map.setMinZoom(this.value);
+        kvm.msg('minimale Zoomstufe auf ' + this.value + ' begrenzt!', 'Karteneinstellung');
       }
     );
 
@@ -523,6 +524,7 @@ kvm = {
             )
           )
         );
+        kvm.msg('max Boundingbox geändert!', 'Karteneinstellung');
       }
     );
 

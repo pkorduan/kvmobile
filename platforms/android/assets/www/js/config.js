@@ -98,7 +98,7 @@ config = {
 */
   // LK-MSE
   markerStyles: {
-    '0': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#465dc0" },
+    '0': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#00c0c0" },
     '1': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#23a325" },
     '2': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#23a325" },
     '3': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#f73446" }

@@ -19,7 +19,7 @@ config = {
   kvwmapServerId: 1,
   kvwmapServerName: 'kvwmap',
   markerStyles: {
-    '0': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#dd8181" },
+    '0': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#00c0c0" },
     '1': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#465dc0" },
     '2': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#23a325" },
     '3': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#26a7f1" }

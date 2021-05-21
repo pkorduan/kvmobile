@@ -69,6 +69,19 @@ kvm.controller.mapper = {
         }
       ).addTo(kvm.map);
     }
+    else if (feature.options.geometry_type == 'Polygon') {
+      editableLayer = L.polygon(
+        feature.wkxToLatLngs(), {
+          stroke: true,
+          color: '#ff3333',
+          weight: 2,
+          opacity: 0.8,
+          fill: true,
+          fillColor: '#e07676',
+          fillOpacity: 0.7
+        }
+      ).addTo(kvm.map);
+    }
     return editableLayer;
   },
 
@@ -96,6 +109,26 @@ kvm.controller.mapper = {
           console.log('isChanged');
           var latlngs = feature.editableLayer.getLatLngs();
           console.log('trigger geomChange mit latlngs: %o', latlngs);
+          $(document).trigger('geomChanged', [{ geom: feature.aLatLngsToWkx(latlngs), exclude: 'latlngs'}]);
+        }
+      );
+    }
+    else if (feature.options.geometry_type == 'Polygon') {
+      console.log('Handler to act on Geometry is changed.');
+      kvm.map._layers[feature.editableLayer._leaflet_id]
+      .on(
+        'editable:dragend',
+        function(evt) {
+          console.log('Polygon wurde verschoben');
+          var latlngs = feature.editableLayer.getLatLngs();
+          $(document).trigger('geomChanged', [{ geom: feature.aLatLngsToWkx(latlngs), exclude: 'latlngs'}]);
+        }
+      )
+      .on(
+        'editable:vertex:dragend',
+        function(evt) {
+          console.log('Stützpunkt von Polygon wurde verschoben');
+          var latlngs = feature.editableLayer.getLatLngs();
           $(document).trigger('geomChanged', [{ geom: feature.aLatLngsToWkx(latlngs), exclude: 'latlngs'}]);
         }
       );

@@ -40,7 +40,7 @@ function Feature(
   console.log('Erzeuge eine editierbare Geometrie vom Feature');
   this.editableLayer = kvm.controller.mapper.createEditable(this); // In vorheriger Version wurde hier L.marker(kvm.map.getCenter()) verwendet. ToDo: muss das hier überhaupt gesetzt werden, wenn es denn dann doch beim setEditable erzeugt wird?
   */
-  console.log('Setze Feature auf im Moment nicht editierbar.');
+  //console.log('Setze Feature auf im Moment nicht editierbar.');
   this.editable = false; // Feature ist gerade im Modus editierbar oder nicht
 
   this.get = function(key) {
@@ -154,6 +154,17 @@ function Feature(
     else if (this.options.geometry_type == 'Line') {
       return geom.points.map(function(p) { return [p.y, p.x]; });
     }
+    else if (this.options.geometry_type == 'Polygon') {
+      /* returns a latlngs array in the form
+      [
+        [[37, -109.05],[41, -109.03],[41, -102.05],[37, -102.04]], // outer ring
+        [[37.29, -108.58],[40.71, -108.58],[40.71, -102.50],[37.29, -102.50]] // hole 1
+        [[37.01, -108.58],[37.02, -108.58],[37.02, -102.50],[37.01, -102.50]] // hole 1
+      ]
+      */
+      return [geom.exteriorRing.map(function(point) { return [point.y, point.x]; })].concat(geom.interiorRings.map(function(interiorRing) { return interiorRing.map(function(point) { return [ point.x, point.y]; }); }));
+//      return [geom.exteriorRing.map(function(point) { return [point.y, point.x]; }).slice(0, -1)].concat(geom.interiorRings.map(function(interiorRing) { return interiorRing.map(function(point) { return [ point.x, point.y]; }).slice(0, -1); }));
+    }
   };
 
   /*
@@ -185,7 +196,7 @@ function Feature(
       break;
       case 'MultiLinestring' : result = kvm.wkx.Geometry.parse('SRID=4326;MULTILINESTRING(' + alatlngs.map(function(linestring) { return '(' + linestring.map(function(point) { return point[1] + ' ' + point[0]; }).join(', ') + ')'; }).join(', ') + ')');
       break;
-      case 'Polygon' : result = kvm.wkx.Geometry.parse('SRID=4326;POLYGON(' + alatlngs.map(function(polyline) { return '(' + polyline.map(function(point) { return point[1] + ' ' + point[0]; }).join(', ') + ')'; }).join(', ') + ')');
+      case 'Polygon' : result = kvm.wkx.Geometry.parse('SRID=4326;POLYGON(' + alatlngs.map(function(polyline) { return '(' + polyline.map(function(point) { return point.lng + ' ' + point.lat; }).join(', ') + ')'; }).join(', ') + ')');
         break;
         case 'MultiPolygon' : result = kvm.wkx.Geometry.parse('SRID=4326;MULTIPOLYGON(' + alatlngs.map(function(polygon) { return '(' + polygon.map(function(polyline) { return '(' + polyline.map(function(point) { return point[1] + ' ' + point[0]; }).join(', ') + ')'; }).join(', ') + ')'; }).join(',') + ')');
       break;
@@ -330,6 +341,9 @@ function Feature(
     else if (this.options.geometry_type == 'Line') {
       return this.getNormalPolylineStyle();
     }
+    else if (this.options.geometry_type == 'Polygon') {
+      return this.getNormalPolygonStyle();
+    }
   };
 
   this.getNormalPolylineStyle = function() {
@@ -342,6 +356,19 @@ function Feature(
     style.color = style.fillColor;
     style.stroke = true;
     style.fill = false;
+    style.opacity = 0.8;
+
+    return style;
+  };
+
+  this.getNormalPolygonStyle = function() {
+    console.log('getNormalPolygonStyle');
+    var markerStyles = JSON.parse(kvm.store.getItem('markerStyles')),
+        numStyles = Object.keys(markerStyles).length,
+        markerStyleIndex = ((this.get('status') >= 0 && this.get('status') < numStyles) ? this.get('status') : 0),
+        style = markerStyles[markerStyleIndex];
+
+    style.stroke = true;
     style.opacity = 0.8;
 
     return style;
@@ -420,14 +447,14 @@ function Feature(
   };
 
   this.setGeomFromData = function() {
-    console.log('setGeomFromData');
+    //console.log('setGeomFromData');
     if (this.data[this.options.geometry_attribute]) {
-      console.log('Setze geom des neuen Features mit data: %o', this.data);
+      //console.log('Setze geom des neuen Features mit data: %o', this.data);
       this.geom = this.wkbToWkx(this.data[this.options.geometry_attribute]);
     }
     this.newGeom = this.geom; // Aktuelle WKX-Geometry beim Editieren. Entspricht this.geom wenn das Feature neu geladen wurde und Geometrie in Karte, durch GPS oder Formular noch nicht geändert wurde.
-    console.log('new feature newGeom: %o', this.newGeom);
-    console.log('new feature geom: %o', this.geom);
+    //console.log('new feature newGeom: %o', this.newGeom);
+    //console.log('new feature geom: %o', this.geom);
   };
 
   this.setGeomFromData();
