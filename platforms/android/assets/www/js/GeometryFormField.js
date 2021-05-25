@@ -96,7 +96,7 @@ function GeometrieFormField(formId, settings) {
                 if (buttonIndex == 1) {
                   kvm.log('set new Position ' + geoLocation.coords.latitude + ' ' + geoLocation.coords.longitude, 4);
                   var feature = kvm.activeLayer.activeFeature,
-                      newGeom = feature.aLatLngsToWkx([[geoLocation.coords.latitude, geoLocation.coords.longitude]]);
+                      newGeom = feature.aLatLngsToWkx([{ lat: geoLocation.coords.latitude, lng: geoLocation.coords.longitude }]);
 
                   $('#geom_wkt').val(newGeom.toWkt());
 

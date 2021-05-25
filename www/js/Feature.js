@@ -188,17 +188,21 @@ function Feature(
     var result;
 
     switch (this.options.geometry_type) {
-      case 'Point' : result = kvm.wkx.Geometry.parse('SRID=4326;POINT(' + alatlngs[0][1] + ' ' + alatlngs[0][0] + ')');
+      case 'Point' : {
+        result = kvm.wkx.Geometry.parse('SRID=4326;POINT(' + alatlngs[0].lng + ' ' + alatlngs[0].lat + ')');
+      }
       break;
-      case 'MultiPoint' : result = kvm.wkx.Geometry.parse('SRID=4326;MULTIPOINT(' + alatlngs.map(function(point) { return point[1] + ' ' + point[0]; }).join(', ') + ')');
+      case 'MultiPoint' : result = kvm.wkx.Geometry.parse('SRID=4326;MULTIPOINT(' + alatlngs.map(function(point) { return point.lng + ' ' + point.lat; }).join(', ') + ')');
       break;
       case 'Line' : result = kvm.wkx.Geometry.parse('SRID=4326;LINESTRING(' + alatlngs.map(function(point) { return point.lng + ' ' + point.lat; }).join(', ') + ')');
       break;
       case 'MultiLinestring' : result = kvm.wkx.Geometry.parse('SRID=4326;MULTILINESTRING(' + alatlngs.map(function(linestring) { return '(' + linestring.map(function(point) { return point[1] + ' ' + point[0]; }).join(', ') + ')'; }).join(', ') + ')');
       break;
-      case 'Polygon' : result = kvm.wkx.Geometry.parse('SRID=4326;POLYGON(' + alatlngs.map(function(polyline) { return '(' + polyline.map(function(point) { return point.lng + ' ' + point.lat; }).join(', ') + ')'; }).join(', ') + ')');
-        break;
-        case 'MultiPolygon' : result = kvm.wkx.Geometry.parse('SRID=4326;MULTIPOLYGON(' + alatlngs.map(function(polygon) { return '(' + polygon.map(function(polyline) { return '(' + polyline.map(function(point) { return point[1] + ' ' + point[0]; }).join(', ') + ')'; }).join(', ') + ')'; }).join(',') + ')');
+      case 'Polygon' : {
+        result = kvm.wkx.Geometry.parse('SRID=4326;POLYGON(' + alatlngs.map(function(polyline) { return '(' + polyline.map(function(point) { return point.lng + ' ' + point.lat; }).join(', ') + ')'; }).join(', ') + ')');
+      }
+      break;
+      case 'MultiPolygon' : result = kvm.wkx.Geometry.parse('SRID=4326;MULTIPOLYGON(' + alatlngs.map(function(polygon) { return '(' + polygon.map(function(polyline) { return '(' + polyline.map(function(point) { return point[1] + ' ' + point[0]; }).join(', ') + ')'; }).join(', ') + ')'; }).join(',') + ')');
       break;
       default : result = kvm.wkx.Geometry.parse('SRID=4326;POINT(' + alatlngs.join(' ') + ')');
     }
@@ -206,13 +210,13 @@ function Feature(
   };
 
   this.wkxToEwkb = function(wkx) {
+    //kvm.wkx.Geometry.parse('SRID=4326;POINT(' + alatlng.join(' ') + ')').toEwkb().inspect().replace(/<|Buffer| |>/g, '')
     return wkx.toEwkb().toString('hex');
   };
 
   this.reverseAxis = function(point) {
     return point[1] + ' ' + point[0]
   };
-  //.toEwkb().inspect().replace(/<|Buffer| |>/g, '')
 
   this.update = function() {
     sql = "\

@@ -723,6 +723,7 @@ function Layer(stelle, settings = {}) {
           img : img
         }),
         fail = (function (error) {
+          console.log('err: %o', error);
           if (this.hasClass('fa-spinner')) this.toggleClass('fa-upload fa-spinner fa-spin');
           $('#sperr_div').hide();
 
@@ -746,6 +747,10 @@ function Layer(stelle, settings = {}) {
       passwort : this.stelle.get('passwort'),
       selected_layer_id : this.get('id'),
       go : 'mobile_upload_image'
+    };
+    options.chunkedMode = false;
+    options.headers = {
+      Connection: "close"
     };
 
     kvm.log('upload to url: ' + server, 3);
@@ -1244,17 +1249,22 @@ function Layer(stelle, settings = {}) {
       this.startEditing();
     }
     else {
-      if ($('#newPosSelect').val() == 1) {
+
+      if ($('#newPosSelect').val() == 1) {      
         navigator.geolocation.getCurrentPosition(
           function(geoLocation) {
             console.log('Starte Editierung an GPS-Coordinate');
-            kvm.activeLayer.startEditing([geoLocation.coords.latitude, geoLocation.coords.longitude]);
+            kvm.activeLayer.startEditing(
+              kvm.activeLayer.getStartGeomAtLatLng([geoLocation.coords.latitude, geoLocation.coords.longitude])
+            );
             $('#gpsCurrentPosition').html(geoLocation.coords.latitude.toString() + ' ' + geoLocation.coords.longitude.toString());
           },
           function(error) {
             console.log('Starte Editierung in Bildschirmmitte');
             var center = kvm.map.getCenter();
-            kvm.activeLayer.startEditing([center.lat, center.lng]);
+            kvm.activeLayer.startEditing(
+              kvm.activeLayer.getStartGeomAtLatLng([center.lat, center.lng])
+            );
             navigator.notification.confirm(
               'Da keine GPS-Position ermittelt werden kann, wird die neue Geometrie in der Mitte der Karte gezeichnet. Schalten Sie die GPS Funktion auf Ihrem Gerät ein und suchen Sie einen Ort unter freiem Himmel auf um GPS benutzen zu können.',
               function(buttonIndex) {
@@ -1276,9 +1286,38 @@ function Layer(stelle, settings = {}) {
       else {
         var center = kvm.map.getCenter();
         console.log('Starte Editierung in Bildschirmmitte');
-        this.startEditing([center.lat, center.lng]);
+        this.startEditing(
+          kvm.activeLayer.getStartGeomAtLatLng([center.lat, center.lng])
+        );
       }
     }
+  };
+
+  this.getStartGeomAtLatLng = function(latlng) {
+    var startGeomSize = 0.0002,
+        startGeom;
+
+    if (this.get('geometry_type') == 'Point') {
+      startGeom = [{ lat: latlng[0], lng: latlng[1] }];
+    }
+    else if (this.get('geometry_type') == 'Line') {
+      startGeom = [[
+        { lat: latlng[0] - startGeomSize / 2, lng: latlng[1] - startGeomSize },
+        { lat: latlng[0] + startGeomSize / 2, lng: latlng[1] - startGeomSize / 2 },
+        { lat: latlng[0] - startGeomSize / 2, lng: latlng[1] + startGeomSize / 2 },
+        { lat: latlng[0] + startGeomSize / 2, lng: latlng[1] + startGeomSize }
+      ]];
+    }
+    else if (this.get('geometry_type') == 'Polygon') {
+      startGeom = [[
+        { lat: latlng[0] + startGeomSize, lng: latlng[1] + startGeomSize },
+        { lat: latlng[0] + startGeomSize, lng: latlng[1] - startGeomSize },
+        { lat: latlng[0] - startGeomSize, lng: latlng[1] - startGeomSize },
+        { lat: latlng[0] - startGeomSize, lng: latlng[1] + startGeomSize }
+      ]];
+    }
+    console.log('Verwende Startgeometrie: %o', startGeom);
+    return startGeom;
   };
 
   this.showDataView = function(featureId) {
@@ -1295,13 +1334,15 @@ function Layer(stelle, settings = {}) {
     var feature = this.activeFeature,
         vectorLayer;
 
+    console.log('alatlng is in startEditing: %o', alatlng);
+    debug_alat = alatlng;
     if (alatlng.length > 0) {
       kvm.alog('Setzte Geometry für Feature %o', alatlng, 4);
-      feature.setGeom(feature.aLatLngsToWkx([alatlng]));
+      feature.setGeom(feature.aLatLngsToWkx(alatlng));
       feature.geom = feature.newGeom;
       feature.set(
         feature.options.geometry_attribute,
-        kvm.wkx.Geometry.parse('SRID=4326;POINT(' + alatlng.join(' ') + ')').toEwkb().inspect().replace(/<|Buffer| |>/g, '')
+        feature.wkxToEwkb(feature.geom)
       )
     }
     this.loadFeatureToForm(feature, { editable: true });

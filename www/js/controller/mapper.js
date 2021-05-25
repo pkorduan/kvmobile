@@ -98,7 +98,7 @@ kvm.controller.mapper = {
           console.log('draged');
           var latlng = feature.editableLayer.getLatLng();
           console.log('trigger geomChanged mit latlng: %o', latlng);
-          $(document).trigger('geomChanged', [{ geom: feature.aLatLngsToWkx([[latlng.lat, latlng.lng]]), exclude: 'latlngs'}]);
+          $(document).trigger('geomChanged', [{ geom: feature.aLatLngsToWkx([latlng]), exclude: 'latlngs'}]);
         }
       );
     }
