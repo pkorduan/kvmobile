@@ -18,7 +18,6 @@ config = {
   debug: true,
   kvwmapServerId: 1,
   kvwmapServerName: 'kvwmap',
-
 /*
   // GDI-Service
   markerStyles: {
@@ -96,6 +95,7 @@ config = {
     }
   ]
 */
+/*
   // LK-MSE
   markerStyles: {
     '0': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#00c0c0" },
@@ -151,13 +151,18 @@ config = {
       }
     }
   ]
-
-/*
+*/
   // LK-EE
+  markerStyles: {
+    '0': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#dd8181" },
+    '1': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#465dc0" },
+    '2': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#23a325" },
+    '3': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#26a7f1" }
+  },
   mapSettings : {
     newPosSelect: 1,
     minZoom: 8,
-    maxZoom: 18,
+    maxZoom: 23,
     startZoom: 8,
     west: 331592,
     south: 5677145,
@@ -167,7 +172,7 @@ config = {
     startCenterLon: 13.4658
   },
   kvwmapServerUrl: 'https://geoportal.lkee.de/kvwmap',
-  kvwmapServerLoginName: 'korduanpeter',
+  kvwmapServerLoginName: '',
   kvwmapServerPasswort: '',
   backgroundLayerSettings: [
     {
@@ -191,7 +196,6 @@ config = {
       }
     }
   ]
-*/
 /*
   // LK-VG
   mapSettings: {
