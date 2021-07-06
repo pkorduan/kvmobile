@@ -228,8 +228,10 @@ kvm = {
 
 //    L.PM.initialize({ optIn: true });
     kvm.myRenderer = L.canvas({ padding: 0.5 });
-    map.addControl(new L.control.betterscale({metric: true}));
-    map.addControl(new L.control.locate({
+    kvm.controls.layers = L.control.layers(
+      baseMaps
+    ).addTo(map);
+    kvm.controls.locate = L.control.locate({
       position: 'topright',
       keepCurrentZoomLevel: true,
       flyTo: true,
@@ -239,8 +241,116 @@ kvm = {
         popup: "Sie befinden sich im Umkreis von {distance} {unit}.",
         outsideMapBoundsMsg: "Sie sind außerhalb des darstellbaren Bereiches der Karte."
       }
-    }));
-    kvm.controls.layers = L.control.layers(baseMaps).addTo(map);
+    }).addTo(map);
+    kvm.controls.betterscale = L.control.betterscale({
+      metric: true
+    }).addTo(map);
+    kvm.controls.trackControl =  L.easyButton({
+      id: 'trackControl',
+      position: 'topright',
+      leafletClasses: true,
+      states: [{
+        stateName: 'track-aufzeichnen',
+        icon:      'fa-circle',
+        title:     'Track aufzeichnen',
+        onClick: function(btn, map) {
+          navigator.notification.confirm(
+            'Wie möchten Sie fortfahren?',
+            function(buttonIndex) {
+              var lastLatlng = kvm.activeLayer.activeFeature.getWaypoint('last'); 
+              if (buttonIndex == 1) {
+                console.log('Vorhandenen Track löschen und neu beginnen.');
+                // Editierbarkeit ausschalten
+                kvm.activeLayer.activeFeature.editableLayer.disableEdit();
+                // LatLngs zurücksetzen
+                kvm.activeLayer.activeFeature.editableLayer.setLatLngs([]);
+                // Tracking einschalten (latlngs hinzufügen auch im Hintergrund, wenn das Display aus ist.)
+                kvm.controller.mapper.startGpsTracking(lastLatlng);
+                btn.state('track-aufnahme');
+              }
+              else if (buttonIndex == 2) {
+                console.log('Vorhandenen Track weiterzeichnen.');
+                // Editierbarkeit ausschalten
+                kvm.activeLayer.activeFeature.editableLayer.disableEdit();
+                // Tracking einschalten (latlngs hinzufügen)
+                kvm.controller.mapper.startGpsTracking(lastLatlng);
+                btn.state('track-aufnahme');
+              }
+              else {
+                console.log('Abbruch');
+              }
+            },
+            'GPS-Track aufzeichnen.',
+            ['Löschen und neu beginnen', 'An Linie anhängen', 'Abbrechen']
+          );
+        }
+      }, {
+        stateName: 'track-aufnahme',
+        icon:      'fa-pause',
+        title:     'Track unterbrechen',
+        onClick: function(btn, map) {
+          navigator.notification.confirm(
+            'Wie möchten Sie fortfahren?',
+            function(buttonIndex) {
+              if (buttonIndex == 1) {
+                console.log('Aufnahme beenden.');
+                // Tracking ausschalten
+                navigator.geolocation.clearWatch(kvm.controller.mapper.watchId);
+                // Track als Geometrie vom Feature übernehmen
+                //Editierbarkeit einschalten.
+                kvm.activeLayer.activeFeature.editableLayer.enableEdit();
+                btn.state('track-aufzeichnen');
+              }
+              else if (buttonIndex == 2) {
+                console.log('Aufnahme unterbrechen.');
+                // Tracking ausschalten
+                navigator.geolocation.clearWatch(kvm.controller.mapper.watchId);
+                btn.state('track-pause');
+              }
+              else {
+                console.log('Abbruch');
+              }
+            },
+            'GPS-Track aufzeichnen.',
+            ['Aufnahme beenden', 'Aufnahme unterbrechen', 'Abbrechen']
+          );
+        }
+      }, {
+        stateName: 'track-pause',
+        icon:      'fa-play',
+        title:     'Aufnahme fortsetzen',
+        onClick: function(btn, map) {
+          navigator.notification.confirm(
+            'Wie möchten Sie fortfahren?',
+            function(buttonIndex) {
+              var lastLatlng = kvm.activeLayer.activeFeature.getWaypoint('last');
+              if (buttonIndex == 1) {
+                console.log('Aufnahme beenden.');
+                // Tracking ausschalten
+                navigator.geolocation.clearWatch(kvm.controller.mapper.watchId);
+                // Track als Geometrie vom Feature übernehmen
+                //Editierbarkeit einschalten.
+                kvm.activeLayer.activeFeature.editableLayer.enableEdit();
+                btn.state('track-aufzeichnen');
+              }
+              else if (buttonIndex == 2) {
+                console.log('Aufnahme fortsetzen.');
+                // Tracking einschalten
+                kvm.controller.mapper.startGpsTracking(lastLatlng);
+                btn.state('track-aufnahme');
+              }
+              else {
+                console.log('Abbruch');
+              }
+            },
+            'GPS-Track aufzeichnen.',
+            ['Aufnahme beenden', 'Aufnahme fortsetzen', 'Abbrechen']
+          );
+        }
+      }]
+    }).addTo(map);
+    $('#trackControl').hide();
+
 /*
     map.pm.addControls({
       position: 'topright',
@@ -789,17 +899,21 @@ kvm = {
               function(buttonIndex) {
                 var action = (kvm.activeLayer.activeFeature.options.new ? 'insert' : 'update'),
                     activeFeature = kvm.activeLayer.activeFeature,
-                    activeLayer = kvm.map._layers[activeFeature.layerId],
                     editableLayer = kvm.activeLayer.activeFeature.editableLayer;
 
                 kvm.log('Action: ' + action, 4);
                 if (buttonIndex == 1) { // ja
                   kvm.log('Speichern', 3);
                   if (
-                    activeFeature.options.geometry_type == 'Line' &&
-                    activeLayer.getLatLngs() != editableLayer.getLatLngs()
+                    activeFeature.options.geometry_type == 'Line'
                   ) {
-                    editableLayer.fireEvent('isChanged', editableLayer.getLatLngs());
+                    var speichern = true;
+                    if (activeFeature.layerId) {
+                      speichern = kvm.map._layers[activeFeature.layerId].getLatLngs() != editableLayer.getLatLngs();
+                    }
+                    if (speichern) {
+                      editableLayer.fireEvent('isChanged', editableLayer.getLatLngs());
+                    }
                   }
                   if (action == 'insert') {
                     kvm.activeLayer.runInsertStrategy();

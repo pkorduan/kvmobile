@@ -197,7 +197,8 @@ function Attribute(layer, settings = {}) {
         value = $('<div class="form-value">');
 
     if (this.get('form_element_type') == 'Geometrie') {
-      value.append('<i id="saveGpsPositionButton" class="fa fa-map-marker fa-2x" aria-hidden="true" style="margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>\
+      if (this.layer.settings.geometry_type == 'Point') {
+        value.append('<i id="saveGpsPositionButton" class="fa fa-map-marker fa-2x" aria-hidden="true" style="margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>\
         <svg onclick="kvm.msg(\'Die GPS-Genauigkeit beträgt ca. \' + Math.round(kvm.controller.mapper.getGPSAccuracy()) + \' Meter.\')" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="28" height="28" version="1.1">\
           <g id="gps-signal-icon" class="gps-signal-level-0" transform="scale(1 -1) translate(0 -28)">\
             <rect class="bar-1" x="0" y="0" width="4" height="4" />\
@@ -208,8 +209,9 @@ function Attribute(layer, settings = {}) {
           </g>\
         </svg>\
         <i id="goToGpsPositionButton" class="fa fa-pencil fa-2x" aria-hidden="true" style="float: right; margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>\
-        <!--input type="text" id="geom_wkt" value=""//-->\
-        <textarea cols="40" rows="5" id="geom_wkt"></textarea>');
+        <!--input type="text" id="geom_wkt" value=""//-->');
+      }
+      value.append('<textarea cols="40" rows="5" id="geom_wkt"></textarea>');
     }
 
     if (this.get('form_element_type') == 'Dokument') {

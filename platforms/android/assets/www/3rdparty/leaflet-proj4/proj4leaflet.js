@@ -15,13 +15,7 @@
 		factory(window.L, window.proj4);
 	}
 }(function (L, proj4) {
-	if (proj4.__esModule && proj4.default) {
-		// If proj4 was bundled as an ES6 module, unwrap it to get
-		// to the actual main proj4 object.
-		// See discussion in https://github.com/kartena/Proj4Leaflet/pull/147
-		proj4 = proj4.default;
-	}
- 
+
 	L.Proj = {};
 
 	L.Proj._isProj4Obj = function(a) {
@@ -81,12 +75,12 @@
 				code = proj.srsCode;
 				options = b || {};
 
-				this.projection = new L.Proj.Projection(proj, L.bounds(options.bounds));
+				this.projection = new L.Proj.Projection(proj, options.bounds);
 			} else {
 				code = a;
 				def = b;
 				options = c || {};
-				this.projection = new L.Proj.Projection(code, def, L.bounds(options.bounds));
+				this.projection = new L.Proj.Projection(code, def, options.bounds);
 			}
 
 			L.Util.setOptions(this, options);
@@ -110,7 +104,7 @@
 				}
 			}
 
-			this.infinite = !L.bounds(this.options.bounds);
+			this.infinite = !this.options.bounds;
 
 		},
 
@@ -142,9 +136,6 @@
 			// Check if scale is downScale => return array index
 			if (scale === downScale) {
 				return downZoom;
-			}
-			if (downScale === undefined) {
-				return -Infinity;
 			}
 			// Interpolate
 			nextZoom = downZoom + 1;

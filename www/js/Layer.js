@@ -1185,7 +1185,7 @@ function Layer(stelle, settings = {}) {
   this.getPopup = function(feature) {
     var html;
 
-    html = feature.get(this.get('name_attribute') || this.get('id_attribute'));
+    html = feature.getLabelValue();
     console.log('getPopup');
     console.log('showPopupButtons: %s', feature.showPopupButtons());
     if (feature.showPopupButtons()) {
@@ -1301,6 +1301,12 @@ function Layer(stelle, settings = {}) {
       startGeom = [{ lat: latlng[0], lng: latlng[1] }];
     }
     else if (this.get('geometry_type') == 'Line') {
+      startGeom = [
+        { lat: latlng[0], lng: latlng[1] },
+        { lat: latlng[0] + startGeomSize, lng: latlng[1] + startGeomSize }
+      ];
+    }
+    else if (this.get('geometry_type') == 'MultiLine') {
       startGeom = [[
         { lat: latlng[0] - startGeomSize / 2, lng: latlng[1] - startGeomSize },
         { lat: latlng[0] + startGeomSize / 2, lng: latlng[1] - startGeomSize / 2 },
@@ -1334,8 +1340,6 @@ function Layer(stelle, settings = {}) {
     var feature = this.activeFeature,
         vectorLayer;
 
-    console.log('alatlng is in startEditing: %o', alatlng);
-    debug_alat = alatlng;
     if (alatlng.length > 0) {
       kvm.alog('Setzte Geometry für Feature %o', alatlng, 4);
       feature.setGeom(feature.aLatLngsToWkx(alatlng));

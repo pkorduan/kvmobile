@@ -68,6 +68,7 @@ kvm.controller.mapper = {
           opacity: 0.7
         }
       ).addTo(kvm.map);
+      $('#trackControl').show();
     }
     else if (feature.options.geometry_type == 'Polygon') {
       editableLayer = L.polygon(
@@ -136,6 +137,9 @@ kvm.controller.mapper = {
   },
 
   removeEditable: function(feature) {
+    if (feature.options.geometry_type == 'Line') {
+      $('#trackControl').hide();
+    }
     kvm.map.removeLayer(feature.editableLayer);
   },
 
@@ -155,6 +159,22 @@ kvm.controller.mapper = {
         }
 
         $('#gps-signal-icon').attr('class', 'gps-signal-level-' + this.signalLevel);
+      }).bind(this)
+    );
+  },
+
+  startGpsTracking: function(startLatlng) {
+    this.lastLatlng = startLatlng;
+    this.watchId = navigator.geolocation.watchPosition(
+      (function(location) {
+        var latlng = L.latLng(location.coords.latitude, location.coords.longitude);
+        console.log('gps Location: %s', latlng.toString());
+        if (this.lastLatlng.distanceTo(latlng) > (config.minTrackDistance ? config.minTrackDistance : 5)) {
+          console.log('Add Point to Line at Location: %s', latlng.toString());
+          kvm.map.flyTo(latlng);
+          kvm.activeLayer.activeFeature.editableLayer.addLatLng(latlng);
+          this.lastLatlng = latlng;
+        }
       }).bind(this)
     );
   },

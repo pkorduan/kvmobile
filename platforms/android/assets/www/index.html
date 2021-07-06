@@ -23,6 +23,7 @@
     <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-locatecontrol-gh-pages/dist/L.Control.Locate.min.css"/>
     <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-betterscale-master/L.Control.BetterScale.css"/>
     <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-geoman/leaflet-geoman.css"/>
+    <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-easy-button/easy-button.css"/>
     <link rel="stylesheet" type="text/css" href="css/style.css"/>
     <script src="cordova.js"></script>
     <script src="3rdparty/jquery-3.5.1/jquery.min.js"></script>
@@ -37,6 +38,7 @@
     <script src="3rdparty/proj4js-2.3.12/proj4.js"></script>
     <script src="3rdparty/leaflet-proj4/proj4leaflet.js"></script>
     <script src="3rdparty/leaflet-tilelayer-cordova/leaflet-tilelayer-cordova.js"></script>
+    <script src="3rdparty/leaflet-easy-button/easy-button.js"></script>
     <script src="3rdparty/wkx-0.4.2/dist/wkx.min.js"></script>
     <script src="3rdparty/md5/js/md5.min.js"></script>
     <script src="js/config.js"></script>
@@ -193,6 +195,7 @@
           <option value="2">Immer am aktuellen Kartenmittelpunkt</option>
         </select>
       </div>
+      Mindestdistanz beim Tracking: <span id="minTrackDistance">5</span> m <input id="minTrackDistanceSlider" type="range" min="1" max="200" value="5" class="min-track-distance-slider"><i class="fa fa-info" aria-hidden="true" onclick="kvm.msg('Stellt die Mindestentfernung zum nächsten aufgezeichneten Wegpunkt beim Linientracking ein. Punkte in kleinerem Abstand werden bei der Aufzeichnung ignoriert.')" style="margin-left: 5px"></i><br>
       maximale Kartenausdehnung:
       <div class="settings-label">West:</div><input id="mapSettings_west" name="west" class="mapSetting" type="number" size="7"/>
       <div style="clear: both"></div>

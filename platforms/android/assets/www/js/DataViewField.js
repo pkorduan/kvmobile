@@ -21,8 +21,13 @@ function DataViewField(divId, settings) {
   this.element = $('<div id="' + this.get('index') + '" class="data-view-value">');
 
   this.setValue = function(val) {
-    console.log('DataViewField.setValue with value: ' + val);
-    if (this.get('form_element_type') == 'Dokument') {
+    console.log('DataViewField.setValue %s with value: %s', this.settings.name, val);
+    if (val && this.get('type') == 'timestamp') {
+      datetime = new Date(val);
+      val = datetime.toLocaleDateString() + ' ' + datetime.toLocaleTimeString();
+      this.element.html(kvm.coalesce(val, ''));
+    }
+    else if (this.get('form_element_type') == 'Dokument') {
       kvm.log('DataViewField.setValue for Document Attribute with value: ' +  val, 4);
       var val = kvm.coalesce(val, ''),
           images,

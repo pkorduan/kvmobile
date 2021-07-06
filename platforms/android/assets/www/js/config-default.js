@@ -15,6 +15,7 @@ config = {
   localBackupPath: 'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/Backups/',
   projZone: 33,
   logLevel: 4, // 0 off, 1 error, 2 waring, 3 info, 4 debug, 5 all
+  minTrackDistance: 5,
   debug: true,
   kvwmapServerId: 1,
   kvwmapServerName: 'kvwmap',

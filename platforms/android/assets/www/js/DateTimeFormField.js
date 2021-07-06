@@ -46,6 +46,11 @@ function DateTimeFormField(formId, settings) {
     return val;
   };
 
+  this.getFormattedValue = function(val) {
+    var datetime = new Date(val);
+    return datetime.toLocaleDateString() + ' ' + datetime.toLocaleTimeString();
+  }
+
   this.getAutoValue = function() {
     kvm.log('DateTimeFormField.getAutoValue', 4);
     return kvm.now();
