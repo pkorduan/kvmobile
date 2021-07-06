@@ -1540,9 +1540,10 @@ function Layer(stelle, settings = {}) {
     changes = $.map(
       this.attributes,
       (function(attr) {
-        console.log('attr.name: %s', attr.get('name'));
+        console.log('attr name: %s', attr.get('name'));
         //console.log('attr.privilege: %s', attr.get('privilege'));
         if (
+          attr.get('name') != this.id_attribute &&
           !attr.isAutoAttribute(action) &&
           attr.get('privilege') != '0'
         ) {
@@ -1575,7 +1576,7 @@ function Layer(stelle, settings = {}) {
             }
           }
         }
-      }).bind({ geometry_attribute: this.get('geometry_attribute') })
+      }).bind({ geometry_attribute: this.get('geometry_attribute'), id_attribute: this.get('id_attribute') })
     );
 
     return changes;
