@@ -286,6 +286,7 @@ function Layer(stelle, settings = {}) {
               (function(tx, res) {
                 kvm.log('Deltas Tabelle erfolgreich angelegt.', 3);
                 this.appendToList();
+                console.log('Add Layer to map in create Table after create deltastable.');
                 if ($('#layer_list .sync-layer-button').length == this.stelle.numLayers) {
                   // Erst wenn der letzte Layer geladen wurde.
                   kvm.bindLayerEvents();
@@ -320,6 +321,8 @@ function Layer(stelle, settings = {}) {
         tx.executeSql(sql, [],
           (function(tx, res) {
             kvm.log('Tabelle ' + this.get('schema_name') + '_' + this.get('table_name')  + ' erfolgreich gelöscht.', 3);
+            kvm.controls.layers.removeLayer(this.layerGroup);
+            console.log('Remove layer from map in updaeTable after delete table.')
             var sql = this.getCreateTableSql();
             kvm.log('Erzeuge Tabelle neu mit sql: ' + sql, 3);
             tx.executeSql(sql,[],
@@ -327,6 +330,7 @@ function Layer(stelle, settings = {}) {
                 kvm.log('Tabelle erfolgreich angelegt.', 3);
                 // update layer name in layerlist for this layer
                 this.appendToList();
+                console.log('Add layer to map in update Table after create table and append to list.');
                 kvm.bindLayerEvents(this.getGlobalId());
                 this.setActive();
                 kvm.setConnectionStatus();
@@ -2392,6 +2396,7 @@ function Layer(stelle, settings = {}) {
   this.appendToList = function() {
     kvm.log('Füge Layer ' + this.get('title') + ' zur Layerliste hinzu.', 3);
     $('#layer_list').append(this.getListItem());
+    kvm.controls.layers.addOverlay(this.layerGroup, kvm.coalesce(this.get('alias'), this.get('title'), this.get('table_name')));
   };
 
   this.addActiveFeature = function() {
@@ -2546,8 +2551,12 @@ function Layer(stelle, settings = {}) {
     if (parseInt(this.get('privileg')) > 0) {
       $('#newFeatureButton').show();
     }
-    kvm.controls.layers.removeLayer(this.layerGroup);
-    kvm.controls.layers.addOverlay(this.layerGroup, kvm.coalesce(this.get('alias'), this.get('title'), this.get('table_name')));
+    // ToDo: Do not remove and add layerGroup here but in appendToList
+    // change Style of layer control for this layer.
+    // Deactivate the events on features of other layers
+    // activate the events of this activ layer
+    //kvm.controls.layers.removeLayer(this.layerGroup);
+    //kvm.controls.layers.addOverlay(this.layerGroup, kvm.coalesce(this.get('alias'), this.get('title'), this.get('table_name')));
   };
 
   this.createLayerFilterForm = function() {
