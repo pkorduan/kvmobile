@@ -1,9 +1,8 @@
 function Layer(stelle, settings = {}) {
-  kvm.log('Erzeuge Layerobjekt', 3);
   var layer_ = this;
   this.stelle = stelle;
   this.settings = (typeof settings == 'string' ? $.parseJSON(settings) : settings);
-
+  kvm.log('Erzeuge Layerobjekt für Layer ' + this.settings.title + ' (id: ' + this.settings.id + ') in Stelle: ' + stelle.get('id'), 3);
 /*
   // diese 3 Settings werden hier statisch gesetzt für den Fall dass der Server die Attribute noch nicht per mobile_get_layer liefert.
   this.settings['id_attribute'] = 'uuid';
@@ -132,7 +131,7 @@ function Layer(stelle, settings = {}) {
             item,
             i;
 
-        kvm.log(numRows + ' Datensaetze gelesen, erzeuge Featureliste neu...', 3, true);
+        kvm.log(numRows + ' Datensätze gelesen, erzeuge Featureliste neu...', 3, true);
         this.numFeatures = numRows;
   
         this.features = {};
@@ -169,14 +168,12 @@ function Layer(stelle, settings = {}) {
         }
         kvm.setConnectionStatus();
 
-        kvm.createFeatureList();
-        if (numRows > 0) {
-          if (this.layerGroup) {
-            this.layerGroup.clearLayers();
-          }
-          this.drawFeatures();
+        this.createFeatureList();
+        if (this.layerGroup) {
+         console.log('Clear Layers in layerGroup');
+         this.layerGroup.clearLayers();
         }
-
+        this.drawFeatures();
         $('#sperr_div').hide();
       }).bind(this),
       function(error) {
@@ -184,6 +181,39 @@ function Layer(stelle, settings = {}) {
         $('#sperr_div').hide();
       }
     );
+  };
+
+  /*
+    * create the list of features if layer is active layer in list view at once
+    */
+  this.createFeatureList = function() {
+    console.log('createFeatureList for layer %s', this.get('title'));
+    if (typeof kvm.activeLayer != 'undefined' && kvm.activeLayer.id == this.id) {
+      kvm.log('Erzeuge die Liste der Datensätze neu.');
+      $('#featurelistHeading').html(this.get('alias') ? this.get('alias') : this.get('title'));
+      $('#featurelistBody').html('');
+      html = '';
+
+      $.each(
+        this.features,
+        function (key, feature) {
+          //console.log('append feature: %o to list', feature);
+          var needle = $('#searchHaltestelle').val().toLowerCase(),
+            element = $(feature.listElement()),
+            haystack = element.html().toLowerCase();
+
+          html = html + feature.listElement();
+          //console.log(feature.get('uuid') + ' zur Liste hinzugefügt.');
+          //console.log(html);
+        }
+      );
+      $('#featurelistBody').append(html);
+      kvm.bindFeatureItemClickEvents();
+      if (Object.keys(this.features).length > 0) {
+        kvm.showItem('featurelist');
+        $('#numDatasetsText').html(Object.keys(this.features).length).show();
+      }
+    }
   };
 
   this.writeData = function(items) {
@@ -204,7 +234,7 @@ function Layer(stelle, settings = {}) {
                   (function(attr) {
                       var type = attr.get('type'),
                           value = (type == 'geometry' ? this.item.geometry : this.item.properties[attr.get('name')]);
-
+                      //console.log('type: %s value: %s', type, value);
                       v = attr.toSqliteValue(type, value);
                       return v;
                   }).bind({
@@ -233,7 +263,6 @@ function Layer(stelle, settings = {}) {
         this.set('syncLastLocalTimestamp', Date());
         this.saveToStore();
         this.setActive();
-        this.readData($('#limit').val(), $('#offset').val());
       }).bind(this),
       (function(error) {
         this.set('syncVersion', 0);
@@ -285,11 +314,8 @@ function Layer(stelle, settings = {}) {
             tx.executeSql(sql,[],
               (function(tx, res) {
                 kvm.log('Deltas Tabelle erfolgreich angelegt.', 3);
-                this.appendToList();
-                if ($('#layer_list .sync-layer-button').length == this.stelle.numLayers) {
-                  // Erst wenn der letzte Layer geladen wurde.
-                  kvm.bindLayerEvents();
-                }
+                // hier wurde früher der Layer zur Liste und Karte hinzugefügt. wenn alle Tabellen vorhanden waren. Jetzt erfolgt das beim Laden der Anwendung, weil das immer wieder geschehen muss nach dem Start der Anwendung aber natürlich auch nach dem Reload von Layern.
+
               }).bind(this),
               (function(error) {
                 var tableName = this.get('schema_name') + '_' + this.get('table_name')
@@ -311,6 +337,7 @@ function Layer(stelle, settings = {}) {
   };
 
   this.updateTable = function() {
+    console.log('updateTable');
     kvm.db.transaction(
       (function(tx) {
         var tableName = this.get('schema_name') + '_' + this.get('table_name'),
@@ -326,8 +353,7 @@ function Layer(stelle, settings = {}) {
               (function(tx, res) {
                 kvm.log('Tabelle erfolgreich angelegt.', 3);
                 // update layer name in layerlist for this layer
-                this.appendToList();
-                kvm.bindLayerEvents(this.getGlobalId());
+                this.appendToApp();
                 this.setActive();
                 kvm.setConnectionStatus();
               }).bind(this),
@@ -376,7 +402,7 @@ function Layer(stelle, settings = {}) {
         return attr.get('name');
       }
     );
-    kvm.alog('return tableColumns: %o', tableColumns);
+    console.log('Return tableColumns: %o', tableColumns);
     return tableColumns;
   };
 
@@ -2389,10 +2415,39 @@ function Layer(stelle, settings = {}) {
   // prüfen wie sich die ganze Geschichte auf img auswirkt.
   // prüfen wie das mit dem user_name ist, der darf nach einem Rückgängig machen nicht mit drin sein, wenn vorher keiner drin stand.
 
-  this.appendToList = function() {
+  this.appendToApp = function() {
     kvm.log('Füge Layer ' + this.get('title') + ' zur Layerliste hinzu.', 3);
     $('#layer_list').append(this.getListItem());
+    kvm.bindLayerEvents(this.getGlobalId());
+    console.log('Füge Layer %s in append als overlay zum layer control hinzu.', this.get('title'));
+    kvm.controls.layers.addOverlay(this.layerGroup, kvm.coalesce(this.get('alias'), this.get('title'), this.get('table_name')));
+    kvm.map.addLayer(this.layerGroup);
+    kvm.layers[this.get('id')] = this;
+    this.saveToStore();
   };
+
+  /**
+   * Function remove layer from store, layer options list, clear data, remove from layer control, map and kvm.layers array
+   * Do not remove featurelist, because this will be updated wenn the new layer has been loaded
+   * and wenn all layer has been removed a text will appear instead of the featurelist.
+   * The layer that replace an active layer will also be set active
+  */
+  this.removeFromApp = function() {
+    console.log('remove layer %s (%s)', this.get('title'), this.get('id'));
+    console.log('Entferne layer div aus layer options list.');
+    $('layer_' + this.getGlobalId()).remove();
+    console.log('Lösche die Daten vom aktiven Layer');
+    this.clearData();
+    console.log('Entferne layer aus layer control');
+    kvm.controls.layers.removeLayer(this.layerGroup);
+    console.log('Entferne layer von map');
+    kvm.map.removeLayer(this.layerGroup);
+    console.log('Lösche activeLayer von kvm layers array');
+    const i = kvm.layers.indexOf(this.get('id'));
+    if (i > -1) {
+      kvm.layers.splice(i, 1)
+    };
+  }
 
   this.addActiveFeature = function() {
     this.features[this.activeFeature.id] = this.activeFeature;
@@ -2407,7 +2462,7 @@ function Layer(stelle, settings = {}) {
       <div id="layer_' + this.getGlobalId()  + '">\
         <input type="radio" name="activeLayerId" value="' + this.getGlobalId() + '"/> ' +
         (this.get('alias') ? this.get('alias') : this.get('title')) + '\
-        <i class="layer-functions-button fa fa-ellipsis-v" aria-hidden="true"></i>\
+        <i id="layer-functions-button_' + this.getGlobalId() + '" class="layer-functions-button fa fa-ellipsis-v" aria-hidden="true"></i>\
         <div class="layer-functions-div">\
           <button id="syncLayerButton_' + this.getGlobalId() + '" value="' + this.getGlobalId() + '" class="settings-button sync-layer-button layer-function-button">\
             <i id="syncLayerIcon_' + this.getGlobalId() + '" class="fa fa-refresh" aria-hidden="true"></i>\
@@ -2508,19 +2563,28 @@ function Layer(stelle, settings = {}) {
     }
   };
 
+  /**
+    Select layer in layerlist
+    - Create layerFilter
+    - Set sortAttribute
+    - Set featureForm and dataView
+    - readData:
+      - Load Features from Database, recreate FeatureList and draw in map
+      - Select Layer in Layer control
+  */
   this.setActive = function() {
     kvm.log('Setze Layer ' + this.get('title') + ' (' + (this.get('alias') ? this.get('alias') : 'kein Aliasname') + ') auf aktiv.', 3);
     kvm.activeLayer = this;
     kvm.store.setItem('activeLayerId', this.get('id'));
 
-    // create layerFilter
+    // Create layerFilter
     this.createLayerFilterForm();
     var layerFilter = kvm.store.getItem('layerFilter');
     if (layerFilter) {
       this.loadLayerFilterValues(JSON.parse(layerFilter));
     }
 
-    // set sortAttribute
+    // Set sortAttribute
     $('#anzeigeSortSelect option[value!=""]').remove();
     $.each(
       this.attributes,
@@ -2533,7 +2597,7 @@ function Layer(stelle, settings = {}) {
       $('#anzeigeSortSelect').val(sortAttribute);
     }
 
-    // set featureForm and dataView
+    // Set featureForm and dataView
     $('#formular').html('');
     this.createFeatureForm();
     this.createDataView();
@@ -2546,8 +2610,19 @@ function Layer(stelle, settings = {}) {
     if (parseInt(this.get('privileg')) > 0) {
       $('#newFeatureButton').show();
     }
-    kvm.controls.layers.removeLayer(this.layerGroup);
-    kvm.controls.layers.addOverlay(this.layerGroup, kvm.coalesce(this.get('alias'), this.get('title'), this.get('table_name')));
+    // Load Features from Database, recreate FeatureList and draw in map
+    this.readData();
+
+    // Unselect all overlayLayers in Layer control and select this overlaylayer
+    // Style layer in control to show that the layer is editable
+    
+    // ToDo: Do not remove and add layerGroup here but in appendToApp
+    // change Style of layer control for this layer.
+    // Deactivate the events on features of other layers
+    // activate the events of this activ layer
+    //kvm.controls.layers.removeLayer(this.layerGroup);
+    //console.log('Add layerGroup %s in setActive als overlay zum Layer Control hinzu.', this.get('title'));
+    //kvm.controls.layers.addOverlay(this.layerGroup, kvm.coalesce(this.get('alias'), this.get('title'), this.get('table_name')));
   };
 
   this.createLayerFilterForm = function() {

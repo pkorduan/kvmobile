@@ -202,7 +202,7 @@ kvm.controller.mapper = {
   clearWatch: function() {
     navigator.geolocation.clearWatch(this.watchId);
   },
-
+/*
   createLayerList: function(stelle) {
     kvm.log('Erzeuge Layerliste.', 3);
     var layerIds = $.parseJSON(kvm.store.getItem('layerIds_' + stelle.get('id'))),
@@ -215,11 +215,12 @@ kvm.controller.mapper = {
         stelle,
         $.parseJSON(kvm.store.getItem('layerSettings_' + stelle.get('id') + '_' + layerIds[i]))
       );
-      layer.appendToList();
+      layer.appendToApp();
     };
 
     kvm.bindLayerEvents();
   },
+*/
 
   gpsError: function(error) {
     $('#gps-signal-icon').attr('class', 'gps-signal-level-0');

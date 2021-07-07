@@ -8,6 +8,7 @@ kvm = {
   layerDataLoaded: false,
   featureListLoaded: false,
   mapSettings: {},
+  layers: [],
 
   loadHeadFile: function(filename, filetype) {
     console.log('Lade filename %s, filetype: %s', filename, filetype);
@@ -144,30 +145,53 @@ kvm = {
       stelle.viewSettings();
       stelle.setActive();
 
-      if (this.store.getItem('activeLayerId')) {
-        var activeLayerId = this.store.getItem('activeLayerId'),
-            activeLayerSettings = this.store.getItem('layerSettings_' + activeStelleId + '_' + activeLayerId);
-
-        if (activeLayerSettings != null) {
-          layer = new Layer(stelle, activeLayerSettings);
-
-          kvm.log('Aktiven Layer ' +  activeLayerId + ' gefunden.', 3);
-
-          // ToDo do not createTable instead attach schema database for layer if not exists
-          // before create LayerList();
-          layer.createTable();
-          setTimeout(
-            function() {
-              kvm.controller.mapper.createLayerList(stelle);
-              kvm.log('Setze Layer: ' + layer.get('schema_name') + '.' + layer.get('table_name'), 3);
+      /*
+        Laden von Layern
+        - Prüfen ob layerIds für die aktiveStelle registriert sind im store
+        - Wenn ja aus store abfragen und für jede layerId folgendes ausführen:
+          - Auslesen der layersettings
+          - Layer Objekt erzeugen
+          - Layer zur Layerliste, kvm.layers und Karte hinzufügen
+          - Daten des Layer aus Datenbank abfragen und zeichnen
+          - Wenn es der aktive Layer ist, aktiv schalten
+      */
+      if (this.store.getItem('layerIds_' + activeStelleId)) {
+        // Auslesen der layersettings
+        var layerIds = $.parseJSON(this.store.getItem('layerIds_' + activeStelleId));
+        for (let layerId of layerIds) {
+          console.log('Lade Layersettings for layerId: %s', layerId);
+          layerSettings = this.store.getItem('layerSettings_' + activeStelleId + '_' + layerId);
+          if (layerSettings != null) {
+            //Layer Objekt erzeugen
+            layer = new Layer(stelle, layerSettings);
+            //Layer zum Layerliste und Karte hinzufügen
+            layer.appendToApp();
+            if (this.store.getItem('activeLayerId') && this.store.getItem('activeLayerId') == layerId) {
+              // Layer laden und aktiv schalten
+              console.log('Set Layer %s active', layer.get('title'));
               layer.setActive();
-              kvm.layerDataLoaded = false;
-              kvm.featureListLoaded = false;
-              //layer.loadFeaturesToMap();
-              layer.readData($('#limit').val(), $('#offset').val()); // load from loacl db to feature list
-            },
-            2000
-          );
+            } else {
+              layer.readData();
+            }
+            /*
+            // ToDo do not createTable instead attach schema database for layer if not exists
+            // before create LayerList();
+            //layer.createTable();
+            setTimeout(
+              function () {
+                kvm.controller.mapper.createLayerList(stelle);
+                kvm.log('Setze Layer: ' + layer.get('schema_name') + '.' + layer.get('table_name'), 3);
+                layer.setActive();
+                kvm.layerDataLoaded = false;
+                kvm.featureListLoaded = false;
+                //layer.loadFeaturesToMap();
+                layer.readData($('#limit').val(), $('#offset').val()); // load from loacl db to feature list
+               
+              },
+              2000
+            );
+            */
+          }
         }
       }
       else {
@@ -646,6 +670,14 @@ kvm = {
       }
     );
 
+    $('#resetBackgroundLayerSettingsButton').on(
+      'click',
+      function() {
+        kvm.saveBackgroundLayerSettings(config.backgroundLayerSettings);
+        kvm.msg('Einstellung zu Hintergrundlayern aus config Datei erfolgreich wiederhergestellt.');
+      }
+    );
+
     $('localBackupPath').on(
       'change',
       function() {
@@ -1051,11 +1083,17 @@ kvm = {
       kvm.getGeoLocation
     );
 
-    // Update the current slider value (each time you drag the slider handle)
     $('#cameraOptionsQualitySlider').on(
       'input',
       function() {
         $('#cameraOptionsQuality').html(this.value);
+      }
+    );
+
+    $('#minTrackDistanceSlider').on(
+      'input',
+      function () {
+        $('#minTrackDistance').html(this.value);
       }
     );
 
@@ -1096,6 +1134,7 @@ kvm = {
   * Erzeugt die Events für die Auswahl, Syncronisierung und das Zurücksetzen von Layern
   */
   bindLayerEvents: function(layerGlobalId = 0) {
+    console.log('bindLayerEvents for layerGlobalId: %s', layerGlobalId);
     /*
     * Schaltet einen anderen Layer und deren Sync-Funktionen aktiv
     * Die Einstellungen des Layers werden aus dem Store geladen
@@ -1108,17 +1147,31 @@ kvm = {
             layerSettings = kvm.store.getItem('layerSettings_' + id);
             layer = new Layer(kvm.activeStelle, layerSettings);
 
-        layer.readData();
-        layer.setActive();
+//        layer.readData();
+        layer.setActive(); // include loading filter, sort, data view, form and readData
+        $('input:checkbox.leaflet-control-layers-selector').map(function (i, e) {
+          var layerLegendName = $(e).next().html();
+          if (layerLegendName.includes(kvm.activeLayer.get('alias'))) {
+            if (!$(e).checked) {
+              $(e).click(); // switch activeLayer on if it is off 
+            }
+          }
+          else {
+            if ($(e).checked) {
+              $(e).click(); // switch other layer off if they are on
+            }
+          }
+        });
+
 //        kvm.showItem('featurelist');
       }
     );
 
-    $('.layer-functions-button').on(
+    $('#layer-functions-button_' + layerGlobalId).on(
       'click',
       function(evt) {
-        console.log()
         var target = $(evt.target);
+        console.log('click on layer-functions-button von div %o', target.parent().attr('id'));
         target.parent().children().filter('.layer-functions-div').toggle();
         target.toggleClass('fa-ellipsis-v fa-window-close-o');
       }
@@ -1277,7 +1330,7 @@ kvm = {
         }
       }
     );
-
+/*
     $('#short_password_field').on(
       'keyup',
       function(e) {
@@ -1303,7 +1356,6 @@ kvm = {
       'change',
       function(e) {
         console.log('checkbox changed');
-        debug_e = e;
         if (e.target.checked) {
           $('#password_field').attr('type', 'text');
         }
@@ -1319,6 +1371,7 @@ kvm = {
         console.log('login with password');
       }
     );
+*/
   },
 
   setConnectionStatus: function() {
@@ -1347,36 +1400,6 @@ kvm = {
       'Hersteller: ' + device.manufacturer + '<br>' +
       'Seriennummer: ' + device.serial
     );
-  },
-
-  /*
-  * create the list of features of active layer in list view at once
-  */
-  createFeatureList: function() {
-    kvm.log('Erzeuge die Liste der Datensätze neu.');
-    $('#featurelistHeading').html(this.activeLayer.get('alias') ? this.activeLayer.get('alias') : this.activeLayer.get('title'));
-    $('#featurelistBody').html('');
-    html = '';
-
-    $.each(
-      this.activeLayer.features,
-      function (key, feature) {
-        //console.log('append feature: %o to list', feature);
-        var needle = $('#searchHaltestelle').val().toLowerCase(),
-            element = $(feature.listElement()),
-            haystack = element.html().toLowerCase();
-
-        html = html + feature.listElement();
-        //console.log(feature.get('uuid') + ' zur Liste hinzugefügt.');
-        //console.log(html);
-      }
-    );
-    $('#featurelistBody').append(html);
-    kvm.bindFeatureItemClickEvents();
-    if (Object.keys(this.activeLayer.features).length > 0) {
-      kvm.showItem('featurelist');
-      $('#numDatasetsText').html(Object.keys(this.activeLayer.features).length).show();
-    }
   },
 
   showItem: function(item) {

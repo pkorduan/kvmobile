@@ -51,6 +51,7 @@ label: {
   margin-top: -7px;
   float: right;
   color: #263286;
+  display: none;
 }
 
 .layer-functions-div {
@@ -644,7 +645,7 @@ a.hover {
 .min-track-distance-slider {
   -webkit-appearance: none;  /* Override default CSS styles */
   appearance: none;
-  width: 60%; /* Full-width */
+  width: 60% !important; /* Full-width */
   height: 25px; /* Specified height */
   background: #d3d3d3; /* Grey background */
   outline: none; /* Remove outline */
@@ -664,14 +665,14 @@ a.hover {
   appearance: none;
   width: 25px; /* Set a specific slider handle width */
   height: 25px; /* Slider handle height */
-  background: #4C50AF; /* Green background */
+  background: #4CAF50; /* Green background */
   cursor: pointer; /* Cursor on hover */
 }
 
 .min-track-distance-slider::-moz-range-thumb {
   width: 25px; /* Set a specific slider handle width */
   height: 25px; /* Slider handle height */
-  background: #4C50AF; /* Green background */
+  background: #4CAF50; /* Green background */
   cursor: pointer; /* Cursor on hover */
 }
 
