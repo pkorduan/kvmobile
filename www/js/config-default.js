@@ -182,6 +182,7 @@ config = {
   kvwmapServerLoginName: '',
   kvwmapServerPasswort: '',
   backgroundLayerSettings: [{
+<<<<<<< HEAD
       label: 'Hintergrundkarte offline',
       online: false,
       type: 'tile',
@@ -208,6 +209,18 @@ config = {
       params: {
         attribution: "OSM TileServer GL GDI-Service"
       }
+=======
+//    url : 'https://isk.geobasis-bb.de/mapproxy/dop20c_wmts/service?service=WMTS&request=GetTile&version=1.0.0&layer=bebb_dop20c&style=default&format=image/png&TileMatrixSet=grid_25833&TileMatrix={z}&TileRow={x}&TileCol={y}',
+    label: 'Hintergrundkarte online',
+    online: true,
+    type: 'wms',
+    url: 'https://isk.geobasis-bb.de/ows/dop20c_wms',
+    params: {
+      layers: 'bebb_dop20c',
+      format: 'image/png',
+      transparent: true,
+      attribution: "LGB WMS DOP20"
+>>>>>>> cb9ec2dbee3c678fc69549c4b1ae26da2ade44b1
     }
   ]
 */

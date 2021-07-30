@@ -193,7 +193,7 @@
           <option value="2">Immer am aktuellen Kartenmittelpunkt</option>
         </select>
       </div>
-      Mindestdistanz beim Tracking: <span id="minTrackDistance">5</span> m <input id="minTrackDistanceSlider" type="range" min="1" max="200" value="5" class="min-track-distance-slider"><i class="fa fa-info" aria-hidden="true" onclick="kvm.msg('Stellt die Mindestentfernung zum nächsten aufgezeichneten Wegpunkt beim Linientracking ein. Punkte in kleinerem Abstand werden bei der Aufzeichnung ignoriert.')" style="margin-left: 5px"></i><br>
+      Mindestdistanz beim Tracking: <span id="minTrackDistance">5</span> m <input id="minTrackDistanceSlider" type="range" min="1" max="100" value="5" class="min-track-distance-slider"><i class="fa fa-info" aria-hidden="true" onclick="kvm.msg('Stellt die Mindestentfernung zum nächsten aufgezeichneten Wegpunkt beim Linientracking ein. Punkte in kleinerem Abstand werden bei der Aufzeichnung ignoriert.')" style="margin-left: 5px"></i><br>
       maximale Kartenausdehnung:
       <div class="settings-label">West:</div><input id="mapSettings_west" name="west" class="mapSetting" type="number" size="7"/>
       <div style="clear: both"></div>
@@ -311,6 +311,9 @@
     <div id="backgroundLayersDiv">
       <textarea id="backgroundLayersTextarea" style="height: 200px">
       </textarea>
+      <button id="resetBackgroundLayerSettingsButton" class="settings-button">
+        <i class="fa fa-refresh" aria-hidden="true"> Reset Einstellungen</i>
+       </button>
     </div>
     <hr>
 

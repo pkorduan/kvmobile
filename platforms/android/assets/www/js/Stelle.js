@@ -205,18 +205,17 @@ function Stelle(settings = {}) {
                 var layers = [];
                 kvm.log('Download erfolgreich.', 3);
                 //console.log('resultObj: %o', resultObj);
-                $('#layer_' + kvm.activeLayer.getGlobalId()).remove();
+
                 kvm.activeStelle.numLayers = resultObj.layers.length;
 
                 var layerSettings = resultObj.layers.filter(function(layer) { return layer.id = layerId; })[0],
                     layer;
 
-                kvm.activeLayer.clearData();
-
+                kvm.activeLayer.removeFromApp();
+                console.log('Erzeuge neuen Layer');
                 layer = new Layer(kvm.activeStelle, layerSettings);
                 layer.saveToStore();
-                layer.updateTable();
-                layer.setActive();
+                layer.updateTable(); // function includes appendToApp() and setActive()
               }
               else {
                 kvm.log('Fehlerausgabe von parseLayerResult!', 4);
@@ -272,8 +271,9 @@ function Stelle(settings = {}) {
 
               if (resultObj.success) {
                 var layers = [];
-                kvm.alog('Download erfolgreich.', '', 3);
+                kvm.alog('Download der Layer der Stelle erfolgreich.', '', 3);
                 //console.log('resultObj: %o', resultObj);
+
                 $('#layer_list').html('');
                 if ('layerIds_' + kvm.activeStelle.get('id') in kvm.store) {
                   JSON.parse(kvm.store['layerIds_' + kvm.activeStelle.get('id')]).map(
@@ -286,6 +286,9 @@ function Stelle(settings = {}) {
                 kvm.store.removeItem('aktiveLayerId');
 
                 kvm.activeStelle.numLayers = resultObj.layers.length;
+
+                kvm.activeStelle.removeLayers();
+
                 $.each(
                   resultObj.layers,
                   function(index, layerSetting) {
@@ -294,6 +297,7 @@ function Stelle(settings = {}) {
                     layer = new Layer(kvm.activeStelle, layerSetting);
                     layer.saveToStore();
                     layer.createTable(this);
+                    layer.appendToApp();
                   }
                 );
 
@@ -320,6 +324,15 @@ function Stelle(settings = {}) {
       this.downloadError,
       true
     );
+  };
+
+  this.removeLayers = function() {
+    Object.keys(kvm.layers).map(function (layerId) {
+      kvm.layers[layerId].removeFromApp();
+    });
+    $('#featurelistHeading').html('Noch keine Layer synchronisiert');
+    $('#featurelistBody').html('Wählen Sie unter Einstellungen in der Gruppe "Layer" einen Layer aus. Öffnen Sie dann das Optionen Menü und wählen die Funktion "Daten synchronisieren"!');
+    $('#showSearch').hide();
   };
 
   this.getLayerUrl = function(options = { hidePassword: false}) {
