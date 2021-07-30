@@ -32,6 +32,7 @@
     <script src="3rdparty/leaflet-1.3.1/Path.Drag.js"></script>
     <!--script src="3rdparty/Leaflet.markercluster-1.3.0/dist/leaflet.markercluster.js"></script//-->
     <!--script src="3rdparty/leaflet-gps-master/dist/leaflet-gps.min.js"></script-->
+    <script src="3rdparty/Leaflet.VectorGrid/dist/Leaflet.VectorGrid.bundled.js"></script>
     <script src="3rdparty/leaflet-locatecontrol-gh-pages/dist/L.Control.Locate.min.js"></script>
     <script src="3rdparty/leaflet-betterscale-master/L.Control.BetterScale.js"></script>
     <script src="3rdparty/leaflet-geoman/leaflet-geoman.min.js"></script>
@@ -142,9 +143,6 @@
       Status:
       <select id="statusFilterSelect" style="50%">
         <option value="" selected>kein Filter</option>
-        <option value="status = 0">Noch zu prüfen</option>
-        <option value="status = 1">Ist schon geprüft</option>
-        <option value="status = 2">Noch Nachfragen nötig</option>
       </select>
       <div class="settings-label">Anzahl der Zeilen:</div><input type="number" id="limit" value="1000" size="5"/><br>
       <div class="settings-label">Starten bei Zeile:</div><input type="number" id="offset" value="0" size="5"/><br>

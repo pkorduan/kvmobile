@@ -165,7 +165,10 @@ function Attribute(layer, settings = {}) {
         if (this.layer.get('geometry_type') == 'Point') {
           slValue = "'" + kvm.wkx.Geometry.parse('SRID=4326;POINT(' + pgValue.coordinates.toString().replace(',', ' ') + ')').toEwkb().toString('hex', 0, maxByte).match(/.{2}/g).join('') + "'";
         }
-        if (this.layer.get('geometry_type') == 'Line') {
+        if (pgValue.type == 'LineString') {
+          slValue = "'" + kvm.wkx.Geometry.parse('SRID=4326;LINESTRING(' + pgValue.coordinates.map(function(p) { return p.join(' '); }).join(', ') + ')').toEwkb().toString('hex', 0, maxByte).match(/.{2}/g).join('') + "'";
+        }
+        if (pgValue.type == 'MultiLineString') {
           slValue = "'" + kvm.wkx.Geometry.parse('SRID=4326;LINESTRING(' + pgValue.coordinates[0].map(function(p) { return p.join(' '); }).join(', ') + ')').toEwkb().toString('hex', 0, maxByte).match(/.{2}/g).join('') + "'";
         }
         if (this.layer.get('geometry_type') == 'Polygon') {

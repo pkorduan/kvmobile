@@ -53,7 +53,7 @@ function DateTimeFormField(formId, settings) {
 
   this.getAutoValue = function() {
     kvm.log('DateTimeFormField.getAutoValue', 4);
-    return kvm.now();
+    return kvm.now_local();
   };
 
   this.bindEvents = function() {

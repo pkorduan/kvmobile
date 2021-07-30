@@ -223,7 +223,7 @@ function Layer(stelle, settings = {}) {
         " + values + "\
     ";
 
-    kvm.log('Schreibe Daten in lokale Datenbank mit Sql: ' + sql.substring(1, 1000), 4, true);
+    kvm.log('lokale Datenbank mit Sql: ' + sql.substring(1, 1000), 4, true);
     kvm.db.executeSql(
       sql,
       [],
@@ -286,6 +286,7 @@ function Layer(stelle, settings = {}) {
               (function(tx, res) {
                 kvm.log('Deltas Tabelle erfolgreich angelegt.', 3);
                 this.appendToList();
+                console.log('Add Layer to map in create Table after create deltastable.');
                 if ($('#layer_list .sync-layer-button').length == this.stelle.numLayers) {
                   // Erst wenn der letzte Layer geladen wurde.
                   kvm.bindLayerEvents();
@@ -320,6 +321,8 @@ function Layer(stelle, settings = {}) {
         tx.executeSql(sql, [],
           (function(tx, res) {
             kvm.log('Tabelle ' + this.get('schema_name') + '_' + this.get('table_name')  + ' erfolgreich gelöscht.', 3);
+            kvm.controls.layers.removeLayer(this.layerGroup);
+            console.log('Remove layer from map in updaeTable after delete table.')
             var sql = this.getCreateTableSql();
             kvm.log('Erzeuge Tabelle neu mit sql: ' + sql, 3);
             tx.executeSql(sql,[],
@@ -327,6 +330,7 @@ function Layer(stelle, settings = {}) {
                 kvm.log('Tabelle erfolgreich angelegt.', 3);
                 // update layer name in layerlist for this layer
                 this.appendToList();
+                console.log('Add layer to map in update Table after create table and append to list.');
                 kvm.bindLayerEvents(this.getGlobalId());
                 this.setActive();
                 kvm.setConnectionStatus();
@@ -2392,6 +2396,7 @@ function Layer(stelle, settings = {}) {
   this.appendToList = function() {
     kvm.log('Füge Layer ' + this.get('title') + ' zur Layerliste hinzu.', 3);
     $('#layer_list').append(this.getListItem());
+    kvm.controls.layers.addOverlay(this.layerGroup, kvm.coalesce(this.get('alias'), this.get('title'), this.get('table_name')));
   };
 
   this.addActiveFeature = function() {
@@ -2546,8 +2551,12 @@ function Layer(stelle, settings = {}) {
     if (parseInt(this.get('privileg')) > 0) {
       $('#newFeatureButton').show();
     }
-    kvm.controls.layers.removeLayer(this.layerGroup);
-    kvm.controls.layers.addOverlay(this.layerGroup, kvm.coalesce(this.get('alias'), this.get('title'), this.get('table_name')));
+    // ToDo: Do not remove and add layerGroup here but in appendToList
+    // change Style of layer control for this layer.
+    // Deactivate the events on features of other layers
+    // activate the events of this activ layer
+    //kvm.controls.layers.removeLayer(this.layerGroup);
+    //kvm.controls.layers.addOverlay(this.layerGroup, kvm.coalesce(this.get('alias'), this.get('title'), this.get('table_name')));
   };
 
   this.createLayerFilterForm = function() {
@@ -2565,18 +2574,31 @@ function Layer(stelle, settings = {}) {
       this.attributes,
       function(key, value) {
         if (value.settings.type != 'geometry') {
-          
-          if (value.settings.form_element_type == 'Auswahlfeld') {
-            input_field = $('<select id="filter_value_' + value.settings.name + '" class="filter-view-value-field" name="filter_value_' + value.settings.name + '">');
-            input_field.append($('<option value=""></option>'));
+          if (value.settings.name == 'status') {
+            $('#statusFilterSelect option').remove();
+            $('#statusFilterSelect').append($('<option value="" selected>-- Bitte wählen --</option>'));
             value.settings.options.map(
               function(option) {
-                input_field.append($('<option value="' + option.value + '">' + option.output + '</option>'));
+                $('#statusFilterSelect').append($('<option value="' + option.value + '">' + option.output + '</option>'));
               }
-            )
+            );
           }
-          else {
-            input_field = '<input id="filter_value_' + value.settings.name + '" class="filter-view-value-field" name="filter_value_' + value.settings.name + '" type="text" value=""/>';
+          switch (value.settings.form_element_type) {
+            case 'Auswahlfeld' : {
+              input_field = $('<select id="filter_value_' + value.settings.name + '" class="filter-view-value-field" name="filter_value_' + value.settings.name + '">');
+              input_field.append($('<option value="" selected>-- Bitte wählen --</option>'));
+              value.settings.options.map(
+                function(option) {
+                  input_field.append($('<option value="' + option.value + '">' + option.output + '</option>'));
+                }
+              )
+            } break;
+            case 'Time' : {
+              input_field = '<input id="filter_value_' + value.settings.name + '" class="filter-view-value-field" name="filter_value_' + value.settings.name + '" type="datetime-local" value=""/>';
+            } break;
+            default : {
+              input_field = '<input id="filter_value_' + value.settings.name + '" class="filter-view-value-field" name="filter_value_' + value.settings.name + '" type="text" value=""/>';
+            }
           }
           $('#attributeFilterFieldDiv').append(
             $('<div class="filter-view-field" database_type="' + value.settings.type + '" name="' + value.settings.name + '">')
@@ -2591,6 +2613,7 @@ function Layer(stelle, settings = {}) {
 
   this.loadLayerFilterValues = function(layerFilter) {
     Object.keys(layerFilter).forEach(function(attr_name) {
+      $('#filter_operator_' + attr_name).val(layerFilter[attr_name].operator);
       $('#filter_value_' + attr_name).val(layerFilter[attr_name].value);
     })
   };

@@ -411,9 +411,7 @@ kvm = {
   },
 
   initBackgroundLayers: function() {
-    if (!(this.backgroundLayerSettings = JSON.parse(kvm.store.getItem('backgroundLayerSettings')))) {
-      this.saveBackgroundLayerSettings(config.backgroundLayerSettings);
-    }
+    this.saveBackgroundLayerSettings(config.backgroundLayerSettings);
     $('#backgroundLayersTextarea').val(kvm.store.getItem('backgroundLayerSettings'));
     this.backgroundLayers = [];
     for ( var i = 0; i < this.backgroundLayerSettings.length; ++i) {
@@ -429,6 +427,9 @@ kvm = {
   createBackgroundLayer: function(backgroundLayerSetting) {
     if (backgroundLayerSetting.type == 'tile') {
       return L.tileLayer(backgroundLayerSetting.url, backgroundLayerSetting.params);
+    }
+    else if (backgroundLayerSetting.type == 'vectortile') {
+      return L.vectorGrid.protobuf(backgroundLayerSetting.url, backgroundLayerSetting.params);
     }
     else {
       //backgroundLayerSetting.type == 'wms'
@@ -1794,6 +1795,12 @@ kvm = {
     var now = new Date();
     return now.getFullYear() + '-' + String('0' + parseInt(now.getMonth() + 1)).slice(-2) + '-' + String('0' + now.getDate()).slice(-2) + 'T'
       + String('0' + now.getHours()).slice(-2) + ':' + String('0' + now.getMinutes()).slice(-2) + ':' + String('0' + now.getSeconds()).slice(-2)  + 'Z';
+  },
+
+  now_local: function() {
+    var now = new Date();
+    return now.getFullYear() + '-' + String('0' + parseInt(now.getMonth() + 1)).slice(-2) + '-' + String('0' + now.getDate()).slice(-2) + 'T'
+      + String('0' + now.getHours()).slice(-2) + ':' + String('0' + now.getMinutes()).slice(-2) + ':' + String('0' + now.getSeconds()).slice(-2);
   },
 
   today: function() {

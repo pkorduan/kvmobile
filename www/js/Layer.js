@@ -223,7 +223,7 @@ function Layer(stelle, settings = {}) {
         " + values + "\
     ";
 
-    kvm.log('Schreibe Daten in lokale Datenbank mit Sql: ' + sql.substring(1, 1000), 4, true);
+    kvm.log('lokale Datenbank mit Sql: ' + sql.substring(1, 1000), 4, true);
     kvm.db.executeSql(
       sql,
       [],
@@ -2574,18 +2574,31 @@ function Layer(stelle, settings = {}) {
       this.attributes,
       function(key, value) {
         if (value.settings.type != 'geometry') {
-          
-          if (value.settings.form_element_type == 'Auswahlfeld') {
-            input_field = $('<select id="filter_value_' + value.settings.name + '" class="filter-view-value-field" name="filter_value_' + value.settings.name + '">');
-            input_field.append($('<option value=""></option>'));
+          if (value.settings.name == 'status') {
+            $('#statusFilterSelect option').remove();
+            $('#statusFilterSelect').append($('<option value="" selected>-- Bitte wählen --</option>'));
             value.settings.options.map(
               function(option) {
-                input_field.append($('<option value="' + option.value + '">' + option.output + '</option>'));
+                $('#statusFilterSelect').append($('<option value="' + option.value + '">' + option.output + '</option>'));
               }
-            )
+            );
           }
-          else {
-            input_field = '<input id="filter_value_' + value.settings.name + '" class="filter-view-value-field" name="filter_value_' + value.settings.name + '" type="text" value=""/>';
+          switch (value.settings.form_element_type) {
+            case 'Auswahlfeld' : {
+              input_field = $('<select id="filter_value_' + value.settings.name + '" class="filter-view-value-field" name="filter_value_' + value.settings.name + '">');
+              input_field.append($('<option value="" selected>-- Bitte wählen --</option>'));
+              value.settings.options.map(
+                function(option) {
+                  input_field.append($('<option value="' + option.value + '">' + option.output + '</option>'));
+                }
+              )
+            } break;
+            case 'Time' : {
+              input_field = '<input id="filter_value_' + value.settings.name + '" class="filter-view-value-field" name="filter_value_' + value.settings.name + '" type="datetime-local" value=""/>';
+            } break;
+            default : {
+              input_field = '<input id="filter_value_' + value.settings.name + '" class="filter-view-value-field" name="filter_value_' + value.settings.name + '" type="text" value=""/>';
+            }
           }
           $('#attributeFilterFieldDiv').append(
             $('<div class="filter-view-field" database_type="' + value.settings.type + '" name="' + value.settings.name + '">')
@@ -2600,6 +2613,7 @@ function Layer(stelle, settings = {}) {
 
   this.loadLayerFilterValues = function(layerFilter) {
     Object.keys(layerFilter).forEach(function(attr_name) {
+      $('#filter_operator_' + attr_name).val(layerFilter[attr_name].operator);
       $('#filter_value_' + attr_name).val(layerFilter[attr_name].value);
     })
   };

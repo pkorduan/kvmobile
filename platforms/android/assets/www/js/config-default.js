@@ -182,25 +182,34 @@ config = {
   kvwmapServerLoginName: '',
   kvwmapServerPasswort: '',
   backgroundLayerSettings: [{
-    label: 'Hintergrundkarte offline',
-    online: false,
-    type: 'tile',
-    url : 'https://isk.geobasis-bb.de/mapproxy/dop20c_wmts/service?service=WMTS&request=GetTile&version=1.0.0&layer=bebb_dop20c&style=default&format=image/png&TileMatrixSet=grid_25833&TileMatrix={z}&TileRow={x}&TileCol={y}',
-    params: {
-      attribution: "LGB WMTS DOP20c"
+      label: 'Hintergrundkarte offline',
+      online: false,
+      type: 'tile',
+      url : 'https://isk.geobasis-bb.de/mapproxy/dop20c_wmts/service?service=WMTS&request=GetTile&version=1.0.0&layer=bebb_dop20c&style=default&format=image/png&TileMatrixSet=grid_25833&TileMatrix={z}&TileRow={x}&TileCol={y}',
+      params: {
+        attribution: "LGB WMTS DOP20c"
+      }
+    }, {
+      label: 'Hintergrundkarte oNline',
+      online: true,
+      type: 'wms',
+      url: 'https://isk.geobasis-bb.de/ows/dop20c_wms',
+      params: {
+        layers: 'bebb_dop20c',
+        format: 'image/png',
+        transparent: true,
+        attribution: "LGB WMS DOP20"
+      }
+    }, {
+      label: 'Vektorkacheln online',
+      online: true,
+      type: 'vectortile',
+      url: 'http://gdi-service.de:8080/data/v3/{z}/{x}/{y}.pbf',
+      params: {
+        attribution: "OSM TileServer GL GDI-Service"
+      }
     }
-  }, {
-    label: 'Hintergrundkarte oNline',
-    online: true,
-    type: 'wms',
-    url: 'https://isk.geobasis-bb.de/ows/dop20c_wms',
-    params: {
-      layers: 'bebb_dop20c',
-      format: 'image/png',
-      transparent: true,
-      attribution: "LGB WMS DOP20"
-    }
-  }
+  ]
 */
 
   // LK-ROS

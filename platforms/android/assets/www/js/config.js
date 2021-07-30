@@ -144,16 +144,17 @@ config = {
   kvwmapServerUrl: 'https://geoportal.lkee.de/',
   kvwmapServerLoginName: '',
   kvwmapServerPasswort: '',
-  backgroundLayerSettings: [{
-    label: 'Hintergrundkarte offline',
+  backgroundLayerSettings: [
+/*    {
+    label: 'Luftbilder offline',
     online: false,
     type: 'tile',
     url : 'https://isk.geobasis-bb.de/mapproxy/dop20c_wmts/service?service=WMTS&request=GetTile&version=1.0.0&layer=bebb_dop20c&style=default&format=image/png&TileMatrixSet=grid_25833&TileMatrix={z}&TileRow={x}&TileCol={y}',
     params: {
       attribution: "LGB WMTS DOP20c"
     }
-  }, {
-    label: 'Hintergrundkarte oNline',
+  },*/ {
+    label: 'Luftbilder online',
     online: true,
     type: 'wms',
     url: 'https://isk.geobasis-bb.de/ows/dop20c_wms',
@@ -162,6 +163,78 @@ config = {
       format: 'image/png',
       transparent: true,
       attribution: "LGB WMS DOP20"
+    }
+  }, {
+    label: 'Vektorkacheln online',
+    online: true,
+    type: 'vectortile',
+    url: //'https://api.mapbox.com/styles/v1/pkorduan/ckrg05q6c4x7n17nr0kjbe6j9.html?fresh=true&title=view&access_token=pk.eyJ1IjoicGtvcmR1YW4iLCJhIjoiY2lxbm54b2Q4MDAzaGkzbWFodWtka2NsaCJ9.SiUN3rvZ1pbyOyZ3xQh-Hg#{z}/{x}/{y}',
+    'http://gdi-service.de:8080/data/v3/{z}/{x}/{y}.pbf',
+    params: {
+      rendererFactory: L.canvas.tile, // replace with L.svg.tile if needed
+      getFeatureId: function(f) {
+        return f.properties.osm_id;
+      },
+      vectorTileLayerStyles: {
+        // A plain set of L.Path options.
+        landuse: {
+          weight: 0,
+          fillColor: '#9bc2c4',
+          fillOpacity: 1,
+          fill: true
+        },
+        // A function for styling features dynamically, depending on their
+        // properties and the map's zoom level
+        admin: function(properties, zoom) {
+          var level = properties.admin_level;
+          var weight = 1;
+          if (level == 2) {
+            weight = 2;
+          }
+          return {
+            weight: weight,
+            color: '#cf52d3',
+            dashArray: '2, 6',
+            fillOpacity: 0
+          }
+        },
+        // A function for styling features dynamically, depending on their
+        // properties, the map's zoom level, and the layer's geometry
+        // dimension (point, line, polygon)
+        water: function(properties, zoom, geometryDimension) {
+          if (geometryDimension === 1) {   // point
+            return ({
+                    radius: 5,
+                    color: '#cf52d3',
+            });
+          }
+
+          if (geometryDimension === 2) {   // line
+            return ({
+                weight: 1,
+                color: '#cf52d3',
+                dashArray: '2, 6',
+                fillOpacity: 0
+            });
+          }
+
+          if (geometryDimension === 3) {   // polygon
+            return ({
+                weight: 1,
+                fillColor: '#9bc2c4',
+                fillOpacity: 1,
+                fill: true
+            });
+          }
+        },
+        // An 'icon' option means that a L.Icon will be used
+        place: {
+          //icon: new L.Icon.Default()
+        },
+        road: [],
+      },
+      maxNativeZoom: 14,
+      attribution: "OSM TileServer GL GDI-Service"
     }
   }]
 }

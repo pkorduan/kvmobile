@@ -91,7 +91,7 @@ input[type=text], input[type=datetime-local], input[type=password], select, text
   width: 100%;
   margin-top: 2px;
   margin-bottom: 2px;
-  display: inline-block;
+/*  display: inline-block;*/
   border: 1px solid rgb(38, 50, 134);
   background-color: white;
   border-radius: 4px;
@@ -207,20 +207,23 @@ a.hover {
   width: 100%;  
 }
 
+#attributeFilterFieldDiv {
+	word-break: break-word;
+}
+
 .filter-view-field {
   display: table-row;
 }
 
 .filter-view-label {
-  width: 30%;
+/*  width: 30%; */
   display: table-cell;
-  padding-left: 12px;
+  padding-left: 2px;
   padding-top: 5px;
-  border-bottom: 0px solid white;
+  border-bottom: 1px solid lightgray;
   padding-bottom: 5px;
-  background-color: #dfdfdf;
   border-top: 2px solid white;
-  padding-right: 12px;
+  padding-right: 2px;
 }
 
 .filter-view-operator {
@@ -228,8 +231,8 @@ a.hover {
   border-bottom: 1px solid lightgray;
   padding-top: 5px;
   padding-bottom: 5px;
-  padding-left: 16px;
-  width: 10%;
+  padding-left: 2px;
+/*  width: 12%; */
   border-top: 0px solid lightgray;
 }
 
@@ -238,8 +241,8 @@ a.hover {
   border-bottom: 1px solid lightgray;
   padding-top: 5px;
   padding-bottom: 5px;
-  padding-left: 16px;
-  width: 60%;
+  padding-left: 2px;
+/*  width: 60%; */
   border-top: 0px solid lightgray;
 }
 
@@ -551,8 +554,8 @@ a.hover {
 }
 
 #settings {
-  margin-left: 10px;
-  margin-right: 10px;
+  margin-left: 2px;
+  margin-right: 2px;
 }
 
 #layer_list{

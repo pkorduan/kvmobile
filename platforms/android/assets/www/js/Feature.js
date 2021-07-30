@@ -342,14 +342,12 @@ function Feature(
   */
   this.addListElement = function() {
     kvm.log('Feature.addListElement', 4);
-    console.log('this: ', this);
-    debug_t = this;
     console.log('Add listelement: %o', this.listElement());
 
     $('#featurelistBody').prepend(this.listElement());
     kvm.log(this.id + ' zur Liste hinzugefügt.', 4);
 
-    $("#" + this.id).on(
+    $('#' + this.id).on(
       'click',
       kvm.featureItemClickEventFunction
     );
@@ -362,7 +360,11 @@ function Feature(
 
   this.updateListElement = function() {
     kvm.log('Feature.updateListElement', 4);
-    $("#" + this.id).html(kvm.coalesce(this.get(kvm.activeLayer.get('name_attribute')), 'Datensatz ' + this.id));
+    var markerStyles = JSON.parse(kvm.store.getItem('markerStyles')),
+        numStyles = Object.keys(markerStyles).length,
+        markerStyleIndex = ((this.get('status') >= 0 && this.get('status') < numStyles) ? this.get('status') : 0);
+    $('#' + this.get(this.options.id_attribute)).html(this.getLabelValue());
+    $('#' + this.get(this.options.id_attribute)).css('background-color', markerStyles[markerStyleIndex].fillColor);
   };
 
   this.getNormalStyle = function() {
