@@ -170,6 +170,8 @@ config = {
     type: 'vectortile',
     url: //'https://api.mapbox.com/styles/v1/pkorduan/ckrg05q6c4x7n17nr0kjbe6j9.html?fresh=true&title=view&access_token=pk.eyJ1IjoicGtvcmR1YW4iLCJhIjoiY2lxbm54b2Q4MDAzaGkzbWFodWtka2NsaCJ9.SiUN3rvZ1pbyOyZ3xQh-Hg#{z}/{x}/{y}',
     'http://gdi-service.de:8080/data/v3/{z}/{x}/{y}.pbf',
+    style: 'teststyle.json',
+    interactiv: false,
     params: {
       rendererFactory: L.canvas.tile, // replace with L.svg.tile if needed
       getFeatureId: function(f) {

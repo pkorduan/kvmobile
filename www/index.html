@@ -12,8 +12,19 @@
     <!--meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline'; img-src * filesystem://com.android.providers.media.documents/document/ content://com.android.providers.media.documents/document/ data://com.android.providers.media.documents/document/ blob://com.android.providers.media.documents/document/ android-webview-video-poster:content://com.android.providers.media.documents/document/ gap: https://ssl.gstatic.com content://com.android.providers.media.documents/document/ unsafe-eval'; style-src * 'unsafe-inline'; media-src *"-->
 
     <!--meta http-equiv="Content-Security-Policy" content="default-src *; 'unsafe-inline'; style-src * 'unsafe-inline'; media-src *; img-src * data: content://com.android.providers.media.documents 'unsafe-inline' 'unsafe-eval';"/-->
+<!-- No restrictions
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src *; 
+      style-src * 'unsafe-inline'; 
+      script-src * 'unsafe-inline'; 
+      media-src *; img-src * data:; 
+    ">
+For worker-src use instead
+child-src * 'self' blob: http:
+/-->
 
-    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline'; style-src * 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; media-src *; img-src * data: content://com.android.providers.media.documents 'unsafe-inline' 'unsafe-eval';"/>
+
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline'; style-src * 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; worker-src * 'self' blob: file:; media-src *; img-src * data: content://com.android.providers.media.documents 'unsafe-inline' 'unsafe-eval';"/>
 
     <link rel="stylesheet" type="text/css" href="3rdparty/font-awesome-4.7.0/css/font-awesome.min.css"/>
     <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-1.3.1/leaflet.css"/>
@@ -24,6 +35,7 @@
     <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-betterscale-master/L.Control.BetterScale.css"/>
     <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-geoman/leaflet-geoman.css"/>
     <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-easy-button/easy-button.css"/>
+    <link rel="stylesheet" href="3rdparty/maplibre/maplibre-gl.css">
     <link rel="stylesheet" type="text/css" href="css/style.css"/>
     <script src="cordova.js"></script>
     <script src="3rdparty/jquery-3.5.1/jquery.min.js"></script>
@@ -32,7 +44,16 @@
     <script src="3rdparty/leaflet-1.3.1/Path.Drag.js"></script>
     <!--script src="3rdparty/Leaflet.markercluster-1.3.0/dist/leaflet.markercluster.js"></script//-->
     <!--script src="3rdparty/leaflet-gps-master/dist/leaflet-gps.min.js"></script-->
-    <script src="3rdparty/Leaflet.VectorGrid/dist/Leaflet.VectorGrid.bundled.js"></script>
+    <script src="3rdparty/indexdb/index-min.js"></script>
+
+    <script src="3rdparty/Leaflet.TileLayer/maplibre-gl-unminified.js"></script>
+    <!--script src="3rdparty/maplibre/maplibre-gl.js"></script-->
+
+    <script src="3rdparty/leaflet-maplibre/leaflet-maplibre-gl.js"></script>
+
+
+    <!--script src="3rdparty/Leaflet.VectorGrid/dist/Leaflet.VectorGrid.bundled.js"></script-->
+
     <script src="3rdparty/leaflet-locatecontrol-gh-pages/dist/L.Control.Locate.min.js"></script>
     <script src="3rdparty/leaflet-betterscale-master/L.Control.BetterScale.js"></script>
     <script src="3rdparty/leaflet-geoman/leaflet-geoman.min.js"></script>
@@ -42,6 +63,8 @@
     <script src="3rdparty/leaflet-easy-button/easy-button.js"></script>
     <script src="3rdparty/wkx-0.4.2/dist/wkx.min.js"></script>
     <script src="3rdparty/md5/js/md5.min.js"></script>
+    
+    <!--script src="3rdparty/Leaflet.TileLayer/Leaflet.MTBTileAccessor.js"></script-->
     <script src="js/config.js"></script>
     <script src="js/Layer.js"></script>
     <script src="js/CheckboxFormField.js"></script>
@@ -63,6 +86,7 @@
     <script src="js/syncStatus.js"></script>
     <script src="js/networkStatus.js"></script>
     <script src="js/gpsStatus.js"></script>
+    <script src="js/teststyle.js"></script>
     <script src="js/app.js"></script>
   </head>
   <body onload="kvm.init()">

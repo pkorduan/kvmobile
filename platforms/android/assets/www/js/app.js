@@ -27,9 +27,93 @@ kvm = {
       document.getElementsByTagName("head")[0].appendChild(fileref)
   },
 
+/*
+       const coords = getCoord(url);
+       const key = '_' + coords[0] + '_' + coords[1] + '_' + coords[2];
+        fetch(url).then(t => {
+            t.arrayBuffer().then(arr => {
+              const xx = arr.slice(0);
+              tileDB.saveTile(key, xx);
+              console.debug(`Tile ${key} saved`);
+            })
+          });
+  */
+
+   /**
+    * 
+    * params: {url:string, type:'json'|'arrayBuffer'|?}  
+    * callback(err: ?Error, data: ?Object)
+    */
+   customProtocolHandler: function (params, callback) {
+     console.info('custom', params);
+     const urlPattern = /.*\d+\/\d+\/\d+\..*/;
+     if (params.url.match(urlPattern)) {
+       // matched tile url
+       const sA = params.url.split(/[\/.]/);
+       const coords = [];
+       coords[0] = sA[sA.length - 4];
+       coords[1] = sA[sA.length - 3];
+       coords[2] = sA[sA.length - 2];
+       const key = '_' + coords[0] + '_' + coords[1] + '_' + coords[2];
+       console.info(`custom ${key}`, params);
+       kvm.readTile(key).then((d)=>{
+         if (d) {
+           console.info(`fromDB ${key}`, d);
+           callback(null, d, null, null);
+         } else {
+           console.info("notInDB=>fetching");
+           fetch(params.url.replace('custom', 'http')).then(t => {
+           t.arrayBuffer().then(arr => {
+               const xx = arr.slice(0);
+               kvm.saveTile(key, xx);
+               console.info(`Tile ${key} saved`);
+               callback(null, arr)
+           })
+         });
+         }
+       }).catch((err)=>{
+         console.info("error=>fetching", err);
+         fetch(params.url.replace('custom', 'http')).then(t => {
+           t.arrayBuffer().then(arr => {
+               const xx = arr.slice(0);
+               kvm.saveTile(key, xx);
+               console.info(`Tile ${key} saved`);
+               callback(null, arr)
+           })
+         });
+       });
+
+     } else {
+       // request the json describing the source 
+       // original will be fetched
+       // in the response the protocol the tiles will be changed from http to custom
+       let url = params.url.replace('custom', 'http');
+       fetch(url).then(t => {
+           t.json().then(data=>{
+               console.info(data);
+               kvm.orgTileUrl = data.tiles[0];
+               data.tiles[0]  = data.tiles[0].replace('http', 'custom');
+               // callback(err: ?Error, tileJSON: ?Object)
+               callback(null, data)
+           })
+       })
+       .catch(e => {
+         callback(new Error(e));
+       });      
+     }
+     return { cancel: () => { } };
+   },
+
   init: function() {
     kvm.log('init', 4);
     document.addEventListener('deviceready', this.onDeviceReady.bind(this), false);
+    /**
+     * if maplibre sees an url like custum:// it will call customProtocolHandler
+     * 
+     * customProtocolHandler: (requestParameters: RequestParameters, callback: ResponseCallback<any>) => Cancelable
+     * requestParameters: {url:string, type:json?? }
+     */
+    maplibregl.addProtocol('custom', this.customProtocolHandler);
   },
 
   onDeviceReady: function() {
@@ -70,11 +154,11 @@ kvm = {
             //https://www.npmjs.com/package/cordova-plugin-android-fingerprint-auth
             FingerprintAuth.encrypt(
               encryptConfig,
-              function(_fingerResult){
+              function(_fingerResult) {
                 console.log("successCallback(): " + JSON.stringify(_fingerResult));
                 if (_fingerResult.withFingerprint) {
                   console.log("Successfully encrypted credentials.");
-                  console.log("Encrypted credentials: " + result.token);  
+                  console.log("Encrypted credentials: " + result.token);
                   kvm.startApplication();
                 }
                 else if (_fingerResult.withBackup) {
@@ -102,11 +186,27 @@ kvm = {
         console.log('Open database ERROR: ' + JSON.stringify(error));
       }
     );
+
+
   },
 
   startApplication: function() {
     var activeView = 'featurelist'
     kvm.log('onDeviceReady', 4);
+
+    this.dbPromise = idb.openDB('keyval-store', 1, {
+      upgrade(db) {
+        db.createObjectStore('keyval');
+      },
+    });
+
+    this.readTile = async function(key) {
+      return (await this.dbPromise).get('keyval', key);
+    }
+
+    this.saveTile = async function(key, val) {
+      return (await this.dbPromise).put('keyval', val, key);
+    }
 
     this.store = window.localStorage;
     kvm.log('Lokaler Speicher verfügbar', 3);
@@ -453,7 +553,11 @@ kvm = {
       return L.tileLayer(backgroundLayerSetting.url, backgroundLayerSetting.params);
     }
     else if (backgroundLayerSetting.type == 'vectortile') {
-      return L.vectorGrid.protobuf(backgroundLayerSetting.url, backgroundLayerSetting.params);
+//      return L.vectorGrid.protobuf(backgroundLayerSetting.url, backgroundLayerSetting.params);
+      return L.maplibreGL({
+        style: maplibreStyleObj,
+        interactive: backgroundLayerSetting.interactiv
+      });
     }
     else {
       //backgroundLayerSetting.type == 'wms'
