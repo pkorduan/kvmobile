@@ -8,6 +8,8 @@ https://github.com/srahn/kvwmap/
 http://kvwmap.de
 
 # Change log
+## 1.7.0
+	* Vector-Tile Layer als Hintergrundlayer und Cache für offline-Nutzung
 ## 1.6.0
 	* Unterstützung von abhängigen Auswahllisten
 	* Funktion zum Anzeigen und Editieren von Polygonen
