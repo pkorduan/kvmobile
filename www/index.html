@@ -294,6 +294,20 @@ child-src * 'self' blob: http:
     </div>
     <hr>
 
+    <div class="h2-div"><h2 class="b-collapsed">Kartenverwaltung</h2></div>
+    <div id="mapManagementDiv">
+      Verfügbare Offlinekarten<br>
+      <ul>
+        <li>
+          LK-EE
+          <button id="downloadBackgroundLayerButton" class="settings-button">
+            <i class="fa fa-download" arial-hidden="true"> herunterladen</i>
+          </button>
+        </li>
+      </ul>
+    </div>
+    <hr>
+
     <div class="h2-div"><h2 id="h2_server" class="b-collapsed">Server</h2></div>
     <div id="kvwmapServerDataForm" class="div-form">
       <input id="kvwmapServerIdField" name="kvwmapServerId" type="hidden" value="1">
@@ -374,6 +388,10 @@ child-src * 'self' blob: http:
       <button id="saveDatabaseButton" class="settings-button">
         <i class="fa fa-database" aria-hidden="true"></i>
         <i class="fa fa-check" aria-hidden="true"></i> Sichere Datenbank
+      </button>
+      <br>
+      <button id="resetSettingsButton" class="settings-button">
+        <i class="fa fa-refresh" aria-hidden="true"></i> Reset Datenbank und Einstellungen
       </button>
     </div>
     <hr>

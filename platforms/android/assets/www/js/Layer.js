@@ -140,7 +140,8 @@ function Layer(stelle, settings = {}) {
 
         if (numRows == 0) {
           if (filter.length > 0) {
-            kvm.msg('Filter liefert keine Ergebnisse.', 'Datenfilter');
+            console.log('filter %o', filter);
+            kvm.msg('Abfrage liefert keine Ergebnisse. Daten synchronisieren, erstellen oder Filter anpassen.', 'Datenfilter');
           }
           else {
             kvm.msg('Tabelle ist leer. Unter Einstellungen des Layers können Daten synchronisiert werden.', 'Datenbank')
@@ -903,13 +904,16 @@ function Layer(stelle, settings = {}) {
       [],
       (function(rs) {
         kvm.store.removeItem('layerFilter');
+        console.log('removeItem %o', 'layerSettings_' + this.getGlobalId());
         kvm.store.removeItem('layerSettings_' + this.getGlobalId());
+/*
         navigator.notification.confirm(
           'Alle Daten des Layers in lokaler Datenbank gelöscht.',
           function(buttonIndex) {},
           'Datenbank',
           ['Verstanden']
         );
+*/
       }).bind(this),
       function(error) {
         navigator.notification.confirm(
@@ -955,6 +959,7 @@ function Layer(stelle, settings = {}) {
         icon = $('#syncImagesIcon_' + this.layer.getGlobalId());
         if (icon.hasClass('fa-spinner')) icon.toggleClass('fa-upload fa-spinner fa-spin');
         $('#sperr_div').hide();
+/*
         navigator.notification.confirm(
           'Alle Änderungseinträge zu Bildern des Layers in lokaler Datenbank gelöscht.',
           function(buttonIndex) {
@@ -962,6 +967,7 @@ function Layer(stelle, settings = {}) {
           'Datenbank',
           ['Verstanden']
         );
+*/
       }).bind({
         layer : this,
         delta : delta
@@ -2544,7 +2550,7 @@ function Layer(stelle, settings = {}) {
 
   this.saveToStore = function() {
     kvm.log('Speicher Settings für Layer: ' + this.settings.title, 3);
-    console.log('getlayerIds: %o', kvm.store.getItem('layerIds_' + this.stelle.get('id')));
+    console.log('layerIds vor dem Speichern: %o', kvm.store.getItem('layerIds_' + this.stelle.get('id')));
     var layerIds = $.parseJSON(kvm.store.getItem('layerIds_' + this.stelle.get('id'))),
         settings = JSON.stringify(this.settings);
 
@@ -2553,6 +2559,7 @@ function Layer(stelle, settings = {}) {
     }
     settings.loaded = false;
     kvm.store.setItem('layerSettings_' + this.getGlobalId(), settings);
+    console.log('layerSettings_%s eingetragen.',this.getGlobalId());
 
     if ($.inArray(this.get('id'), layerIds) < 0) {
       layerIds.push(this.get('id'));
@@ -2560,7 +2567,9 @@ function Layer(stelle, settings = {}) {
         'layerIds_' + this.stelle.get('id'),
         JSON.stringify(layerIds)
       );
+      console.log('neue layerId %s eingetragen.', this.get('id'));
     }
+    console.log('layerIds nach dem Speichern: %o', kvm.store.getItem('layerIds_' + this.stelle.get('id')));
   };
 
   /**
@@ -2605,8 +2614,8 @@ function Layer(stelle, settings = {}) {
     $('input[value=' + this.getGlobalId() + ']')[0].checked = true;
     $('.layer-functions-button, .layer-functions-div').hide();
     $('#layer_' + kvm.activeLayer.getGlobalId() + ' > .layer-functions-button').show();
-    $('#layer_' + kvm.activeLayer.getGlobalId() + ' > .layer-functions-button').children().removeClass('fa-ellipsis-v fa-window-close-o');
-    $('#layer_' + kvm.activeLayer.getGlobalId() + ' > .layer-functions-button').children().addClass('fa-ellipsis-v');
+    $('#layer_' + kvm.activeLayer.getGlobalId() + ' > .layer-functions-button').removeClass('fa-ellipsis-v fa-window-close-o');
+    $('#layer_' + kvm.activeLayer.getGlobalId() + ' > .layer-functions-button').addClass('fa-ellipsis-v');
     if (parseInt(this.get('privileg')) > 0) {
       $('#newFeatureButton').show();
     }

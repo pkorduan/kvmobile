@@ -39,70 +39,140 @@ kvm = {
           });
   */
 
-   /**
-    * 
-    * params: {url:string, type:'json'|'arrayBuffer'|?}  
-    * callback(err: ?Error, data: ?Object)
-    */
-   customProtocolHandler: function (params, callback) {
-     console.info('custom', params);
-     const urlPattern = /.*\d+\/\d+\/\d+\..*/;
-     if (params.url.match(urlPattern)) {
-       // matched tile url
-       const sA = params.url.split(/[\/.]/);
-       const coords = [];
-       coords[0] = sA[sA.length - 4];
-       coords[1] = sA[sA.length - 3];
-       coords[2] = sA[sA.length - 2];
-       const key = '_' + coords[0] + '_' + coords[1] + '_' + coords[2];
-       console.info(`custom ${key}`, params);
-       kvm.readTile(key).then((d)=>{
-         if (d) {
-           console.info(`fromDB ${key}`, d);
-           callback(null, d, null, null);
-         } else {
-           console.info("notInDB=>fetching");
-           fetch(params.url.replace('custom', 'http')).then(t => {
-           t.arrayBuffer().then(arr => {
-               const xx = arr.slice(0);
-               kvm.saveTile(key, xx);
-               console.info(`Tile ${key} saved`);
-               callback(null, arr)
-           })
-         });
-         }
-       }).catch((err)=>{
-         console.info("error=>fetching", err);
-         fetch(params.url.replace('custom', 'http')).then(t => {
-           t.arrayBuffer().then(arr => {
-               const xx = arr.slice(0);
-               kvm.saveTile(key, xx);
-               console.info(`Tile ${key} saved`);
-               callback(null, arr)
-           })
-         });
-       });
+  /**
+  * function return all urls to fetch vector tiles in box with lower left corner p1
+  * to upper right corner p2 for zoom level zoom
+  * @param L.latLng p1
+  * @param L.latLng p2
+  * @param integer zoom
+  */
+  function getTilesUrls(p1, p2, zoom) {
+    const coordArray = getTilesCoord(p1, p2, zoom);
+    const urls = [];
+    // orgUrl = http://gdi-service.de:8080/data/v3/{z}/{x}/{y}.pbf
+    for (let i = 0; i < coordArray.length; i++) {
+      let url = orgUrl.replace('{z}', coordArray[i].z);
+      url = url.replace('{x}', coordArray[i].x);
+      url = url.replace('{y}', coordArray[i].y);
+      urls.push(url);
+    }
+    return urls;
+  },
 
-     } else {
-       // request the json describing the source 
-       // original will be fetched
-       // in the response the protocol the tiles will be changed from http to custom
-       let url = params.url.replace('custom', 'http');
-       fetch(url).then(t => {
-           t.json().then(data=>{
-               console.info(data);
-               kvm.orgTileUrl = data.tiles[0];
-               data.tiles[0]  = data.tiles[0].replace('http', 'custom');
-               // callback(err: ?Error, tileJSON: ?Object)
-               callback(null, data)
+  /*
+  * function return coords of vector tiles in box with lower left corner p1
+  * to upper right corner p2 for zoom level zoom
+  */
+  function getTilesCoord(p1, p2, zoom) {
+    const t1 = map.project(p1, zoom).divideBy(256).floor();
+    const t2 = map.project(p2, zoom).divideBy(256).floor();
+    const minX = t1.x<t2.x ? t1.x : t2.x;  
+    const minY = t1.y<t2.y ? t1.y : t2.y;
+    const maxX = t1.x>t2.x ? t1.x : t2.x;
+    const maxY = t1.y>t2.y ? t1.y : t2.y;
+
+    coordArray = [];
+    mod = Math.pow(2, zoom);
+    for (var i = minX; i <= maxX; i++) {
+      for (var j = minY; j <= maxY; j++) {
+        const x = (i % mod + mod) % mod;
+        const y = (j % mod + mod) % mod;
+        const coords = new L.Point(x, y);
+        coords.z = zoom;
+        coordArray.push(coords);
+      }
+    }
+    return coordArray;
+  },
+
+  /**
+  * function extract and return the coordinates from the vector tile url
+  */
+  getCoord: function(url) {
+    const sA = url.split(/[\/.]/);
+    const coord = [];
+    coord[0] = sA[sA.length - 4];
+    coord[1] = sA[sA.length - 3];
+    coord[2] = sA[sA.length - 2];
+    return coord;
+  },
+
+  saveTileServerConfiguration: function(data) {
+    throw new Error('Nicht implementiert');
+  },
+
+  getTileServerConfiguration: function() {
+    throw new Error('Nicht implementiert');
+  },
+
+  /**
+  * 
+  * params: {url:string, type:'json'|'arrayBuffer'|?}  
+  * callback(err: ?Error, data: ?Object)
+  */
+  customProtocolHandler: function (params, callback) {
+    console.info('custom', params);
+    const urlPattern = /.*\d+\/\d+\/\d+\..*/;
+    if (params.url.match(urlPattern)) {
+      // matched tile url
+      const sA = params.url.split(/[\/.]/);
+      const coords = [];
+      coords[0] = sA[sA.length - 4];
+      coords[1] = sA[sA.length - 3];
+      coords[2] = sA[sA.length - 2];
+      const key = '_' + coords[0] + '_' + coords[1] + '_' + coords[2];
+      console.info(`custom ${key}`, params);
+      kvm.readTile(key).then((d)=>{
+       if (d) {
+         console.info(`found in DB ${key}`, d);
+         callback(null, d, null, null);
+       } else {
+         console.info("notInDB=>fetching");
+         const url = params.url.replace('custom', 'http');
+         fetch(url).then(t => {
+           t.arrayBuffer().then(arr => {
+             kvm.saveTile(key, arr.slice(0));
+             console.info(`Tile ${key} saved`);
+             callback(null, arr)
            })
-       })
-       .catch(e => {
-         callback(new Error(e));
-       });      
-     }
-     return { cancel: () => { } };
-   },
+         });
+       }
+      }).catch((err)=>{
+       console.info("error=>fetching", err);
+       fetch(params.url.replace('custom', 'http')).then(t => {
+         t.arrayBuffer().then(arr => {
+           const xx = arr.slice(0);
+           kvm.saveTile(key, xx);
+           console.info(`Tile ${key} saved`);
+           callback(null, arr)
+         })
+       });
+      });
+    }
+    else {
+      // request the json describing the source 
+      // original will be fetched
+      // in the response the protocol the tiles will be changed from http to custom
+      let url = params.url.replace('custom', 'http');
+      fetch(url).then(t => {
+        t.json().then(data => {
+          console.info(data);
+          kvm.saveTileServerConfiguration(data);
+          kvm.orgTileUrl = data.tiles[0];
+          data.tiles[0]  = data.tiles[0].replace('http', 'custom');
+          // callback(err: ?Error, tileJSON: ?Object)
+          callback(null, data)
+        })
+        .catch(
+          callback(null, data)
+        )
+      })
+      .catch(e => {
+        callback(new Error(e));
+      });
+    }
+    return { cancel: () => { } };
+  },
 
   init: function() {
     kvm.log('init', 4);
@@ -1215,6 +1285,84 @@ kvm = {
       }
     );
 
+    $('#resetSettingsButton').on(
+      'click',
+      function() {
+        navigator.notification.confirm(
+          'Alle lokalen Daten, Änderungen und Einstellungen wirklich Löschen?',
+          function(buttonIndex) {
+            if (buttonIndex == 1) { // nein
+              // Do nothing
+            }
+            if (buttonIndex == 2) { // ja
+              if (kvm.layers.length == 0) {
+                kvm.msg('Keine Daten und Layer zum löschen vorhanden.');
+              }
+              else {
+                kvm.layers.forEach(function(layer) {
+                  console.log('Entferne Layer: %s', layer.get('title'));
+                  layer.clearData();
+                });
+              }
+            }
+            kvm.layers = [];
+            $('#layer_list').html('');
+            kvm.activeLayer = kvm.activeStelle = kvm.store = {};
+            window.localStorage.clear();
+            kvm.msg("Fertig!\nStarten Sie die Anwendung neu und fragen Sie die Stelle und Layer unter Einstellungen neu ab.", 'Reset Datenbank und Einstellungen');
+          },
+          '',
+          ['nein', 'ja']
+        );
+      }
+    );
+
+    $('#downloadBackgroundLayerButton').on(
+      'click',
+      function(evt) {
+        navigator.notification.confirm(
+          'Alle Vektorkacheln vom Gebiet LK-EE herunterladen? Vergewissern Sie sich, dass Sie in einem Netz mit guter Anbindung sind.',
+          function(buttonIndex) {
+            if (buttonIndex == 1) { // nein
+              kvm.msg('OK, Abbruch.', 'Kartenverwaltung');
+            }
+            if (buttonIndex == 2) { // ja
+              kvm.msg('Ich beginne mit dem Download der Kacheln.', 'Kartenverwaltung');
+              // find p1 and p2 for fetch area and zoom levels
+              // 
+
+              fetch('v3.json').then(t => {
+                  t.json().then(data=>{
+                      console.info(data);
+                      orgUrl = data.tiles[0];
+                      data.tiles[0]  = data.tiles[0].replace('http', 'custom');
+                      // callback(err: ?Error, tileJSON: ?Object)
+                      callback(null, data)
+                  })
+              })
+
+
+              fetch(url).then(t => {
+                t.arrayBuffer().then(arr => {
+                  kvm.saveTile(key, arr.slice(0));
+                  console.info(`Tile ${key} saved`);
+                })
+              });
+
+
+
+
+              kvm.msg('Fertig.', 'Kartenverwaltung');
+
+
+            }
+          },
+          'Kartenverwaltung',
+          ['nein', 'ja']
+        );
+      }
+    );
+
   },
 
   bindFeatureItemClickEvents: function() {
@@ -1435,6 +1583,7 @@ kvm = {
         }
       }
     );
+
 /*
     $('#short_password_field').on(
       'keyup',

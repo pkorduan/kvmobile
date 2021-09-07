@@ -1215,6 +1215,58 @@ kvm = {
       }
     );
 
+    $('#resetSettingsButton').on(
+      'click',
+      function() {
+        navigator.notification.confirm(
+          'Alle lokalen Daten, Änderungen und Einstellungen wirklich Löschen?',
+          function(buttonIndex) {
+            if (buttonIndex == 1) { // nein
+              // Do nothing
+            }
+            if (buttonIndex == 2) { // ja
+              if (kvm.layers.length == 0) {
+                kvm.msg('Keine Daten und Layer zum löschen vorhanden.');
+              }
+              else {
+                kvm.layers.forEach(function(layer) {
+                  console.log('Entferne Layer: %s', layer.get('title'));
+                  layer.clearData();
+                });
+              }
+            }
+            kvm.layers = [];
+            $('#layer_list').html('');
+            kvm.activeLayer = kvm.activeStelle = kvm.store = {};
+            window.localStorage.clear();
+            kvm.msg("Fertig!\nStarten Sie die Anwendung neu und fragen Sie die Stelle und Layer unter Einstellungen neu ab.", 'Reset Datenbank und Einstellungen');
+          },
+          '',
+          ['nein', 'ja']
+        );
+      }
+    );
+
+    $('#downloadBackgroundLayerButton').on(
+      'click',
+      function(evt) {
+        navigator.notification.confirm(
+          'Alle Vektorkacheln vom Gebiet LK-EE herunterladen? Vergewissern Sie sich, dass Sie in einem Netz mit guter Anbindung sind.',
+          function(buttonIndex) {
+            if (buttonIndex == 1) { // nein
+              kvm.msg('OK, Abbruch.', 'Kartenverwaltung');
+            }
+            if (buttonIndex == 2) { // ja
+              kvm.msg('Ich beginne mit dem Download der Kacheln.', 'Kartenverwaltung');
+              kvm.msg('Fertig.', 'Kartenverwaltung');
+            }
+          },
+          'Kartenverwaltung',
+          ['nein', 'ja']
+        );
+      }
+    );
+
   },
 
   bindFeatureItemClickEvents: function() {
@@ -1435,6 +1487,7 @@ kvm = {
         }
       }
     );
+
 /*
     $('#short_password_field').on(
       'keyup',
