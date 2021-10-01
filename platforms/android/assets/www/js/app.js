@@ -1,5 +1,5 @@
 kvm = {
-  version: '1.7.0',
+  version: '1.7.1',
   Buffer: require('buffer').Buffer,
   wkx: require('wkx'),
   controls: {},
@@ -11,7 +11,7 @@ kvm = {
   layers: [],
 
   loadHeadFile: function(filename, filetype) {
-    console.log('Lade filename %s, filetype: %s', filename, filetype);
+    //console.log('Lade filename %s, filetype: %s', filename, filetype);
     if (filetype=="js"){ //if filename is a external JavaScript file
       var fileref=document.createElement('script')
       fileref.setAttribute("type","text/javascript")
@@ -23,89 +23,145 @@ kvm = {
       fileref.setAttribute("type", "text/css")
       fileref.setAttribute("href", filename)
     }
-    if (typeof fileref!="undefined")
+    if (typeof fileref!="undefined") {
       document.getElementsByTagName("head")[0].appendChild(fileref)
+    }
   },
 
-/*
-       const coords = getCoord(url);
-       const key = '_' + coords[0] + '_' + coords[1] + '_' + coords[2];
-        fetch(url).then(t => {
-            t.arrayBuffer().then(arr => {
-              const xx = arr.slice(0);
-              tileDB.saveTile(key, xx);
-              console.debug(`Tile ${key} saved`);
-            })
-          });
+  /**
+  * function return all urls to fetch vector tiles in box with lower left corner p1
+  * to upper right corner p2 for zoom level zoom
+  * @param L.latLng p1
+  * @param L.latLng p2
+  * @param integer zoom
   */
+  getTilesUrls: function(p1, p2, zoom, orgUrl) {
+    const coordArray = this.getTilesCoord(p1, p2, zoom),
+          urls = [];
 
-   /**
-    * 
-    * params: {url:string, type:'json'|'arrayBuffer'|?}  
-    * callback(err: ?Error, data: ?Object)
-    */
-   customProtocolHandler: function (params, callback) {
-     console.info('custom', params);
-     const urlPattern = /.*\d+\/\d+\/\d+\..*/;
-     if (params.url.match(urlPattern)) {
-       // matched tile url
-       const sA = params.url.split(/[\/.]/);
-       const coords = [];
-       coords[0] = sA[sA.length - 4];
-       coords[1] = sA[sA.length - 3];
-       coords[2] = sA[sA.length - 2];
-       const key = '_' + coords[0] + '_' + coords[1] + '_' + coords[2];
-       console.info(`custom ${key}`, params);
-       kvm.readTile(key).then((d)=>{
-         if (d) {
-           console.info(`fromDB ${key}`, d);
-           callback(null, d, null, null);
-         } else {
-           console.info("notInDB=>fetching");
-           fetch(params.url.replace('custom', 'http')).then(t => {
+    for (let i = 0; i < coordArray.length; i++) {
+      let url = orgUrl.replace('{z}', coordArray[i].z);
+      url = url.replace('{x}', coordArray[i].x);
+      url = url.replace('{y}', coordArray[i].y);
+      urls.push(url);
+    }
+    return urls;
+  },
+
+  /*
+  * function return coords of vector tiles in box with lower left corner p1
+  * to upper right corner p2 for zoom level zoom
+  */
+  getTilesCoord: function(p1, p2, zoom) {
+    const t1 = this.map.project(p1, zoom).divideBy(256).floor(),
+          t2 = this.map.project(p2, zoom).divideBy(256).floor(),
+          minX = t1.x < t2.x ? t1.x : t2.x,
+          minY = t1.y < t2.y ? t1.y : t2.y,
+          maxX = t1.x > t2.x ? t1.x : t2.x,
+          maxY = t1.y > t2.y ? t1.y : t2.y;
+
+    coordArray = [];
+    mod = Math.pow(2, zoom);
+    for (var i = minX; i <= maxX; i++) {
+      for (var j = minY; j <= maxY; j++) {
+        const x = (i % mod + mod) % mod,
+              y = (j % mod + mod) % mod,
+              coords = new L.Point(x, y);
+        coords.z = zoom;
+        coordArray.push(coords);
+      }
+    }
+    return coordArray;
+  },
+
+  /**
+  * function extract and return the coordinates from the vector tile url
+  */
+  getTileKey: function(url) {
+    const sA = url.split(/[\/.]/);
+    return '_' + sA[sA.length - 4] + '_' + sA[sA.length - 3] + '_' + sA[sA.length - 2];
+  },
+
+  saveTileServerConfiguration: function(data) {
+    kvm.store.setItem('tileServerConfig', JSON.stringify(data));
+    return data;
+  },
+
+  getTileServerConfiguration: function() {
+    return JSON.parse(kvm.store.getItem('tileServerConfig'));
+  },
+
+  /**
+  * 
+  * params: {url:string, type:'json'|'arrayBuffer'|?}  
+  * callback(err: ?Error, data: ?Object)
+  */
+  customProtocolHandler: function (params, callback) {
+//    console.info('start customProtocolHandler with params: ', params);
+    const urlPattern = /.*\d+\/\d+\/\d+\..*/;
+    // check if url is a tile url if not assume it is a tile description url 
+    if (params.url.match(urlPattern)) {
+      // matched tile url
+      const key = kvm.getTileKey(params.url);
+      console.info('Searching for tile %s', key);
+      kvm.readTile(key).then((d)=>{
+       if (d) {
+         console.info('Tile %s found in DB', key);
+         callback(null, d, null, null);
+       }
+       else {
+         const url = params.url.replace('custom', 'http');
+         console.info('Tile %s not in DB. Fetching from url: %s', key, url);
+         fetch(url).then(t => {
            t.arrayBuffer().then(arr => {
-               const xx = arr.slice(0);
-               kvm.saveTile(key, xx);
-               console.info(`Tile ${key} saved`);
-               callback(null, arr)
+             kvm.saveTile(key, arr.slice(0));
+             console.info('Tile %s saved in DB', key);
+             callback(null, arr)
            })
          });
-         }
-       }).catch((err)=>{
-         console.info("error=>fetching", err);
-         fetch(params.url.replace('custom', 'http')).then(t => {
-           t.arrayBuffer().then(arr => {
-               const xx = arr.slice(0);
-               kvm.saveTile(key, xx);
-               console.info(`Tile ${key} saved`);
-               callback(null, arr)
-           })
-         });
+       }
+      }).catch((err)=>{
+       console.info("error=>fetching", err);
+       fetch(params.url.replace('custom', 'http')).then(t => {
+         t.arrayBuffer().then(arr => {
+           const xx = arr.slice(0);
+           kvm.saveTile(key, xx);
+           console.info('Tile %s saved in DB', key);
+           callback(null, arr)
+         })
        });
-
-     } else {
-       // request the json describing the source 
-       // original will be fetched
-       // in the response the protocol the tiles will be changed from http to custom
-       let url = params.url.replace('custom', 'http');
-       fetch(url).then(t => {
-           t.json().then(data=>{
-               console.info(data);
-               kvm.orgTileUrl = data.tiles[0];
-               data.tiles[0]  = data.tiles[0].replace('http', 'custom');
-               // callback(err: ?Error, tileJSON: ?Object)
-               callback(null, data)
-           })
-       })
-       .catch(e => {
-         callback(new Error(e));
-       });      
-     }
-     return { cancel: () => { } };
-   },
+      });
+    }
+    else {
+      // request the json describing the source 
+      // original will be fetched
+      // in the response the protocol the tiles will be changed from http to custom
+      let url = params.url.replace('custom', 'http');
+      // switch between on and offline
+      if (navigator.onLine) {
+        fetch(url).then(t => {
+          t.json().then(data=>{
+            console.info(data);
+            kvm.orgTileUrl = data.tiles[0];
+            data.tiles[0]  = data.tiles[0].replace('http', 'custom');
+            kvm.saveTileServerConfiguration(data);
+            // callback(err: ?Error, tileJSON: ?Object)
+            callback(null, data)
+          })
+        })
+        .catch(e => {
+          callback(new Error(e));
+        });
+      }
+      else {
+        data = kvm.getTileServerConfiguration();
+        callback(null, data);
+      }
+    }
+    return { cancel: () => { } };
+  },
 
   init: function() {
-    kvm.log('init', 4);
     document.addEventListener('deviceready', this.onDeviceReady.bind(this), false);
     /**
      * if maplibre sees an url like custum:// it will call customProtocolHandler
@@ -124,11 +180,11 @@ kvm = {
         androidDatabaseImplementation: 2
       },
       function (db) {
-        kvm.log('Lokale Datenbank geöffnet.', 3);
+        //kvm.log('Lokale Datenbank geöffnet.', 3);
         $('#dbnameText').html(config.dbname + '.db');
 
-        // Check if device supports fingerprint
         /**
+        * Check if device supports fingerprint
         * @return {
         *      isAvailable:boolean,
         *      isHardwareDetected:boolean,
@@ -155,39 +211,37 @@ kvm = {
             FingerprintAuth.encrypt(
               encryptConfig,
               function(_fingerResult) {
-                console.log("successCallback(): " + JSON.stringify(_fingerResult));
+                //console.log("successCallback(): " + JSON.stringify(_fingerResult));
                 if (_fingerResult.withFingerprint) {
-                  console.log("Successfully encrypted credentials.");
-                  console.log("Encrypted credentials: " + result.token);
+                  //console.log("Successfully encrypted credentials.");
+                  //console.log("Encrypted credentials: " + result.token);
                   kvm.startApplication();
                 }
                 else if (_fingerResult.withBackup) {
-                  console.log("Authenticated with backup password");
+                  //console.log("Authenticated with backup password");
                   kvm.startApplication();
                 }
                 // Error callback
               },
               function(err){
                 if (err === "Cancelled") {
-                  console.log("FingerprintAuth Dialog Cancelled!");
+                  //console.log("FingerprintAuth Dialog Cancelled!");
                 }
                 else {
-                  console.log("FingerprintAuth Error: " + err);
+                  kvm.msg("FingerprintAuth Error: " + err, 'Fehler');
                 }
               }
             );
           },
           function (message) {
-            console.log("isAvailableError(): " + message);
+            //console.log("isAvailableError(): " + message);
           }
         );
       },
       function (error) {
-        console.log('Open database ERROR: ' + JSON.stringify(error));
+        kvm.msg('Open database ERROR: ' + JSON.stringify(error), 'Fehler');
       }
     );
-
-
   },
 
   startApplication: function() {
@@ -209,30 +263,14 @@ kvm = {
     }
 
     this.store = window.localStorage;
-    kvm.log('Lokaler Speicher verfügbar', 3);
-
-    kvm.log('Lade Gerätedaten.', 3);
+    this.loadLogLevel();
     this.loadDeviceData();
-
-    kvm.log('Lade Sync Status.', 3);
     SyncStatus.load(this.store);
-
-    kvm.log('Lade Netzwerkstatus', 3);
     this.setConnectionStatus();
-
-    kvm.log('Lade GPS-Status', 3);
     this.setGpsStatus();
-
-    kvm.log('initialisiere Karte.', 3);
     this.initMap();
-
-    kvm.log('initialisiere Farbauswahl', 3);
     this.initColorSelector();
-
-    kvm.log('initialisiere Statusfilter', 3);
     this.initStatusFilter();
-
-    kvm.log('initLocalBackupPath', 3);
     this.initLocalBackupPath();
 
     if (this.store.getItem('activeStelleId')) {
@@ -259,18 +297,15 @@ kvm = {
         // Auslesen der layersettings
         var layerIds = $.parseJSON(this.store.getItem('layerIds_' + activeStelleId));
         for (let layerId of layerIds) {
-          console.log('Lade Layersettings for layerId: %s', layerId);
+          //console.log('Lade Layersettings for layerId: %s', layerId);
           layerSettings = this.store.getItem('layerSettings_' + activeStelleId + '_' + layerId);
           if (layerSettings != null) {
-            //Layer Objekt erzeugen
             layer = new Layer(stelle, layerSettings);
-            //Layer zum Layerliste und Karte hinzufügen
             layer.appendToApp();
             if (this.store.getItem('activeLayerId') && this.store.getItem('activeLayerId') == layerId) {
-              // Layer laden und aktiv schalten
-              console.log('Set Layer %s active', layer.get('title'));
               layer.setActive();
-            } else {
+            }
+            else {
               layer.readData();
             }
             /*
@@ -322,7 +357,6 @@ kvm = {
 
   initMap: function() {
     kvm.log('Karte initialisieren.', 3);
-
     kvm.log('initialisiere Mapsettings', 3);
     this.initMapSettings();
 
@@ -335,17 +369,18 @@ kvm = {
     });
 
     var map = L.map('map', {
-//        crs: crs25833,
-        editable: true,
-        center: L.latLng(this.mapSettings.startCenterLat, this.mapSettings.startCenterLon),
-        zoom: this.mapSettings.startZoom,
-        minZoom: this.mapSettings.minZoom,
-        maxZoom: this.mapSettings.maxZoom,
-        layers: this.backgroundLayers
-      }
-    ),
-    baseMaps = {};
+            // crs: crs25833,
+            editable: true,
+            center: L.latLng(this.mapSettings.startCenterLat, this.mapSettings.startCenterLon),
+            zoom: this.mapSettings.startZoom,
+            minZoom: this.mapSettings.minZoom,
+            maxZoom: this.mapSettings.maxZoom,
+            layers: this.backgroundLayers
+          }
+        ),
+        baseMaps = {};
 
+    map.setMaxBounds(L.bounds(L.point(this.mapSettings.west, this.mapSettings.south), L.point(this.mapSettings.east, this.mapSettings.north)));
     for (var i = 0; i < this.backgroundLayers.length; i++) {
       baseMaps[this.backgroundLayerSettings[i].label] = this.backgroundLayers[i];
     }
@@ -473,18 +508,7 @@ kvm = {
         }
       }]
     }).addTo(map);
-    $('#trackControl').hide();
-
-/*
-    map.pm.addControls({
-      position: 'topright',
-      drawCircle: false,
-      drawCircleMarker: false,
-      drawRectangle: false,
-      drawCircle: false,
-      removalMode: false
-    });
-    */
+    $('#trackControl').parent().hide();
     this.map = map;
   },
 
@@ -764,6 +788,15 @@ kvm = {
           )
         );
         kvm.msg('max Boundingbox geändert!', 'Karteneinstellung');
+      }
+    );
+
+    $('#logLevel').on(
+      'change',
+      function() {
+        config.logLevel = $('#logLevel').val();
+        kvm.store.setItem('logLevel', config.logLevel);
+        kvm.msg('Protokollierungsstufe geändert!', 'Protokollierung');
       }
     );
 
@@ -1258,6 +1291,30 @@ kvm = {
             }
             if (buttonIndex == 2) { // ja
               kvm.msg('Ich beginne mit dem Download der Kacheln.', 'Kartenverwaltung');
+              // hide the button and show a progress div
+              // find p1, p2 and zoom levels to fetch data in layer configuration
+              // get urls for vector tiles to download
+              // download the files in background and update the progress div
+              // confirm the finish
+              // hide the progress div and show the delete and update button
+              var bl = config.backgroundLayerSettings.filter(function(l) { return (l.type == 'vectortile' && l.label == 'Vektorkacheln offline'); })[0],
+                  params = bl.params,
+                  key;
+
+              //console.log('Fetch vector tiles for p1: %s,%s p2: %s,%s', params.south, params.west, params.north, params.east);
+              for (var z = params.minZoom; z <= params.maxZoom; z++) {
+                //console.log('Zoom level: %s', z);
+                kvm.getTilesUrls(L.latLng(params.south, params.west), L.latLng(params.north, params.east), z, bl.url).forEach(function(url) {
+                  //console.log('url: %s', url);
+                  const key = kvm.getTileKey(url);
+                  fetch(url).then(t => {
+                    t.arrayBuffer().then(arr => {
+                      kvm.saveTile(key, arr.slice(0));
+                      //console.info('Tile saved to DB');
+                    })
+                  });
+                });
+              }
               kvm.msg('Fertig.', 'Kartenverwaltung');
             }
           },
@@ -1475,10 +1532,10 @@ kvm = {
               }
 
               if (buttonIndex == 2) { // ja
-                if (kvm.aciveLayer) kvm.activeLayer.clearData();
+                var layer = kvm.activeLayer;
                 $('#reloadLayerIcon_' + layer.getGlobalId()).toggleClass('fa-window-restore fa-spinner fa-spin');
-                console.log('reload layer id: %s', kvm.activeLayer.get('id'));
-                kvm.activeStelle.reloadLayer(kvm.activeLayer.get('id'));
+                console.log('reload layer id: %s', layer.get('id'));
+                kvm.activeStelle.reloadLayer(layer.get('id'));
               }
             },
             '',
@@ -1544,6 +1601,16 @@ kvm = {
 
   hideSperrDiv: function() {
     
+  },
+
+  loadLogLevel: function() {
+    kvm.log('Lade LogLevel', 4);
+    var logLevel = kvm.store.getItem('logLevel');
+    if (logLevel == null) {
+      logLevel = config.logLevel;
+      kvm.store.setItem('logLevel', logLevel);
+    }
+    $('#logLevel').val(logLevel);
   },
 
   loadDeviceData: function() {
@@ -1762,7 +1829,7 @@ kvm = {
   },
 
   log: function(msg, level = 3, show_in_sperr_div = false) {
-    if (level <= config.logLevel && (typeof msg === 'string' || msg instanceof String)) {
+    if (level <= (typeof kvm.store == 'undefined' ? config.logLevel : kvm.store.getItem('logLevel')) && (typeof msg === 'string' || msg instanceof String)) {
       msg = this.replacePassword(msg);
       if (config.debug) {
         console.log('Log msg: ' + msg);

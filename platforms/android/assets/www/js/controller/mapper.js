@@ -68,7 +68,7 @@ kvm.controller.mapper = {
           opacity: 0.7
         }
       ).addTo(kvm.map);
-      $('#trackControl').show();
+      $('#trackControl').parent().show();
     }
     else if (feature.options.geometry_type == 'Polygon') {
       editableLayer = L.polygon(
@@ -138,7 +138,7 @@ kvm.controller.mapper = {
 
   removeEditable: function(feature) {
     if (feature.options.geometry_type == 'Line') {
-      $('#trackControl').hide();
+      $('#trackControl').parent().hide();
     }
     kvm.map.removeLayer(feature.editableLayer);
   },

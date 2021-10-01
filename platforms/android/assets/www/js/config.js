@@ -131,13 +131,13 @@ config = {
   // LK-EE
   mapSettings: {
     newPosSelect: 1,
-    minZoom: 8,
+    minZoom: 7,
     maxZoom: 18,
     startZoom: 8,
-    west: 331592,
-    south: 5677145,
-    east: 461195,
-    north: 5767560,
+    west: 13.04961,
+    south: 51.353,
+    east: 13.89345,
+    north: 51.90666,
     startCenterLat: 51.6128,
     startCenterLon: 13.4658
   },
@@ -165,7 +165,7 @@ config = {
       attribution: "LGB WMS DOP20"
     }
   }, {
-    label: 'Vektorkacheln online',
+    label: 'Vektorkacheln offline',
     online: true,
     type: 'vectortile',
     url: //'https://api.mapbox.com/styles/v1/pkorduan/ckrg05q6c4x7n17nr0kjbe6j9.html?fresh=true&title=view&access_token=pk.eyJ1IjoicGtvcmR1YW4iLCJhIjoiY2lxbm54b2Q4MDAzaGkzbWFodWtka2NsaCJ9.SiUN3rvZ1pbyOyZ3xQh-Hg#{z}/{x}/{y}',
@@ -173,6 +173,12 @@ config = {
     style: 'teststyle.json',
     interactiv: false,
     params: {
+      minZoom: 7,
+      maxZoom: 14,
+      west: 13.04961,
+      south: 51.353,
+      east: 13.89345,
+      north: 51.90666,
       rendererFactory: L.canvas.tile, // replace with L.svg.tile if needed
       getFeatureId: function(f) {
         return f.properties.osm_id;

@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
   <head>
-    <TITLE>kvmobile 1.6.0</TITLE>
+    <TITLE>kvmobile 1.7.1</TITLE>
     <META charset="UTF-8">
     <meta name="format-detection" content="telephone=no">
     <meta name="msapplication-tap-highlight" content="no">
@@ -345,7 +345,7 @@ child-src * 'self' blob: http:
     </div>
     <hr>
 
-    <div class="h2-div"><h2 class="b-collapsed">Hinergrundlayer</h2></div>
+    <div class="h2-div"><h2 class="b-collapsed">Hintergrundlayer</h2></div>
     <div id="backgroundLayersDiv">
       <textarea id="backgroundLayersTextarea" style="height: 200px">
       </textarea>
@@ -398,13 +398,23 @@ child-src * 'self' blob: http:
 
     <div class="h2-div"><h2 class="b-collapsed">Protokol</h2></div>
     <div>
+      <div class="settings-label">Protokollierungsstufe:</div>
+      <select id="logLevel" name="logLevel" class="mapSetting">
+        <option value="0">0 - ausgeschaltet</option>
+        <option value="1">1 - error</option>
+        <option value="2">2 - waring</option>
+        <option value="3">3 - info</option>
+        <option value="4">4 - debug</option>
+        <option value="5">5 - alles</option>
+      </select>
+      <div style="clear: both"></div>
+      <input type="checkbox" id="show_allways_debug_messages" value="1"> Debug-Meldung immer einblenden<br>
       <button id="showLoggingsButton" class="settings-button">
         <i class="fa fa-list" aria-hidden="true"> Zeige Protokoll an</i>
       </button>
       <button id="clearLoggingsButton" class="settings-button">
         <i class="fa fa-list" aria-hidden="true"> Leere Protokoll</i>
       </button><br>
-      <input type="checkbox" id="show_allways_debug_messages" value="1"> Debug-Meldung immer einblenden<br>
     </div>
     <hr>
     <p>

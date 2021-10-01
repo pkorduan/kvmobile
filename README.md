@@ -8,6 +8,8 @@ https://github.com/srahn/kvwmap/
 http://kvwmap.de
 
 # Change log
+## 1.7.1
+	* Fix issues mit more than one layer and offline maps
 ## 1.7.0
 	* Vector-Tile Layer als Hintergrundlayer und Cache für offline-Nutzung
 ## 1.6.0

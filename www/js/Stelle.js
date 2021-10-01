@@ -208,7 +208,7 @@ function Stelle(settings = {}) {
 
                 kvm.activeStelle.numLayers = resultObj.layers.length;
 
-                var layerSettings = resultObj.layers.filter(function(layer) { return layer.id = layerId; })[0],
+                var layerSettings = resultObj.layers.filter(function(layer) { return layer.id == layerId; })[0],
                     layer;
 
                 kvm.activeLayer.removeFromApp();

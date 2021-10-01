@@ -70,8 +70,8 @@ function Layer(stelle, settings = {}) {
   };
 
   /*
-  * Load data from local db, create feature objects and show in list view
-  * Read data from offset to offset + limit
+  * Load data from local db from offset to offset + limit and
+  * show in list view if layer is active
   */
   this.readData = function(limit = 50000, offset = 0, order = '') {
     kvm.log('Layer.readData from table: ' + this.get('schema_name') + '_' + this.get('table_name'), 3);
@@ -148,6 +148,7 @@ function Layer(stelle, settings = {}) {
           }
         }
 
+        // create the features for this layer
         for (i = 0; i < numRows; i++) {
           var item = rs.rows.item(i);
           //console.log('Item ' + i + ': %o', item);
@@ -169,9 +170,12 @@ function Layer(stelle, settings = {}) {
         }
         kvm.setConnectionStatus();
 
-        this.createFeatureList();
+        if (typeof kvm.activeLayer != 'undefined' && kvm.activeLayer.get('id') == this.get('id')) {
+          this.createFeatureList();
+        }
+
+        // draw the features in map
         if (this.layerGroup) {
-         console.log('Clear Layers in layerGroup');
          this.layerGroup.clearLayers();
         }
         this.drawFeatures();
@@ -184,36 +188,33 @@ function Layer(stelle, settings = {}) {
     );
   };
 
-  /*
-    * create the list of features if layer is active layer in list view at once
-    */
+  /**
+  * create the list of features in list view at once
+  */
   this.createFeatureList = function() {
-    console.log('createFeatureList for layer %s', this.get('title'));
-    if (typeof kvm.activeLayer != 'undefined' && kvm.activeLayer.id == this.id) {
-      kvm.log('Erzeuge die Liste der Datensätze neu.');
-      $('#featurelistHeading').html(this.get('alias') ? this.get('alias') : this.get('title'));
-      $('#featurelistBody').html('');
-      html = '';
+    kvm.log('Erzeuge die Liste der Datensätze neu.');
+    $('#featurelistHeading').html(this.get('alias') ? this.get('alias') : this.get('title'));
+    $('#featurelistBody').html('');
+    html = '';
 
-      $.each(
-        this.features,
-        function (key, feature) {
-          //console.log('append feature: %o to list', feature);
-          var needle = $('#searchHaltestelle').val().toLowerCase(),
-            element = $(feature.listElement()),
-            haystack = element.html().toLowerCase();
+    $.each(
+      this.features,
+      function (key, feature) {
+        //console.log('append feature: %o to list', feature);
+        var needle = $('#searchHaltestelle').val().toLowerCase(),
+          element = $(feature.listElement()),
+          haystack = element.html().toLowerCase();
 
-          html = html + feature.listElement();
-          //console.log(feature.get('uuid') + ' zur Liste hinzugefügt.');
-          //console.log(html);
-        }
-      );
-      $('#featurelistBody').append(html);
-      kvm.bindFeatureItemClickEvents();
-      if (Object.keys(this.features).length > 0) {
-        kvm.showItem('featurelist');
-        $('#numDatasetsText').html(Object.keys(this.features).length).show();
+        html = html + feature.listElement();
+        //console.log(feature.get('uuid') + ' zur Liste hinzugefügt.');
+        //console.log(html);
       }
+    );
+    $('#featurelistBody').append(html);
+    kvm.bindFeatureItemClickEvents();
+    if (Object.keys(this.features).length > 0) {
+      kvm.showItem('featurelist');
+      $('#numDatasetsText').html(Object.keys(this.features).length).show();
     }
   };
 
@@ -1153,16 +1154,14 @@ function Layer(stelle, settings = {}) {
   * Zeichnet die Features in die Karte
   */
   this.drawFeatures = function() {
-    kvm.log('Erzeuge Geometrieobjekte in der Karte: ', 3);
-    kvm.log('Erzeuge ' + Object.keys(this.features).length + ' CircleMarker', 3);
-    console.log('drawFeatures mit showPopupButton: %s', this.showPopupButtons);
+    kvm.log('Zeichne ' + Object.keys(this.features).length + ' Features von Layer ' + this.get('title'), 3);
     $.each(
       this.features,
       (function (key, feature) {
         var vectorLayer;
 
         if (feature.newGeom) {
-          console.log('Zeichne Feature: %o', feature);
+          console.log('Zeichne Feature: %o in Layer: ', feature, this.get('title'));
           if (feature.options.geometry_type == 'Point') {
             vectorLayer = L.circleMarker(feature.wkxToLatLngs(feature.newGeom), {
               renderer: kvm.myRenderer,
@@ -1185,11 +1184,13 @@ function Layer(stelle, settings = {}) {
 
           // Bind click Event an Kartenobjekt
           vectorLayer.on('click', function(evt) {
+            /*
             console.log('open popup defined in drawFeatures');
             console.log('activeFeature %s', kvm.activeLayer.activeFeature);
             console.log('activeFeature.editable %s', kvm.activeLayer.activeFeature.editable);
+            */
             if (kvm.activeLayer.activeFeature && kvm.activeLayer.activeFeature.editable) {
-              console.log('hide all popup-functions with hide function defined in drawFeatures');
+              //console.log('hide all popup-functions with hide function defined in drawFeatures');
               $('.popup-functions').hide();
             }
             else {
@@ -1198,7 +1199,6 @@ function Layer(stelle, settings = {}) {
           });
 
           // Setze default Style für Kartenobjekt
-          console.log('setStyle %o', feature.getNormalStyle());
           vectorLayer.setStyle(feature.getNormalStyle());
 
           // Kartenobjekt als Layer zur Layergruppe hinzufügen
@@ -1218,8 +1218,7 @@ function Layer(stelle, settings = {}) {
     var html;
 
     html = feature.getLabelValue();
-    console.log('getPopup');
-    console.log('showPopupButtons: %s', feature.showPopupButtons());
+    //console.log('showPopupButtons: %s', feature.showPopupButtons());
     if (feature.showPopupButtons()) {
       console.log('showPopupButtons');
       html = html + '<br>\
@@ -2060,9 +2059,9 @@ function Layer(stelle, settings = {}) {
   };
 
   this.restoreDataset = function(rs) {
-    console.log('restoreDataset');
-    console.log('context %o', this.context);
-    console.log('attr gefiltert: %o', );
+    //console.log('restoreDataset');
+    //console.log('context %o', this.context);
+    //console.log('attr gefiltert: %o', );
     var layer = this.context,
         table = layer.get('schema_name') + '_' + layer.get('table_name'),
         id_attribute = layer.get('id_attribute'),
@@ -2092,8 +2091,8 @@ function Layer(stelle, settings = {}) {
 
     this.next.context = layer;
     this.next.delta = delta;
-    console.log('SQL zum Wiederherstellen des Datensatzes: %s', sql);
-    console.log('Nächste Funktion nach Datenbankabfrage: %s', this.next.succFunc);
+    //console.log('SQL zum Wiederherstellen des Datensatzes: %s', sql);
+    //console.log('Nächste Funktion nach Datenbankabfrage: %s', this.next.succFunc);
     kvm.db.executeSql(
       sql,
       [],
@@ -2109,8 +2108,8 @@ function Layer(stelle, settings = {}) {
   * @param resultset rs Result set from former function is here not used
   */
   this.readDataset = function(rs = null) {
-    console.log('readDataset');
-    console.log('layer: %o', this.context);
+    //console.log('readDataset');
+    //console.log('layer: %o', this.context);
     var layer = this.context,
         id_attribute = layer.get('id_attribute'),
         id = layer.activeFeature.get(id_attribute),
@@ -2124,8 +2123,8 @@ function Layer(stelle, settings = {}) {
         ";
 
     this.next.context = layer;
-    console.log('SQL zum lesen des Datensatzes: %s', sql);
-    console.log('Funktion nach erfolgreicher Datenbankabfrage: %s', this.next.succFunc);
+    //console.log('SQL zum lesen des Datensatzes: %s', sql);
+    //console.log('Funktion nach erfolgreicher Datenbankabfrage: %s', this.next.succFunc);
     kvm.db.executeSql(
       sql,
       [],
@@ -2421,13 +2420,20 @@ function Layer(stelle, settings = {}) {
   // prüfen wie sich die ganze Geschichte auf img auswirkt.
   // prüfen wie das mit dem user_name ist, der darf nach einem Rückgängig machen nicht mit drin sein, wenn vorher keiner drin stand.
 
+  /**
+  * function create the listElement with functions buttons for layer settings page,
+  * add layer in layer control of the map
+  * add layer to the map
+  * save layer object in kvm.layers array and
+  * save layerSettings to store
+  * Do not read data for listing and mapping
+  */
   this.appendToApp = function() {
     kvm.log('Füge Layer ' + this.get('title') + ' zur Layerliste hinzu.', 3);
     $('#layer_list').append(this.getListItem());
     kvm.bindLayerEvents(this.getGlobalId());
-    console.log('Füge Layer %s in append als overlay zum layer control hinzu.', this.get('title'));
+//    kvm.map.addLayer(this.layerGroup);
     kvm.controls.layers.addOverlay(this.layerGroup, kvm.coalesce(this.get('alias'), this.get('title'), this.get('table_name')));
-    kvm.map.addLayer(this.layerGroup);
     kvm.layers[this.get('id')] = this;
     this.saveToStore();
   };
@@ -2441,7 +2447,7 @@ function Layer(stelle, settings = {}) {
   this.removeFromApp = function() {
     console.log('remove layer %s (%s)', this.get('title'), this.get('id'));
     console.log('Entferne layer div aus layer options list.');
-    $('layer_' + this.getGlobalId()).remove();
+    $('#layer_' + this.getGlobalId()).remove();
     console.log('Lösche die Daten vom aktiven Layer');
     this.clearData();
     console.log('Entferne layer aus layer control');
