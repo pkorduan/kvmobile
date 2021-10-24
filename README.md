@@ -8,6 +8,9 @@ https://github.com/srahn/kvwmap/
 http://kvwmap.de
 
 # Change log
+## 1.7.2
+	* Selectable configurations
+	* BackgroundGeolocation enabled
 ## 1.7.1
 	* Fix issues mit more than one layer and offline maps
 ## 1.7.0

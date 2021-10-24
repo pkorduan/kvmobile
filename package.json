@@ -1,7 +1,7 @@
 {
   "name": "de.gdi-service.kvmobile",
   "displayName": "kvmobile",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "description": "Anwendung zur Erfassung von Geodaten und zum synchronisieren mit dem Web-GIS kvwmap.",
   "main": "index.js",
   "scripts": {
@@ -11,7 +11,6 @@
   "license": "GPL 3.0",
   "dependencies": {
     "com.ionic.keyboard": "https://github.com/Telerik-Verified-Plugins/Keyboard",
-    "cordova-android": "^6.4.0",
     "cordova-plugin-android-fingerprint-auth": "^1.5.0",
     "cordova-plugin-camera": "^2.4.1",
     "cordova-plugin-compat": "^1.1.0",
@@ -40,11 +39,21 @@
       "cordova-plugin-whitelist": {},
       "com.ionic.keyboard": {},
       "cordova-plugin-file-opener2": {},
-      "cordova-sqlite-storage": {}
+      "cordova-sqlite-storage": {},
+      "cordova-plugin-background-geolocation": {
+        "GOOGLE_PLAY_SERVICES_VERSION": "11+",
+        "ANDROID_SUPPORT_LIBRARY_VERSION": "26+",
+        "ICON": "@mipmap/ic_launcher",
+        "SMALL_ICON": "@mipmap/ic_launcher",
+        "ACCOUNT_NAME": "@string/app_name",
+        "ACCOUNT_LABEL": "@string/app_name",
+        "ACCOUNT_TYPE": "$PACKAGE_NAME.account",
+        "CONTENT_AUTHORITY": "$PACKAGE_NAME"
+      }
     },
-    "platforms": [
-      "android"
-    ]
+    "platforms": []
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "cordova-android": "^9.1.0"
+  }
 }
