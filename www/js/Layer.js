@@ -56,6 +56,7 @@ function Layer(stelle, settings = {}) {
   };
 
   this.isEmpty = function() {
+    console.log('isEmpty? syncVersion: ', this.get('syncVersion'));
     return (
       typeof this.get('syncVersion') == 'undefined' ||
       this.get('syncVersion') == null ||
@@ -66,7 +67,8 @@ function Layer(stelle, settings = {}) {
   };
 
   this.setEmpty = function() {
-    this.set('syncVersion') == 0;
+    this.set('syncVersion', 0);
+    this.runningSyncVersion = 0
   };
 
   /*
@@ -477,25 +479,32 @@ function Layer(stelle, settings = {}) {
 
                 //console.log('Download Ergebnis (Head 1000): %s', this.result.substring(1, 1000));
                 try {
+                  this.result = this.result.replace("\n", "\\\n");
                   collection = $.parseJSON(this.result);
+                  kvm.log('Anzahl empfangene Datensätze: ' + collection.features.length, 3);
+                  var layer = kvm.activeLayer;
+                  kvm.log('Version in Response: ' + collection.lastDeltaVersion, 3);
+                  layer.runningSyncVersion = collection.lastDeltaVersion;
+                  kvm.log('Version der Daten: ' + layer.runningSyncVersion, 3);
                   if (collection.features.length > 0) {
-                    kvm.log('Anzahl empfangene Datensätze: ' + collection.features.length, 3);
-                    var layer = kvm.activeLayer;
-                    kvm.log('Version in Response: ' + collection.lastDeltaVersion, 3);
-                    layer.runningSyncVersion = collection.lastDeltaVersion;
-                    kvm.log('Version der Daten: ' + layer.runningSyncVersion, 3);
                     layer.writeData(collection.features);
                   }
                   else {
-                    kvm.msg('Abfrage liefert keine Daten vom Server. Entweder sind noch keine auf dem Server vorhanden oder die URL der Anfrage ist nicht korrekt. Prüfen Sie die Parameter unter Einstellungen.', 'Fehler');
+                    kvm.msg('Keine Daten zum Download vorhanden. Lokale Änderungen können jetzt synchronisiert werden.', 'Hinweis');
+                    layer.set('syncVersion', layer.runningSyncVersion);
+                    layer.set('syncLastLocalTimestamp', Date());
+                    if ($('#syncLayerIcon_' + layer.getGlobalId()).hasClass('fa-spinner')) {
+                      $('#syncLayerIcon_' + layer.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
+                    }
+                    $('#sperr_div').hide();
                   }
                 } catch (e) {
-                  errMsg = 'Fehler beim Parsen der heruntergeladenen Daten.' + this.result;
+                  errMsg = 'Fehler beim Parsen der heruntergeladenen Daten: ' + this.result;
                   //console.log('Anfrage: %s', kvm.getSyncUrl)
                   kvm.msg(errMsg, 'Fehler');
                   kvm.log(errMsg, 1);
-                  if ($('#syncLayerIcon_' + this.getGlobalId()).hasClass('fa-spinner')) {
-                    $('#syncLayerIcon_' + this.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
+                  if ($('#syncLayerIcon_' + kvm.activeLayer.getGlobalId()).hasClass('fa-spinner')) {
+                    $('#syncLayerIcon_' + kvm.activeLayer.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
                   }
                   $('#sperr_div').hide();
                 }
@@ -587,19 +596,24 @@ function Layer(stelle, settings = {}) {
       var response = $.parseJSON(r.response);
 
       if (response.success) {
-        kvm.log('Syncronisierung erfolgreich auf dem Server durchgeführt.', 3);
+        kvm.log('Synchronisierung erfolgreich auf dem Server durchgeführt.', 3);
         kvm.log('Antwort vom Server: ' + JSON.stringify(response), 3);
         this.numExecutedDeltas = 0;
         this.numReturnedDeltas = response.deltas.length;
+        debug_r = response.deltas;
+        console.log('numReturendDeltas before execute deltas: %s', this.numReturnedDeltas);
+        console.log('response.deltas.length: %s', response.deltas.length);
+
         if (this.numReturnedDeltas > 0) {
           $.each(
             response.deltas,
             (function(index, value) {
               if (kvm.coalesce(value.sql) != null) {
                 kvm.alog('Führe Änderungen vom Server auf dem Client aus: ', value.sql, 4);
+                console.log('Execute sql von version: %s', value.version);
                 this.execSql(
                   this.pointToUnderlineName(value.sql, this.get('schema_name'), this.get('table_name')),
-                  (this.execServerDeltaSuccessFunc).bind({ context: this, response: response})
+                  (this.execServerDeltaSuccessFunc).bind({ context: this, response: response, numReturnedDeltas: this.numReturnedDeltas})
                 );
               }
             }).bind(this)
@@ -609,14 +623,13 @@ function Layer(stelle, settings = {}) {
           this.set('syncVersion', parseInt(response.syncData[response.syncData.length - 1].push_to_version));
           this.runningSyncVersion = this.get('syncVersion');
           this.saveToStore();
-          kvm.msg('Synchronisierung erfolgreich abgeschlossen!');
-          kvm.msg('Keine neuen Daten vom Server! Aktuelle Version: ' + this.get('syncVersion'));
+          kvm.msg('Keine Änderungen vom Server bekommen! Die aktuelle Version ist: ' + this.get('syncVersion'));
           this.clearDeltas('sql');
           this.readData($('#limit').val(), $('#offset').val());
         }
       }
       else {
-        kvm.msg(response.err_msg);
+        kvm.msg(response.err_msg, 'Daten Synchronisieren');
       }
       if ($('#syncLayerIcon_' + this.getGlobalId()).hasClass('fa-spinner')) {
         $('#syncLayerIcon_' + this.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
@@ -672,7 +685,7 @@ function Layer(stelle, settings = {}) {
   *    - Wenn es geklappt hat, aus der Liste der hochzuladenen Bilder löschen
   * -- Wenn es welche zu löschen gibt, versucht er die Info an den Server zu schicken.
   *    - Wenn der Server gemeldet hat, dass er das Bild erfolgreich gelöscht hat, aus der Liste der zu löschenden Bilder entfernen.
-  * -- Registrieren wenn alle Bilder syncronisiert wurden, dann sperr_div aus und Erfolgsmeldung.
+  * -- Registrieren wenn alle Bilder synchronisiert wurden, dann sperr_div aus und Erfolgsmeldung.
   * Anforderung von Dirk
   * Metainfos zu einem Bild speichern. Da könnte auch die Info ran ob Bild schon geuploaded oder zu löschen ist. Wenn upload
   * geklappt hat, könnte Status von to_upload zu uploaded geändert werden und wenn löschen auf dem Server geklappt hat,
@@ -905,15 +918,16 @@ function Layer(stelle, settings = {}) {
       (function(rs) {
         kvm.store.removeItem('layerFilter');
         //console.log('removeItem %o', 'layerSettings_' + this.getGlobalId());
-        kvm.store.removeItem('layerSettings_' + this.getGlobalId());
-/*
+        //kvm.store.removeItem('layerSettings_' + this.getGlobalId());
+        $('numDatasetsText').html('0');
+
         navigator.notification.confirm(
           'Alle Daten des Layers in lokaler Datenbank gelöscht.',
           function(buttonIndex) {},
           'Datenbank',
-          ['Verstanden']
+          ['OK']
         );
-*/
+
       }).bind(this),
       function(error) {
         navigator.notification.confirm(
@@ -959,15 +973,15 @@ function Layer(stelle, settings = {}) {
         icon = $('#syncImagesIcon_' + this.layer.getGlobalId());
         if (icon.hasClass('fa-spinner')) icon.toggleClass('fa-upload fa-spinner fa-spin');
         $('#sperr_div').hide();
-/*
+
         navigator.notification.confirm(
-          'Alle Änderungseinträge zu Bildern des Layers in lokaler Datenbank gelöscht.',
+          'Synchronisierung der Änderungen abgeschlossen.',
           function(buttonIndex) {
           },
           'Datenbank',
-          ['Verstanden']
+          ['OK']
         );
-*/
+
       }).bind({
         layer : this,
         delta : delta
@@ -1978,7 +1992,6 @@ function Layer(stelle, settings = {}) {
     $('#sperr_div').hide();
     kvm.msg(this.succMsg, 'Hinweis');
   };
-
   /**
   * write delta dataset to database expect:
   * for delete delta if insert delta exists or
@@ -2261,8 +2274,10 @@ function Layer(stelle, settings = {}) {
     $.each(
       changes,
       (function(index, change) {
-        img_old = (change.oldVal ? change.oldVal.slice(1, -1).split(',') : []);
+        img_old = (change.oldVal && change.oldVal != 'null' ? change.oldVal.slice(1, -1).split(',') : []);
         img_new = (change.newVal ? change.newVal.slice(1, -1).split(',') : []);
+        console.log('img_old %o', img_old);
+        console.log('img_new: %o', img_new);
 
         $.map(
           img_new,
@@ -2347,7 +2362,7 @@ function Layer(stelle, settings = {}) {
                       },
                       next: {
                         succFunc: 'showMessage',
-                        msg: 'Löschung von Bild' + img + ' eingetragen.',
+                        msg: 'Löschung von Bild ' + img + ' eingetragen.',
                         title: 'Datenbank'
                       }
                     })();
@@ -2397,13 +2412,13 @@ function Layer(stelle, settings = {}) {
   };
 
   this.execServerDeltaSuccessFunc = function(rs) {
-    kvm.log('execServerDeltaSuccessFunc');
     this.context.numExecutedDeltas++;
+    kvm.log('execServerDeltaSuccessFunc numExecutedDeltas: ' + this.context.numExecutedDeltas + ' context.numReturnedDeltas: ' + this.context.numReturnedDeltas + ' numReturnedDeltas: ' + this.numReturnedDeltas);
     if (this.context.numExecutedDeltas == this.context.numReturnedDeltas) {
-      this.context.set('syncVersion', parseInt(this.response.syncData[this.response.syncData.length - 1].push_to_version));
+      var newVersion = parseInt(this.response.syncData[this.response.syncData.length - 1].push_to_version);
+      this.context.set('syncVersion', newVersion);
       this.context.saveToStore();
-      kvm.msg('Synchronisierung erfolgreich abgeschlossen!');
-      //kvm.msg('Aktuelle Version: ' + this.context.get('syncVersion'));
+      kvm.msg('Synchronisierung erfolgreich abgeschlossen!  Die aktuelle Version ist: ' + newVersion);
       this.context.clearDeltas('sql');
       this.context.readData($('#limit').val(), $('#offset').val());
     }
@@ -2444,7 +2459,7 @@ function Layer(stelle, settings = {}) {
    * The layer that replace an active layer will also be set active
   */
   this.removeFromApp = function() {
-    //console.log('remove layer %s (%s)', this.get('title'), this.get('id'));
+    console.log('remove layer %s (%s)', this.get('title'), this.get('id'));
     //console.log('Entferne layer div aus layer options list.');
     $('#layer_' + this.getGlobalId()).remove();
     //console.log('Lösche die Daten vom aktiven Layer');
@@ -2510,7 +2525,7 @@ function Layer(stelle, settings = {}) {
       'selected_layer_id=' + this.get('id') + '&' +
       'passwort=' + this.stelle.get('passwort');
 
-    if (this.isEmpty()) {
+    if (this.runningSyncVersion == 0) {
       // get all data as new base for deltas
       url += '&' +
         'go=Daten_Export_Exportieren' + '&' +
@@ -2564,17 +2579,18 @@ function Layer(stelle, settings = {}) {
     }
     settings.loaded = false;
     kvm.store.setItem('layerSettings_' + this.getGlobalId(), settings);
-    //console.log('layerSettings_%s eingetragen.',this.getGlobalId());
+    console.log('layerSettings_%s eingetragen. store: %o',this.getGlobalId(), kvm.store);
 
     if ($.inArray(this.get('id'), layerIds) < 0) {
       layerIds.push(this.get('id'));
+      console.log('layer id in layerIds Liste aufgenommen.');
       kvm.store.setItem(
         'layerIds_' + this.stelle.get('id'),
         JSON.stringify(layerIds)
       );
-      //console.log('neue layerId %s eingetragen.', this.get('id'));
+      console.log('neue layerId %s eingetragen.', this.get('id'));
     }
-    //console.log('layerIds nach dem Speichern: %o', kvm.store.getItem('layerIds_' + this.stelle.get('id')));
+    console.log('layerIds nach dem Speichern: %o', kvm.store.getItem('layerIds_' + this.stelle.get('id')));
   };
 
   /**
@@ -2590,6 +2606,7 @@ function Layer(stelle, settings = {}) {
     kvm.log('Setze Layer ' + this.get('title') + ' (' + (this.get('alias') ? this.get('alias') : 'kein Aliasname') + ') auf aktiv.', 3);
     kvm.activeLayer = this;
     kvm.store.setItem('activeLayerId', this.get('id'));
+    $('#featurelistHeading').html(this.get('alias') ? this.get('alias') : this.get('title'));
 
     // Create layerFilter
     this.createLayerFilterForm();

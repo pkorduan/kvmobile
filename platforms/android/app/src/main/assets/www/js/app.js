@@ -1,5 +1,5 @@
 kvm = {
-  version: '1.7.2',
+  version: '1.7.4',
   Buffer: require('buffer').Buffer,
   wkx: require('wkx'),
   controls: {},
@@ -172,6 +172,25 @@ kvm = {
     maplibregl.addProtocol('custom', this.customProtocolHandler);
   },
 
+  fail: function(e) {
+    console.log("FileSystem Error");
+    console.dir(e);
+  },
+
+  writeLog: function(str) {
+    if(!logOb) return;
+    var t = new Date();
+    var log = '[' + t.getFullYear() + '-' + t.getMonth() + '-' + t.getDay() + ' ' + t.getHours() + ':' + t.getMinutes().toString().padStart(2,'0') + ':' + t.getSeconds().toString().padStart(2,'0') + '] ' + str + "\n"
+    logOb.createWriter(
+      function(fileWriter) {
+        fileWriter.seek(fileWriter.length);
+        var blob = new Blob([log], { type : 'text/plain' });
+        fileWriter.write(blob);
+      },
+      kvm.fail
+    );
+  },
+
   onDeviceReady: function() {
     this.store = window.localStorage;
     var foundConfiguration = configurations.filter(function(c) { return c.name == (kvm.store.getItem('configName') ? kvm.store.getItem('configName') : 'Standard'); });
@@ -182,13 +201,24 @@ kvm = {
       config = foundConfiguration[0];
     }
 
+    // Write log to cordova.file.externalDataDirectory
+    // which is at file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/
+    window.resolveLocalFileSystemURL(cordova.file.externalDataDirectory, function(dir) {
+      //console.log("got main dir",dir);
+      dir.getFile("log.txt", {create:true}, function(file) {
+        //console.log("got the file", file);
+        logOb = file;
+        kvm.writeLog("App started");
+      });
+    });
+/*
     BackgroundGeolocation.configure({
       startForeground: true,
 //      locationProvider: BackgroundGeolocation.ACTIVITY_PROVIDER,
       locationProvider: BackgroundGeolocation.DISTANCE_FILTER_PROVIDER,
       desiredAccuracy: BackgroundGeolocation.HIGH_ACCURACY,
-      stationaryRadius: 50,
-      distanceFilter: 50,
+      stationaryRadius: 1,
+      distanceFilter: 1,
       notificationTitle: 'Background tracking',
       notificationText: 'enabled',
       debug: true,
@@ -202,14 +232,16 @@ kvm = {
       // customize post properties
       postTemplate: {
         lat: '@latitude',
-        lon: '@longitude',
-        foo: 'kvmobile' // you can also add your own properties
-      }
+        lon: '@longitude'
+      },
+      maxLocations: 1000
     });
  
     BackgroundGeolocation.on('location', function(location) {
       // handle your locations here
       console.log('loc: %o', location);
+      kvm.writeLog('event location: ' + location.time + ' ' + location.latitude + ' ' + location.longitude);
+
       // to perform long running operation on iOS
       // you need to create background task
 
@@ -219,15 +251,22 @@ kvm = {
         // eg. ajax post location
 
         BackgroundGeolocation.headlessTask(function(event) {
-          console.log('event in headlessTask');
+          console.log('event in headlessTask %o', event);
+          kvm.writeLog('run headlessTask with event params: ' + JSON.stringify(event.params));
           if (event.name === 'location' || event.name === 'stationary') {
             console.log('event.name: %s', event.name);
-            var xhr = new XMLHttpRequest();
-            xhr.open('POST', 'https://gdi-service.de/kvwmap_pet_dev/custom/layouts/snippets/track_location.php');
-            xhr.setRequestHeader('Content-Type', 'application/json');
-            xhr.send(JSON.stringify(event.params));
+
+            kvm.writeLog('event.name: ' + event.name);
+//            var xhr = new XMLHttpRequest();
+//            xhr.open('POST', 'https://gdi-service.de/kvwmap_pet_dev/custom/layouts/snippets/track_location.php');
+//            xhr.setRequestHeader('Content-Type', 'application/json');
+//            xhr.send(JSON.stringify(event.params));
           }
-          return 'Processing event: ' + event.name; // will be logged
+          else {
+            kvm.writeLog('location but stationary: ' + event.params.time + ' ' + event.params.latitude + ' ' + event.params.longitude);
+          }
+            kvm.writeLog('location but stationary: ' + event.params.time + ' ' + event.params.latitude + ' ' + event.params.longitude);
+          return 'Processing event: ' + event.name + ' params: ' + JSON.stringify(event.params); // will be logged
         });
 
         // IMPORTANT: task has to be ended by endTask
@@ -239,6 +278,7 @@ kvm = {
     BackgroundGeolocation.on('stationary', function(stationaryLocation) {
       // handle stationary locations here
       console.log('stationary: %o', stationaryLocation);
+      kvm.writeLog('stationary: ' + stationaryLocation.time + ' ' + stationaryLocation.latitude + ' ' + stationaryLocation.longitude);
     });
  
     BackgroundGeolocation.on('error', function(error) {
@@ -270,11 +310,13 @@ kvm = {
       console.log('[INFO] App is in background');
       // you can also reconfigure service (changes will be applied immediately)
       BackgroundGeolocation.configure({ debug: true });
+      kvm.writeLog('go to background: ');
     });
 
     BackgroundGeolocation.on('foreground', function() {
       console.log('[INFO] App is in foreground');
       BackgroundGeolocation.configure({ debug: false });
+      kvm.writeLog('go to foreground: ');
     });
 
     BackgroundGeolocation.on('abort_requested', function() {
@@ -311,12 +353,12 @@ kvm = {
     //BackgroundGeolocation.getLogEntries(1000, 0, 'TRACE', function(entry) { console.log('log: %o', entry); }, function(fail) { console.log('log fail: %o', fail); })
 
     try {
-//      BackgroundGeolocation.start();
+      BackgroundGeolocation.start();
     }
     catch (e) {
       console.log('gestartet Fehler: %o', e);
     }
-
+*/
     this.db = window.sqlitePlugin.openDatabase(
       {
         name: config.dbname + '.db',
@@ -481,11 +523,11 @@ kvm = {
       }
     }
     else {
-      kvm.msg('Stellen Sie die Zugangsdaten zum Server ein.');
+      kvm.msg('Wählen Sie eine Konfiguration aus und Stellen die Zugangsdaten zum Server ein.');
       var stelle = new Stelle('{}');
       stelle.viewDefaultSettings();
       activeView = 'settings';
-      this.showSettingsDiv('server');
+      this.showSettingsDiv('konfiguration');
     };
 
     // ToDo
@@ -512,7 +554,7 @@ kvm = {
         navigator.notification.confirm(
           'Wollen Sie wirklich die Konfiguration ändern? Dabei gehen alle lokalen Änderungen verloren, die Layer und Einstellungen werden gelöscht und die Anwendung wird mit den Default-Werten der anderen Konfiguration neu gestartet!',
           function(buttonIndex) {
-            if (buttonIndex == 1) {
+            if (buttonIndex == 2) {
               $('#configName').val(kvm.store.getItem('configName'));
             }
             else {
@@ -520,7 +562,7 @@ kvm = {
             }
           },
           'Konfiguration',
-          ['Abbruch', 'Konfiguration ändern']
+          ['Ja', 'Abbruch']
         )
       })
     );
@@ -1375,7 +1417,7 @@ kvm = {
         navigator.notification.confirm(
           'Wollen Sie den Datensatz wiederherstellen? Ein vorhandener mit der gleichen uuid wird dabei überschrieben!',
           function(buttonIndex) {
-            if (buttonIndex == 2) { // ja
+            if (buttonIndex == 1) { // ja
               $('#sperr_div_content').html('Wiederherstellung von Datensätzen ist noch nicht implementiert!');
               kvm.activeLayer.runRestoreStrategy();
               $('#sperr_div').show();
@@ -1388,7 +1430,7 @@ kvm = {
             }
           },
           'Datensatz wiederherstellen',
-          ['nein', 'ja']
+          ['ja', 'nein']
         );
       }
     );
@@ -1447,10 +1489,7 @@ kvm = {
         navigator.notification.confirm(
           'Alle lokalen Daten, Änderungen und Einstellungen wirklich Löschen?',
           function(buttonIndex) {
-            if (buttonIndex == 1) { // nein
-              // Do nothing
-            }
-            if (buttonIndex == 2) { // ja
+            if (buttonIndex == 1) { // ja
               if (kvm.layers.length == 0) {
                 kvm.msg('Keine Daten und Layer zum löschen vorhanden.');
               }
@@ -1461,6 +1500,9 @@ kvm = {
                 });
               }
             }
+            if (buttonIndex == 2) { // nein
+              // Do nothing
+            }
             kvm.layers = [];
             $('#layer_list').html('');
             kvm.activeLayer = kvm.activeStelle = kvm.store = {};
@@ -1468,7 +1510,7 @@ kvm = {
             kvm.msg("Fertig!\nStarten Sie die Anwendung neu und fragen Sie die Stelle und Layer unter Einstellungen neu ab.", 'Reset Datenbank und Einstellungen');
           },
           '',
-          ['nein', 'ja']
+          ['ja', 'nein']
         );
       }
     );
@@ -1479,10 +1521,7 @@ kvm = {
         navigator.notification.confirm(
           'Alle Vektorkacheln vom Gebiet LK-EE herunterladen? Vergewissern Sie sich, dass Sie in einem Netz mit guter Anbindung sind.',
           function(buttonIndex) {
-            if (buttonIndex == 1) { // nein
-              kvm.msg('OK, Abbruch.', 'Kartenverwaltung');
-            }
-            if (buttonIndex == 2) { // ja
+            if (buttonIndex == 1) { // ja
               kvm.msg('Ich beginne mit dem Download der Kacheln.', 'Kartenverwaltung');
               // hide the button and show a progress div
               // find p1, p2 and zoom levels to fetch data in layer configuration
@@ -1510,9 +1549,12 @@ kvm = {
               }
               kvm.msg('Fertig.', 'Kartenverwaltung');
             }
+            if (buttonIndex == 2) { // nein
+              kvm.msg('OK, Abbruch.', 'Kartenverwaltung');
+            }
           },
           'Kartenverwaltung',
-          ['nein', 'ja']
+          ['ja', 'nein']
         );
       }
     );
@@ -1538,15 +1580,17 @@ kvm = {
   },
 
   /*
-  * Erzeugt die Events für die Auswahl, Syncronisierung und das Zurücksetzen von Layern
+  * Erzeugt die Events für die Auswahl, Synchronisierung und das Zurücksetzen von Layern
   */
   bindLayerEvents: function(layerGlobalId = 0) {
     console.log('bindLayerEvents for layerGlobalId: %s', layerGlobalId);
-    /*
-    * Schaltet einen anderen Layer und deren Sync-Funktionen aktiv
-    * Die Einstellungen des Layers werden aus dem Store geladen
-    * Die Featureliste und Kartenelemente werden falls vorhanden aus der Datenbank geladen.
-    */
+    // Schaltet alle layer function button events zunächst aus.
+    $('.layer-function-button').off()
+    //
+    // Schaltet einen anderen Layer und deren Sync-Funktionen aktiv
+    // Die Einstellungen des Layers werden aus dem Store geladen
+    // Die Featureliste und Kartenelemente werden falls vorhanden aus der Datenbank geladen.
+    //
     $('input[name=activeLayerId]' + (layerGlobalId > 0 ? "[value='" + layerGlobalId + "']" : '')).on(
       'change',
       function(evt) {
@@ -1599,11 +1643,11 @@ kvm = {
           $('#syncLayerIcon_' + layer.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
           $('#sperr_div').show();
 
-          if (layer.isEmpty()) {
+          if (layer.runningSyncVersion == 0) {
             navigator.notification.confirm(
-              'Daten vom Server holen und lokal speichern?',
+              'Daten vom Server holen. Danach können eigene Änderungen synchronisiert werden.',
               function(buttonIndex) {
-                if (buttonIndex == 2) { // ja
+                if (buttonIndex == 1) { // ja
                   layer.requestData();
                 }
                 else {
@@ -1611,15 +1655,15 @@ kvm = {
                   $('#sperr_div').hide();
                 }
               },
-              'Daten mit Server synchronisieren',
-              ['nein', 'ja']
+              'Layer mit Server synchronisieren',
+              ['ja', 'nein']
             );
           }
           else {
             navigator.notification.confirm(
-              'Jetzt lokale Änderungen zum Server schicken und Änderungen vom Server holen und lokal einspielen?',
+              'Jetzt lokale Änderungen, fallse vorhanden, zum Server schicken und Änderungen vom Server holen und lokal einspielen?',
               function(buttonIndex) {
-                if (buttonIndex == 2) { // ja
+                if (buttonIndex == 1) { // ja
                   layer.syncData();
                 }
                 else {
@@ -1627,8 +1671,8 @@ kvm = {
                   $('#sperr_div').hide();
                 }
               },
-              '',
-              ['nein', 'ja']
+              'Layer mit Server synchronisieren',
+              ['ja', 'nein']
             );
           }
         }
@@ -1646,21 +1690,20 @@ kvm = {
         }
         else {
           navigator.notification.confirm(
-            'Bilder mit Server Syncronisieren?',
+            'Bilder mit Server Synchronisieren?',
             function(buttonIndex) {
-              if (buttonIndex == 1) { // nein
+              if (buttonIndex == 1) { // ja
+                $('#syncImageIcon_' + layer.getGlobalId()).toggleClass('fa-upload fa-spinner fa-spin');
+                $('#sperr_div').show();
+                layer.syncImages();
+              }
+              if (buttonIndex == 2) { // nein
                 // Do nothing
               }
 
-              if (buttonIndex == 2) { // ja
-                $('#syncImageIcon_' + layer.getGlobalId()).toggleClass('fa-upload fa-spinner fa-spin');
-                $('#sperr_div').show();
-
-                layer.syncImages();
-              }
             },
             '',
-            ['nein', 'ja']
+            ['ja', 'nein']
           );
         }
       }
@@ -1685,17 +1728,16 @@ kvm = {
           navigator.notification.confirm(
             'Alle lokale Daten und nicht hochgeladene Änderungen wirklich Löschen?',
             function(buttonIndex) {
-              if (buttonIndex == 1) { // nein
-                // Do nothing
-              }
-
-              if (buttonIndex == 2) { // ja
+              if (buttonIndex == 1) { // ja
                 $('#clearLayerIcon_' + layer.getGlobalId()).toggleClass('fa-ban fa-spinner fa-spin');
                 layer.clearData();
               }
+              if (buttonIndex == 2) { // nein
+                // Do nothing
+              }
             },
             '',
-            ['nein', 'ja']
+            ['ja', 'nein']
           );
         }
       }
@@ -1720,19 +1762,18 @@ kvm = {
           navigator.notification.confirm(
             'Die Einstellungen des Layers neu laden und die Tabelle neu anlegen.',
             function(buttonIndex) {
-              if (buttonIndex == 1) { // nein
-                // Do nothing
-              }
-
-              if (buttonIndex == 2) { // ja
+              if (buttonIndex == 1) { // ja
                 var layer = kvm.activeLayer;
                 $('#reloadLayerIcon_' + layer.getGlobalId()).toggleClass('fa-window-restore fa-spinner fa-spin');
                 console.log('reload layer id: %s', layer.get('id'));
                 kvm.activeStelle.reloadLayer(layer.get('id'));
               }
+              if (buttonIndex == 2) { // nein
+                // Do nothing
+              }
             },
             '',
-            ['nein', 'ja']
+            ['ja', 'nein']
           );
         }
       }
@@ -1932,11 +1973,12 @@ kvm = {
     alert('Fehler: ' + error.code + ' ' + error.message);
   },
 
-  syncronize: function(context) {
-    kvm.log('function syncronize');
+  synchronize: function(context) {
+    kvm.log('function synchronize');
     var url = context.getSyncUrl();
   },
 
+/*
   downloadData: function(context) {
     kvm.log('download data');
     var fileTransfer = new FileTransfer(),
@@ -1981,7 +2023,7 @@ kvm = {
       true
     );
   },
-
+*/
   paginate: function(evt) {
     var limit = 25,
         target = $(evt),
@@ -2007,10 +2049,10 @@ kvm = {
 
   replacePassword: function(s) {
     if (kvm.activeStelle) {
-      return s.replace(kvm.activeStelle.settings.passwort, '********');
+      return s.replace(kvm.activeStelle.settings.passwort, 'secretPwFromStelleSetting');
     }
     else {
-      return s;
+      return s.replace($('#kvwmapServerPasswortField').val(), 'secretPwFromForm');
     }
   },
 
@@ -2110,7 +2152,7 @@ kvm = {
 
   isValidJsonString: function(str) {
     try {
-      JSON.parse(str);
+      JSON.parse(str.trim());
     } catch (e) {
       return false;
     }

@@ -317,6 +317,7 @@ configurations = [
   }, // LK-VG
   {
     name: 'LK-EE',
+    version: '1.7.3',
     dbname: 'kvmobile',
     localImgPath:    'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/',
     localTilePath:   'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/',
@@ -335,7 +336,7 @@ configurations = [
     },
     mapSettings: {
       newPosSelect: 1,
-      minZoom: 7,
+      minZoom: 9,
       maxZoom: 18,
       startZoom: 8,
       west: 13.04961,
@@ -518,4 +519,75 @@ configurations = [
       }
     ]
   }  // LK-MSE
+  {
+    name: 'GDI-Service',
+    dbname: 'kvmobile',
+    localImgPath:    'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/',
+    localTilePath:   'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/',
+    localBackupPath: 'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/Backups/',
+    projZone: 33,
+    logLevel: 4,
+    debug: true,
+    minTrackDistance: 5,
+    kvwmapServerId: 1,
+    kvwmapServerName: 'kvwmap',
+    markerStyles: {
+      '0': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#dd8181" },
+      '1': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#465dc0" },
+      '2': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#23a325" },
+      '3': { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#26a7f1" }
+    },
+    mapSettings: {
+      newPosSelect: 1,
+      minZoom: 8,
+      maxZoom: 18,
+      startZoom: 8,
+      west: 274300,
+      south: 5936055,
+      east: 360500,
+      north: 6023976,
+      startCenterLat: 53.095876,
+      startCenterLon: 12.20896
+    },
+    kvwmapServerUrl: 'https://gdi-service.de/kvwmap_pet_dev',
+    kvwmapServerLoginName: 'korduan',
+    kvwmapServerPasswort: '',
+    backgroundLayerSettings: [
+      {
+        label: 'Hintergrundkarte offline',
+        online: false,
+        type: 'tile',
+        url: 'file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/orka-tiles-vg/{z}/{x}/{y}.png',
+        params: {
+          attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
+        }
+      }, {
+        label: 'Hintergrundkarte online',
+        online: true,
+        type: 'tile',
+        url: 'https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png',
+        params: {
+          attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
+        }
+      }, {
+        label: 'Luftbild online',
+        online: true,
+        type: 'wms',
+        url: 'https://www.geodaten-mv.de/dienste/adv_dop',
+        params: {
+          layers: 'mv_dop',
+          format: 'image/png',
+          attribution: "Geoportal-MV DOP WMS"
+        }
+      }, {
+        label: 'Luftbildkacheln online',
+        online: true,
+        type: 'tile',
+        url: 'https://www.geodaten-mv.de/dienste/dop_wmts/wmts/mv_dop/ETRS89UTM33/{z}/{x}/{y}.png',
+        params: {
+          attribution: "Geoportal-MV DOP WMST"
+        }
+      }
+    ]
+  }, // GDI-Service
 ]

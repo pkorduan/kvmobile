@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
   <head>
-    <TITLE>kvmobile 1.7.2</TITLE>
+    <TITLE>kvmobile 1.7.4</TITLE>
     <META charset="UTF-8">
     <meta name="format-detection" content="telephone=no">
     <meta name="msapplication-tap-highlight" content="no">
@@ -201,8 +201,8 @@ child-src * 'self' blob: http:
     <div class="h2-div"><h2 class="b-collapsed">Bildaufnahme</h2></div>
     <div id="cameraOptionsDiv">
       Bildqualität: <span id="cameraOptionsQuality">25</span> % <input id="cameraOptionsQualitySlider" type="range" min="10" max="100" value="25" class="camera-options-slider"><i class="fa fa-info" aria-hidden="true" onclick="kvm.msg('Verringert die Größe der aufgenommenen Bilddateien auf die angegebenen % der in der Kamera eingestellten Größe.')" style="margin-left: 5px"></i><br>
-      <input id="cameraOptionsAllowEdit" type="checkbox" checked> Editieren erlauben<br>
-      <input id="cameraOptionsCorrectOrientation" type="checkbox" checked> Bildrichtung anpassen<br>
+      <!--input id="cameraOptionsAllowEdit" type="checkbox"> Editieren erlauben<br>
+      <input id="cameraOptionsCorrectOrientation" type="checkbox" checked> Bildrichtung anpassen<br//-->
       <input id="cameraOptionsSaveToPhotoAlbum" type="checkbox" checked> Auch im Fotoalbum speichern
     </div>
     <hr>
@@ -417,7 +417,7 @@ child-src * 'self' blob: http:
     </div>
     <hr>
 
-    <div class="h2-div"><h2 class="b-collapsed">Konfiguration</h2></div>
+    <div class="h2-div"><h2 id="h2_konfiguration" class="b-collapsed">Konfiguration</h2></div>
     <div id="configFileDiv">
     </div>
     <hr>

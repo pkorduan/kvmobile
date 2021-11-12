@@ -136,18 +136,16 @@ function BilderFormField(formId, settings) {
                 navigator.notification.confirm(
                   'Bild Löschen?',
                   function(buttonIndex) {
-                    if (buttonIndex == 1) { // nein
-                      // Do nothing
-                    }
-
-                    if (buttonIndex == 2) { // ja
+                    if (buttonIndex == 1) { // ja
                       var field = kvm.activeLayer.attributes[fieldId].formField;
-
                       field.dropImage(target);
+                    }
+                    if (buttonIndex == 2) { // nein
+                      // Do nothing
                     }
                   },
                   '',
-                  ['nein', 'ja']
+                  ['ja', 'nein']
                 );
               }
             }
@@ -236,16 +234,16 @@ function BilderFormField(formId, settings) {
     navigator.notification.confirm(
       'Wirklich alle Bilder in diesem Datensatz Löschen?',
       function(buttonIndex) {
-        if (buttonIndex == 1) { // nein
-          // Do nothing
-        }
-        if (buttonIndex == 2) { // ja
+        if (buttonIndex == 1) { // ja
           context.setValue('');
           context.element.trigger('change');
         }
+        if (buttonIndex == 2) { // nein
+          // Do nothing
+        }
       },
       '',
-      ['nein', 'ja']
+      ['ja', 'nein']
     );
   };
 

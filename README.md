@@ -8,6 +8,11 @@ https://github.com/srahn/kvwmap/
 http://kvwmap.de
 
 # Change log
+## 1.7.4
+	* Verbesserung beim Synchronisieren und Versionieren.
+## 1.7.3
+	* Fehler bei der Synchronisierung behoben
+	* Alle Ja Links in Dialogen rechts
 ## 1.7.2
 	* Selectable configurations
 	* BackgroundGeolocation enabled
