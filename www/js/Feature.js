@@ -313,6 +313,7 @@ function Feature(
   };
 
   this.listElement = function() {
+    //console.log('Erzeuge Listenelement für Feature', this.get(this.options.id_attribute));
     var markerStyles = JSON.parse(kvm.store.getItem('markerStyles')),
         numStyles = Object.keys(markerStyles).length,
         markerStyleIndex = ((this.get('status') >= 0 && this.get('status') < numStyles) ? this.get('status') : 0);

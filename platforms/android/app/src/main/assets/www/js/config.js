@@ -518,7 +518,7 @@ configurations = [
         }
       }
     ]
-  }  // LK-MSE
+  },  // LK-MSE
   {
     name: 'GDI-Service',
     dbname: 'kvmobile',
@@ -589,5 +589,5 @@ configurations = [
         }
       }
     ]
-  }, // GDI-Service
+  } // GDI-Service
 ]

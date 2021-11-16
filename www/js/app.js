@@ -200,7 +200,7 @@ kvm = {
     else {
       config = foundConfiguration[0];
     }
-
+/*
     // Write log to cordova.file.externalDataDirectory
     // which is at file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/
     window.resolveLocalFileSystemURL(cordova.file.externalDataDirectory, function(dir) {
@@ -211,6 +211,7 @@ kvm = {
         kvm.writeLog("App started");
       });
     });
+*/
 /*
     BackgroundGeolocation.configure({
       startForeground: true,

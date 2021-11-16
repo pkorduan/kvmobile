@@ -2672,6 +2672,10 @@ function Layer(stelle, settings = {}) {
       function(key, value) {
         if (value.settings.type != 'geometry') {
           if (value.settings.name == 'status') {
+            if (value.settings.options == '') {
+              kvm.msg('Layer Konfigurationsfehler: Der Layer ' + kvm.activeLayer.settings.title + ' kann nicht verwendet werden. Das Attribut Status hat keine Optionen. Wenden Sie sich an den Administrator der WebGIS Anwendung zum Einstellen der Optionen.', 'Fehler');
+              return false;
+            }
             $('#statusFilterSelect option').remove();
             $('#statusFilterSelect').append($('<option value="" selected>-- Bitte wählen --</option>'));
             value.settings.options.map(
