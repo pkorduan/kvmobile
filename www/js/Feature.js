@@ -61,6 +61,16 @@ function Feature(
     this.editable = editable;
   };
 
+  this.getWaypoint = function(end = 'last') {
+    var latlngs = this.editableLayer.getLatLngs();
+    if (end == 'last') {
+      return latlngs[latlngs.length - 1];
+    }
+    else {
+      return latlngs[0];
+    }
+  };
+
   this.showPopupButtons = function() {
     return kvm.activeLayer.showPopupButtons;
   };
@@ -114,7 +124,8 @@ function Feature(
     console.log('setLatLngs in feature with geom: %o', geom);
     if (this.editableLayer) {
       var newLatLngs = this.wkxToLatLngs(geom),
-          oldLatLngs = this.getLatLngs();
+          oldLatLngs = this.getLatLng
+      ();
 
       console.log('vergleiche alte mit neuer coord');
       if (oldLatLngs != newLatLngs) {
@@ -137,7 +148,7 @@ function Feature(
       return this.editableLayer.getLatLng();
     }
     else {
-      return this.editableLayer.getLatLng();
+      return this.editableLayer.getLatLngs();
     }
   };
 
@@ -302,12 +313,29 @@ function Feature(
   };
 
   this.listElement = function() {
+    //console.log('Erzeuge Listenelement für Feature', this.get(this.options.id_attribute));
     var markerStyles = JSON.parse(kvm.store.getItem('markerStyles')),
         numStyles = Object.keys(markerStyles).length,
         markerStyleIndex = ((this.get('status') >= 0 && this.get('status') < numStyles) ? this.get('status') : 0);
+
     return '\
-      <div class="feature-item" id="' + this.get(this.options.id_attribute) + '" style="background-color: ' + markerStyles[markerStyleIndex].fillColor + '">' + kvm.coalesce(this.get(kvm.activeLayer.get('name_attribute')), 'Datensatz ' + this.get(this.options.id_attribute)) + '</div>\
+      <div class="feature-item" id="' + this.get(this.options.id_attribute) + '" style="background-color: ' + markerStyles[markerStyleIndex].fillColor + '">' + this.getLabelValue() + '</div>\
     ';
+  };
+
+  this.getLabelValue = function() {
+    var layer = kvm.activeLayer,
+        label_attribute = layer.get('name_attribute'),
+        formField = layer.attributes[layer.attribute_index[label_attribute]].formField,
+        label_value = '';
+
+    if (this.get(label_attribute)) {
+      label_value = (formField.getFormattedValue ? formField.getFormattedValue(this.get(label_attribute)) : this.get(label_attribute));
+    }
+    else {
+      label_value = 'Datensatz ' + this.get(this.options.id_attribute);
+    }
+    return label_value;
   };
 
   /*
@@ -315,14 +343,12 @@ function Feature(
   */
   this.addListElement = function() {
     kvm.log('Feature.addListElement', 4);
-    console.log('this: ', this);
-    debug_t = this;
     console.log('Add listelement: %o', this.listElement());
 
     $('#featurelistBody').prepend(this.listElement());
     kvm.log(this.id + ' zur Liste hinzugefügt.', 4);
 
-    $("#" + this.id).on(
+    $('#' + this.id).on(
       'click',
       kvm.featureItemClickEventFunction
     );
@@ -335,7 +361,11 @@ function Feature(
 
   this.updateListElement = function() {
     kvm.log('Feature.updateListElement', 4);
-    $("#" + this.id).html(kvm.coalesce(this.get(kvm.activeLayer.get('name_attribute')), 'Datensatz ' + this.id));
+    var markerStyles = JSON.parse(kvm.store.getItem('markerStyles')),
+        numStyles = Object.keys(markerStyles).length,
+        markerStyleIndex = ((this.get('status') >= 0 && this.get('status') < numStyles) ? this.get('status') : 0);
+    $('#' + this.get(this.options.id_attribute)).html(this.getLabelValue());
+    $('#' + this.get(this.options.id_attribute)).css('background-color', markerStyles[markerStyleIndex].fillColor);
   };
 
   this.getNormalStyle = function() {
