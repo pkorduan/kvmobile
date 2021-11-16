@@ -1,11 +1,12 @@
 <!doctype html>
 <html>
   <head>
-    <TITLE>kvmobile 1.5.9</TITLE>
+    <TITLE>kvmobile 1.6.0</TITLE>
     <META charset="UTF-8">
     <meta name="format-detection" content="telephone=no">
     <meta name="msapplication-tap-highlight" content="no">
-    <meta name="viewport" content="user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, width=device-width, height=device-height, target-densityDpi=device-dpi">
+    <meta name="viewport" content="user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, width=device-width, height=device-height">
+    <!-- target-densityDpi=device-dpi us bit supported //-->
     <!-- This is a wide open CSP declaration. To lock this down for production, see below. -->
     <!--meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline'; style-src 'self' 'unsafe-inline'; media-src *"-->
     <!--meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline'; img-src * filesystem://com.android.providers.media.documents/document/ content://com.android.providers.media.documents/document/ data://com.android.providers.media.documents/document/ blob://com.android.providers.media.documents/document/ android-webview-video-poster:content://com.android.providers.media.documents/document/ gap: https://ssl.gstatic.com content://com.android.providers.media.documents/document/ unsafe-eval'; style-src * 'unsafe-inline'; media-src *"-->
@@ -33,7 +34,11 @@
     <script src="3rdparty/leaflet-locatecontrol-gh-pages/dist/L.Control.Locate.min.js"></script>
     <script src="3rdparty/leaflet-betterscale-master/L.Control.BetterScale.js"></script>
     <script src="3rdparty/leaflet-geoman/leaflet-geoman.min.js"></script>
+    <script src="3rdparty/proj4js-2.3.12/proj4.js"></script>
+    <script src="3rdparty/leaflet-proj4/proj4leaflet.js"></script>
+    <script src="3rdparty/leaflet-tilelayer-cordova/leaflet-tilelayer-cordova.js"></script>
     <script src="3rdparty/wkx-0.4.2/dist/wkx.min.js"></script>
+    <script src="3rdparty/md5/js/md5.min.js"></script>
     <script src="js/config.js"></script>
     <script src="js/Layer.js"></script>
     <script src="js/CheckboxFormField.js"></script>
@@ -61,6 +66,20 @@
 
     <div id="sperr_div" class="modal" ondblclick="$(this).hide()">
       <i class="fa fa-spinner fa-pulse fa-2x"></i><p id="sperr_div_content" style="margin-top: 20px">Lade Daten ...</p>
+    </div>
+
+    <div id="login" class="login">
+      <div class="login-header">kvmobile</div>
+      <img src="img/logo_gdi_kl.png"><br>
+      <div id="short_password_div">
+        <span id="short_password_label">Die ersten 4 Zeichen des Passwortes:</span>
+        <input id="short_password_field" type="password" name="short_password">
+      </div>
+      <div id="password_div">
+        <span id="password_label" style="font-size: 10px">Bitte vollständiges Passwort eingeben:
+        <div><input id="password_field" type="password" name="password"><input id="password_ok_button" type="button" name="submit_password" value="ok"></div>
+        <input id="password_view_checkbox" type="checkbox" name="show_password" value="1"> Passwort anzeigen</span>
+      </div>
     </div>
 
     <!-- Menue -->
@@ -204,6 +223,9 @@
         <option value="17">17</option>
         <option value="18">18</option>
         <option value="19">19</option>
+        <option value="20">20</option>
+        <option value="21">21</option>
+        <option value="22">22</option>
       </select>
       <div style="clear: both"></div>
       <div class="settings-label">größte Zoomstufe:</div>
@@ -285,18 +307,9 @@
     <hr>
 
     <div class="h2-div"><h2 class="b-collapsed">Hinergrundlayer</h2></div>
-    <div id="backgroundLayerOnlineDiv">
-      URL:<br>
-      <input id="backgroundLayerOnline_url" type="text" name="url"/><br>
-      <div class="settings-label">Typ</div>
-      <select id="backgroundLayerOnline_type" name="type" class="mapSetting">
-        <option value="tile">Tile-Layer</option>
-        <option value="wms">WMS-Layer</option>
-      </select>
-      <div style="clear: both"></div>
-      <div class="settings-label">Layername</div>
-      <input id="backgroundLayerOnline_layers" type="text" name="layers" class="mapSetting"/>
-      <div style="clear: both"></div>
+    <div id="backgroundLayersDiv">
+      <textarea id="backgroundLayersTextarea" style="height: 200px">
+      </textarea>
     </div>
     <hr>
 

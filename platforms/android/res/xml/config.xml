@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<widget id="de.gdiservice.kvmobile" version="1.5.9" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+<widget id="de.gdiservice.kvmobile" version="1.6.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
     <feature name="Camera">
         <param name="android-package" value="org.apache.cordova.camera.CameraLauncher" />
     </feature>
@@ -37,6 +37,9 @@
     <feature name="FileOpener2">
         <param name="android-package" value="io.github.pwlin.cordova.plugins.fileopener2.FileOpener2" />
     </feature>
+    <feature name="FingerprintAuth">
+        <param name="android-package" value="com.cordova.plugin.android.fingerprintauth.FingerprintAuth" />
+    </feature>
     <name>kvwmobile</name>
     <description>
       Anwendung zur Erfassung von Geodaten und zum synchronisieren mit dem Web-GIS kvwmap.
@@ -48,6 +51,7 @@
     <access origin="https://gdi-service.de/kvwmap_pet_dev/*" />
     <access origin="https://geoportal.lkros.de/kvwmap_dev/*" />
     <access origin="https://geoportal.lkros.de/kvwmap_test/*" />
+    <access origin="https://geoportal.lkros.de/kvwmap_lro/*" />
     <access origin="https://geoportal-vg.de/kvwmap/*" />
     <access origin="https://geoportal-vg.de/kvwmap_test/*" />
     <access origin="https://geoport.lk-vr.de/kvwmap/*" />

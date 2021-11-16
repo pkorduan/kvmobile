@@ -148,7 +148,8 @@ function Attribute(layer, settings = {}) {
 
   this.toSqliteValue = function(pgType, pgValue) {
     kvm.alog('Attribute.toSqliteValue pgType: ' + pgType + ' pgValue: %o', pgValue, 5);
-    var slType = this.getSqliteType();
+    var slType = this.getSqliteType(),
+        maxByte = 10485760; // 10 MB
 
     switch (true) {
       case (pgValue == null) :
@@ -161,7 +162,15 @@ function Attribute(layer, settings = {}) {
         slValue = "'f'";
         break;
       case (pgType == 'geometry') :
-        slValue = "'" + kvm.wkx.Geometry.parse('SRID=4326;POINT(' + pgValue.coordinates.toString().replace(',', ' ') + ')').toEwkb().inspect().replace(/<|Buffer| |>/g, '') + "'";
+        if (this.layer.get('geometry_type') == 'Point') {
+          slValue = "'" + kvm.wkx.Geometry.parse('SRID=4326;POINT(' + pgValue.coordinates.toString().replace(',', ' ') + ')').toEwkb().toString('hex', 0, maxByte).match(/.{2}/g).join('') + "'";
+        }
+        if (this.layer.get('geometry_type') == 'Line') {
+          slValue = "'" + kvm.wkx.Geometry.parse('SRID=4326;LINESTRING(' + pgValue.coordinates[0].map(function(p) { return p.join(' '); }).join(', ') + ')').toEwkb().toString('hex', 0, maxByte).match(/.{2}/g).join('') + "'";
+        }
+        if (this.layer.get('geometry_type') == 'Polygon') {
+          slValue = "'" + kvm.wkx.Geometry.parse('SRID=4326;POLYGON((' + pgValue.coordinates[0].map(function(p) { return p.join(' '); }).join(', ') + '))').toEwkb().toString('hex', 0, maxByte).match(/.{2}/g).join('') + "'";
+        }
         break;
       case (this.isArrayType()) :
         //console.log('value of arraytype: %o', pgValue);
@@ -199,14 +208,14 @@ function Attribute(layer, settings = {}) {
           </g>\
         </svg>\
         <i id="goToGpsPositionButton" class="fa fa-pencil fa-2x" aria-hidden="true" style="float: right; margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>\
-        <input type="text" id="geom_wkt" value=""/>');
+        <!--input type="text" id="geom_wkt" value=""//-->\
+        <textarea cols="40" rows="5" id="geom_wkt"></textarea>');
     }
 
     if (this.get('form_element_type') == 'Dokument') {
       value.append('\
-          <i id="takePictureButton_' + this.get('index') + '" class="fa fa-camera fa-2x" style="color: rgb(38, 50, 134)"/>\
-          <!--i id="selectPictureButton_' + this.get('index') + '" class="fa fa-picture-o fa-2x" style="color: rgb(38, 50, 134)"/-->\
-          <i id="dropAllPictureButton_' + this.get('index') + '" class="fa fa-trash fa-2x" style="color: rgb(238, 50, 50); float: right; display: none;"/>\
+          <i id="takePictureButton_' + this.get('index') + '" class="fa fa-camera fa-2x" style="color: rgb(38, 50, 134)"></i>\
+          <i id="dropAllPictureButton_' + this.get('index') + '" class="fa fa-trash fa-2x" style="color: rgb(238, 50, 50); float: right; display: none;"/></i>\
           <div id="' + this.formField.images_div_id + '"></div>\
       ');
     };

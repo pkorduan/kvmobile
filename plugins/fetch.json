@@ -94,5 +94,21 @@
     },
     "is_top_level": true,
     "variables": {}
+  },
+  "cordova-sqlite-storage": {
+    "source": {
+      "type": "registry",
+      "id": "cordova-sqlite-storage"
+    },
+    "is_top_level": true,
+    "variables": {}
+  },
+  "cordova-plugin-android-fingerprint-auth": {
+    "source": {
+      "type": "registry",
+      "id": "cordova-plugin-android-fingerprint-auth@^1.5.0"
+    },
+    "is_top_level": true,
+    "variables": {}
   }
 }

@@ -1,5 +1,5 @@
 kvm = {
-  version: '1.5.9',
+  version: '1.6.0',
   Buffer: require('buffer').Buffer,
   wkx: require('wkx'),
   controls: {},
@@ -10,6 +10,7 @@ kvm = {
   mapSettings: {},
 
   loadHeadFile: function(filename, filetype) {
+    console.log('Lade filename %s, filetype: %s', filename, filetype);
     if (filetype=="js"){ //if filename is a external JavaScript file
       var fileref=document.createElement('script')
       fileref.setAttribute("type","text/javascript")
@@ -31,19 +32,83 @@ kvm = {
   },
 
   onDeviceReady: function() {
+    this.db = window.sqlitePlugin.openDatabase(
+      {
+        name: config.dbname + '.db',
+        location: 'default',
+        androidDatabaseImplementation: 2
+      },
+      function (db) {
+        kvm.log('Lokale Datenbank geöffnet.', 3);
+        $('#dbnameText').html(config.dbname + '.db');
+
+        // Check if device supports fingerprint
+        /**
+        * @return {
+        *      isAvailable:boolean,
+        *      isHardwareDetected:boolean,
+        *      hasEnrolledFingerprints:boolean
+        *   }
+        */
+        FingerprintAuth.isAvailable(
+          function (result) {
+            console.log("FingerprintAuth available: " + JSON.stringify(result));
+            // Check the docs to know more about the encryptConfig object
+            var encryptConfig = {
+                clientId: "myAppName",
+                username: "currentUser",
+                password: "currentUserPassword",
+                maxAttempts: 5,
+                locale: "de_DE",
+                dialogTitle: "Authentifizierung mit Fingerabdruck",
+                dialogMessage: "Lege Finger auf den Sensor",
+                dialogHint: "Diese Methode ist nur Verfügbar mit Fingerabdrucksensor"
+            }; // See config object for required parameters
+
+            // Set config and success callback
+            //https://www.npmjs.com/package/cordova-plugin-android-fingerprint-auth
+            FingerprintAuth.encrypt(
+              encryptConfig,
+              function(_fingerResult){
+                console.log("successCallback(): " + JSON.stringify(_fingerResult));
+                if (_fingerResult.withFingerprint) {
+                  console.log("Successfully encrypted credentials.");
+                  console.log("Encrypted credentials: " + result.token);  
+                  kvm.startApplication();
+                }
+                else if (_fingerResult.withBackup) {
+                  console.log("Authenticated with backup password");
+                  kvm.startApplication();
+                }
+                // Error callback
+              },
+              function(err){
+                if (err === "Cancelled") {
+                  console.log("FingerprintAuth Dialog Cancelled!");
+                }
+                else {
+                  console.log("FingerprintAuth Error: " + err);
+                }
+              }
+            );
+          },
+          function (message) {
+            console.log("isAvailableError(): " + message);
+          }
+        );
+      },
+      function (error) {
+        console.log('Open database ERROR: ' + JSON.stringify(error));
+      }
+    );
+  },
+
+  startApplication: function() {
     var activeView = 'featurelist'
     kvm.log('onDeviceReady', 4);
 
     this.store = window.localStorage;
     kvm.log('Lokaler Speicher verfügbar', 3);
-
-    this.db = window.sqlitePlugin.openDatabase({
-      name: config.dbname + '.db',
-      location: 'default',
-      androidDatabaseImplementation: 2
-    });
-    kvm.log('Lokale Datenbank geöffnet.', 3);
-    $('#dbnameText').html(config.dbname + '.db');
 
     kvm.log('Lade Gerätedaten.', 3);
     this.loadDeviceData();
@@ -137,38 +202,29 @@ kvm = {
     kvm.log('initialisiere Mapsettings', 3);
     this.initMapSettings();
 
-    kvm.log('initialisiere backgroundLayersettings', 3);
-    this.initBackgroundLayerOnline();
+    kvm.log('initialisiere backgroundLayers', 3);
+    this.initBackgroundLayers();
 
-    var orka_offline = L.tileLayer(config.localTilePath + 'orka-tiles-vg/{z}/{x}/{y}.png', {
-      attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
+    var crs25833 = new L.Proj.CRS('EPSG:25833', '+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs', {
+      origin: [-464849.38, 6310160.14],
+      resolutions: [16384, 8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1]
     });
 
-    if (this.backgroundLayerOnline.type == 'tile') {
-      var orka_online = L.tileLayer(this.backgroundLayerOnline.url, this.backgroundLayerOnline.params);
-    };
+    var map = L.map('map', {
+//        crs: crs25833,
+        editable: true,
+        center: L.latLng(this.mapSettings.startCenterLat, this.mapSettings.startCenterLon),
+        zoom: this.mapSettings.startZoom,
+        minZoom: this.mapSettings.minZoom,
+        maxZoom: this.mapSettings.maxZoom,
+        layers: this.backgroundLayers
+      }
+    ),
+    baseMaps = {};
 
-    if (this.backgroundLayerOnline.type == 'wms') {
-      var orka_online = L.tileLayer.wms(this.backgroundLayerOnline.url, this.backgroundLayerOnline.params);
-    };
-
-    var map = L.map(
-          'map', {
-            editable: true,
-            center: L.latLng(this.mapSettings.startCenterLat, this.mapSettings.startCenterLon),
-            zoom: this.mapSettings.startZoom,
-            minZoom: this.mapSettings.minZoom,
-            maxZoom: this.mapSettings.maxZoom,
-            layers: [
-              orka_offline,
-              orka_online
-            ]
-          }
-        ),
-        baseMaps = {
-          'Hintergrundkarte offline': orka_offline,
-          'Hintergrundkarte online': orka_online
-        };
+    for (var i = 0; i < this.backgroundLayers.length; i++) {
+      baseMaps[this.backgroundLayerSettings[i].label] = this.backgroundLayers[i];
+    }
 
 //    L.PM.initialize({ optIn: true });
     kvm.myRenderer = L.canvas({ padding: 0.5 });
@@ -244,18 +300,30 @@ kvm = {
     kvm.store.setItem('mapSettings', JSON.stringify(mapSettings));
   },
 
-  initBackgroundLayerOnline: function() {
-    if (!(this.backgroundLayerOnline = JSON.parse(kvm.store.getItem('backgroundLayerOnline')))) {
-      this.saveBackgroundLayerOnline(config.backgroundLayerOnline);
+  initBackgroundLayers: function() {
+    if (!(this.backgroundLayerSettings = JSON.parse(kvm.store.getItem('backgroundLayerSettings')))) {
+      this.saveBackgroundLayerSettings(config.backgroundLayerSettings);
     }
-    $('#backgroundLayerOnline_url').val(this.backgroundLayerOnline.url);
-    $('#backgroundLayerOnline_type').val(this.backgroundLayerOnline.type);
-    $('#backgroundLayerOnline_layers').val(this.backgroundLayerOnline.params.layers);
+    $('#backgroundLayersTextarea').val(kvm.store.getItem('backgroundLayerSettings'));
+    this.backgroundLayers = [];
+    for ( var i = 0; i < this.backgroundLayerSettings.length; ++i) {
+      this.backgroundLayers.push(this.createBackgroundLayer(this.backgroundLayerSettings[i]));
+    }
   },
 
-  saveBackgroundLayerOnline: function(backgroundLayerOnline) {
-    this.backgroundLayerOnline = backgroundLayerOnline;
-    kvm.store.setItem('backgroundLayerOnline', JSON.stringify(backgroundLayerOnline));
+  saveBackgroundLayerSettings: function(backgroundLayerSettings) {
+    this.backgroundLayerSettings = backgroundLayerSettings;
+    kvm.store.setItem('backgroundLayerSettings', JSON.stringify(backgroundLayerSettings));
+  },
+
+  createBackgroundLayer: function(backgroundLayerSetting) {
+    if (backgroundLayerSetting.type == 'tile') {
+      return L.tileLayer(backgroundLayerSetting.url, backgroundLayerSetting.params);
+    }
+    else {
+      //backgroundLayerSetting.type == 'wms'
+      return L.tileLayer.wms(backgroundLayerSetting.url, backgroundLayerSetting.params);
+    }
   },
 
   addColorSelector: function(style, i) {
@@ -420,7 +488,6 @@ kvm = {
     $('.mapSetting').on(
       'change',
       function() {
-        kvm.msg('Karteneinstellung gespeichert');
         kvm.mapSettings[this.name] = this.value;
         kvm.saveMapSettings(kvm.mapSettings);
       }
@@ -430,6 +497,7 @@ kvm = {
       'change',
       function() {
         kvm.map.setMaxZoom(this.value);
+        kvm.msg('maximale Zoomstufe auf ' + this.value + ' begrenzt!', 'Karteneinstellung');
       }
     );
 
@@ -437,6 +505,7 @@ kvm = {
       'change',
       function() {
         kvm.map.setMinZoom(this.value);
+        kvm.msg('minimale Zoomstufe auf ' + this.value + ' begrenzt!', 'Karteneinstellung');
       }
     );
 
@@ -455,6 +524,7 @@ kvm = {
             )
           )
         );
+        kvm.msg('max Boundingbox geändert!', 'Karteneinstellung');
       }
     );
 
@@ -717,10 +787,20 @@ kvm = {
             navigator.notification.confirm(
               'Datensatz Speichern?',
               function(buttonIndex) {
-                var action = (kvm.activeLayer.activeFeature.options.new ? 'insert' : 'update');
+                var action = (kvm.activeLayer.activeFeature.options.new ? 'insert' : 'update'),
+                    activeFeature = kvm.activeLayer.activeFeature,
+                    activeLayer = kvm.map._layers[activeFeature.layerId],
+                    editableLayer = kvm.activeLayer.activeFeature.editableLayer;
+
                 kvm.log('Action: ' + action, 4);
                 if (buttonIndex == 1) { // ja
                   kvm.log('Speichern', 3);
+                  if (
+                    activeFeature.options.geometry_type == 'Line' &&
+                    activeLayer.getLatLngs() != editableLayer.getLatLngs()
+                  ) {
+                    editableLayer.fireEvent('isChanged', editableLayer.getLatLngs());
+                  }
                   if (action == 'insert') {
                     kvm.activeLayer.runInsertStrategy();
                   }
@@ -801,8 +881,14 @@ kvm = {
     */
     $('#editFeatureButton').on(
       'click',
-      function() {
+      { "context": this },
+      function(evt) {
+        var this_ = evt.data.context,
+            featureId = this_.activeLayer.activeFeature.id,
+            feature = this_.activeLayer.features[featureId];
+
         kvm.activeLayer.editFeature();
+        //kvm.activeLayer.editGeometry(featureId); # von dev-3 ToDo vergl. editFeature und editGeometry
       }
     );
 
@@ -1078,6 +1164,47 @@ kvm = {
       }
     );
 
+    $('#short_password_field').on(
+      'keyup',
+      function(e) {
+        if (e.target.value.length == 4) {
+          console.log('login with short password');
+        }
+      }
+    );
+
+    $('#password_field').on(
+      'keyup',
+      function(e) {
+        if (e.target.value.length > 0) {
+          $('#password_ok_button').show();
+        }
+        else {
+          $('#password_ok_button').hide();
+        }
+      }
+    );
+
+    $('#password_view_checkbox').on(
+      'change',
+      function(e) {
+        console.log('checkbox changed');
+        debug_e = e;
+        if (e.target.checked) {
+          $('#password_field').attr('type', 'text');
+        }
+        else {
+          $('#password_field').attr('type', 'password');
+        }
+      }
+    );
+
+    $('#password_ok_button').on(
+      'click',
+      function(e) {
+        console.log('login with password');
+      }
+    );
   },
 
   setConnectionStatus: function() {

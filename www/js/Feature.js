@@ -35,8 +35,12 @@ function Feature(
   this.data = (typeof data == 'string' ? $.parseJSON(data) : data);
   this.options = options; // Optionen, die beim Erzeugen des Features mit übergeben wurden. Siehe Default-Argument in init-Klasse.
   this.id = this.data[options.id_attribute];
-  this.markerId = ''; // Id des Layers (z.B. circleMarkers) in dem das Feature gezeichnet ist
-  this.editableLayer = L.marker(kvm.map.getCenter()); // Leaflet Layer-Objekt in dem die editierbare Geometrie ist //ToDo starte an vorhandener Position
+  this.layerId = ''; // Id des Layers (z.B. circleMarkers) in dem das Feature gezeichnet ist
+  /*
+  console.log('Erzeuge eine editierbare Geometrie vom Feature');
+  this.editableLayer = kvm.controller.mapper.createEditable(this); // In vorheriger Version wurde hier L.marker(kvm.map.getCenter()) verwendet. ToDo: muss das hier überhaupt gesetzt werden, wenn es denn dann doch beim setEditable erzeugt wird?
+  */
+  //console.log('Setze Feature auf im Moment nicht editierbar.');
   this.editable = false; // Feature ist gerade im Modus editierbar oder nicht
 
   this.get = function(key) {
@@ -47,6 +51,8 @@ function Feature(
     if (editable) {
       console.log('Setze feature: %s editierbar.', this.id);
       this.editableLayer = kvm.controller.mapper.createEditable(this);
+      this.editableLayer.enableEdit();
+      kvm.controller.mapper.bindEventHandler(this);
     }
     else {
       console.log('Entferne editierbare Geometrie von feature: %s.', this.id);
@@ -102,26 +108,27 @@ function Feature(
 
   /*
   * Setzt die LatLngs des editableLayers auf die übergebene Geometrie
-  * wenn sich der Wert zu dem vorherigen geändert hat und
-  * lößt einen Trigger aus, der angibt, dass sich die Geom des Features geändert hat.
+  * falls das Feature schon einen editableLayer zugewiesen bekommen hat.
   */
   this.setLatLngs = function(geom) {
     console.log('setLatLngs in feature with geom: %o', geom);
-    var newLatLngs = this.wkxToLatLngs(geom),
-        oldLatLngs = this.getLatLngs();
+    if (this.editableLayer) {
+      var newLatLngs = this.wkxToLatLngs(geom),
+          oldLatLngs = this.getLatLngs();
 
-    console.log('vergleiche alte mit neuer coord');
-    if (oldLatLngs != newLatLngs) {
-      console.log('Ändere alte latlngs: %o auf neue: %o', oldLatLngs, newLatLngs);
-      if (this.options.geometry_type == 'Point') {
-        this.editableLayer.setLatLng(newLatLngs);
+      console.log('vergleiche alte mit neuer coord');
+      if (oldLatLngs != newLatLngs) {
+        console.log('Ändere alte latlngs: %o auf neue: %o', oldLatLngs, newLatLngs);
+        if (this.options.geometry_type == 'Point') {
+          this.editableLayer.setLatLng(newLatLngs);
+        }
+        else {
+          this.editableLayer.setLatLngs(newLatLngs);
+        }
+        $(document).trigger('geomChanged', [{ geom: geom, exclude: 'latlngs'}]);
       }
-      else {
-        this.editableLayer.setLatLngs(newLatLngs);
-      }
-      $(document).trigger('geomChanged', [{ geom: geom, exclude: 'latlngs'}]);
+      console.log('Neue latLngs für die Editable Geometry in der Karte: %o', newLatLngs);
     }
-    console.log('Neue latLngs für die Editable Geometry in der Karte: %o', newLatLngs);
   };
 
   this.getLatLngs = function() {
@@ -135,13 +142,29 @@ function Feature(
   };
 
   /*
-  * Gibt von einem WKX Geometry Objekt ein Array mit latlng Werten aus.
+  * Gibt von einem WKX Geometry Objekt ein Array mit latlng Werten aus wie es für Leaflet Objekte gebraucht wird.
   */
   this.wkxToLatLngs = function(geom = this.geom) {
-    // ToDo hier ggf. den Geometrietyp auch aus this.geometry_type auslesen und nicht aus der übergebenen geom
-    // Problem dann, dass man die Funktion nur benutzen kann für den Geometrietype des activeLayer
-    var coordsLevelDeep = kvm.controller.mapper.coordsLevelsDeep[geom.toWkt().split('(')[0].toUpperCase()];
-    return (coordsLevelDeep == 0 ? L.GeoJSON.coordsToLatLng(geom.toGeoJSON().coordinates) : L.GeoJSON.coordsToLatLngs(geom.toGeoJSON().coordinates, coordsLevelDeep));
+    if (this.options.geometry_type == 'Point') {
+      // ToDo hier ggf. den Geometrietyp auch aus this.geometry_type auslesen und nicht aus der übergebenen geom
+      // Problem dann, dass man die Funktion nur benutzen kann für den Geometrietype des activeLayer
+      var coordsLevelDeep = kvm.controller.mapper.coordsLevelsDeep[geom.toWkt().split('(')[0].toUpperCase()];
+      return (coordsLevelDeep == 0 ? L.GeoJSON.coordsToLatLng(geom.toGeoJSON().coordinates) : L.GeoJSON.coordsToLatLngs(geom.toGeoJSON().coordinates, coordsLevelDeep));
+    }
+    else if (this.options.geometry_type == 'Line') {
+      return geom.points.map(function(p) { return [p.y, p.x]; });
+    }
+    else if (this.options.geometry_type == 'Polygon') {
+      /* returns a latlngs array in the form
+      [
+        [[37, -109.05],[41, -109.03],[41, -102.05],[37, -102.04]], // outer ring
+        [[37.29, -108.58],[40.71, -108.58],[40.71, -102.50],[37.29, -102.50]] // hole 1
+        [[37.01, -108.58],[37.02, -108.58],[37.02, -102.50],[37.01, -102.50]] // hole 1
+      ]
+      */
+      return [geom.exteriorRing.map(function(point) { return [point.y, point.x]; })].concat(geom.interiorRings.map(function(interiorRing) { return interiorRing.map(function(point) { return [ point.x, point.y]; }); }));
+//      return [geom.exteriorRing.map(function(point) { return [point.y, point.x]; }).slice(0, -1)].concat(geom.interiorRings.map(function(interiorRing) { return interiorRing.map(function(point) { return [ point.x, point.y]; }).slice(0, -1); }));
+    }
   };
 
   /*
@@ -165,17 +188,21 @@ function Feature(
     var result;
 
     switch (this.options.geometry_type) {
-      case 'Point' : result = kvm.wkx.Geometry.parse('SRID=4326;POINT(' + alatlngs[0][1] + ' ' + alatlngs[0][0] + ')');
+      case 'Point' : {
+        result = kvm.wkx.Geometry.parse('SRID=4326;POINT(' + alatlngs[0].lng + ' ' + alatlngs[0].lat + ')');
+      }
       break;
-      case 'MultiPoint' : result = kvm.wkx.Geometry.parse('SRID=4326;MULTIPOINT(' + alatlngs.map(function(point) { return point[1] + ' ' + point[0]; }).join(', ') + ')');
+      case 'MultiPoint' : result = kvm.wkx.Geometry.parse('SRID=4326;MULTIPOINT(' + alatlngs.map(function(point) { return point.lng + ' ' + point.lat; }).join(', ') + ')');
       break;
-      case 'Linestring' : result = kvm.wkx.Geometry.parse('SRID=4326;LINESTRING(' + alatlngs.map(function(point) { return point[1] + ' ' + point[0]; }).join(', ') + ')');
-      break; 
+      case 'Line' : result = kvm.wkx.Geometry.parse('SRID=4326;LINESTRING(' + alatlngs.map(function(point) { return point.lng + ' ' + point.lat; }).join(', ') + ')');
+      break;
       case 'MultiLinestring' : result = kvm.wkx.Geometry.parse('SRID=4326;MULTILINESTRING(' + alatlngs.map(function(linestring) { return '(' + linestring.map(function(point) { return point[1] + ' ' + point[0]; }).join(', ') + ')'; }).join(', ') + ')');
       break;
-      case 'Polygon' : result = kvm.wkx.Geometry.parse('SRID=4326;POLYGON(' + alatlngs.map(function(polyline) { return '(' + polyline.map(function(point) { return point[1] + ' ' + point[0]; }).join(', ') + ')'; }).join(', ') + ')');
-        break;
-        case 'MultiPolygon' : result = kvm.wkx.Geometry.parse('SRID=4326;MULTIPOLYGON(' + alatlngs.map(function(polygon) { return '(' + polygon.map(function(polyline) { return '(' + polyline.map(function(point) { return point[1] + ' ' + point[0]; }).join(', ') + ')'; }).join(', ') + ')'; }).join(',') + ')');
+      case 'Polygon' : {
+        result = kvm.wkx.Geometry.parse('SRID=4326;POLYGON(' + alatlngs.map(function(polyline) { return '(' + polyline.map(function(point) { return point.lng + ' ' + point.lat; }).join(', ') + ')'; }).join(', ') + ')');
+      }
+      break;
+      case 'MultiPolygon' : result = kvm.wkx.Geometry.parse('SRID=4326;MULTIPOLYGON(' + alatlngs.map(function(polygon) { return '(' + polygon.map(function(polyline) { return '(' + polyline.map(function(point) { return point[1] + ' ' + point[0]; }).join(', ') + ')'; }).join(', ') + ')'; }).join(',') + ')');
       break;
       default : result = kvm.wkx.Geometry.parse('SRID=4326;POINT(' + alatlngs.join(' ') + ')');
     }
@@ -183,13 +210,13 @@ function Feature(
   };
 
   this.wkxToEwkb = function(wkx) {
+    //kvm.wkx.Geometry.parse('SRID=4326;POINT(' + alatlng.join(' ') + ')').toEwkb().inspect().replace(/<|Buffer| |>/g, '')
     return wkx.toEwkb().toString('hex');
   };
 
   this.reverseAxis = function(point) {
     return point[1] + ' ' + point[0]
   };
-  //.toEwkb().inspect().replace(/<|Buffer| |>/g, '')
 
   this.update = function() {
     sql = "\
@@ -226,26 +253,40 @@ function Feature(
   };
 
   this.unselect = function() {
-    kvm.log('Deselektiere Feature ' + this.markerId, 4);
-    if (this.markerId) {
-      kvm.map._layers[this.markerId].setStyle(this.getNormalCircleMarkerStyle());
+    kvm.log('Deselektiere Feature ' + this.layerId, 4);
+    if (this.layerId) {
+      kvm.map._layers[this.layerId].setStyle(this.getNormalStyle());
     }
     $('.feature-item').removeClass('selected-feature-item');
   };
 
+  this.zoomTo = function(layer) {
+    if (this.options.geometry_type == 'Point') {
+      kvm.map.setZoom(18);
+      kvm.map.panTo(layer.getLatLng());
+    }
+    else {
+      kvm.map.flyToBounds(layer.getBounds());
+     // kvm.map.fitBounds(layer.getBounds());
+    }
+  };
+
   this.select = function(zoom) {
     kvm.log('Markiere Feature ' + this.id, 4);
+    var layer = kvm.map._layers[this.layerId];
 
     if (this.newGeom) {
       console.log('Feature has newGeom');
-      kvm.log('Select feature in map ' + this.markerId, 4);
-      kvm.log('Set style %o',this.getSelectedCircleMarkerStyle());
-      kvm.map._layers[this.markerId].setStyle(this.getSelectedCircleMarkerStyle());
+      kvm.log('Select feature in map ' + this.layerId, 4);
+      layer.setStyle(this.getSelectedStyle());
+
+      this.zoomTo(layer);
+/*
       if (zoom) {
         kvm.map.setZoom(17);
       }
-      kvm.map.panTo(kvm.map._layers[this.markerId].getLatLng());
-
+      kvm.map.panTo(kvm.map._layers[this.layerId].getLatLng());
+*/
       if (!this.showPopupButtons()) {
         console.log('hide popup-functinos in select because showPopupButtons is false');
         $('.popup-functions').hide();
@@ -261,9 +302,11 @@ function Feature(
   };
 
   this.listElement = function() {
-    var markerStyles = JSON.parse(kvm.store.getItem('markerStyles'));
+    var markerStyles = JSON.parse(kvm.store.getItem('markerStyles')),
+        numStyles = Object.keys(markerStyles).length,
+        markerStyleIndex = ((this.get('status') >= 0 && this.get('status') < numStyles) ? this.get('status') : 0);
     return '\
-      <div class="feature-item" id="' + this.get(this.options.id_attribute) + '" style="background-color: ' + markerStyles[this.get('status')].fillColor + '">' + kvm.coalesce(this.get(kvm.activeLayer.get('name_attribute')), 'Datensatz ' + this.get(this.options.id_attribute)) + '</div>\
+      <div class="feature-item" id="' + this.get(this.options.id_attribute) + '" style="background-color: ' + markerStyles[markerStyleIndex].fillColor + '">' + kvm.coalesce(this.get(kvm.activeLayer.get('name_attribute')), 'Datensatz ' + this.get(this.options.id_attribute)) + '</div>\
     ';
   };
 
@@ -295,31 +338,128 @@ function Feature(
     $("#" + this.id).html(kvm.coalesce(this.get(kvm.activeLayer.get('name_attribute')), 'Datensatz ' + this.id));
   };
 
+  this.getNormalStyle = function() {
+    if (this.options.geometry_type == 'Point') {
+      return this.getNormalCircleMarkerStyle();
+    }
+    else if (this.options.geometry_type == 'Line') {
+      return this.getNormalPolylineStyle();
+    }
+    else if (this.options.geometry_type == 'Polygon') {
+      return this.getNormalPolygonStyle();
+    }
+  };
+
+  this.getNormalPolylineStyle = function() {
+    console.log('getNormalPolylineStyle');
+    var markerStyles = JSON.parse(kvm.store.getItem('markerStyles')),
+        numStyles = Object.keys(markerStyles).length,
+        markerStyleIndex = ((this.get('status') >= 0 && this.get('status') < numStyles) ? this.get('status') : 0),
+        style = markerStyles[markerStyleIndex];
+
+    style.color = style.fillColor;
+    style.stroke = true;
+    style.fill = false;
+    style.opacity = 0.8;
+
+    return style;
+  };
+
+  this.getNormalPolygonStyle = function() {
+    console.log('getNormalPolygonStyle');
+    var markerStyles = JSON.parse(kvm.store.getItem('markerStyles')),
+        numStyles = Object.keys(markerStyles).length,
+        markerStyleIndex = ((this.get('status') >= 0 && this.get('status') < numStyles) ? this.get('status') : 0),
+        style = markerStyles[markerStyleIndex];
+
+    style.stroke = true;
+    style.opacity = 0.8;
+
+    return style;
+  };
+
   this.getNormalCircleMarkerStyle = function() {
+    console.log('getNormalCircleMarkerStyle');
     //kvm.log('getNormalCircleMarkerStyle for status: ' + this.get('status'), 4);
-    var status = ((this.get('status') && this.get('status') != 'null') ? this.get('status') : 0),
-        markerStyles = JSON.parse(kvm.store.getItem('markerStyles'));
-    return markerStyles[status];
+    var markerStyles = JSON.parse(kvm.store.getItem('markerStyles')),
+        numStyles = Object.keys(markerStyles).length,
+        markerStyleIndex = ((this.get('status') >= 0 && this.get('status') < numStyles) ? this.get('status') : 0);
+    return markerStyles[markerStyleIndex];
+  };
+
+  this.getSelectedStyle = function() {
+    console.log('Feature.getSelectedStyle');
+    if (this.options.geometry_type == 'Point') {
+      return this.getSelectedCircleMarkerStyle();
+    }
+    else if (this.options.geometry_type == 'Line') {
+      return this.getSelectedPolylineStyle();
+    }
   };
 
   this.getSelectedCircleMarkerStyle = function() {
+    console.log('getSelectedCircleMarkerStyle');
     var style = JSON.parse(JSON.stringify(this.getNormalCircleMarkerStyle()));
     style.weight = 5;
     style.color = '#ff2828';
     return style;
   };
 
+  this.getSelectedPolylineStyle = function() {
+    console.log('getSelectedPolylineStyle');
+    return {
+      stroke: true,
+      fill: false,
+      color: '#ff2828',
+      weight: 5,
+      opacity: 0.7
+    }
+  };
+
+  this.getEditModeStyle = function() {
+    console.log('getEditModeStyle');
+    if (this.options.geometry_type == 'Point') {
+      return this.getEditModeCircleMarkerStyle();
+    }
+    else if (this.options.geometry_type == 'Line') {
+      return this.getEditModePolylineStyle();
+    }
+  };
+
   this.getEditModeCircleMarkerStyle = function() {
-    return { color: "#666666", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#cccccc" };
+    console.log('getEditModeCircleMarkerStyle');
+    return {
+      color: "#666666",
+      weight: 4,
+      fill: true,
+      fillOpacity: 0.8,
+      fillColor: "#cccccc"
+    };
+  };
+
+  this.getEditModePolylineStyle = function() {
+    console.log('getEditModePolylineStyle');
+    var style = {
+      stroke: true,
+      fill: false,
+      color: '#666666',
+      weight: 5,
+      opacity: 0.8
+    }
+    console.log('style: %o', style);
+    return style;
   };
 
   this.setGeomFromData = function() {
+    //console.log('setGeomFromData');
     if (this.data[this.options.geometry_attribute]) {
       //console.log('Setze geom des neuen Features mit data: %o', this.data);
       this.geom = this.wkbToWkx(this.data[this.options.geometry_attribute]);
     }
     this.newGeom = this.geom; // Aktuelle WKX-Geometry beim Editieren. Entspricht this.geom wenn das Feature neu geladen wurde und Geometrie in Karte, durch GPS oder Formular noch nicht geändert wurde.
-  }
+    //console.log('new feature newGeom: %o', this.newGeom);
+    //console.log('new feature geom: %o', this.geom);
+  };
 
   this.setGeomFromData();
 

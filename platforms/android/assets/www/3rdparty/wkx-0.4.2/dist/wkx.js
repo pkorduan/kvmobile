@@ -3166,7 +3166,7 @@ var isArray = require('isarray')
 
 exports.Buffer = Buffer
 exports.SlowBuffer = SlowBuffer
-exports.INSPECT_MAX_BYTES = 50
+exports.INSPECT_MAX_BYTES = 50000
 
 /**
  * If `Buffer.TYPED_ARRAY_SUPPORT`:
