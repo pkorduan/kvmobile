@@ -202,11 +202,10 @@ function Stelle(settings = {}) {
 
               if (resultObj.success) {
                 kvm.log('layerResult is valid!', 4);
-                var layers = [];
                 kvm.log('Download erfolgreich.', 3);
                 //console.log('resultObj: %o', resultObj);
 
-                kvm.activeStelle.numLayers = resultObj.layers.length;
+                //kvm.activeStelle.numLayers = resultObj.layers.length; Anzahl bleibt die gleiche wenn nur ein Layer neu geladen wird.
 
                 var layerSettings = resultObj.layers.filter(function(layer) { return layer.id == layerId; })[0],
                     layer;
@@ -270,7 +269,8 @@ function Stelle(settings = {}) {
               resultObj = kvm.parseLayerResult(this.result);
 
               if (resultObj.success) {
-                var layers = [];
+                var layers = [],
+                    overlay_layers = [];
                 kvm.alog('Download der Layer der Stelle erfolgreich.', '', 3);
                 //console.log('resultObj: %o', resultObj);
 
@@ -287,21 +287,49 @@ function Stelle(settings = {}) {
                   );
                 }
                 kvm.store.removeItem('activeLayerId');
+
+                // remove existing overlays
+                console.log('Entferne existierende Overlays aus der Anwendung.');
+                // Entferne Overlays aus dem Layer control
+                if ('overlayIds_' + kvm.activeStelle.get('id') in kvm.store) {
+                  JSON.parse(kvm.store['overlayIds_' + kvm.activeStelle.get('id')]).map(
+                    function(id) {
+                      var globalId = kvm.activeStelle.get('id') + '_' + id;
+                      if (kvm.overlays[globalId]) {
+                        $('#overlay_' + globalId).remove();
+                        kvm.overlays[globalId].removeFromApp();
+                      }
+                    }
+                  );
+                }
+
                 $('#featurelistHeading').html('Noch keine Layer synchronisiert');
                 $('#featurelistBody').html('Wählen Sie unter Einstellungen in der Gruppe "Layer" einen Layer aus. Öffnen Sie dann das Optionen Menü und wählen die Funktion "Daten synchronisieren"!');
                 $('#showSearch').hide();
 
-                kvm.activeStelle.numLayers = resultObj.layers.length;
+                kvm.activeStelle.numLayers = resultObj.layers.filter(function(l) { return l.sync == 1; }).length;
                 // add requested layers
                 console.log('Füge neu runtergeladene Layer zur Anwendung hinzu.');
                 $.each(
                   resultObj.layers,
                   function(index, layerSetting) {
-                    var layer;
+                    var layer, overlay;
                     //console.log('Layer.requestLayers create layer with settings: %o', layerSetting);
-                    layer = new Layer(kvm.activeStelle, layerSetting);
-                    layer.createTable(this);
-                    layer.appendToApp();
+                    if (layerSetting.sync == 1) {
+                      layer = new Layer(kvm.activeStelle, layerSetting);
+                      layer.createTable(this);
+                      layer.appendToApp();
+                    }
+                    else {
+                      console.log('Zeige Overlay %s an.', layerSetting.title);
+                      overlay = new Overlay(kvm.activeStelle, layerSetting);
+                      overlay.saveSettingsToStore(); // save layersettings to local storage
+                      overlay.appendToApp();
+                      overlay.features = [];
+                      overlay.layerGroup.clearLayers();
+                      overlay.addOverlayToMap(); // create the leaflet overlay and add to map
+                      overlay.reloadData(); // load data of overlay from remote resource, save the data in local storage and add it to the overlay in leaflet
+                    }
                   }
                 );
 
@@ -330,6 +358,98 @@ function Stelle(settings = {}) {
     );
   };
 
+  /*
+  * Request all layers from stelle,
+  * remove existing overlays from app
+  * write overlays to store,
+  * append overlays to list
+  * ToDo: extend getLayerUrl to get only overlays or
+  * change to function getOverlayUrl() and Methode mobile_get_layers to mobile_get_overlays
+  */
+  this.requestOverlays = function() {
+    //console.log('Layer.requestLayers for stelle: %o', this);
+    var fileTransfer = new FileTransfer(),
+        filename = cordova.file.dataDirectory + 'layers_stelle_' + this.get('id') + '.json',
+        //filename = 'temp_file.json',
+        url = this.getLayerUrl();
+
+    kvm.log('Download Layerdaten von Url: ' + url);
+    kvm.log('Speicher die Datei auf dem Gerät in Datei: ' + filename);
+
+    fileTransfer.download(
+      url,
+      filename,
+      function (fileEntry) {
+        fileEntry.file(
+          function (file) {
+            var reader = new FileReader();
+
+            reader.onloadend = function() {
+              kvm.log('Download der Layerdaten abgeschlossen.');
+              var items = [],
+                  validationResult = '';
+              kvm.log('Download Result: ' + this.result, 4);
+              resultObj = kvm.parseLayerResult(this.result);
+
+              if (resultObj.success) {
+                var layers = [],
+                    overlay_layers = [];
+                kvm.alog('Download der Layer der Stelle erfolgreich.', '', 3);
+                //console.log('resultObj: %o', resultObj);
+
+                // remove existing overlays
+                console.log('Entferne existierende Overlays aus der Anwendung.');
+                // Entferne Overlays aus dem Layer control
+                if ('overlayIds_' + kvm.activeStelle.get('id') in kvm.store) {
+                  JSON.parse(kvm.store['overlayIds_' + kvm.activeStelle.get('id')]).map(
+                    function(id) {
+                      var globalId = kvm.activeStelle.get('id') + '_' + id;
+                      if (kvm.overlays[globalId]) {
+                        kvm.overlays[globalId].removeFromApp();
+                      }
+                    }
+                  );
+                }
+
+                kvm.activeStelle.numLayers = resultObj.layers.filter(function(l) { return l.sync == 1; }).length;
+                console.log('Füge neu runtergeladene Overlays zur Anwendung hinzu.');
+                $.each(
+                  resultObj.layers,
+                  function(index, layerSetting) {
+                    var overlay;
+                    if (layerSetting.sync != 1) {
+                      console.log('Zeige Overlay %s an.', layerSetting.title);
+                      overlay = new Overlay(kvm.activeStelle, layerSetting);
+                      overlay.saveSettingsToStore(); // save layersettings to local storage
+                      overlay.appendToApp();
+                      overlay.addOverlayToMap(); // create the leaflet overlay and add to map
+                      overlay.reloadData(); // load data of overlay from remote resource, save the data in local storage and add it to the overlay in leaflet
+                    }
+                  }
+                );
+
+                kvm.setConnectionStatus();
+                $('#sperr_div').hide();
+              }
+              else {
+                kvm.log('Fehlerausgabe von parseLayerResult!', 4);
+                kvm.msg(resultObj.errMsg, 'Downloadfehler');
+              }
+              $('#sperr_div').hide();
+            };
+            reader.readAsText(file);
+          },
+          function(error) {
+            alert('Fehler beim Einlesen der heruntergeladenen Datei. Prüfen Sie die URL und Parameter, die für den Download verwendet werden.');
+            kvm.log('Fehler beim lesen der Datei: ' + error.code);
+            $('#sperr_div').hide();
+          }
+        );
+      },
+      this.downloadError,
+      true
+    );
+  };
 
   this.removeLayers = function() {
     Object.keys(kvm.layers).map(function (layerId) {

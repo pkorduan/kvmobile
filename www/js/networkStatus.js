@@ -8,7 +8,6 @@ NetworkStatus = {
 
   view: function(status) {
     $('#networkStatusText').html(status);
-    console.log
     if (navigator.onLine) {
       if ($('.sync-images-button').hasClass('inactive-button')) {
         $('.sync-images-button').toggleClass('active-button inactive-button');

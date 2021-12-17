@@ -10,7 +10,7 @@ function Layer(stelle, settings = {}) {
   this.settings['geometry_type'] = 'Point';
 */
   //-----------------------------------------------
-  
+
   this.attributes = [];
   this.runningSyncVersion = 0;
   this.layerGroup = L.layerGroup();
@@ -920,14 +920,14 @@ function Layer(stelle, settings = {}) {
         //console.log('removeItem %o', 'layerSettings_' + this.getGlobalId());
         //kvm.store.removeItem('layerSettings_' + this.getGlobalId());
         $('numDatasetsText').html('0');
-
+/*
         navigator.notification.confirm(
-          'Alle Daten des Layers in lokaler Datenbank gelöscht.',
+          'Alle Daten der Tabelle ' + this.get('schema_name') + '.' + this.get('table_name') + ' in lokaler Datenbank gelöscht.',
           function(buttonIndex) {},
           'Datenbank',
           ['OK']
         );
-
+*/
       }).bind(this),
       function(error) {
         navigator.notification.confirm(
@@ -973,7 +973,7 @@ function Layer(stelle, settings = {}) {
         icon = $('#syncImagesIcon_' + this.layer.getGlobalId());
         if (icon.hasClass('fa-spinner')) icon.toggleClass('fa-upload fa-spinner fa-spin');
         $('#sperr_div').hide();
-
+/*
         navigator.notification.confirm(
           'Synchronisierung der Änderungen abgeschlossen.',
           function(buttonIndex) {
@@ -981,7 +981,7 @@ function Layer(stelle, settings = {}) {
           'Datenbank',
           ['OK']
         );
-
+*/
       }).bind({
         layer : this,
         delta : delta
@@ -2676,8 +2676,8 @@ function Layer(stelle, settings = {}) {
               kvm.msg('Layer Konfigurationsfehler: Der Layer ' + kvm.activeLayer.settings.title + ' kann nicht verwendet werden. Das Attribut Status hat keine Optionen. Wenden Sie sich an den Administrator der WebGIS Anwendung zum Einstellen der Optionen.', 'Fehler');
               return false;
             }
-            if (!value.settings.options.isArray()) {
-              kvm.msg('Layer Konfigurationsfehler: Der Layer ' + kvm.activeLayer.settings.title + ' kann nicht verwendet werden. Das Optionenfeld ist zwar belegt, aber es handelt sich nicht um ein Array von Auswahlmöglichkeiten. Wenden Sie sich an den Administrator der WebGIS Anwendung zum Einstellen der Optionen.', 'Fehler');
+            if (!Array.isArray(value.settings.options)) {
+              kvm.msg('Layer Konfigurationsfehler: Der Layer ' + kvm.activeLayer.settings.title + ' kann nicht verwendet werden. Das Optionenfeld ist zwar belegt mit ' + value.settings.options + ', aber es handelt sich nicht um ein Array von Auswahlmöglichkeiten. Wenden Sie sich an den Administrator der WebGIS Anwendung zum Einstellen der Optionen.', 'Fehler');
               return false;
             }
             $('#statusFilterSelect option').remove();

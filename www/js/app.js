@@ -9,6 +9,7 @@ kvm = {
   featureListLoaded: false,
   mapSettings: {},
   layers: [],
+  overlays: [],
 
   loadHeadFile: function(filename, filetype) {
     //console.log('Lade filename %s, filetype: %s', filename, filetype);
@@ -515,6 +516,25 @@ kvm = {
             */
           }
         }
+
+        // Prüfe ob Netz ist, wenn nicht lade die Overlays vom Store
+        if (navigator.onLine) {
+          stelle.requestOverlays();
+        }
+        else {
+          var overlay,
+              overlayIds = $.parseJSON(this.store.getItem('overlayIds_' + activeStelleId));
+          for (let overlayId of overlayIds) {
+            //console.log('Lade Layersettings for layerId: %s', layerId);
+            overlaySettings = this.store.getItem('overlaySettings_' + activeStelleId + '_' + overlayId);
+            if (overlaySettings != null) {
+              overlay = new Overlay(stelle, overlaySettings);
+              overlay.appendToApp();
+              overlay.addOverlayToMap(); // create the leaflet overlay and add to map
+              overlay.loadData();
+            }
+          }
+        }
       }
       else {
         kvm.msg('Laden Sie die Stellen und Layer vom Server.');
@@ -942,6 +962,9 @@ kvm = {
     $('#kvwmapServerStelleSelectField').on(
       'change',
       function() {
+        if ($('#saveServerSettingsButton').hasClass('settings-button')) {
+          $('#saveServerSettingsButton').toggleClass('settings-button settings-button-active');
+        }
         $('#saveServerSettingsButton').show();
       }
     );
@@ -2135,11 +2158,12 @@ kvm = {
   coalesce: function() {
     var i, undefined, arg;
 
-    for( i = 0; i < arguments.length; i++ ) {
+    for ( i = 0; i < arguments.length; i++ ) {
       arg = arguments[i];
       if (
         arg !== 'null' &&
         arg !== null &&
+        arg != '' &&
         arg !== undefined && (
           typeof arg !== 'number' ||
           arg.toString() !== 'NaN'
