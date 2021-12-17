@@ -8,6 +8,8 @@ https://github.com/srahn/kvwmap/
 http://kvwmap.de
 
 # Change log
+## 1.7.5
+	* Anzeige und Reload von Overlays
 ## 1.7.4
 	* Verbesserung beim Synchronisieren und Versionieren.
 ## 1.7.3
