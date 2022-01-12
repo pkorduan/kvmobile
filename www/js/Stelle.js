@@ -295,8 +295,9 @@ function Stelle(settings = {}) {
                   JSON.parse(kvm.store['overlayIds_' + kvm.activeStelle.get('id')]).map(
                     function(id) {
                       var globalId = kvm.activeStelle.get('id') + '_' + id;
+                      $('#overlay_' + globalId).remove();
                       if (kvm.overlays[globalId]) {
-                        $('#overlay_' + globalId).remove();
+                        console.log('Remove Overlay ' + globalId + ' from overlay list.');
                         kvm.overlays[globalId].removeFromApp();
                       }
                     }

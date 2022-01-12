@@ -1,5 +1,5 @@
 kvm = {
-  version: '1.7.5',
+  version: '1.7.8',
   Buffer: require('buffer').Buffer,
   wkx: require('wkx'),
   controls: {},
@@ -2330,8 +2330,16 @@ kvm = {
     if (kvm.activeLayer.activeFeature.editableLayer) {
       console.log('editableLayer: %o', kvm.activeLayer.activeFeature.editableLayer.getLatLng());
     }
+  },
+  
+  rgbToHex: function(rgb) {
+    let parts = rgb.split(' '),
+        componentToHex = function(c) {
+          let hex = parseInt(c).toString(16);
+          return hex.length == 1 ? "0" + hex : hex;
+        };    
+    return "#" + componentToHex(parts[0]) + componentToHex(parts[1]) + componentToHex(parts[2]);
   }
-
 };
 
 kvm.loadHeadFile('js/controller/mapper.js', 'js');

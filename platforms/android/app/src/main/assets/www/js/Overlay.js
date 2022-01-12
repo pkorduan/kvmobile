@@ -110,8 +110,86 @@ function Overlay(stelle, settings = {}) {
   this.drawFeatures = function(features) {
     var title = this.getTitle();
     kvm.log('Zeichne Features of overlay ' + title, 3);
-    this.layerGroup = L.geoJSON(features);
+    this.layerGroup = L.geoJSON(
+      features, {
+        style: (this.getOverlayStyle).bind(this)
+      }
+    );
     kvm.controls.layers.addOverlay(this.layerGroup, title);
+  };
+
+  this.getOverlayStyle = function(geoJsonFeature) {
+    //console.log('getOverlayStyle: %o', this);
+    if (this.settings.geometry_type == 'Point') {
+      return this.getOverlayCircleMarkerStyle(geoJsonFeature);
+    }
+    else if (this.settings.geometry_type == 'Line') {
+      return this.getOverlayPolylineStyle(geoJsonFeature);
+    }
+    else if (this.settings.geometry_type == 'Polygon') {
+      return this.getOverlayPolygonStyle(geoJsonFeature);
+    }
+  };
+
+  this.getOverlayCircleMarkerStyle = function(geoJsonFeature) {
+    //console.log('this: %o', this.settings.classes[0].style);
+    var s = this.settings.classes[0].style,
+        d = {
+          color: '#284084',
+          fill: true,
+          fillOpacity: 0.5,
+          fillColor: '#3a5dbf',
+          weight: 4
+        },
+        r = {
+          color: (s.color ? kvm.rgbToHex(s.color) : d.color),
+          weight: s.weight || d.weight,
+          fill: d.fill,
+          fillOpacity: (s.opacity ? s.opacity / 100 : d.fillOpacity),
+          fillColor: (s.fillColor ? kvm.rgbToHex(s.fillColor) : d.fillColor)
+        };
+    //console.log('r: %o', r);
+    return r;
+  };
+
+  this.getOverlayPolylineStyle = function(geoJsonFeature) {
+    //console.log('this: %o', this.settings.classes[0].style);
+    var s = this.settings.classes[0].style,
+        d = {
+          color: '#284084',
+          fill: true,
+          fillOpacity: 0.5,
+          fillColor: '#3a5dbf',
+          weight: 4
+        },
+        r = {
+          color: (s.fillColor ? kvm.rgbToHex(s.fillColor) : d.color),
+          weight: s.weight || d.weight,
+          opacity: (s.opacity ? s.opacity / 100 : d.fillOpacity)
+        };
+    //console.log('r: %o', r);
+    return r;
+  };
+
+  this.getOverlayPolygonStyle = function(geoJsonFeature) {
+    //console.log('getOverlayPolygonStyle this: %o', this.settings.classes[0].style);
+    var s = this.settings.classes[0].style,
+        d = {
+          color: '#284084',
+          fill: true,
+          fillOpacity: 0.5,
+          fillColor: '#3a5dbf',
+          weight: 4
+        },
+        r = {
+          color: (s.color ? kvm.rgbToHex(s.color) : d.color),
+          weight: s.weight || d.weight,
+          fill: d.fill,
+          fillOpacity: (s.opacity ? s.opacity / 100 : d.fillOpacity),
+          fillColor: (s.fillColor ? kvm.rgbToHex(s.fillColor) : d.fillColor)
+        };
+    //console.log('r: %o', r);
+    return r;
   };
 
   /*
@@ -155,18 +233,24 @@ function Overlay(stelle, settings = {}) {
               this.result = this.result.replace("\n", "\\\n");
               try {
                 collection = $.parseJSON(this.result);
-                kvm.log('Anzahl empfangene Datensätze: ' + collection.features.length, 3);
-                if (collection.features.length > 0) {
-                  console.log('Add ' + collection.features.length + ' Features to the overlay');
-                  this_.features = collection.features;
-                  this_.drawFeatures(this_.features);
-                  kvm.overlays[globalId] = this_;
-                  kvm.store.setItem('overlayFeatures_' + this_.globalId, JSON.stringify(this_.features));
-                }
               } catch (e) {
                 errMsg = 'Fehler beim Parsen der von ' + this_.getUrl() + ' heruntergeladenen Daten: ' +  this.result.substring(1, 1000);
                 kvm.msg(errMsg, 'Fehler');
                 kvm.log(errMsg, 1);
+              }
+              kvm.log('Anzahl empfangene Datensätze: ' + collection.features.length, 3);
+              if (collection.features.length > 0) {
+                console.log('Add ' + collection.features.length + ' Features to the overlay');
+                this_.features = collection.features;
+                try {
+                  this_.drawFeatures(this_.features);
+                } catch (e) {
+                  errMsg = 'Fehler beim Zeichnen der Features des Overlays ' + this_.globalId;
+                  kvm.msg(errMsg, 'Fehler');
+                  kvm.log(errMsg, 1);
+                }
+                kvm.overlays[globalId] = this_;
+                kvm.store.setItem('overlayFeatures_' + this_.globalId, JSON.stringify(this_.features));
               }
               if ($('#syncOverlayIcon_' + this_.globalId).hasClass('fa-spinner')) {
                 $('#syncOverlayIcon_' + this_.globalId).toggleClass('fa-refresh fa-spinner fa-spin');

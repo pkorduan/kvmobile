@@ -8,6 +8,13 @@ https://github.com/srahn/kvwmap/
 http://kvwmap.de
 
 # Change log
+## 1.7.8
+	* Behebung des Fehlers, dass beim Reload von Overlays die ohne Daten nicht vorher entfert werden.
+	* Dynmaische Einstellung der Opacity von Overlayflächen möglich
+## 1.7.7
+	* Behebung des Fehlers, dass die Opacity der Overlay nicht von der Klasse des Layers übernommen wurde
+## 1.7.6
+	* Darstellung der Overlays mit Style der 1. Klasse des Layers in kvwmap
 ## 1.7.5
 	* Anzeige und Reload von Overlays
 ## 1.7.4
