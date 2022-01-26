@@ -1,5 +1,5 @@
 kvm = {
-  version: '1.7.8',
+  version: '1.7.9',
   Buffer: require('buffer').Buffer,
   wkx: require('wkx'),
   controls: {},
@@ -2163,7 +2163,6 @@ kvm = {
       if (
         arg !== 'null' &&
         arg !== null &&
-        arg != '' &&
         arg !== undefined && (
           typeof arg !== 'number' ||
           arg.toString() !== 'NaN'

@@ -608,7 +608,7 @@ function Layer(stelle, settings = {}) {
           $.each(
             response.deltas,
             (function(index, value) {
-              if (kvm.coalesce(value.sql) != null) {
+              if (kvm.coalesce(value.sql, '') != '') {
                 kvm.alog('Führe Änderungen vom Server auf dem Client aus: ', value.sql, 4);
                 console.log('Execute sql von version: %s', value.version);
                 this.execSql(
@@ -1128,10 +1128,10 @@ function Layer(stelle, settings = {}) {
         ) {
           val = attr.get('default');
         }
-        //console.log('Feature is new? %s', this.options.new);
-        //console.log('Set %s %s: %s', attr.get('form_element_type'), key, val);
+        console.log('Feature is new? %s', this.options.new);
+        console.log('Set %s %s: %s', attr.get('form_element_type'), key, val);
         attr.formField.setValue(val);
-        if (kvm.coalesce(attr.get('req_by')) != null) {
+        if (kvm.coalesce(attr.get('req_by'), '') != '') {
           req_by_idx = kvm.activeLayer.attribute_index[attr.get('req_by')];
           kvm.activeLayer.attributes[req_by_idx].formField.filter_by_required(
             attr.get('name'),
@@ -2447,7 +2447,7 @@ function Layer(stelle, settings = {}) {
     $('#layer_list').append(this.getListItem());
     kvm.bindLayerEvents(this.getGlobalId());
 //    kvm.map.addLayer(this.layerGroup);
-    kvm.controls.layers.addOverlay(this.layerGroup, kvm.coalesce(this.get('alias'), this.get('title'), this.get('table_name')));
+    kvm.controls.layers.addOverlay(this.layerGroup, kvm.coalesce(this.get('alias'), this.get('title'), this.get('table_name'), 'overlay' + this.getGlobalId()));
     kvm.layers[this.get('id')] = this;
     this.saveToStore();
   };

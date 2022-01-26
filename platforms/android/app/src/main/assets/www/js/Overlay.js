@@ -332,7 +332,7 @@ function Overlay(stelle, settings = {}) {
   };
 
   this.getTitle = function() {
-    return kvm.coalesce(this.get('alias'), this.get('title'), this.get('table_name'));
+    return kvm.coalesce(this.get('alias'), this.get('title'), this.get('table_name'), this.globalId);
   };
 
   this.getUrl = function() {

@@ -23,8 +23,8 @@ function SelectFormField(formId, settings) {
       id="' + this.get('index') + '"\
       name="' + this.get('name') + '"' +
       (this.get('privilege') == '0' ? ' disabled' : '') + 
-      (kvm.coalesce(this.get('req_by')) != null ? ' req_by="' + this.get('req_by') + '"' : '') +
-      (kvm.coalesce(this.get('requires')) != null ? ' requires="' + this.get('requires') + '"' : '') + '>\
+      (kvm.coalesce(this.get('req_by'), '') != '' ? ' req_by="' + this.get('req_by') + '"' : '') +
+      (kvm.coalesce(this.get('requires'), '') != '' ? ' requires="' + this.get('requires') + '"' : '') + '>\
       <option value="">Bitte wählen</option>' +
       $.map(
         this.get('options'),
@@ -33,7 +33,7 @@ function SelectFormField(formId, settings) {
           return '\
             <option\
               value="' + option.value + '"' +
-              (kvm.coalesce(option.requires) != null ? ' requires="' + option.requires + '"' : '') +
+              (kvm.coalesce(option.requires, '') != '' ? ' requires="' + option.requires + '"' : '') +
             '>' +
               option.output + '\
             </option>';
@@ -44,7 +44,7 @@ function SelectFormField(formId, settings) {
 
   this.setValue = function(val) {
     //console.log('SelectFormField.setValue with value: ' + val);
-    if (kvm.coalesce(val) == null && this.get('default')) {
+    if (kvm.coalesce(val, '') == '' && this.get('default')) {
       val = this.get('default');
     }
     this.element.val(val == 'null' ? '' : val);

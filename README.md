@@ -8,6 +8,8 @@ https://github.com/srahn/kvwmap/
 http://kvwmap.de
 
 # Change log
+## 1.7.9
+	* Behebung des Fehlers, dass beim neu Anlegen eines Objektes nichts passiert. (Anpassung coalesce Funktion)
 ## 1.7.8
 	* Behebung des Fehlers, dass beim Reload von Overlays die ohne Daten nicht vorher entfert werden.
 	* Dynmaische Einstellung der Opacity von Overlayflächen möglich

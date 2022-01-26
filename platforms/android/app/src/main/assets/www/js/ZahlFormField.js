@@ -31,11 +31,11 @@ function ZahlFormField(formId, settings) {
 
   this.setValue = function(val) {
     //console.log('ZahlFormField.setValue with value: ' + val);
-    if (kvm.coalesce(val) == null && this.get('default')) {
+    if (kvm.coalesce(val, '') == '' && this.get('default')) {
       val = this.get('default');
     }
 
-    this.element.val(val == 'null' ? '' : val);
+    this.element.val(val == null || val == 'null' ? '' : val);
   };
 
   this.getValue = function(action = '') {

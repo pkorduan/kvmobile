@@ -31,7 +31,7 @@ function TextFormField(formId, settings) {
 
   this.setValue = function(val) {
     console.log('TextFormField ' + this.get('name') + ' setValue with value: %o', val);
-    if (kvm.coalesce(val) == null && this.get('default')) {
+    if (kvm.coalesce(val, '') == '' && this.get('default')) {
       val = this.get('default');
     }
 
