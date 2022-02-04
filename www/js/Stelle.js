@@ -144,7 +144,7 @@ function Stelle(settings = {}) {
     url += file +
       'go=mobile_get_stellen' + '&' +
       'login_name=' + this.get('login_name') + '&' +
-      'passwort=' + escape(this.get('passwort'));
+      'passwort=' + encodeURIComponent(this.get('passwort'));
     return url;
   };
 
@@ -467,7 +467,7 @@ function Stelle(settings = {}) {
     url += file +
       'go=mobile_get_layers' + '&' +
       'login_name=' + this.get('login_name') + '&' +
-      'passwort=' + (options.hidePassword ? '*****' : this.get('passwort')) + '&' +
+      'passwort=' + (options.hidePassword ? '*****' : encodeURIComponent(this.get('passwort'))) + '&' +
       'Stelle_ID=' + this.get('Stelle_ID');
     return url;
   };

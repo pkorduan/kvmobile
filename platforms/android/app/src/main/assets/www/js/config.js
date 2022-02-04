@@ -351,18 +351,6 @@ configurations = [
     kvwmapServerPasswort: '',
     backgroundLayerSettings: [
       {
-        label: 'Luftbilder online',
-        online: true,
-        type: 'wms',
-        url: 'https://isk.geobasis-bb.de/ows/dop20c_wms',
-        params: {
-          layers: 'bebb_dop20c',
-          format: 'image/png',
-          transparent: true,
-          attribution: "LGB WMS DOP20"
-        }
-      },
-      {
         label: 'Vektorkacheln offline',
         online: true,
         type: 'vectortile',
@@ -441,6 +429,18 @@ configurations = [
           },
           maxNativeZoom: 14,
           attribution: "OSM TileServer GL GDI-Service"
+        }
+      },
+      {
+        label: 'Luftbilder online',
+        online: true,
+        type: 'wms',
+        url: 'https://isk.geobasis-bb.de/ows/dop20c_wms',
+        params: {
+          layers: 'bebb_dop20c',
+          format: 'image/png',
+          transparent: true,
+          attribution: "LGB WMS DOP20"
         }
       }
     ]

@@ -197,7 +197,7 @@ function BilderFormField(formId, settings) {
   };
 
   this.bindEvents = function() {
-    //console.log('SelectFormField.bindEvents');
+    //console.log('BildFormField.bindEvents');
     $('#featureFormular input[id=' + this.get('index') + ']').on(
       'change',
       function() {

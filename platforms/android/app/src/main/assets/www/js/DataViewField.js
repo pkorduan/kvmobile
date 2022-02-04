@@ -56,8 +56,29 @@ function DataViewField(divId, settings) {
             (function(fileEntry) {
               kvm.log('Datei ' + fileEntry.toURL() + ' existiert.', 4);
               var src = fileEntry.toURL();
-              var img_div = $('<div class="img" src="' + src + '" style="background-image: url(' + src + ');" field_id="' + this.get('index') + '"name="' + src + '"></div>');
+              var img_div = $('<div class="img" src="' + src + '" style="background-image: url(' + src + ');" field_id="' + this.get('index') + '"name="preview_' + src + '"></div>');
               this.element.append(img_div);
+              img_div.on(
+                'click',
+                function(evt) {
+                  var target = $(evt.target),
+                      src = target.attr('src'),
+                      fieldId = target.attr('field_id');
+
+                  cordova.plugins.fileOpener2.open(
+                    src,
+                    'image/jpeg',
+                    {
+                      error : function(e) {
+                        alert('Fehler beim laden der Datei: ' + e.message + ' Status: ' + e.status);
+                      },
+                      success : function() {
+                        kvm.log('Datei ' + src + ' erfolgreich geöffnet.', 4);
+                      }
+                    }
+                  );
+                }
+              );
             }).bind(this),
             (function() {
               kvm.log('Datei ' + this.localFile + ' existiert nicht!', 2);
@@ -91,6 +112,70 @@ function DataViewField(divId, settings) {
     }
     this.element.trigger('change');
     return val;
+  };
+
+  // this function bind events pending on form_element_type
+  this.bindEvents = function() {
+    switch (this.get('form_element_type')) {
+      case 'Dokument' :
+        // open image in viewer
+        $('div[name$="' + name + '"]').on(
+          'click',
+          function(evt) {
+            var target = $(evt.target),
+                src = target.attr('src'),
+                fieldId = target.attr('field_id');
+            if (src == 'img/no_image.png') {
+              navigator.notification.confirm(
+                'Bild herunterladen?',
+                function(buttonIndex) {
+                  if (buttonIndex == 1) { // ja
+                    var remoteFile = target.attr('name'),
+                        localFile = kvm.activeLayer.attributes[fieldId].formField.serverToLocalPath(remoteFile);
+
+                    kvm.activeLayer.downloadImage(localFile, remoteFile);
+                  }
+                  if (buttonIndex == 2) { // nein
+                    // Do nothing
+                  }
+                },
+                '',
+                ['ja', 'nein']
+              );
+            }
+            else {
+              kvm.log('Versuche das Bild zu öffnen: ' + src, 4);
+              cordova.plugins.fileOpener2.open(
+                src,
+                'image/jpeg',
+                {
+                  error : function(e) {
+                    alert('Fehler beim laden der Datei: ' + e.message + ' Status: ' + e.status);
+                  },
+                  success : function() {
+                    kvm.log('Datei ' + src + ' erfolgreich geöffnet.', 4);
+                    navigator.notification.confirm(
+                      'Bild Löschen?',
+                      function(buttonIndex) {
+                        if (buttonIndex == 1) { // ja
+                          var field = kvm.activeLayer.attributes[fieldId].formField;
+                          field.dropImage(target);
+                        }
+                        if (buttonIndex == 2) { // nein
+                          // Do nothing
+                        }
+                      },
+                      '',
+                      ['ja', 'nein']
+                    );
+                  }
+                }
+              );
+            }
+          }
+        );
+        break;
+    }
   };
 
   this.withLabel = function() {

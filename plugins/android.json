@@ -53,6 +53,9 @@
     },
     "cordova-sqlite-evplus-legacy-attach-detach-free": {
       "PACKAGE_NAME": "de.gdiservice.kvmobile"
+    },
+    "cordova-plugin-inappbrowser": {
+      "PACKAGE_NAME": "de.gdiservice.kvmobile"
     }
   },
   "dependent_plugins": {

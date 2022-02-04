@@ -3,6 +3,10 @@ function Layer(stelle, settings = {}) {
   this.stelle = stelle;
   this.settings = (typeof settings == 'string' ? $.parseJSON(settings) : settings);
   kvm.log('Erzeuge Layerobjekt für Layer ' + this.settings.title + ' (id: ' + this.settings.id + ') in Stelle: ' + stelle.get('id'), 3);
+  if (this.settings['name_attribute'] == '') {
+    this.settings['name_attribute'] = this.settings['id_attribute'];
+    console.log('Set id_attribute: %s as name_attribute', this.settings['id_attribute']);
+  }
 /*
   // diese 3 Settings werden hier statisch gesetzt für den Fall dass der Server die Attribute noch nicht per mobile_get_layer liefert.
   this.settings['id_attribute'] = 'uuid';
@@ -202,7 +206,7 @@ function Layer(stelle, settings = {}) {
     $.each(
       this.features,
       function (key, feature) {
-        //console.log('append feature: %o to list', feature);
+        console.log('append feature: %o to list', feature);
         var needle = $('#searchHaltestelle').val().toLowerCase(),
           element = $(feature.listElement()),
           haystack = element.html().toLowerCase();
@@ -1059,6 +1063,7 @@ function Layer(stelle, settings = {}) {
         $('#dataViewDiv').append(
           attr.viewField.withLabel()
         ).append('<div style="clear: both">');
+        attr.viewField.bindEvents();
       }
     );
   };
@@ -1183,11 +1188,13 @@ function Layer(stelle, settings = {}) {
           }
           else if (feature.options.geometry_type == 'Line') {
             vectorLayer = L.polyline(feature.wkxToLatLngs(feature.newGeom), {
+              renderer: kvm.myRenderer,
               featureId: feature.id
             });
           }
           else if (feature.options.geometry_type == 'Polygon') {
             vectorLayer = L.polygon(feature.wkxToLatLngs(feature.newGeom), {
+              renderer: kvm.myRenderer,
               featureId: feature.id
             });
           }
@@ -2447,7 +2454,7 @@ function Layer(stelle, settings = {}) {
     $('#layer_list').append(this.getListItem());
     kvm.bindLayerEvents(this.getGlobalId());
 //    kvm.map.addLayer(this.layerGroup);
-    kvm.controls.layers.addOverlay(this.layerGroup, kvm.coalesce(this.get('alias'), this.get('title'), this.get('table_name'), 'overlay' + this.getGlobalId()));
+    kvm.controls.layers.addOverlay(this.layerGroup, kvm.coalempty(this.get('alias'), this.get('title'), this.get('table_name'), 'overlay' + this.getGlobalId()));
     kvm.layers[this.get('id')] = this;
     this.saveToStore();
   };
@@ -2523,7 +2530,7 @@ function Layer(stelle, settings = {}) {
       'Stelle_ID=' + this.stelle.get('Stelle_ID') + '&' +
       'login_name=' + this.stelle.get('login_name') + '&' +
       'selected_layer_id=' + this.get('id') + '&' +
-      'passwort=' + this.stelle.get('passwort');
+      'passwort=' + encodeURIComponent(this.stelle.get('passwort'));
 
     if (this.runningSyncVersion == 0) {
       // get all data as new base for deltas
@@ -2554,7 +2561,7 @@ function Layer(stelle, settings = {}) {
     url += file +
         'Stelle_ID=' + stelle.get('Stelle_ID') + '&' +
         'login_name=' + stelle.get('login_name') + '&' +
-        'passwort=' + stelle.get('passwort') + '&' +
+        'passwort=' + encodeURIComponent(stelle.get('passwort')) + '&' +
         'go=mobile_download_image' + '&' +
         'image=' + image;
     return url;
@@ -2601,6 +2608,9 @@ function Layer(stelle, settings = {}) {
     - readData:
       - Load Features from Database, recreate FeatureList and draw in map
       - Select Layer in Layer control
+    ToDo: Remove the click events on map features of other layers that are not active
+          or make it possible to select and edit all visible features in the map by switching dataview and formfield
+          penging on layer where the feature belongs to
   */
   this.setActive = function() {
     kvm.log('Setze Layer ' + this.get('title') + ' (' + (this.get('alias') ? this.get('alias') : 'kein Aliasname') + ') auf aktiv.', 3);

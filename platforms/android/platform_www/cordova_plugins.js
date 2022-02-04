@@ -321,6 +321,14 @@ cordova.define('cordova/plugin_list', function(require, exports, module) {
       "clobbers": [
         "SQLitePlugin"
       ]
+    },
+    {
+      "id": "cordova-plugin-inappbrowser.inappbrowser",
+      "file": "plugins/cordova-plugin-inappbrowser/www/inappbrowser.js",
+      "pluginId": "cordova-plugin-inappbrowser",
+      "clobbers": [
+        "cordova.InAppBrowser.open"
+      ]
     }
   ];
   module.exports.metadata = {
@@ -337,6 +345,7 @@ cordova.define('cordova/plugin_list', function(require, exports, module) {
     "cordova-plugin-geolocation": "2.4.3",
     "cordova-plugin-network-information": "1.3.3",
     "cordova-plugin-whitelist": "1.3.3",
-    "cordova-sqlite-evplus-legacy-attach-detach-free": "0.8.3-pre5"
+    "cordova-sqlite-evplus-legacy-attach-detach-free": "0.8.3-pre5",
+    "cordova-plugin-inappbrowser": "5.0.0"
   };
 });

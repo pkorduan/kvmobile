@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
   <head>
-    <TITLE>kvmobile 1.7.9</TITLE>
+    <TITLE>kvmobile 1.7.10</TITLE>
     <META charset="UTF-8">
     <meta name="format-detection" content="telephone=no">
     <meta name="msapplication-tap-highlight" content="no">
@@ -98,7 +98,7 @@ child-src * 'self' blob: http:
 
     <div id="login" class="login">
       <div class="login-header">kvmobile</div>
-      <img src="img/logo_gdi_kl.png"><br>
+      <img src="img/logo_gdi.png"><br>
       <div id="short_password_div">
         <span id="short_password_label">Die ersten 4 Zeichen des Passwortes:</span>
         <input id="short_password_field" type="password" name="short_password">
@@ -163,7 +163,7 @@ child-src * 'self' blob: http:
     Automatisches Öffnen von Formular, wenn in der Nähe von Haltestellen
     <hr>
 -->
-    <div class="h2-div"><h2 class="b-collapsed">Anzeigefilter</h2></div>
+    <div class="h2-div"><h2 id="h2_anzeigefilter" class="b-collapsed">Anzeigefilter</h2></div>
     <div id="anzeigeFilterDiv">
       <select id="statusFilterSelect" style="50%">
         <option value="" selected>kein Filter</option>
@@ -179,7 +179,7 @@ child-src * 'self' blob: http:
     </div>
     <hr>
 
-    <div class="h2-div"><h2 class="b-collapsed">Sortierung</h2></div>
+    <div class="h2-div"><h2 id="h2_sortierung" class="b-collapsed">Sortierung</h2></div>
     <div id="anzeigeSortDiv">
       <select id="anzeigeSortSelect">
         <option value="">keine Sortierung</option>
@@ -187,19 +187,19 @@ child-src * 'self' blob: http:
     </div>
     <hr>
 
-    <div class="h2-div"><h2 class="b-collapsed">Farben</h2></div>
+    <div class="h2-div"><h2 id="h2_farben" class="b-collapsed">Farben</h2></div>
     <div id="colorSelectorDiv">
     </div>
     <hr>
 
-    <div class="h2-div"><h2 class="b-collapsed">Symbole</h2></div>
+    <div class="h2-div"><h2 id="h2_symbole" class="b-collapsed">Symbole</h2></div>
     <div id="transfarencySelectorDiv">
       Symboltransparenz : <span id="fillOpacitySpan">0.8</span><br>
       <input type="range" class="camera-options-slider" id="fillOpacitySlider" name="fillOpacity" min="0" max="10" value="8"><i class="fa fa-info" aria-hidden="true" onclick="kvm.msg('0 ist ganz durchsichtig, 1 ohne Transparenz. Wirkt sich erst nach dem neu Laden der Datensätze z.B. durch Filterung aus. Dazu einmal bei Filter auf Anwenden klicken.')" style="margin-left: 5px"></i>
     </div>
     <hr>
 
-    <div class="h2-div"><h2 class="b-collapsed">Bildaufnahme</h2></div>
+    <div class="h2-div"><h2 id="h2_bildaufnahme" class="b-collapsed">Bildaufnahme</h2></div>
     <div id="cameraOptionsDiv">
       Bildqualität: <span id="cameraOptionsQuality">25</span> % <input id="cameraOptionsQualitySlider" type="range" min="10" max="100" value="25" class="camera-options-slider"><i class="fa fa-info" aria-hidden="true" onclick="kvm.msg('Verringert die Größe der aufgenommenen Bilddateien auf die angegebenen % der in der Kamera eingestellten Größe.')" style="margin-left: 5px"></i><br>
       <!--input id="cameraOptionsAllowEdit" type="checkbox"> Editieren erlauben<br>
@@ -208,7 +208,7 @@ child-src * 'self' blob: http:
     </div>
     <hr>
 
-    <div class="h2-div"><h2 class="b-collapsed">Karteneinstellungen</h2></div>
+    <div class="h2-div"><h2 id="h2_karteneinstellungen" class="b-collapsed">Karteneinstellungen</h2></div>
     <div id="mapSettingsDiv">
       Startposition neuer Objekte<br>
       <div id="newPosDiv">
@@ -294,7 +294,7 @@ child-src * 'self' blob: http:
     </div>
     <hr>
 
-    <div class="h2-div"><h2 class="b-collapsed">Kartenverwaltung</h2></div>
+    <div class="h2-div"><h2 id="h2_kartenverwaltung" class="b-collapsed">Kartenverwaltung</h2></div>
     <div id="mapManagementDiv">
       Verfügbare Offlinekarten<br>
       <ul>
@@ -345,14 +345,14 @@ child-src * 'self' blob: http:
     </div>
     <hr>
 
-    <div class="h2-div"><h2 id="h2_layer" class="b-collapsed">Overlays</h2></div>
+    <div class="h2-div"><h2 id="h2_overlay" class="b-collapsed">Overlays</h2></div>
     <div>
       <div id="overlay_list">
       </div>
     </div>
     <hr>
 
-    <div class="h2-div"><h2 class="b-collapsed">Hintergrundlayer</h2></div>
+    <div class="h2-div"><h2 id="h2_hintergrundlayer" class="b-collapsed">Hintergrundlayer</h2></div>
     <div id="backgroundLayersDiv">
       <textarea id="backgroundLayersTextarea" style="height: 200px">
       </textarea>
@@ -362,22 +362,22 @@ child-src * 'self' blob: http:
     </div>
     <hr>
 
-    <div class="h2-div"><h2 class="b-collapsed">Netzwerkstatus</h2></div>
+    <div class="h2-div"><h2 id="h2_netzwerkstatus" class="b-collapsed">Netzwerkstatus</h2></div>
     <div id="networkStatusText">...wird geladen</div>
     <hr>
 
-    <div class="h2-div"><h2 class="b-collapsed">GPS-Status</h2></div>
+    <div class="h2-div"><h2 id="h2_gps_status" class="b-collapsed">GPS-Status</h2></div>
     <div>
       <div id="gpsStatusText">...wird geladen</div>
       <div id="gpsCurrentPosition"></div>
     </div>
     <hr>
 
-    <div class="h2-div"><h2 class="b-collapsed">Geräteinformationen</h2></div>
+    <div class="h2-div"><h2 id="h2_geraeteinformationen" class="b-collapsed">Geräteinformationen</h2></div>
     <div id="deviceDataText">...wird geladen</div>
     <hr>
 
-    <div class="h2-div"><h2 class="b-collapsed">Datenbank</h2></div>
+    <div class="h2-div"><h2 id="h2_datenbank" class="b-collapsed">Datenbank</h2></div>
     <div>
       Datenbankname: <span id="dbnameText">...wird geladen</span><br>
       Anzahl Datensätze: <span id="numDatasetsText" style="display: none">... wird geladen</span><br>
@@ -429,7 +429,25 @@ child-src * 'self' blob: http:
     <div id="configFileDiv">
     </div>
     <hr>
-    <p>
+
+    <div class="h2-div"><h2 id="h2_update" class="b-collapsed">Update</h2></div>
+    <div>
+			Nach neuen Updates suchen.<p>
+			Der nachstehende Link öffnet eine Web-Seite im Standardbrowser Ihres Gerätes mit den letzten Versionen von kvwmobile.<br>
+			Zum aktualisieren der App laden Sie die apk-Datei mit der höchsten Versionsnummer herunter.<br>
+			Bestätigen Sie mit "OK" dass Sie die Datei behalten möchten wenn Sie gefragt werden.<br>
+			Klicken Sie dann auf "Öffnen" und stellen Sie wenn Sie gefragt werden ein, dass Sie der Quelle vertrauen.<br>
+			Danach klicken Sie auf "Installieren". Nach dem Installationsvorgang werden Sie gefragt ob Sie die App öffnen wollen. Bestätigen Sie das und die neue Version wird gestartet.<br>
+			Danach können Sie den Browser wieder schließen und in kvmobile prüfen ob die neue Version läuft. Die Versionsnummer wird unter Einstellungen > Geräteinformationen angezeigt.<p>
+				<a
+					href="https://gdi-service.de/public/kvmobile"
+				  onclick="window.open('https://gdi-service.de/public/kvmobile', '_system'); return false;"
+				>Download-Bereich</a>
+    </div>
+    <hr>
+
+    <div style="margin-bottom: 20px">
+		</div>
   </div>
 
   <!-- Logs -->

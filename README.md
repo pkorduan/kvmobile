@@ -8,6 +8,9 @@ https://github.com/srahn/kvwmap/
 http://kvwmap.de
 
 # Change log
+## 1.7.10
+	* Funktion zum Download neuer Versionen
+	* Fix Bug in usage of coalesce add coalempty to ignore also empty spaces and to show overlaynames correcty
 ## 1.7.9
 	* Behebung des Fehlers, dass beim neu Anlegen eines Objektes nichts passiert. (Anpassung coalesce Funktion)
 ## 1.7.8

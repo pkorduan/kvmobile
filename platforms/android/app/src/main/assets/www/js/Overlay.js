@@ -2,6 +2,10 @@ function Overlay(stelle, settings = {}) {
   var overlay_ = this;
   this.stelle = stelle;
   this.settings = (typeof settings == 'string' ? $.parseJSON(settings) : settings);
+  if (this.settings['name_attribute'] == '') {
+    this.settings['name_attribute'] = this.settings['id_attribute'];
+    console.log('Set id_attribute: %s as name_attribute', this.settings['id_attribute']);
+  }
   this.globalId = this.stelle.get('id') + '_' + this.settings.id;
   kvm.log('Erzeuge Overlayobjekt für Overlay ' + this.settings.title + ' (globalId: ' + this.globalId + ')', 3);
   this.attributes = [];
@@ -115,6 +119,7 @@ function Overlay(stelle, settings = {}) {
         style: (this.getOverlayStyle).bind(this)
       }
     );
+		console.log('Add Layer with title: %s to layers control.', title);
     kvm.controls.layers.addOverlay(this.layerGroup, title);
   };
 
@@ -243,6 +248,7 @@ function Overlay(stelle, settings = {}) {
                 console.log('Add ' + collection.features.length + ' Features to the overlay');
                 this_.features = collection.features;
                 try {
+									console.log('Call drawFeatures with _this: %o', this_);
                   this_.drawFeatures(this_.features);
                 } catch (e) {
                   errMsg = 'Fehler beim Zeichnen der Features des Overlays ' + this_.globalId;
@@ -332,7 +338,7 @@ function Overlay(stelle, settings = {}) {
   };
 
   this.getTitle = function() {
-    return kvm.coalesce(this.get('alias'), this.get('title'), this.get('table_name'), this.globalId);
+    return kvm.coalempty(this.get('alias'), this.get('title'), this.get('table_name'), this.globalId);
   };
 
   this.getUrl = function() {
@@ -344,7 +350,7 @@ function Overlay(stelle, settings = {}) {
       'Stelle_ID=' + this.stelle.get('Stelle_ID') + '&' +
       'login_name=' + this.stelle.get('login_name') + '&' +
       'selected_layer_id=' + this.get('id') + '&' +
-      'passwort=' + this.stelle.get('passwort') + '&' +
+      'passwort=' + encodeURIComponent(this.stelle.get('passwort')) + '&' +
       'go=Daten_Export_Exportieren' + '&' +
       'export_format=GeoJSON' + '&' +
       'all=1' + '&' +

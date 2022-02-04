@@ -1,7 +1,7 @@
 {
   "name": "de.gdi-service.kvmobile",
   "displayName": "kvmobile",
-  "version": "1.7.9",
+  "version": "1.7.10",
   "description": "Anwendung zur Erfassung von Geodaten und zum synchronisieren mit dem Web-GIS kvwmap.",
   "main": "index.js",
   "scripts": {
@@ -49,11 +49,13 @@
         "ACCOUNT_LABEL": "@string/app_name",
         "ACCOUNT_TYPE": "$PACKAGE_NAME.account",
         "CONTENT_AUTHORITY": "$PACKAGE_NAME"
-      }
+      },
+      "cordova-plugin-inappbrowser": {}
     },
     "platforms": []
   },
   "devDependencies": {
-    "cordova-android": "^9.1.0"
+    "cordova-android": "^9.1.0",
+    "cordova-plugin-inappbrowser": "^5.0.0"
   }
 }

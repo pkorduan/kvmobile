@@ -1,5 +1,6 @@
+window.open = cordova.InAppBrowser.open;
 kvm = {
-  version: '1.7.9',
+  version: '1.7.10',
   Buffer: require('buffer').Buffer,
   wkx: require('wkx'),
   controls: {},
@@ -548,7 +549,7 @@ kvm = {
       var stelle = new Stelle('{}');
       stelle.viewDefaultSettings();
       activeView = 'settings';
-      this.showSettingsDiv('konfiguration');
+      this.showSettingsDiv('server');
     };
 
     // ToDo
@@ -628,7 +629,7 @@ kvm = {
             zoom: this.mapSettings.startZoom,
             minZoom: this.mapSettings.minZoom,
             maxZoom: this.mapSettings.maxZoom,
-            layers: this.backgroundLayers
+            layers: this.backgroundLayers[0]
           }
         ),
         baseMaps = {};
@@ -911,10 +912,18 @@ kvm = {
     $('.h2-div').on(
       'click',
       function(evt) {
-        var h2 = $(evt.target)
-            h2div = h2.parent();
-        h2.toggleClass('b-collapsed b-expanded');
-        h2div.next().toggle();
+        var h2 = $(evt.target),
+            h2div = h2.parent(),
+            collapsed = h2.hasClass('b-collapsed');
+
+        kvm.collapseAllSettingsDiv();
+        if (collapsed) {
+          h2.toggleClass('b-collapsed b-expanded');
+          h2div.next().toggle();
+          if (h2.prop('id') == 'h2_update') {
+            $('#settings').scrollTop(h2.offset().top);
+          }
+        }
       }
     );
 
@@ -2161,6 +2170,26 @@ kvm = {
     for ( i = 0; i < arguments.length; i++ ) {
       arg = arguments[i];
       if (
+        arg !== 'null' &&
+        arg !== null &&
+        arg !== undefined && (
+          typeof arg !== 'number' ||
+          arg.toString() !== 'NaN'
+        )
+      ) {
+        return arg;
+      }
+    }
+    return null;
+  },
+
+  coalempty: function() {
+    var i, undefined, arg;
+
+    for ( i = 0; i < arguments.length; i++ ) {
+      arg = arguments[i];
+      if (
+        arg !== '' &&
         arg !== 'null' &&
         arg !== null &&
         arg !== undefined && (
