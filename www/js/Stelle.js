@@ -400,20 +400,24 @@ function Stelle(settings = {}) {
 
                 // remove existing overlays
                 console.log('Entferne existierende Overlays aus der Anwendung.');
-                // Entferne Overlays aus dem Layer control
+                // Entferne Overlays aus der App, dem Layer control und der Karte
                 if ('overlayIds_' + kvm.activeStelle.get('id') in kvm.store) {
+                  console.log('parse overlayIds setting from store');
                   JSON.parse(kvm.store['overlayIds_' + kvm.activeStelle.get('id')]).map(
                     function(id) {
+                      console.log('remove overlay with id %s.', id);
                       var globalId = kvm.activeStelle.get('id') + '_' + id;
+                      console.log('check if overlays[%s] exists', globalId);
                       if (kvm.overlays[globalId]) {
+                        console.log('overlay exists, remove From App');
                         kvm.overlays[globalId].removeFromApp();
                       }
                     }
                   );
                 }
 
-                kvm.activeStelle.numLayers = resultObj.layers.filter(function(l) { return l.sync == 1; }).length;
-                console.log('Füge neu runtergeladene Overlays zur Anwendung hinzu.');
+                kvm.activeStelle.numOverlays = resultObj.layers.filter(function(l) { return l.sync == 1; }).length;
+                console.log('Füge neu %s runtergeladene Overlays zur Anwendung hinzu.', kvm.activeStelle.numOverlays);
                 $.each(
                   resultObj.layers,
                   function(index, layerSetting) {

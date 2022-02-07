@@ -104,6 +104,9 @@ function Overlay(stelle, settings = {}) {
     this.layerGroup = L.layerGroup();
     this.features = [];
     delete kvm.overlays[this.globalId];
+    $('#overlay_' + this.globalId).remove();
+    kvm.store.setItem('overlayIds_' + this.stelle.get('id'), JSON.stringify(Object.keys(kvm.overlays)));
+    kvm.store.removeItem('overlaySettings_' + this.globalId);
     kvm.store.removeItem('overlayFeatures_' + this.globalId);
   };
 
