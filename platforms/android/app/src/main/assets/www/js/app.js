@@ -492,9 +492,11 @@ kvm = {
             layer = new Layer(stelle, layerSettings);
             layer.appendToApp();
             if (this.store.getItem('activeLayerId') && this.store.getItem('activeLayerId') == layerId) {
+              console.log('layer: %s setActive', layer.get('alias'));
               layer.setActive();
             }
             else {
+              console.log('layer: %s readData', layer.get('alias'));
               layer.readData();
             }
             /*
@@ -526,7 +528,7 @@ kvm = {
           var overlay,
               overlayIds = $.parseJSON(this.store.getItem('overlayIds_' + activeStelleId));
           for (let overlayId of overlayIds) {
-            //console.log('Lade Layersettings for layerId: %s', layerId);
+            console.log('Lade OverlaySettings for overlayId: %s', overlayId);
             overlaySettings = this.store.getItem('overlaySettings_' + activeStelleId + '_' + overlayId);
             if (overlaySettings != null) {
               overlay = new Overlay(stelle, overlaySettings);

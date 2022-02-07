@@ -343,7 +343,7 @@ function Feature(
   */
   this.addListElement = function() {
     kvm.log('Feature.addListElement', 4);
-    console.log('Add listelement: %o', this.listElement());
+    //console.log('Add listelement: %o', this.listElement());
 
     $('#featurelistBody').prepend(this.listElement());
     kvm.log(this.id + ' zur Liste hinzugefügt.', 4);
@@ -381,7 +381,7 @@ function Feature(
   };
 
   this.getNormalPolylineStyle = function() {
-    console.log('getNormalPolylineStyle');
+    //console.log('getNormalPolylineStyle');
     var markerStyles = JSON.parse(kvm.store.getItem('markerStyles')),
         numStyles = Object.keys(markerStyles).length,
         markerStyleIndex = ((this.get('status') >= 0 && this.get('status') < numStyles) ? this.get('status') : 0),
@@ -396,7 +396,7 @@ function Feature(
   };
 
   this.getNormalPolygonStyle = function() {
-    console.log('getNormalPolygonStyle');
+    //console.log('getNormalPolygonStyle');
     var markerStyles = JSON.parse(kvm.store.getItem('markerStyles')),
         numStyles = Object.keys(markerStyles).length,
         markerStyleIndex = ((this.get('status') >= 0 && this.get('status') < numStyles) ? this.get('status') : 0),
@@ -409,7 +409,7 @@ function Feature(
   };
 
   this.getNormalCircleMarkerStyle = function() {
-    console.log('getNormalCircleMarkerStyle');
+    //console.log('getNormalCircleMarkerStyle');
     //kvm.log('getNormalCircleMarkerStyle for status: ' + this.get('status'), 4);
     var markerStyles = JSON.parse(kvm.store.getItem('markerStyles')),
         numStyles = Object.keys(markerStyles).length,
@@ -418,7 +418,7 @@ function Feature(
   };
 
   this.getSelectedStyle = function() {
-    console.log('Feature.getSelectedStyle');
+    //console.log('Feature.getSelectedStyle');
     if (this.options.geometry_type == 'Point') {
       return this.getSelectedCircleMarkerStyle();
     }
@@ -428,7 +428,7 @@ function Feature(
   };
 
   this.getSelectedCircleMarkerStyle = function() {
-    console.log('getSelectedCircleMarkerStyle');
+    //console.log('getSelectedCircleMarkerStyle');
     var style = JSON.parse(JSON.stringify(this.getNormalCircleMarkerStyle()));
     style.weight = 5;
     style.color = '#ff2828';
@@ -436,7 +436,7 @@ function Feature(
   };
 
   this.getSelectedPolylineStyle = function() {
-    console.log('getSelectedPolylineStyle');
+    //console.log('getSelectedPolylineStyle');
     return {
       stroke: true,
       fill: false,
@@ -447,7 +447,7 @@ function Feature(
   };
 
   this.getEditModeStyle = function() {
-    console.log('getEditModeStyle');
+    //console.log('getEditModeStyle');
     if (this.options.geometry_type == 'Point') {
       return this.getEditModeCircleMarkerStyle();
     }
@@ -457,7 +457,7 @@ function Feature(
   };
 
   this.getEditModeCircleMarkerStyle = function() {
-    console.log('getEditModeCircleMarkerStyle');
+    //console.log('getEditModeCircleMarkerStyle');
     return {
       color: "#666666",
       weight: 4,
@@ -468,7 +468,7 @@ function Feature(
   };
 
   this.getEditModePolylineStyle = function() {
-    console.log('getEditModePolylineStyle');
+    //console.log('getEditModePolylineStyle');
     var style = {
       stroke: true,
       fill: false,

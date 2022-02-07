@@ -381,6 +381,10 @@ a.hover {
   color: #263286;
 }
 
+.active-layer {
+  font-weight: bold; 
+}
+
 .text-button {
   font-size: 30px;
   border: 2px solid #263286;

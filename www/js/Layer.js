@@ -198,6 +198,7 @@ function Layer(stelle, settings = {}) {
   * create the list of features in list view at once
   */
   this.createFeatureList = function() {
+    console.log('createFeatureList for layer %s', this.get('alias'));
     kvm.log('Erzeuge die Liste der Datensätze neu.');
     $('#featurelistHeading').html(this.get('alias') ? this.get('alias') : this.get('title'));
     $('#featurelistBody').html('');
@@ -1231,7 +1232,14 @@ function Layer(stelle, settings = {}) {
     );
     kvm.log('Featuregeometrie gezeichnet', 4);
     this.layerGroup.addTo(kvm.map);
+    this.selectLayerInControl();
     kvm.log('layerGroup zur Karte hinzugefügt.', 4)
+  };
+
+  this.selectLayerInControl = function() {
+    console.log('selectLayerInControl layer: ', this.get('alias'));
+    $(".leaflet-control-layers-overlays span").removeClass('active-layer');
+    $(".leaflet-control-layers-overlays :contains('" + this.get('alias') + "') span").addClass('active-layer');
   };
 
   this.getPopup = function(feature) {

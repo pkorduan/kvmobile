@@ -315,7 +315,7 @@ function Stelle(settings = {}) {
                   resultObj.layers,
                   function(index, layerSetting) {
                     var layer, overlay;
-                    //console.log('Layer.requestLayers create layer with settings: %o', layerSetting);
+                    console.log('Layer.requestLayers create layer with settings: %o', layerSetting);
                     if (layerSetting.sync == 1) {
                       layer = new Layer(kvm.activeStelle, layerSetting);
                       layer.createTable(this);

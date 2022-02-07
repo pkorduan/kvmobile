@@ -119,7 +119,7 @@ function Overlay(stelle, settings = {}) {
         style: (this.getOverlayStyle).bind(this)
       }
     );
-		console.log('Add Layer with title: %s to layers control.', title);
+		console.log('Add Overlay with title: %s to layers control.', title);
     kvm.controls.layers.addOverlay(this.layerGroup, title);
   };
 
@@ -248,7 +248,7 @@ function Overlay(stelle, settings = {}) {
                 console.log('Add ' + collection.features.length + ' Features to the overlay');
                 this_.features = collection.features;
                 try {
-									console.log('Call drawFeatures with _this: %o', this_);
+                  console.log('Call drawFeatures with _this: %o', this_);
                   this_.drawFeatures(this_.features);
                 } catch (e) {
                   errMsg = 'Fehler beim Zeichnen der Features des Overlays ' + this_.globalId;
@@ -278,6 +278,7 @@ function Overlay(stelle, settings = {}) {
   };
 
   this.appendToApp = function() {
+    console.log('Overlay.appendToApp: %s', this.get('alias'));
     kvm.log('Füge Overlay ' + this.get('title') + ' zur Overlayliste hinzu.', 3);
     $('#overlay_list').append(this.getListItem());
     this.bindOverlayEvents();
