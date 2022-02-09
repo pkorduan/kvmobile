@@ -68,27 +68,8 @@ function Overlay(stelle, settings = {}) {
 
   this.saveSettingsToStore = function() {
     kvm.log('Speicher Settings für Overlay: ' + this.settings.title, 3);
-    //console.log('overlayIds vor dem Speichern: %o', kvm.store.getItem('overlayIds_' + this.stelle.get('id')));
-    var overlayIds = $.parseJSON(kvm.store.getItem('overlayIds_' + this.stelle.get('id'))),
-        settings = JSON.stringify(this.settings);
-
-    if (overlayIds == null) {
-      overlayIds = [];
-    }
-    settings.loaded = false;
-    kvm.store.setItem('overlaySettings_' + this.globalId, settings);
-    console.log('overlaySettings_%s eingetragen. store: %o', this.globalId, kvm.store);
-
-    if ($.inArray(this.get('id'), overlayIds) < 0) {
-      overlayIds.push(this.get('id'));
-      console.log('overlay id in overlayIds Liste aufgenommen.');
-      kvm.store.setItem(
-        'overlayIds_' + this.stelle.get('id'),
-        JSON.stringify(overlayIds)
-      );
-      console.log('neue overlayId %s eingetragen.', this.get('id'));
-    }
-    console.log('overlayIds nach dem Speichern: %o', kvm.store.getItem('overlayIds_' + this.stelle.get('id')));
+    kvm.store.setItem('overlaySettings_' + this.globalId, JSON.stringify(this.settings));
+    kvm.store.setItem('overlayIds_' + this.stelle.get('id'), JSON.stringify($.map(kvm.overlays, function(overlay) { return overlay.get('id'); })));
   };
 
   /*
@@ -98,9 +79,10 @@ function Overlay(stelle, settings = {}) {
   * from the list of overlays in settings view
   */
   this.removeFromApp = function() {
-    console.log('overlay removeFrom App');
+    console.log('  requestOverlays) fkt: removeFromApp');
     kvm.controls.layers.removeLayer(this.layerGroup);
     kvm.map.removeLayer(this.layerGroup);
+    this.layerGroup.clearLayers();
     this.layerGroup = L.layerGroup();
     this.features = [];
     delete kvm.overlays[this.globalId];
@@ -108,10 +90,6 @@ function Overlay(stelle, settings = {}) {
     kvm.store.setItem('overlayIds_' + this.stelle.get('id'), JSON.stringify(Object.keys(kvm.overlays)));
     kvm.store.removeItem('overlaySettings_' + this.globalId);
     kvm.store.removeItem('overlayFeatures_' + this.globalId);
-  };
-
-  this.addOverlayToMap = function() {
-    // create the overlay here and add it to the layer control
   };
 
   this.drawFeatures = function(features) {
@@ -122,7 +100,7 @@ function Overlay(stelle, settings = {}) {
         style: (this.getOverlayStyle).bind(this)
       }
     );
-		console.log('Add Overlay with title: %s to layers control.', title);
+    console.log('Add Overlay with title: %s to layers control.', title);
     kvm.controls.layers.addOverlay(this.layerGroup, title);
   };
 
@@ -237,30 +215,28 @@ function Overlay(stelle, settings = {}) {
                   collection = {},
                   errMsg = '';
 
-              console.log('Download Ergebnis von Overlay ' + this_.get('id') + ' (Head 1000): %s', this.result.substring(1, 1000));
+              //console.log('Download Ergebnis von Overlay ' + this_.get('id') + ' (Head 1000): %s', this.result.substring(0, 1000));
               this.result = this.result.replace("\n", "\\\n");
               try {
                 collection = $.parseJSON(this.result);
               } catch (e) {
-                errMsg = 'Fehler beim Parsen der von ' + this_.getUrl() + ' heruntergeladenen Daten: ' +  this.result.substring(1, 1000);
+                errMsg = 'Fehler beim Parsen der von ' + this_.getUrl() + ' heruntergeladenen Daten: ' +  this.result.substring(0, 1000);
                 kvm.msg(errMsg, 'Fehler');
                 kvm.log(errMsg, 1);
               }
               kvm.log('Anzahl empfangene Datensätze: ' + collection.features.length, 3);
-              if (collection.features.length > 0) {
-                console.log('Add ' + collection.features.length + ' Features to the overlay');
-                this_.features = collection.features;
-                try {
-                  console.log('Call drawFeatures with _this: %o', this_);
-                  this_.drawFeatures(this_.features);
-                } catch (e) {
-                  errMsg = 'Fehler beim Zeichnen der Features des Overlays ' + this_.globalId;
-                  kvm.msg(errMsg, 'Fehler');
-                  kvm.log(errMsg, 1);
-                }
-                kvm.overlays[globalId] = this_;
-                kvm.store.setItem('overlayFeatures_' + this_.globalId, JSON.stringify(this_.features));
+              console.log('Add ' + collection.features.length + ' Features to the overlay');
+              this_.features = collection.features;
+              try {
+                console.log('Call drawFeatures with _this: %o', this_);
+                this_.drawFeatures(this_.features);
+              } catch (e) {
+                errMsg = 'Fehler beim Zeichnen der Features des Overlays ' + this_.globalId;
+                kvm.msg(errMsg, 'Fehler');
+                kvm.log(errMsg, 1);
               }
+              kvm.overlays[globalId] = this_;
+              kvm.store.setItem('overlayFeatures_' + this_.globalId, JSON.stringify(this_.features));
               if ($('#syncOverlayIcon_' + this_.globalId).hasClass('fa-spinner')) {
                 $('#syncOverlayIcon_' + this_.globalId).toggleClass('fa-refresh fa-spinner fa-spin');
               }

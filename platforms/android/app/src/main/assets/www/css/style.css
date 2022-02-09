@@ -710,3 +710,7 @@ a.hover {
 .fa-2x {
 	font-size: 30px;
 }
+
+.no-popup-functions {
+	display: none;
+}

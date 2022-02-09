@@ -250,8 +250,7 @@ function Stelle(settings = {}) {
         //filename = 'temp_file.json',
         url = this.getLayerUrl();
 
-    kvm.log('Download Layerdaten von Url: ' + url);
-    kvm.log('Speicher die Datei auf dem Gerät in Datei: ' + filename);
+    kvm.log('requestLayers) Download Layerdaten von Url: ' + url);
 
     fileTransfer.download(
       url,
@@ -262,20 +261,20 @@ function Stelle(settings = {}) {
             var reader = new FileReader();
 
             reader.onloadend = function() {
-              kvm.log('Download der Layerdaten abgeschlossen.');
+              kvm.log('  requestLayers) Download der Layerdaten abgeschlossen.');
               var items = [],
                   validationResult = '';
-              kvm.log('Download Result: ' + this.result, 4);
+              kvm.log('  requestLayers) Download Result: ' + this.result, 4);
               resultObj = kvm.parseLayerResult(this.result);
 
               if (resultObj.success) {
                 var layers = [],
                     overlay_layers = [];
-                kvm.alog('Download der Layer der Stelle erfolgreich.', '', 3);
+                kvm.alog('  requestLayers) Download der Layer der Stelle erfolgreich.', '', 3);
                 //console.log('resultObj: %o', resultObj);
 
                 // remove existing layers
-                console.log('Entferne existierende Layer aus der Anwendung.');
+                console.log('  requestLayers) Entferne existierende Layer aus der Anwendung.');
                 $('#layer_list').html('');
                 if ('layerIds_' + kvm.activeStelle.get('id') in kvm.store) {
                   JSON.parse(kvm.store['layerIds_' + kvm.activeStelle.get('id')]).map(
@@ -289,7 +288,7 @@ function Stelle(settings = {}) {
                 kvm.store.removeItem('activeLayerId');
 
                 // remove existing overlays
-                console.log('Entferne existierende Overlays aus der Anwendung.');
+                console.log('  requestLayers) Entferne existierende Overlays aus der Anwendung.');
                 // Entferne Overlays aus dem Layer control
                 if ('overlayIds_' + kvm.activeStelle.get('id') in kvm.store) {
                   JSON.parse(kvm.store['overlayIds_' + kvm.activeStelle.get('id')]).map(
@@ -297,7 +296,7 @@ function Stelle(settings = {}) {
                       var globalId = kvm.activeStelle.get('id') + '_' + id;
                       $('#overlay_' + globalId).remove();
                       if (kvm.overlays[globalId]) {
-                        console.log('Remove Overlay ' + globalId + ' from overlay list.');
+                        console.log('  requestLayers) Remove Overlay ' + globalId + ' from overlay list.');
                         kvm.overlays[globalId].removeFromApp();
                       }
                     }
@@ -310,25 +309,22 @@ function Stelle(settings = {}) {
 
                 kvm.activeStelle.numLayers = resultObj.layers.filter(function(l) { return l.sync == 1; }).length;
                 // add requested layers
-                console.log('Füge neu runtergeladene Layer zur Anwendung hinzu.');
+                console.log('  requestLayers) Füge neu runtergeladene Layer zur Anwendung hinzu.');
                 $.each(
                   resultObj.layers,
                   function(index, layerSetting) {
                     var layer, overlay;
-                    console.log('Layer.requestLayers create layer with settings: %o', layerSetting);
+                    console.log('  requestLayers) Layer.requestLayers create layer with settings: %o', layerSetting);
                     if (layerSetting.sync == 1) {
                       layer = new Layer(kvm.activeStelle, layerSetting);
                       layer.createTable(this);
                       layer.appendToApp();
                     }
                     else {
-                      console.log('Zeige Overlay %s an.', layerSetting.title);
+                      console.log('  requestLayers) Zeige Overlay %s an.', layerSetting.title);
                       overlay = new Overlay(kvm.activeStelle, layerSetting);
                       overlay.saveSettingsToStore(); // save layersettings to local storage
                       overlay.appendToApp();
-                      overlay.features = [];
-                      overlay.layerGroup.clearLayers();
-                      overlay.addOverlayToMap(); // create the leaflet overlay and add to map
                       overlay.reloadData(); // load data of overlay from remote resource, save the data in local storage and add it to the overlay in leaflet
                     }
                   }
@@ -374,9 +370,7 @@ function Stelle(settings = {}) {
         //filename = 'temp_file.json',
         url = this.getLayerUrl();
 
-    kvm.log('Download Layerdaten von Url: ' + url);
-    kvm.log('Speicher die Datei auf dem Gerät in Datei: ' + filename);
-
+    kvm.log('requestOverlays) Download Layerdaten von Url: ' + url);
     fileTransfer.download(
       url,
       filename,
@@ -386,49 +380,48 @@ function Stelle(settings = {}) {
             var reader = new FileReader();
 
             reader.onloadend = function() {
-              kvm.log('Download der Layerdaten abgeschlossen.');
+              kvm.log('  requestOverlays) - Download der Layerdaten abgeschlossen.');
               var items = [],
                   validationResult = '';
-              kvm.log('Download Result: ' + this.result, 4);
+              kvm.log('  requestOverlays) - Download Result: ' + this.result.substring(1, 1000), 4);
               resultObj = kvm.parseLayerResult(this.result);
 
               if (resultObj.success) {
                 var layers = [],
                     overlay_layers = [];
-                kvm.alog('Download der Layer der Stelle erfolgreich.', '', 3);
+                kvm.alog('  requestOverlays) Download der Layer der Stelle erfolgreich.', '', 3);
                 //console.log('resultObj: %o', resultObj);
 
                 // remove existing overlays
-                console.log('Entferne existierende Overlays aus der Anwendung.');
-                // Entferne Overlays aus dem Layer control
+                console.log('  requestOverlays) Entferne existierende Overlays aus der Anwendung.');
+                // Entferne Overlays aus der App, dem Layer control und der Karte
                 if ('overlayIds_' + kvm.activeStelle.get('id') in kvm.store) {
+                  console.log('  requestOverlays) parse overlayIds setting from store');
                   JSON.parse(kvm.store['overlayIds_' + kvm.activeStelle.get('id')]).map(
-                    function(id) {
-                      var globalId = kvm.activeStelle.get('id') + '_' + id;
+                    function(globalId) {
                       if (kvm.overlays[globalId]) {
+                        console.log('  requestOverlays) overlay exists, remove From App');
                         kvm.overlays[globalId].removeFromApp();
                       }
                     }
                   );
                 }
 
-                kvm.activeStelle.numLayers = resultObj.layers.filter(function(l) { return l.sync == 1; }).length;
-                console.log('Füge neu runtergeladene Overlays zur Anwendung hinzu.');
+                kvm.activeStelle.numOverlays = resultObj.layers.filter(function(l) { return l.sync == 1; }).length;
+                console.log('  requestOverlays) Füge neu %s runtergeladene Overlays zur Anwendung hinzu.', kvm.activeStelle.numOverlays);
                 $.each(
                   resultObj.layers,
                   function(index, layerSetting) {
                     var overlay;
                     if (layerSetting.sync != 1) {
-                      console.log('Zeige Overlay %s an.', layerSetting.title);
+                      console.log('  requestOverlays) Zeige Overlay %s an.', layerSetting.title);
                       overlay = new Overlay(kvm.activeStelle, layerSetting);
                       overlay.saveSettingsToStore(); // save layersettings to local storage
                       overlay.appendToApp();
-                      overlay.addOverlayToMap(); // create the leaflet overlay and add to map
                       overlay.reloadData(); // load data of overlay from remote resource, save the data in local storage and add it to the overlay in leaflet
                     }
                   }
                 );
-
                 kvm.setConnectionStatus();
                 $('#sperr_div').hide();
               }

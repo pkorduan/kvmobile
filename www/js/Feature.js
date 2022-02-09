@@ -71,10 +71,6 @@ function Feature(
     }
   };
 
-  this.showPopupButtons = function() {
-    return kvm.activeLayer.showPopupButtons;
-  };
-
   this.getAsArray = function(key) {
     return (this.data[key] ? this.data[key].slice(1, -1).split(',') : []);
   };
@@ -298,10 +294,6 @@ function Feature(
       }
       kvm.map.panTo(kvm.map._layers[this.layerId].getLatLng());
 */
-      if (!this.showPopupButtons()) {
-        console.log('hide popup-functinos in select because showPopupButtons is false');
-        $('.popup-functions').hide();
-      }
     }
     else {
       console.log('Feature hat noch eine newGeom und noch nicht in Karte');

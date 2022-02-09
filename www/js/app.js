@@ -1,6 +1,6 @@
 window.open = cordova.InAppBrowser.open;
 kvm = {
-  version: '1.7.10',
+  version: '1.7.11',
   Buffer: require('buffer').Buffer,
   wkx: require('wkx'),
   controls: {},
@@ -362,8 +362,8 @@ kvm = {
       console.log('gestartet Fehler: %o', e);
     }
 */
-    this.db = window.sqlitePlugin.openDatabase(
-      {
+
+    this.db = window.sqlitePlugin.openDatabase({
         name: config.dbname + '.db',
         location: 'default',
         androidDatabaseImplementation: 2
@@ -372,14 +372,8 @@ kvm = {
         //kvm.log('Lokale Datenbank geöffnet.', 3);
         $('#dbnameText').html(config.dbname + '.db');
 
-        /**
-        * Check if device supports fingerprint
-        * @return {
-        *      isAvailable:boolean,
-        *      isHardwareDetected:boolean,
-        *      hasEnrolledFingerprints:boolean
-        *   }
-        */
+        //kvm.startApplication();
+
         FingerprintAuth.isAvailable(
           function (result) {
             console.log("FingerprintAuth available: " + JSON.stringify(result));
@@ -426,6 +420,7 @@ kvm = {
             //console.log("isAvailableError(): " + message);
           }
         );
+
       },
       function (error) {
         kvm.msg('Open database ERROR: ' + JSON.stringify(error), 'Fehler');
@@ -532,6 +527,8 @@ kvm = {
             overlaySettings = this.store.getItem('overlaySettings_' + activeStelleId + '_' + overlayId);
             if (overlaySettings != null) {
               overlay = new Overlay(stelle, overlaySettings);
+              kvm.overlays.push(overlay);
+              overlay.saveSettingsToStore(); // save layersettings to local storage
               overlay.appendToApp();
               overlay.addOverlayToMap(); // create the leaflet overlay and add to map
               overlay.loadData();
@@ -642,7 +639,7 @@ kvm = {
     }
 
 //    L.PM.initialize({ optIn: true });
-    kvm.myRenderer = L.canvas({ padding: 0.5 });
+    kvm.myRenderer = L.canvas({ padding: 0.5, tolerance: 7 });
     kvm.controls.layers = L.control.layers(
       baseMaps
     ).addTo(map);
@@ -1614,250 +1611,6 @@ kvm = {
     kvm.showItem('dataView');
   },
 
-  /*
-  * Erzeugt die Events für die Auswahl, Synchronisierung und das Zurücksetzen von Layern
-  */
-  bindLayerEvents: function(layerGlobalId = 0) {
-    console.log('bindLayerEvents for layerGlobalId: %s', layerGlobalId);
-    // Schaltet alle layer function button events zunächst aus.
-    $('.layer-function-button').off()
-    //
-    // Schaltet einen anderen Layer und deren Sync-Funktionen aktiv
-    // Die Einstellungen des Layers werden aus dem Store geladen
-    // Die Featureliste und Kartenelemente werden falls vorhanden aus der Datenbank geladen.
-    //
-    $('input[name=activeLayerId]' + (layerGlobalId > 0 ? "[value='" + layerGlobalId + "']" : '')).on(
-      'change',
-      function(evt) {
-        var id = evt.target.value,
-            layerSettings = kvm.store.getItem('layerSettings_' + id);
-            layer = new Layer(kvm.activeStelle, layerSettings);
-
-//        layer.readData();
-        layer.setActive(); // include loading filter, sort, data view, form and readData
-        $('input:checkbox.leaflet-control-layers-selector').map(function (i, e) {
-          var layerLegendName = $(e).next().html();
-          if (layerLegendName.includes(kvm.activeLayer.get('alias'))) {
-            if (!$(e).checked) {
-              $(e).click(); // switch activeLayer on if it is off 
-            }
-          }
-          else {
-            if ($(e).checked) {
-              $(e).click(); // switch other layer off if they are on
-            }
-          }
-        });
-
-//        kvm.showItem('featurelist');
-      }
-    );
-
-    $('#layer-functions-button_' + layerGlobalId).on(
-      'click',
-      function(evt) {
-        var target = $(evt.target);
-        console.log('click on layer-functions-button von div %o', target.parent().attr('id'));
-        target.parent().children().filter('.layer-functions-div').toggle();
-        target.toggleClass('fa-ellipsis-v fa-window-close-o');
-      }
-    );
-
-    $('.sync-layer-button' + (layerGlobalId > 0 ? "[id='syncLayerButton_" + layerGlobalId + "']" : '')).on(
-      'click',
-      function(evt) {
-        var layer = kvm.activeLayer,
-            target = $(evt.target);
-
-        $('#sperr_div_content').html('');
-
-        if (target.hasClass('inactive-button')) {
-          kvm.msg('Keine Internetverbindung! Kann Layer jetzt nicht synchronisieren.');
-        }
-        else {
-          $('#syncLayerIcon_' + layer.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
-          $('#sperr_div').show();
-
-          if (layer.runningSyncVersion == 0) {
-            navigator.notification.confirm(
-              'Daten vom Server holen. Danach können eigene Änderungen synchronisiert werden.',
-              function(buttonIndex) {
-                if (buttonIndex == 1) { // ja
-                  layer.requestData();
-                }
-                else {
-                  $('#syncLayerIcon_' + layer.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
-                  $('#sperr_div').hide();
-                }
-              },
-              'Layer mit Server synchronisieren',
-              ['ja', 'nein']
-            );
-          }
-          else {
-            navigator.notification.confirm(
-              'Jetzt lokale Änderungen, fallse vorhanden, zum Server schicken und Änderungen vom Server holen und lokal einspielen?',
-              function(buttonIndex) {
-                if (buttonIndex == 1) { // ja
-                  layer.syncData();
-                }
-                else {
-                  $('#syncLayerIcon_' + layer.getGlobalId()).toggleClass('fa-refresh fa-spinner fa-spin');
-                  $('#sperr_div').hide();
-                }
-              },
-              'Layer mit Server synchronisieren',
-              ['ja', 'nein']
-            );
-          }
-        }
-      }
-    );
-
-    $('.sync-images-button' + (layerGlobalId > 0 ? "[id='syncImagesButton_" + layerGlobalId + "']" : '')).on(
-      'click',
-      function(evt) {
-        var layer = kvm.activeLayer,
-            target = $(evt.target);
-
-        if (target.hasClass('inactive-button')) {
-          kvm.msg('Keine Internetverbindung! Kann Bilder jetzt nicht synchronisieren.');
-        }
-        else {
-          navigator.notification.confirm(
-            'Bilder mit Server Synchronisieren?',
-            function(buttonIndex) {
-              if (buttonIndex == 1) { // ja
-                $('#syncImageIcon_' + layer.getGlobalId()).toggleClass('fa-upload fa-spinner fa-spin');
-                $('#sperr_div').show();
-                layer.syncImages();
-              }
-              if (buttonIndex == 2) { // nein
-                // Do nothing
-              }
-
-            },
-            '',
-            ['ja', 'nein']
-          );
-        }
-      }
-    );
-
-    $('.clear-layer-button' + (layerGlobalId > 0 ? "[id='clearLayerButton_" + layerGlobalId + "']" : '')).on(
-      'click',
-      function(evt) {
-        var id = evt.target.value,
-            layer = kvm.activeLayer;
-
-        if (layer.isEmpty()) {
-          navigator.notification.confirm(
-            'Layer ist schon geleert!',
-            function (buttonIndex) {
-            },
-            'Datenbank',
-            ['OK']
-          );
-        }
-        else {
-          navigator.notification.confirm(
-            'Alle lokale Daten und nicht hochgeladene Änderungen wirklich Löschen?',
-            function(buttonIndex) {
-              if (buttonIndex == 1) { // ja
-                $('#clearLayerIcon_' + layer.getGlobalId()).toggleClass('fa-ban fa-spinner fa-spin');
-                layer.clearData();
-              }
-              if (buttonIndex == 2) { // nein
-                // Do nothing
-              }
-            },
-            '',
-            ['ja', 'nein']
-          );
-        }
-      }
-    );
-
-    $('.reload-layer-button' + (layerGlobalId > 0 ? "[id='reloadLayerButton_" + layerGlobalId + "']" : '')).on(
-      'click',
-      function(evt) {
-        var id = evt.target.value,
-            layer = kvm.activeLayer;
-
-        if (!layer.isEmpty()) {
-          navigator.notification.confirm(
-            'Layer ist noch nicht geleert. Die Daten des Layers auf dem Endgerät müssen erst gelöscht werden.',
-            function (buttonIndex) {
-            },
-            'Datenbank',
-            ['OK']
-          );
-        }
-        else {
-          navigator.notification.confirm(
-            'Die Einstellungen des Layers neu laden und die Tabelle neu anlegen.',
-            function(buttonIndex) {
-              if (buttonIndex == 1) { // ja
-                var layer = kvm.activeLayer;
-                $('#reloadLayerIcon_' + layer.getGlobalId()).toggleClass('fa-window-restore fa-spinner fa-spin');
-                console.log('reload layer id: %s', layer.get('id'));
-                kvm.activeStelle.reloadLayer(layer.get('id'));
-              }
-              if (buttonIndex == 2) { // nein
-                // Do nothing
-              }
-            },
-            '',
-            ['ja', 'nein']
-          );
-        }
-      }
-    );
-
-/*
-    $('#short_password_field').on(
-      'keyup',
-      function(e) {
-        if (e.target.value.length == 4) {
-          console.log('login with short password');
-        }
-      }
-    );
-
-    $('#password_field').on(
-      'keyup',
-      function(e) {
-        if (e.target.value.length > 0) {
-          $('#password_ok_button').show();
-        }
-        else {
-          $('#password_ok_button').hide();
-        }
-      }
-    );
-
-    $('#password_view_checkbox').on(
-      'change',
-      function(e) {
-        console.log('checkbox changed');
-        if (e.target.checked) {
-          $('#password_field').attr('type', 'text');
-        }
-        else {
-          $('#password_field').attr('type', 'password');
-        }
-      }
-    );
-
-    $('#password_ok_button').on(
-      'click',
-      function(e) {
-        console.log('login with password');
-      }
-    );
-*/
-  },
-
   setConnectionStatus: function() {
     kvm.log('setConnectionStatus');
     NetworkStatus.load();
@@ -1922,11 +1675,13 @@ kvm = {
       case 'mapEdit':
         $(".menu-button").hide();
         $("#showFormEdit, #saveFeatureButton, #saveFeatureButton, #cancelFeatureButton").show();
-        if (kvm.activeLayer && parseInt(kvm.activeLayer.get('privileg')) == 2) {
+        if (kvm.activeLayer && parseInt(kvm.activeLayer.get('privileg')) == 2 && !kvm.activeLayer.activeFeature.options.new) {
           $('#deleteFeatureButton').show();
         }
         $("#map").show();
         kvm.map.invalidateSize();
+        kvm.map.zoomOut();
+        kvm.map.zoomIn();
         break;
       case "dataView":
         $(".menu-button").hide();
@@ -1942,7 +1697,7 @@ kvm = {
       case "formular":
         $(".menu-button").hide();
         $("#showMapEdit, #saveFeatureButton, #saveFeatureButton, #cancelFeatureButton").show();
-        if (kvm.activeLayer && parseInt(kvm.activeLayer.get('privileg')) == 2) {
+        if (kvm.activeLayer && parseInt(kvm.activeLayer.get('privileg')) == 2 && !kvm.activeLayer.activeFeature.options.new) {
           $('#deleteFeatureButton').show();
         }
         $("#formular").show().scrollTop(0);
