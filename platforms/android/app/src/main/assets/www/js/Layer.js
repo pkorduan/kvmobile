@@ -2502,7 +2502,7 @@ function Layer(stelle, settings = {}) {
 
 //        layer.readData();
         // unselect active Feature
-        if (kvm.activeLayer.activeFeature) {
+        if (kvm.activeLayer && kvm.activeLayer.activeFeature) {
           kvm.map.closePopup();
           kvm.activeLayer.activeFeature.unselect();
         }

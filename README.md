@@ -8,6 +8,8 @@ https://github.com/srahn/kvwmap/
 http://kvwmap.de
 
 # Change log
+## 1.7.12
+	* Fix Bug beim erstmaligen Wechseln zwkschen Layern nach dem Laden von der Stelle.
 ## 1.7.11
 	* Fix Bugs durch doppelt geladene oder nicht korrekt entfernte Layer
 	* Steuerung der Darstellung der Popup Funktionen an nur einer Stelle in Funktion per Style
