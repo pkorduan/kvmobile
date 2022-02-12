@@ -1,4 +1,5 @@
 plattforms/android/.gradle/*
 plattforms/android/assets/*
-www/js/config.js
+www/js/*
 www/3rdparty/*
+node_modules/*

@@ -1,6 +1,6 @@
-# A File Opener Plugin for Cordova (The Original Version)
+# A File Opener Plugin for Cordova
 
-[![Latest Stable Version](https://img.shields.io/npm/v/cordova-plugin-file-opener2.svg)](https://www.npmjs.com/package/cordova-plugin-file-opener2) [![Total Downloads](https://img.shields.io/npm/dt/cordova-plugin-file-opener2.svg)](https://npm-stat.com/charts.html?package=cordova-plugin-file-opener2) [![Build Status](https://travis-ci.org/apache/cordova-plugin-file-opener2.svg?branch=master)](https://travis-ci.org/apache/cordova-plugin-file-opener2)
+[![Latest Stable Version](https://img.shields.io/npm/v/cordova-plugin-file-opener2.svg)](https://www.npmjs.com/package/cordova-plugin-file-opener2) [![Total Downloads](https://img.shields.io/npm/dt/cordova-plugin-file-opener2.svg)](https://npm-stat.com/charts.html?package=cordova-plugin-file-opener2)
 
 This plugin will open a file on your device file system with its default application.
 
@@ -35,10 +35,22 @@ If you are using the `cordova-android-support-gradle-release` plugin it should m
 
 The following platforms and versions are supported by the latest release:
 
-- Android 4.4+ / iOS 9+ / WP8 / Windows
+- Android 4.4+ / iOS 9+ / Windows / Electron
 - Cordova CLI 7.0 or higher
 
 Cordova CLI 6.0 is supported by 2.0.19, but there are a number of issues, particularly with Android builds (see [232](https://github.com/pwlin/cordova-plugin-file-opener2/issues/232) [203](https://github.com/pwlin/cordova-plugin-file-opener2/issues/203) [207](https://github.com/pwlin/cordova-plugin-file-opener2/issues/207)). Using the [cordova-android-support-gradle-release](https://github.com/dpa99c/cordova-android-support-gradle-release) plugin may help.
+
+### AndroidX Support
+
+Currently if your project requires AndroidX support, you need to add the following two plugins to your project:
+
+- [cordova-plugin-androidx](https://github.com/dpa99c/cordova-plugin-androidx/) and [cordova-plugin-androidx-adapter](https://github.com/dpa99c/cordova-plugin-androidx-adapter/)
+```shell
+$ cordova plugin add cordova-plugin-androidx
+$ cordova plugin add cordova-plugin-androidx-adapter
+```
+Just adding these plugins should be enough and no further changes are necessary.
+
 
 ## fileOpener2.open(filePath, mimeType, options)
 
@@ -49,7 +61,7 @@ Opens a file
 - Android 4.4+
 - iOS 9+
 - Windows
-- WP8
+- Electron
 
 ### Quick Examples
 Open an APK install dialog:
@@ -77,6 +89,8 @@ cordova.plugins.fileOpener2.open(
     }
 );
 ```
+
+__Note on Electron:__ Do not forget to enable Node.js in your app by adding `"nodeIntegration": true` to `platforms/electron/platform_www/cdv-electron-settings.json` file, See [Cordova-Electron documentation](https://cordova.apache.org/docs/en/latest/guide/platforms/electron/index.html#customizing-the-application's-window-options).
 
 ### Market place installation
 Install From Market: to install an APK from a market place, such as Google Play or the App Store, you can use an `<a>` tag in combination with the `market://` protocol:
@@ -112,14 +126,18 @@ cordova.plugins.fileOpener2.showOpenWithDialog(
         },
         success : function () {
             console.log('file opened successfully');
-        }
+        },
+        position : [0, 0]
     }
 );
 ```
+`position` array of coordinates from top-left device screen, use for iOS dialog positioning.
 
 ## fileOpener2.uninstall(packageId, callbackContext)
 
-Uninstall a package with its ID
+Uninstall a package with its ID. 
+
+__Note__: You need to add `<uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />` to your `AndroidManifest.xml`
 
 ### Supported Platforms
 
