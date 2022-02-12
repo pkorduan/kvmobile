@@ -21,9 +21,9 @@ description: Get information about wireless connectivity.
 #         under the License.
 -->
 
-|Android 4.4|Android 5.1|Android 6.0|iOS 9.3|iOS 10.0|Windows 10 Store|Travis CI|
-|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-|[![Build Status](http://cordova-ci.cloudapp.net:8080/buildStatus/icon?job=cordova-periodic-build/PLATFORM=android-4.4,PLUGIN=cordova-plugin-network-information)](http://cordova-ci.cloudapp.net:8080/job/cordova-periodic-build/PLATFORM=android-4.4,PLUGIN=cordova-plugin-network-information/)|[![Build Status](http://cordova-ci.cloudapp.net:8080/buildStatus/icon?job=cordova-periodic-build/PLATFORM=android-5.1,PLUGIN=cordova-plugin-network-information)](http://cordova-ci.cloudapp.net:8080/job/cordova-periodic-build/PLATFORM=android-5.1,PLUGIN=cordova-plugin-network-information/)|[![Build Status](http://cordova-ci.cloudapp.net:8080/buildStatus/icon?job=cordova-periodic-build/PLATFORM=android-6.0,PLUGIN=cordova-plugin-network-information)](http://cordova-ci.cloudapp.net:8080/job/cordova-periodic-build/PLATFORM=android-6.0,PLUGIN=cordova-plugin-network-information/)|[![Build Status](http://cordova-ci.cloudapp.net:8080/buildStatus/icon?job=cordova-periodic-build/PLATFORM=ios-9.3,PLUGIN=cordova-plugin-network-information)](http://cordova-ci.cloudapp.net:8080/job/cordova-periodic-build/PLATFORM=ios-9.3,PLUGIN=cordova-plugin-network-information/)|[![Build Status](http://cordova-ci.cloudapp.net:8080/buildStatus/icon?job=cordova-periodic-build/PLATFORM=ios-10.0,PLUGIN=cordova-plugin-network-information)](http://cordova-ci.cloudapp.net:8080/job/cordova-periodic-build/PLATFORM=ios-10.0,PLUGIN=cordova-plugin-network-information/)|[![Build Status](http://cordova-ci.cloudapp.net:8080/buildStatus/icon?job=cordova-periodic-build/PLATFORM=windows-10-store,PLUGIN=cordova-plugin-network-information)](http://cordova-ci.cloudapp.net:8080/job/cordova-periodic-build/PLATFORM=windows-10-store,PLUGIN=cordova-plugin-network-information/)|[![Build Status](https://travis-ci.org/apache/cordova-plugin-network-information.svg?branch=master)](https://travis-ci.org/apache/cordova-plugin-network-information)|
+|AppVeyor|Travis CI|
+|:-:|:-:|
+|[![Build status](https://ci.appveyor.com/api/projects/status/github/apache/cordova-plugin-network-information?branch=master)](https://ci.appveyor.com/project/ApacheSoftwareFoundation/cordova-plugin-network-information)|[![Build Status](https://travis-ci.org/apache/cordova-plugin-network-information.svg?branch=master)](https://travis-ci.org/apache/cordova-plugin-network-information)|
 
 # cordova-plugin-network-information
 
@@ -35,25 +35,16 @@ wifi connection, and whether the device has an internet connection.
 
 > To get a few ideas how to use the plugin, check out the [sample](#sample) at the bottom of this page or go straight to the [reference](#reference) content.
 
-Report issues with this plugin on the [Apache Cordova issue tracker][Apache Cordova issue tracker].
-
-##<a name="reference"></a>Reference
-
 ## Installation
 
     cordova plugin add cordova-plugin-network-information
 
 ## Supported Platforms
 
-- Amazon Fire OS
 - Android
-- BlackBerry 10
 - Browser
 - iOS
-- Windows Phone 7 and 8
-- Tizen
 - Windows
-- Firefox OS
 
 # Connection
 
@@ -101,39 +92,14 @@ function checkConnection() {
 checkConnection();
 ```
 
-### API Change
-
-Until Cordova 2.3.0, the `Connection` object was accessed via
-`navigator.network.connection`, after which it was changed to
-`navigator.connection` to match the W3C specification.  It's still
-available at its original location, but is deprecated and will
-eventually be removed.
-
 ### iOS Quirks
 
 - <iOS7 can't detect the type of cellular network connection.
     - `navigator.connection.type` is set to `Connection.CELL` for all cellular data.
 
-### Windows Phone Quirks
-
-- When running in the emulator, always detects `navigator.connection.type` as `Connection.UNKNOWN`.
-
-- Windows Phone can't detect the type of cellular network connection.
-    - `navigator.connection.type` is set to `Connection.CELL` for all cellular data.
-
 ### Windows Quirks
 
 - When running in the Phone 8.1 emulator, always detects `navigator.connection.type` as `Connection.ETHERNET`.
-
-### Tizen Quirks
-
-- Tizen can only detect a WiFi or cellular connection.
-    - `navigator.connection.type` is set to `Connection.CELL_2G` for all cellular data.
-
-### Firefox OS Quirks
-
-- Firefox OS can't detect the type of cellular network connection.
-    - `navigator.connection.type` is set to `Connection.CELL` for all cellular data.
 
 ### Browser Quirks
 
@@ -169,17 +135,13 @@ function onOffline() {
 }
 ```
 
+### Quirks
+
+This plugin is unable to broadcast events while in the background. Use `navigator.connection.type` to check connection status on the [resume](https://cordova.apache.org/docs/en/latest/cordova/events/events.html#resume) event instead.
+
 ### iOS Quirks
 
 During initial startup, the first offline event (if applicable) takes at least a second to fire.
-
-### Windows Phone 7 Quirks
-
-When running in the Emulator, the `connection.status` is always unknown, so this event does _not_ fire.
-
-### Windows Phone 8 Quirks
-
-The Emulator reports the connection type as `Cellular`, which does not change, so the event does _not_ fire.
 
 ## online
 
@@ -209,19 +171,15 @@ function onOnline() {
 }
 ```
 
+### Quirks
+
+This plugin is unable to broadcast events while in the background. Use `navigator.connection.type` to check connection status on the [resume](https://cordova.apache.org/docs/en/latest/cordova/events/events.html#resume) event instead.
+
 ### iOS Quirks
 
 During initial startup, the first `online` event (if applicable) takes
 at least a second to fire, prior to which `connection.type` is
 `UNKNOWN`.
-
-### Windows Phone 7 Quirks
-
-When running in the Emulator, the `connection.status` is always unknown, so this event does _not_ fire.
-
-### Windows Phone 8 Quirks
-
-The Emulator reports the connection type as `Cellular`, which does not change, so events does _not_ fire.
 
 ## Sample: Upload a File Depending on your Network State <a name="sample"></a>
 
@@ -275,34 +233,52 @@ function onOnline() {
 
 When the online event fires in the preceding code, call the app's `tryToUploadFile` function.
 
-If the FileTransfer object's upload function fails, call the app's `offlineWrite` function to save the current data somewhere.
+If the upload fails, then call the app's `offlineWrite` function to save the current data somewhere.
 
->*Note* This example requires the FileTransfer plugin.
+>*Note* For simplicity, file reading & writing was omitted. Refer to the [cordova-plugin-file](https://github.com/apache/cordova-plugin-file#cordova-plugin-file) documentation for more information on file handling.
 
 ```js
 function tryToUploadFile() {
     // !! Assumes variable fileURL contains a valid URL to a text file on the device,
     var fileURL = getDataFileEntry().toURL();
+    
+    getFileBlobSomehow(fileURL, function(fileBlob) {
+        var success = function (r) {
+            console.log("Response = " + r.response);
+            display("Uploaded. Response: " + r.response);
+        };
 
-    var success = function (r) {
-        console.log("Response = " + r.response);
-        display("Uploaded. Response: " + r.response);
-    }
+        var fail = function (error) {
+            console.log("An error has occurred: Code = " + error.code || error.status);
+            offlineWrite("Failed to upload: some offline data");
+        }
 
-    var fail = function (error) {
-        console.log("An error has occurred: Code = " + error.code);
-        offlineWrite("Failed to upload: some offline data");
-    }
+        var xhr = new XMLHttpRequest();
 
-    var options = new FileUploadOptions();
-    options.fileKey = "file";
-    options.fileName = fileURL.substr(fileURL.lastIndexOf('/') + 1);
-    options.mimeType = "text/plain";
+        xhr.onerror = fail;
+        xhr.ontimeout = fail;
+        xhr.onload = function() {
+            // If the response code was successful...
+            if (xhr.status >= 200 && xhr.status < 400) {
+                success(xhr);
+            }
+            else {
+                fail(xhr)
+            }
+        }
 
-    var ft = new FileTransfer();
-    // Make sure you add the domain of your server URL to the
-    // Content-Security-Policy <meta> element in index.html.
-    ft.upload(fileURL, encodeURI(SERVER), success, fail, options);
+        // Make sure you add the domain of your server URL to the
+        // Content-Security-Policy <meta> element in index.html.
+        xhr.open("POST", encodeURI(SERVER));
+
+        xhr.setRequestHeader("Content-Type", "text/plain");
+
+        // The server request handler could read this header to
+        // set the filename.
+        xhr.setRequestHeader("X-Filename", fileURL.substr(fileURL.lastIndexOf("/") + 1));
+
+        xhr.send(fileBlob);
+    });
 };
 ```
 
@@ -337,5 +313,3 @@ function onOffline() {
     console.log("lost connection");
 }
 ```
- 
-[Apache Cordova issue tracker]: https://issues.apache.org/jira/issues/?jql=project%20%3D%20CB%20AND%20status%20in%20%28Open%2C%20%22In%20Progress%22%2C%20Reopened%29%20AND%20resolution%20%3D%20Unresolved%20AND%20component%20%3D%20%22Plugin%20Network%20Information%22%20ORDER%20BY%20priority%20DESC%2C%20summary%20ASC%2C%20updatedDate%20DESC

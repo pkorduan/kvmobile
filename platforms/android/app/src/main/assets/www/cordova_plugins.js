@@ -298,6 +298,14 @@ cordova.define('cordova/plugin_list', function(require, exports, module) {
       "runs": true
     },
     {
+      "id": "cordova-plugin-inappbrowser.inappbrowser",
+      "file": "plugins/cordova-plugin-inappbrowser/www/inappbrowser.js",
+      "pluginId": "cordova-plugin-inappbrowser",
+      "clobbers": [
+        "cordova.InAppBrowser.open"
+      ]
+    },
+    {
       "id": "cordova-plugin-network-information.network",
       "file": "plugins/cordova-plugin-network-information/www/network.js",
       "pluginId": "cordova-plugin-network-information",
@@ -321,14 +329,6 @@ cordova.define('cordova/plugin_list', function(require, exports, module) {
       "clobbers": [
         "SQLitePlugin"
       ]
-    },
-    {
-      "id": "cordova-plugin-inappbrowser.inappbrowser",
-      "file": "plugins/cordova-plugin-inappbrowser/www/inappbrowser.js",
-      "pluginId": "cordova-plugin-inappbrowser",
-      "clobbers": [
-        "cordova.InAppBrowser.open"
-      ]
     }
   ];
   module.exports.metadata = {
@@ -343,9 +343,9 @@ cordova.define('cordova/plugin_list', function(require, exports, module) {
     "cordova-plugin-file-opener2": "2.0.19",
     "cordova-plugin-file-transfer": "1.6.3",
     "cordova-plugin-geolocation": "2.4.3",
+    "cordova-plugin-inappbrowser": "5.0.0",
     "cordova-plugin-network-information": "1.3.3",
     "cordova-plugin-whitelist": "1.3.3",
-    "cordova-sqlite-evplus-legacy-attach-detach-free": "0.8.3-pre5",
-    "cordova-plugin-inappbrowser": "5.0.0"
+    "cordova-sqlite-evplus-legacy-attach-detach-free": "0.8.3-pre5"
   };
 });

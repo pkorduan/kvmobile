@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+        "rootDir": "src/ts",
+        "outDir": "www/js",
+        "strict": false,
+        "removeComments": false,
+        "module": "none",
+        "moduleResolution": "node",
+        "inlineSourceMap": false,
+        "sourceMap": true,
+        "experimentalDecorators": true,
+        "target": "ES2016",
+        "allowJs": true,
+        "allowUmdGlobalAccess": true
+    },
+
+    "include": ["src/ts/**/*"],
+    "exclude": ["node_modules/**"]
+}
