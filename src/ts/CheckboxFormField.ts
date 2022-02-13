@@ -1,4 +1,4 @@
-function CheckboxFormField(formId, settings) {
+function CheckboxFormField(formId, settings):void {
   this.settings = settings,
 
   this.get = function(key) {

@@ -1,4 +1,4 @@
-configurations = [
+configurationsYY = [
   {
     name: 'Standard',
     dbname: 'kvmobile',

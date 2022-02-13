@@ -11,6 +11,7 @@
   "author": "Peter Korduan",
   "license": "GPL 3.0",
   "dependencies": {
+    "@maplibre/maplibre-gl-leaflet": "^0.0.15",
     "com.ionic.keyboard": "https://github.com/Telerik-Verified-Plugins/Keyboard",
     "cordova-plugin-android-fingerprint-auth": "^1.5.0",
     "cordova-plugin-camera": "^2.4.1",
@@ -27,8 +28,7 @@
     "cordova-sqlite-storage": "^6.0.0",
     "ionic-plugin-keyboard": "git+https://github.com/Telerik-Verified-Plugins/Keyboard.git",
     "jquery": "^3.6.0",
-    "leaflet": "^1.7.1",
-    "maplibre-gl": "^2.1.1"
+    "leaflet": "^1.7.1"
   },
   "cordova": {
     "plugins": {
@@ -63,9 +63,11 @@
   "devDependencies": {
     "@types/cordova": "^0.0.34",
     "@types/cordova-plugin-file-opener2": "^2.0.0",
+    "@types/cordova-sqlite-storage": "^1.5.5",
     "@types/jquery": "^3.5.13",
     "@types/leaflet": "^1.7.9",
     "cordova-android": "^10.1.1",
-    "cordova-browser": "^6.0.0"
+    "cordova-browser": "^6.0.0",
+    "typescript": "^4.5.5"
   }
 }
