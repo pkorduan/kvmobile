@@ -1,4 +1,9 @@
-function Overlay(stelle, settings = {}): void {
+import * as L from "leaflet";
+
+import { kvm } from "./app";
+import { Attribute } from "./Attribute";
+
+export function Overlay(stelle, settings = {}): void {
     var overlay_ = this;
     this.stelle = stelle;
     this.settings = typeof settings == "string" ? $.parseJSON(settings) : settings;

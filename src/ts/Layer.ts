@@ -1,8 +1,14 @@
 /// <reference types="cordova-plugin-file-transfer" />
 /// <reference types="cordova-plugin-device" />
+
+import * as L from "leaflet";
+import { kvm } from "./app";
+import { Attribute } from "./Attribute";
+import { Feature } from "./Feature";
+
 declare var config: any;
 
-function Layer(stelle, settings = {}): void {
+export function Layer(stelle, settings = {}): void {
     var layer_ = this;
     this.stelle = stelle;
     this.settings = typeof settings == "string" ? $.parseJSON(settings) : settings;
@@ -2767,6 +2773,7 @@ function Layer(stelle, settings = {}): void {
           penging on layer where the feature belongs to
   */
     this.setActive = function () {
+        console.error("Layer.setActive()");
         kvm.log("Setze Layer " + this.get("title") + " (" + (this.get("alias") ? this.get("alias") : "kein Aliasname") + ") auf aktiv.", 3);
         kvm.activeLayer = this;
         kvm.store.setItem("activeLayerId", this.get("id"));

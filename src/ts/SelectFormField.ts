@@ -1,3 +1,5 @@
+import { kvm } from "./app";
+
 /*
  * create a select form field in the structure
  *   <div class="form-field">
@@ -9,7 +11,7 @@
  *     </div>
  *   </div>
  */
-function SelectFormField(formId, settings): void {
+export function SelectFormField(formId, settings): void {
     (this.settings = settings),
         (this.get = function (key) {
             return this.settings[key];

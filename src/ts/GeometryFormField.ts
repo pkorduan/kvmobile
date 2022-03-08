@@ -1,3 +1,6 @@
+import { Buffer } from "buffer";
+import { kvm } from "./app";
+import * as wkx from "wkx";
 /*
  * create a geometry form field in the structure
  *   <div class="form-field">
@@ -9,7 +12,7 @@
  *     </div>
  *   </div>
  */
-function GeometrieFormField(formId, settings): void {
+export function GeometrieFormField(formId, settings): void {
     this.settings = settings;
 
     this.get = function (key) {
@@ -26,7 +29,7 @@ function GeometrieFormField(formId, settings): void {
 
     this.setValue = function (val) {
         kvm.log("GeometrieFormField.setValue with value:" + val);
-        var geom = kvm.wkx.Geometry.parse(new kvm.Buffer(val, "hex"));
+        var geom = wkx.Geometry.parse(<any>new Buffer(val, "hex"));
         this.element.val(geom.toEwkb().toString("hex"));
         /*
     if (val == null || val == 'null') {

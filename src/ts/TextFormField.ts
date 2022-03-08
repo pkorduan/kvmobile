@@ -1,3 +1,4 @@
+import { kvm } from "./app";
 /*
  * create a text form field in the structure
  *   <div class="form-field">
@@ -9,7 +10,7 @@
  *     </div>
  *   </div>
  */
-function TextFormField(formId, settings): void {
+export function TextFormField(formId, settings): void {
     //console.log('Erzeuge TextformField with settings %o', settings);
     (this.settings = settings),
         (this.get = function (key) {

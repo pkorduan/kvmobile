@@ -1,4 +1,8 @@
-kvm.controller.files = {
+import { kvm } from "../app";
+
+// kvm.controller.files = {
+
+export const FileUtils = {
     readFile: function (fileEntry) {
         fileEntry.file(function (file) {
             var reader = new FileReader();

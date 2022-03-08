@@ -1,4 +1,4 @@
-const maplibreStyleObj = {
+export const maplibreStyleObj = {
     version: 8,
     name: "Basic preview",
     metadata: {

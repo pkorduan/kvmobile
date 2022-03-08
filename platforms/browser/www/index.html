@@ -30,29 +30,32 @@ child-src * 'self' blob: http:
     <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-1.3.1/leaflet.css"/>
     <link rel="stylesheet" type="text/css" href="3rdparty/Leaflet.markercluster-1.3.0/dist/MarkerCluster.css"/>
     <link rel="stylesheet" type="text/css" href="3rdparty/Leaflet.markercluster-1.3.0/dist/MarkerCluster.Default.css"/>
-    <!--link rel="stylesheet" type="text/css" href="3rdparty/leaflet-gps-master/dist/leaflet-gps.min.css"/-->
+    
     <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-locatecontrol-gh-pages/dist/L.Control.Locate.min.css"/>
     <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-betterscale-master/L.Control.BetterScale.css"/>
     <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-geoman/leaflet-geoman.css"/>
     <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-easy-button/easy-button.css"/>
     <link rel="stylesheet" href="3rdparty/maplibre/maplibre-gl.css">
     <link rel="stylesheet" type="text/css" href="css/style.css"/>
+
+
     <script src="cordova.js"></script>
+<!--        
     <script src="3rdparty/jquery-3.5.1/jquery.min.js"></script>
+
     <script src="3rdparty/leaflet-1.3.1/leaflet.js"></script>
+
+
     <script src="3rdparty/leaflet-1.3.1/Leaflet.Editable.js"></script>
     <script src="3rdparty/leaflet-1.3.1/Path.Drag.js"></script>
-    <!--script src="3rdparty/Leaflet.markercluster-1.3.0/dist/leaflet.markercluster.js"></script//-->
-    <!--script src="3rdparty/leaflet-gps-master/dist/leaflet-gps.min.js"></script-->
+-->    
     <script src="3rdparty/indexdb/index-min.js"></script>
 
+<!--
     <script src="3rdparty/Leaflet.TileLayer/maplibre-gl-unminified.js"></script>
-    <!--script src="3rdparty/maplibre/maplibre-gl.js"></script-->
-
+    
     <script src="3rdparty/leaflet-maplibre/leaflet-maplibre-gl.js"></script>
 
-
-    <!--script src="3rdparty/Leaflet.VectorGrid/dist/Leaflet.VectorGrid.bundled.js"></script-->
 
     <script src="3rdparty/leaflet-locatecontrol-gh-pages/dist/L.Control.Locate.min.js"></script>
     <script src="3rdparty/leaflet-betterscale-master/L.Control.BetterScale.js"></script>
@@ -63,9 +66,10 @@ child-src * 'self' blob: http:
     <script src="3rdparty/leaflet-easy-button/easy-button.js"></script>
     <script src="3rdparty/wkx-0.4.2/dist/wkx.min.js"></script>
     <script src="3rdparty/md5/js/md5.min.js"></script>
+-->
     
     <!--script src="3rdparty/Leaflet.TileLayer/Leaflet.MTBTileAccessor.js"></script-->
-    <script src="js/config.js"></script>
+<!--    <script src="js/config.js"></script>
     <script src="js/Layer.js"></script>
     <script src="js/Overlay.js"></script>
     <script src="js/CheckboxFormField.js"></script>
@@ -87,10 +91,10 @@ child-src * 'self' blob: http:
     <script src="js/syncStatus.js"></script>
     <script src="js/networkStatus.js"></script>
     <script src="js/gpsStatus.js"></script>
-    <script src="js/teststyle.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/teststyle.js"></script> -->
+    <script type="module" src="js/app.js"></script>
   </head>
-  <body onload="kvm.init()">
+  <body">
 
     <div id="sperr_div" class="modal" ondblclick="$(this).hide()">
       <i class="fa fa-spinner fa-pulse fa-2x"></i><p id="sperr_div_content" style="margin-top: 20px">Lade Daten ...</p>

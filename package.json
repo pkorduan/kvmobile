@@ -6,6 +6,8 @@
   "main": "index.js",
   "scripts": {
     "start": "tsc && cordova run browser",
+    "watch": "webpack --watch --config webpack.dev.js",
+    "build": "webpack --config webpack.prod.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Peter Korduan",
@@ -26,9 +28,19 @@
     "cordova-plugin-whitelist": "^1.3.5",
     "cordova-sqlite-evplus-legacy-attach-detach-free": "git+https://github.com/litehelpers/Cordova-sqlite-evplus-legacy-attach-detach-free.git#evplus-legacy-attach-detach-master",
     "cordova-sqlite-storage": "^6.0.0",
+    "idb": "^7.0.0",
     "ionic-plugin-keyboard": "git+https://github.com/Telerik-Verified-Plugins/Keyboard.git",
     "jquery": "^3.6.0",
-    "leaflet": "^1.7.1"
+    "leaflet": "^1.7.1",
+    "leaflet-betterscale": "^1.0.0",
+    "leaflet-easybutton": "^2.4.0",
+    "leaflet.locatecontrol": "^0.76.0",
+    "maplibre-gl": "^2.1.6",
+    "md5": "^2.3.0",
+    "process": "^0.11.10",
+    "proj4leaflet": "^1.0.2",
+    "util": "^0.12.4",
+    "wkx": "^0.5.0"
   },
   "cordova": {
     "plugins": {
@@ -66,8 +78,14 @@
     "@types/cordova-sqlite-storage": "^1.5.5",
     "@types/jquery": "^3.5.13",
     "@types/leaflet": "^1.7.9",
+    "@types/leaflet.locatecontrol": "^0.74.0",
+    "@types/proj4leaflet": "^1.0.6",
+    "buffer": "^6.0.3",
     "cordova-android": "^10.1.1",
     "cordova-browser": "^6.0.0",
-    "typescript": "^4.5.5"
+    "ts-loader": "^9.2.6",
+    "typescript": "^4.5.5",
+    "webpack": "^5.68.0",
+    "webpack-cli": "^4.9.2"
   }
 }

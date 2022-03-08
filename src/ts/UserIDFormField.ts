@@ -1,3 +1,5 @@
+import { kvm } from "./app";
+
 /*
  * create a UserID form field in the structure
  *   <div class="form-field">
@@ -9,7 +11,7 @@
  *     </div>
  *   </div>
  */
-function UserIDFormField(formId, settings): void {
+export function UserIDFormField(formId, settings): void {
     //console.log('Erzeuge UserIDFormField with settings %o', settings);
     (this.settings = settings),
         (this.get = function (key) {

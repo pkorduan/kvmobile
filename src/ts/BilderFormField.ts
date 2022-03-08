@@ -1,10 +1,7 @@
-interface Navigator {
-    camera: any;
-}
-declare var navigator: Navigator;
-declare var Camera;
+/// <reference types="cordova-plugin-camera"/>
 
-function BilderFormField(formId, settings): void {
+import { config, kvm } from "./app";
+export function BilderFormField(formId, settings): void {
     this.settings = settings;
     this.images_div_id = "images_" + settings["index"];
 

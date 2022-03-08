@@ -1,4 +1,8 @@
-function Stelle(settings = {}) {
+import { Layer } from "./Layer";
+import { config, kvm } from "./app";
+import { Overlay } from "./Overlay";
+
+export function Stelle(settings = {}) {
     this.settings = typeof settings == "string" ? $.parseJSON(settings) : settings;
 
     this.get = function (key) {

@@ -1,5 +1,7 @@
-import * as L from "leaflet";
-export const configurations = [
+"use strict";
+exports.__esModule = true;
+exports.configurations = void 0;
+exports.configurations = [
     {
         name: "Standard",
         dbname: "kvmobile",
@@ -26,7 +28,7 @@ export const configurations = [
             "0": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#dd8181" },
             "1": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#465dc0" },
             "2": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#23a325" },
-            "3": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#26a7f1" },
+            "3": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#26a7f1" }
         },
         /*
           // LK-MSE
@@ -89,7 +91,7 @@ export const configurations = [
             east: 13.89345,
             north: 51.90666,
             startCenterLat: 51.6128,
-            startCenterLon: 13.4658,
+            startCenterLon: 13.4658
         },
         kvwmapServerUrl: "https://geoportal.lkee.de/",
         kvwmapServerLoginName: "",
@@ -113,8 +115,8 @@ export const configurations = [
                     layers: "bebb_dop20c",
                     format: "image/png",
                     transparent: true,
-                    attribution: "LGB WMS DOP20",
-                },
+                    attribution: "LGB WMS DOP20"
+                }
             },
             {
                 label: "Vektorkacheln offline",
@@ -143,7 +145,7 @@ export const configurations = [
                             weight: 0,
                             fillColor: "#9bc2c4",
                             fillOpacity: 1,
-                            fill: true,
+                            fill: true
                         },
                         // A function for styling features dynamically, depending on their
                         // properties and the map's zoom level
@@ -157,7 +159,7 @@ export const configurations = [
                                 weight: weight,
                                 color: "#cf52d3",
                                 dashArray: "2, 6",
-                                fillOpacity: 0,
+                                fillOpacity: 0
                             };
                         },
                         // A function for styling features dynamically, depending on their
@@ -168,7 +170,7 @@ export const configurations = [
                                 // point
                                 return {
                                     radius: 5,
-                                    color: "#cf52d3",
+                                    color: "#cf52d3"
                                 };
                             }
                             if (geometryDimension === 2) {
@@ -177,7 +179,7 @@ export const configurations = [
                                     weight: 1,
                                     color: "#cf52d3",
                                     dashArray: "2, 6",
-                                    fillOpacity: 0,
+                                    fillOpacity: 0
                                 };
                             }
                             if (geometryDimension === 3) {
@@ -186,21 +188,21 @@ export const configurations = [
                                     weight: 1,
                                     fillColor: "#9bc2c4",
                                     fillOpacity: 1,
-                                    fill: true,
+                                    fill: true
                                 };
                             }
                         },
                         // An 'icon' option means that a L.Icon will be used
                         place: {
-                            //icon: new L.Icon.Default()
+                        //icon: new L.Icon.Default()
                         },
-                        road: [],
+                        road: []
                     },
                     maxNativeZoom: 14,
-                    attribution: "OSM TileServer GL GDI-Service",
-                },
+                    attribution: "OSM TileServer GL GDI-Service"
+                }
             },
-        ],
+        ]
     },
     {
         name: "LK-ROS",
@@ -218,7 +220,7 @@ export const configurations = [
             "0": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#dd8181" },
             "1": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#465dc0" },
             "2": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#23a325" },
-            "3": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#26a7f1" },
+            "3": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#26a7f1" }
         },
         mapSettings: {
             newPosSelect: 1,
@@ -230,7 +232,7 @@ export const configurations = [
             east: 360500,
             north: 6023976,
             startCenterLat: 53.095876,
-            startCenterLon: 12.20896,
+            startCenterLon: 12.20896
         },
         kvwmapServerUrl: "https://gdi-service.de/kvwmap_pet_dev",
         kvwmapServerLoginName: "korduan",
@@ -242,8 +244,8 @@ export const configurations = [
                 type: "tile",
                 url: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/orka-tiles-vg/{z}/{x}/{y}.png",
                 params: {
-                    attribution: "Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.",
-                },
+                    attribution: "Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV."
+                }
             },
             {
                 label: "Hintergrundkarte online",
@@ -251,8 +253,8 @@ export const configurations = [
                 type: "tile",
                 url: "https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png",
                 params: {
-                    attribution: "Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.",
-                },
+                    attribution: "Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV."
+                }
             },
             {
                 label: "Luftbild online",
@@ -262,8 +264,8 @@ export const configurations = [
                 params: {
                     layers: "mv_dop",
                     format: "image/png",
-                    attribution: "Geoportal-MV DOP WMS",
-                },
+                    attribution: "Geoportal-MV DOP WMS"
+                }
             },
             {
                 label: "Luftbildkacheln online",
@@ -271,10 +273,10 @@ export const configurations = [
                 type: "tile",
                 url: "https://www.geodaten-mv.de/dienste/dop_wmts/wmts/mv_dop/ETRS89UTM33/{z}/{x}/{y}.png",
                 params: {
-                    attribution: "Geoportal-MV DOP WMST",
-                },
+                    attribution: "Geoportal-MV DOP WMST"
+                }
             },
-        ],
+        ]
     },
     {
         name: "LK-VG",
@@ -292,7 +294,7 @@ export const configurations = [
             "0": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#dd8181" },
             "1": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#465dc0" },
             "2": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#23a325" },
-            "3": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#26a7f1" },
+            "3": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#26a7f1" }
         },
         mapSettings: {
             newPosSelect: 2,
@@ -304,7 +306,7 @@ export const configurations = [
             east: 492200,
             north: 6016500,
             startCenterLat: 53.78441,
-            startCenterLon: 13.81898,
+            startCenterLon: 13.81898
         },
         kvwmapServerUrl: "https://geoportal-vg.de/kvwmap_test",
         kvwmapServerLoginName: "kvmobile",
@@ -316,10 +318,10 @@ export const configurations = [
                 type: "tile",
                 url: "https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png",
                 params: {
-                    attribution: "Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.",
-                },
+                    attribution: "Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV."
+                }
             },
-        ],
+        ]
     },
     {
         name: "LK-EE",
@@ -338,7 +340,7 @@ export const configurations = [
             "0": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#dd8181" },
             "1": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#465dc0" },
             "2": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#23a325" },
-            "3": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#26a7f1" },
+            "3": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#26a7f1" }
         },
         mapSettings: {
             newPosSelect: 1,
@@ -350,7 +352,7 @@ export const configurations = [
             east: 13.89345,
             north: 51.90666,
             startCenterLat: 51.6128,
-            startCenterLon: 13.4658,
+            startCenterLon: 13.4658
         },
         kvwmapServerUrl: "https://geoportal.lkee.de/",
         kvwmapServerLoginName: "",
@@ -383,7 +385,7 @@ export const configurations = [
                             weight: 0,
                             fillColor: "#9bc2c4",
                             fillOpacity: 1,
-                            fill: true,
+                            fill: true
                         },
                         // A function for styling features dynamically, depending on their
                         // properties and the map's zoom level
@@ -397,7 +399,7 @@ export const configurations = [
                                 weight: weight,
                                 color: "#cf52d3",
                                 dashArray: "2, 6",
-                                fillOpacity: 0,
+                                fillOpacity: 0
                             };
                         },
                         // A function for styling features dynamically, depending on their
@@ -408,7 +410,7 @@ export const configurations = [
                                 // point
                                 return {
                                     radius: 5,
-                                    color: "#cf52d3",
+                                    color: "#cf52d3"
                                 };
                             }
                             if (geometryDimension === 2) {
@@ -417,7 +419,7 @@ export const configurations = [
                                     weight: 1,
                                     color: "#cf52d3",
                                     dashArray: "2, 6",
-                                    fillOpacity: 0,
+                                    fillOpacity: 0
                                 };
                             }
                             if (geometryDimension === 3) {
@@ -426,19 +428,19 @@ export const configurations = [
                                     weight: 1,
                                     fillColor: "#9bc2c4",
                                     fillOpacity: 1,
-                                    fill: true,
+                                    fill: true
                                 };
                             }
                         },
                         // An 'icon' option means that a L.Icon will be used
                         place: {
-                            //icon: new L.Icon.Default()
+                        //icon: new L.Icon.Default()
                         },
-                        road: [],
+                        road: []
                     },
                     maxNativeZoom: 14,
-                    attribution: "OSM TileServer GL GDI-Service",
-                },
+                    attribution: "OSM TileServer GL GDI-Service"
+                }
             },
             {
                 label: "Luftbilder online",
@@ -449,10 +451,10 @@ export const configurations = [
                     layers: "bebb_dop20c",
                     format: "image/png",
                     transparent: true,
-                    attribution: "LGB WMS DOP20",
-                },
+                    attribution: "LGB WMS DOP20"
+                }
             },
-        ],
+        ]
     },
     {
         name: "LK-MSE",
@@ -470,7 +472,7 @@ export const configurations = [
             "0": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#dd8181" },
             "1": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#465dc0" },
             "2": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#23a325" },
-            "3": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#26a7f1" },
+            "3": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#26a7f1" }
         },
         mapSettings: {
             newPosSelect: 2,
@@ -482,7 +484,7 @@ export const configurations = [
             east: 428034,
             north: 5990606,
             startCenterLat: 53.50467,
-            startCenterLon: 12.96181,
+            startCenterLon: 12.96181
         },
         kvwmapServerUrl: "https://geoport-lk-mse.de/supergis",
         kvwmapServerLoginName: "paulmobil",
@@ -494,8 +496,8 @@ export const configurations = [
                 type: "tile",
                 url: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/orka-tiles-vg/{z}/{x}/{y}.png",
                 params: {
-                    attribution: "Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.",
-                },
+                    attribution: "Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV."
+                }
             },
             {
                 label: "Hintergrundkarte online",
@@ -503,8 +505,8 @@ export const configurations = [
                 type: "tile",
                 url: "https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png",
                 params: {
-                    attribution: "Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.",
-                },
+                    attribution: "Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV."
+                }
             },
             {
                 label: "Luftbild online",
@@ -514,8 +516,8 @@ export const configurations = [
                 params: {
                     layers: "mv_dop",
                     format: "image/png",
-                    attribution: "Geoportal-MV DOP WMS",
-                },
+                    attribution: "Geoportal-MV DOP WMS"
+                }
             },
             {
                 label: "Luftbildkacheln online",
@@ -523,10 +525,10 @@ export const configurations = [
                 type: "tile",
                 url: "https://www.geodaten-mv.de/dienste/dop_wmts/wmts/mv_dop/ETRS89UTM33/{z}/{x}/{y}.png",
                 params: {
-                    attribution: "Geoportal-MV DOP WMST",
-                },
+                    attribution: "Geoportal-MV DOP WMST"
+                }
             },
-        ],
+        ]
     },
     {
         name: "GDI-Service",
@@ -544,7 +546,7 @@ export const configurations = [
             "0": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#dd8181" },
             "1": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#465dc0" },
             "2": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#23a325" },
-            "3": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#26a7f1" },
+            "3": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#26a7f1" }
         },
         mapSettings: {
             newPosSelect: 1,
@@ -556,7 +558,7 @@ export const configurations = [
             east: 360500,
             north: 6023976,
             startCenterLat: 53.095876,
-            startCenterLon: 12.20896,
+            startCenterLon: 12.20896
         },
         kvwmapServerUrl: "https://gdi-service.de/kvwmap_pet_dev",
         kvwmapServerLoginName: "korduan",
@@ -568,8 +570,8 @@ export const configurations = [
                 type: "tile",
                 url: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/orka-tiles-vg/{z}/{x}/{y}.png",
                 params: {
-                    attribution: "Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.",
-                },
+                    attribution: "Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV."
+                }
             },
             {
                 label: "Hintergrundkarte online",
@@ -577,8 +579,8 @@ export const configurations = [
                 type: "tile",
                 url: "https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png",
                 params: {
-                    attribution: "Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.",
-                },
+                    attribution: "Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV."
+                }
             },
             {
                 label: "Luftbild online",
@@ -588,8 +590,8 @@ export const configurations = [
                 params: {
                     layers: "mv_dop",
                     format: "image/png",
-                    attribution: "Geoportal-MV DOP WMS",
-                },
+                    attribution: "Geoportal-MV DOP WMS"
+                }
             },
             {
                 label: "Luftbildkacheln online",
@@ -597,10 +599,10 @@ export const configurations = [
                 type: "tile",
                 url: "https://www.geodaten-mv.de/dienste/dop_wmts/wmts/mv_dop/ETRS89UTM33/{z}/{x}/{y}.png",
                 params: {
-                    attribution: "Geoportal-MV DOP WMST",
-                },
+                    attribution: "Geoportal-MV DOP WMST"
+                }
             },
-        ],
+        ]
     }, // GDI-Service
 ];
 //# sourceMappingURL=config.js.map

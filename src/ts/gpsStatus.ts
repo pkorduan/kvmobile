@@ -1,4 +1,5 @@
-const GpsStatus = {
+import "jquery";
+export const GpsStatus = {
     load: function () {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(function (position) {

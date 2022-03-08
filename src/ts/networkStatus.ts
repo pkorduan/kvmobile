@@ -1,6 +1,5 @@
-/* <reference types="cordova-plugin-network-information" />*/
 declare var Connection;
-const NetworkStatus = {
+export const NetworkStatus = {
     load: function () {
         this.view(this.get());
     },

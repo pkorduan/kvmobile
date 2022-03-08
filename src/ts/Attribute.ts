@@ -1,4 +1,18 @@
-function Attribute(layer, settings = {}): void {
+import { kvm } from "./app";
+import * as wkx from "wkx";
+import { BilderFormField } from "./BilderFormField";
+import { CheckboxFormField } from "./CheckboxFormField";
+import { DataViewField } from "./DataViewField";
+import { DateFormField } from "./DateFormField";
+import { DateTimeFormField } from "./DateTimeFormField";
+import { GeometrieFormField } from "./GeometryFormField";
+import { SelectFormField } from "./SelectFormField";
+import { TextfeldFormField } from "./TextfeldFormField";
+import { TextFormField } from "./TextFormField";
+import { UserFormField } from "./UserFormField";
+import { UserIDFormField } from "./UserIDFormField";
+import { ZahlFormField } from "./ZahlFormField";
+export function Attribute(layer, settings = {}): void {
     //console.log('Erzeuge Attributeobjekt with settings %o', settings);
     this.layer = layer;
     this.settings = settings;
@@ -141,7 +155,7 @@ function Attribute(layer, settings = {}): void {
                 if (this.layer.get("geometry_type") == "Point") {
                     slValue =
                         "'" +
-                        kvm.wkx.Geometry.parse("SRID=4326;POINT(" + pgValue.coordinates.toString().replace(",", " ") + ")")
+                        wkx.Geometry.parse("SRID=4326;POINT(" + pgValue.coordinates.toString().replace(",", " ") + ")")
                             .toEwkb()
                             .toString("hex", 0, maxByte)
                             .match(/.{2}/g)
@@ -151,7 +165,7 @@ function Attribute(layer, settings = {}): void {
                 if (pgValue.type == "LineString") {
                     slValue =
                         "'" +
-                        kvm.wkx.Geometry.parse(
+                        wkx.Geometry.parse(
                             "SRID=4326;LINESTRING(" +
                                 pgValue.coordinates
                                     .map(function (p) {
@@ -169,7 +183,7 @@ function Attribute(layer, settings = {}): void {
                 if (pgValue.type == "MultiLineString") {
                     slValue =
                         "'" +
-                        kvm.wkx.Geometry.parse(
+                        wkx.Geometry.parse(
                             "SRID=4326;LINESTRING(" +
                                 pgValue.coordinates[0]
                                     .map(function (p) {
@@ -187,7 +201,7 @@ function Attribute(layer, settings = {}): void {
                 if (this.layer.get("geometry_type") == "Polygon") {
                     slValue =
                         "'" +
-                        kvm.wkx.Geometry.parse(
+                        wkx.Geometry.parse(
                             "SRID=4326;POLYGON((" +
                                 pgValue.coordinates[0]
                                     .map(function (p) {

@@ -11,7 +11,9 @@
  *    </div>
  *  </div>
  */
-function DataViewField(divId, settings): void {
+import { kvm } from "./app";
+
+export function DataViewField(divId, settings): void {
     this.settings = settings;
 
     this.get = function (key) {

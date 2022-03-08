@@ -1,3 +1,5 @@
+import { kvm } from "./app";
+
 /*
  * create a dateTime form field in the structure
  *   <div class="form-field">
@@ -9,7 +11,7 @@
  *     </div>
  *   </div>
  */
-function DateTimeFormField(formId, settings): void {
+export function DateTimeFormField(formId, settings): void {
     //console.log('Erzeuge DateTimeFormField with settings %o', settings);
     (this.settings = settings),
         (this.get = function (key) {

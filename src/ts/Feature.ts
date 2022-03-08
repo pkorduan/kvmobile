@@ -1,3 +1,7 @@
+import { Buffer } from "buffer";
+import * as wkx from "wkx";
+import * as L from "leaflet";
+import { kvm } from "./app";
 /*
  * Klasse zum Vorhalten der Datenobjekte zur Laufzeit der Anwendung
  * Ein Feature ist leer (außer die automatisch generierte uuid) wenn es neu angelegt werden soll
@@ -23,7 +27,7 @@
  * aLatLngs und aCoords können bei Polygon und Multi-Geometrien verschachtelt sein.
  * Wenn das Zentrale Format immer wkx ist, kann man mit fromXY und asXY alle Transformationen umsetzen
  */
-function Feature(
+export function Feature(
     data: any = {},
     options: any = {
         id_attribute: "uuid",
@@ -184,7 +188,7 @@ function Feature(
      * Erzeugt an Hand des übergebenen wkb Strings ein wkx-Geometry-Objekt mit eastnorth Werten
      */
     this.wkbToWkx = function (wkb) {
-        return kvm.wkx.Geometry.parse(new kvm.Buffer(wkb, "hex"));
+        return wkx.Geometry.parse(<any>new Buffer(wkb, "hex"));
     };
 
     /*
@@ -203,11 +207,11 @@ function Feature(
         switch (this.options.geometry_type) {
             case "Point":
                 {
-                    result = kvm.wkx.Geometry.parse("SRID=4326;POINT(" + alatlngs[0].lng + " " + alatlngs[0].lat + ")");
+                    result = wkx.Geometry.parse("SRID=4326;POINT(" + alatlngs[0].lng + " " + alatlngs[0].lat + ")");
                 }
                 break;
             case "MultiPoint":
-                result = kvm.wkx.Geometry.parse(
+                result = wkx.Geometry.parse(
                     "SRID=4326;MULTIPOINT(" +
                         alatlngs
                             .map(function (point) {
@@ -218,7 +222,7 @@ function Feature(
                 );
                 break;
             case "Line":
-                result = kvm.wkx.Geometry.parse(
+                result = wkx.Geometry.parse(
                     "SRID=4326;LINESTRING(" +
                         alatlngs
                             .map(function (point) {
@@ -229,7 +233,7 @@ function Feature(
                 );
                 break;
             case "MultiLinestring":
-                result = kvm.wkx.Geometry.parse(
+                result = wkx.Geometry.parse(
                     "SRID=4326;MULTILINESTRING(" +
                         alatlngs
                             .map(function (linestring) {
@@ -249,7 +253,7 @@ function Feature(
                 break;
             case "Polygon":
                 {
-                    result = kvm.wkx.Geometry.parse(
+                    result = wkx.Geometry.parse(
                         "SRID=4326;POLYGON(" +
                             alatlngs
                                 .map(function (polyline) {
@@ -269,7 +273,7 @@ function Feature(
                 }
                 break;
             case "MultiPolygon":
-                result = kvm.wkx.Geometry.parse(
+                result = wkx.Geometry.parse(
                     "SRID=4326;MULTIPOLYGON(" +
                         alatlngs
                             .map(function (polygon) {
@@ -296,7 +300,7 @@ function Feature(
                 );
                 break;
             default:
-                result = kvm.wkx.Geometry.parse("SRID=4326;POINT(" + alatlngs.join(" ") + ")");
+                result = wkx.Geometry.parse("SRID=4326;POINT(" + alatlngs.join(" ") + ")");
         }
         return result;
     };

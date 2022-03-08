@@ -1,3 +1,5 @@
+import { kvm } from "./app";
+
 /*
  * create a numeric form field in the structure
  *   <div class="form-field">
@@ -9,7 +11,7 @@
  *     </div>
  *   </div>
  */
-function ZahlFormField(formId, settings): void {
+export function ZahlFormField(formId, settings): void {
     //console.log('Erzeuge ZahlFormField with settings %o', settings);
     (this.settings = settings),
         (this.get = function (key) {

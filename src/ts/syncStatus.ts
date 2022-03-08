@@ -1,4 +1,4 @@
-const SyncStatus = {
+export const SyncStatus = {
     load: function (store) {
         this.store = store;
         this.view(this.get());

@@ -1,19 +1,20 @@
 {
     "compilerOptions": {
         "rootDir": "src/ts",
-        "outDir": "www/js",
+        "outDir": "www/js/",
         "strict": false,
         "removeComments": false,
-        "module": "none",
+        "module": "CommonJS",
         "moduleResolution": "node",
         "inlineSourceMap": false,
-        "sourceMap": true,
+        "sourceMap": false,
         "experimentalDecorators": true,
-        "target": "ES2020",
+        "target": "ES2017",
         "allowJs": true,
-        "allowUmdGlobalAccess": true
+        "allowUmdGlobalAccess": true,
+        "esModuleInterop": true
     },
 
-    "include": ["src/ts/**/*"],
+    "include": ["src/ts/app.ts", "node_modules/cordova*/**/*.d.ts"],
     "exclude": ["node_modules/**"]
 }

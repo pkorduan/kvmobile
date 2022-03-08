@@ -1,29 +1,50 @@
-/// <reference types="leaflet" />
-/// <reference types="cordova-sqlite-storage"/>
-
-/// <import path="./configurations.ts" />
+/// <reference types="cordova-plugin-dialogs"/>
+/// <reference types="cordova-plugin-device"/>
+/// <reference types="cordova-plugin-android-fingerprint-auth"/>
 // window.open = cordova.InAppBrowser.open;
 
-interface LayerWithActiveFeature extends L.Layer {
-    activeFeature: any;
-    get: (p: any) => any;
-    features: any;
-    selectFeature: any;
-}
+// import "cordova-plugin-dialogs";
+// import "cordova-plugin-device";
 
-declare var require;
-declare var FingerprintAuth;
-declare var maplibregl;
-declare var idb;
-declare var configuration;
+import * as idb from "idb";
+import { configurations } from "./config";
+import { GpsStatus } from "./gpsStatus";
+import { SyncStatus } from "./syncStatus";
+import { Stelle } from "./Stelle";
+import { Layer } from "./Layer";
+import { Overlay } from "./Overlay";
+import { maplibreStyleObj } from "./teststyle";
+import { NetworkStatus } from "./networkStatus";
+import { FileUtils } from "./controller/files";
+import { Mapper } from "./controller/mapper";
+import maplibregl from "maplibre-gl";
+import type { FingerprintAuth as FingerprintAuthT } from "cordova-plugin-android-fingerprint-auth";
+import "process";
+require("leaflet");
+require("leaflet.locatecontrol");
+require("leaflet-betterscale");
+require("leaflet-easybutton");
+import type from "../../node_modules/leaflet-easybutton/src/easy-button";
+require("proj4leaflet");
 
-var kvm = {
+require("@maplibre/maplibre-gl-leaflet");
+
+declare var FingerprintAuth: typeof FingerprintAuthT;
+
+export var config: any;
+
+export const kvm = {
     version: "1.7.12",
-    Buffer: require("buffer").Buffer,
-    wkx: require("wkx"),
+    // Buffer: require("buffer").Buffer,
+    // wkx: require("wkx"),
     controls: <any>{},
-    controller: <any>{},
-    views: <any>{},
+    controller: {
+        files: <typeof FileUtils>undefined,
+        mapper: <typeof Mapper>undefined,
+    },
+    views: {
+        mapper: {},
+    },
     layerDataLoaded: false,
     featureListLoaded: false,
     mapSettings: {},
@@ -44,7 +65,6 @@ var kvm = {
 
     loadHeadFile: function (filename, filetype) {
         //console.log('Lade filename %s, filetype: %s', filename, filetype);
-        Stelle;
         let fileref;
         if (filetype == "js") {
             //if filename is a external JavaScript file
@@ -644,7 +664,7 @@ var kvm = {
         kvm.log("initialisiere backgroundLayers", 3);
         this.initBackgroundLayers();
 
-        var crs25833 = new (<any>L).Proj.CRS("EPSG:25833", "+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs", {
+        var crs25833 = new L.Proj.CRS("EPSG:25833", "+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs", {
             origin: [-464849.38, 6310160.14],
             resolutions: [16384, 8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1],
         });
@@ -656,7 +676,7 @@ var kvm = {
                 zoom: this.mapSettings.startZoom,
                 minZoom: this.mapSettings.minZoom,
                 maxZoom: this.mapSettings.maxZoom,
-                layers: this.backgroundLayers[0],
+                layers: this.backgroundLayers[1],
             }),
             baseMaps = {};
 
@@ -669,7 +689,7 @@ var kvm = {
         //    L.PM.initialize({ optIn: true });
         kvm.myRenderer = L.canvas({ padding: 0.5, tolerance: 7 });
         kvm.controls.layers = L.control.layers(baseMaps).addTo(map);
-        kvm.controls.locate = (<any>L).control
+        kvm.controls.locate = L.control
             .locate({
                 position: "topright",
                 keepCurrentZoomLevel: true,
@@ -687,110 +707,108 @@ var kvm = {
                 metric: true,
             })
             .addTo(map);
-        kvm.controls.trackControl = (<any>L)
-            .easyButton({
-                id: "trackControl",
-                position: "topright",
-                leafletClasses: true,
-                states: [
-                    {
-                        stateName: "track-aufzeichnen",
-                        icon: "fa-circle",
-                        title: "Track aufzeichnen",
-                        onClick: function (btn, map) {
-                            navigator.notification.confirm(
-                                "Wie möchten Sie fortfahren?",
-                                function (buttonIndex) {
-                                    var lastLatlng = kvm.activeLayer.activeFeature.getWaypoint("last");
-                                    if (buttonIndex == 1) {
-                                        console.log("Vorhandenen Track löschen und neu beginnen.");
-                                        // Editierbarkeit ausschalten
-                                        kvm.activeLayer.activeFeature.editableLayer.disableEdit();
-                                        // LatLngs zurücksetzen
-                                        kvm.activeLayer.activeFeature.editableLayer.setLatLngs([]);
-                                        // Tracking einschalten (latlngs hinzufügen auch im Hintergrund, wenn das Display aus ist.)
-                                        kvm.controller.mapper.startGpsTracking(lastLatlng);
-                                        btn.state("track-aufnahme");
-                                    } else if (buttonIndex == 2) {
-                                        console.log("Vorhandenen Track weiterzeichnen.");
-                                        // Editierbarkeit ausschalten
-                                        kvm.activeLayer.activeFeature.editableLayer.disableEdit();
-                                        // Tracking einschalten (latlngs hinzufügen)
-                                        kvm.controller.mapper.startGpsTracking(lastLatlng);
-                                        btn.state("track-aufnahme");
-                                    } else {
-                                        console.log("Abbruch");
-                                    }
-                                },
-                                "GPS-Track aufzeichnen.",
-                                ["Löschen und neu beginnen", "An Linie anhängen", "Abbrechen"]
-                            );
-                        },
+        kvm.controls.trackControl = L.easyButton({
+            id: "trackControl",
+            position: "topright",
+            leafletClasses: true,
+            states: [
+                {
+                    stateName: "track-aufzeichnen",
+                    icon: "fa-circle",
+                    title: "Track aufzeichnen",
+                    onClick: function (btn, map) {
+                        navigator.notification.confirm(
+                            "Wie möchten Sie fortfahren?",
+                            function (buttonIndex) {
+                                var lastLatlng = kvm.activeLayer.activeFeature.getWaypoint("last");
+                                if (buttonIndex == 1) {
+                                    console.log("Vorhandenen Track löschen und neu beginnen.");
+                                    // Editierbarkeit ausschalten
+                                    kvm.activeLayer.activeFeature.editableLayer.disableEdit();
+                                    // LatLngs zurücksetzen
+                                    kvm.activeLayer.activeFeature.editableLayer.setLatLngs([]);
+                                    // Tracking einschalten (latlngs hinzufügen auch im Hintergrund, wenn das Display aus ist.)
+                                    kvm.controller.mapper.startGpsTracking(lastLatlng);
+                                    btn.state("track-aufnahme");
+                                } else if (buttonIndex == 2) {
+                                    console.log("Vorhandenen Track weiterzeichnen.");
+                                    // Editierbarkeit ausschalten
+                                    kvm.activeLayer.activeFeature.editableLayer.disableEdit();
+                                    // Tracking einschalten (latlngs hinzufügen)
+                                    kvm.controller.mapper.startGpsTracking(lastLatlng);
+                                    btn.state("track-aufnahme");
+                                } else {
+                                    console.log("Abbruch");
+                                }
+                            },
+                            "GPS-Track aufzeichnen.",
+                            ["Löschen und neu beginnen", "An Linie anhängen", "Abbrechen"]
+                        );
                     },
-                    {
-                        stateName: "track-aufnahme",
-                        icon: "fa-pause",
-                        title: "Track unterbrechen",
-                        onClick: function (btn, map) {
-                            navigator.notification.confirm(
-                                "Wie möchten Sie fortfahren?",
-                                function (buttonIndex) {
-                                    if (buttonIndex == 1) {
-                                        console.log("Aufnahme beenden.");
-                                        // Tracking ausschalten
-                                        navigator.geolocation.clearWatch(kvm.controller.mapper.watchId);
-                                        // Track als Geometrie vom Feature übernehmen
-                                        //Editierbarkeit einschalten.
-                                        kvm.activeLayer.activeFeature.editableLayer.enableEdit();
-                                        btn.state("track-aufzeichnen");
-                                    } else if (buttonIndex == 2) {
-                                        console.log("Aufnahme unterbrechen.");
-                                        // Tracking ausschalten
-                                        navigator.geolocation.clearWatch(kvm.controller.mapper.watchId);
-                                        btn.state("track-pause");
-                                    } else {
-                                        console.log("Abbruch");
-                                    }
-                                },
-                                "GPS-Track aufzeichnen.",
-                                ["Aufnahme beenden", "Aufnahme unterbrechen", "Abbrechen"]
-                            );
-                        },
+                },
+                {
+                    stateName: "track-aufnahme",
+                    icon: "fa-pause",
+                    title: "Track unterbrechen",
+                    onClick: function (btn, map) {
+                        navigator.notification.confirm(
+                            "Wie möchten Sie fortfahren?",
+                            function (buttonIndex) {
+                                if (buttonIndex == 1) {
+                                    console.log("Aufnahme beenden.");
+                                    // Tracking ausschalten
+                                    navigator.geolocation.clearWatch(kvm.controller.mapper.watchId);
+                                    // Track als Geometrie vom Feature übernehmen
+                                    //Editierbarkeit einschalten.
+                                    kvm.activeLayer.activeFeature.editableLayer.enableEdit();
+                                    btn.state("track-aufzeichnen");
+                                } else if (buttonIndex == 2) {
+                                    console.log("Aufnahme unterbrechen.");
+                                    // Tracking ausschalten
+                                    navigator.geolocation.clearWatch(kvm.controller.mapper.watchId);
+                                    btn.state("track-pause");
+                                } else {
+                                    console.log("Abbruch");
+                                }
+                            },
+                            "GPS-Track aufzeichnen.",
+                            ["Aufnahme beenden", "Aufnahme unterbrechen", "Abbrechen"]
+                        );
                     },
-                    {
-                        stateName: "track-pause",
-                        icon: "fa-play",
-                        title: "Aufnahme fortsetzen",
-                        onClick: function (btn, map) {
-                            navigator.notification.confirm(
-                                "Wie möchten Sie fortfahren?",
-                                function (buttonIndex) {
-                                    var lastLatlng = kvm.activeLayer.activeFeature.getWaypoint("last");
-                                    if (buttonIndex == 1) {
-                                        console.log("Aufnahme beenden.");
-                                        // Tracking ausschalten
-                                        navigator.geolocation.clearWatch(kvm.controller.mapper.watchId);
-                                        // Track als Geometrie vom Feature übernehmen
-                                        //Editierbarkeit einschalten.
-                                        kvm.activeLayer.activeFeature.editableLayer.enableEdit();
-                                        btn.state("track-aufzeichnen");
-                                    } else if (buttonIndex == 2) {
-                                        console.log("Aufnahme fortsetzen.");
-                                        // Tracking einschalten
-                                        kvm.controller.mapper.startGpsTracking(lastLatlng);
-                                        btn.state("track-aufnahme");
-                                    } else {
-                                        console.log("Abbruch");
-                                    }
-                                },
-                                "GPS-Track aufzeichnen.",
-                                ["Aufnahme beenden", "Aufnahme fortsetzen", "Abbrechen"]
-                            );
-                        },
+                },
+                {
+                    stateName: "track-pause",
+                    icon: "fa-play",
+                    title: "Aufnahme fortsetzen",
+                    onClick: function (btn, map) {
+                        navigator.notification.confirm(
+                            "Wie möchten Sie fortfahren?",
+                            function (buttonIndex) {
+                                var lastLatlng = kvm.activeLayer.activeFeature.getWaypoint("last");
+                                if (buttonIndex == 1) {
+                                    console.log("Aufnahme beenden.");
+                                    // Tracking ausschalten
+                                    navigator.geolocation.clearWatch(kvm.controller.mapper.watchId);
+                                    // Track als Geometrie vom Feature übernehmen
+                                    //Editierbarkeit einschalten.
+                                    kvm.activeLayer.activeFeature.editableLayer.enableEdit();
+                                    btn.state("track-aufzeichnen");
+                                } else if (buttonIndex == 2) {
+                                    console.log("Aufnahme fortsetzen.");
+                                    // Tracking einschalten
+                                    kvm.controller.mapper.startGpsTracking(lastLatlng);
+                                    btn.state("track-aufnahme");
+                                } else {
+                                    console.log("Abbruch");
+                                }
+                            },
+                            "GPS-Track aufzeichnen.",
+                            ["Aufnahme beenden", "Aufnahme fortsetzen", "Abbrechen"]
+                        );
                     },
-                ],
-            })
-            .addTo(map);
+                },
+            ],
+        }).addTo(map);
         $("#trackControl").parent().hide();
         this.map = map;
     },
@@ -856,6 +874,7 @@ var kvm = {
     },
 
     createBackgroundLayer: function (backgroundLayerSetting) {
+        console.error("createBackgroundLayer " + backgroundLayerSetting.type);
         if (backgroundLayerSetting.type == "tile") {
             return L.tileLayer(backgroundLayerSetting.url, backgroundLayerSetting.params);
         } else if (backgroundLayerSetting.type == "vectortile") {
@@ -926,6 +945,11 @@ var kvm = {
             },
             false
         );
+
+        // rtr events from index.html
+        // $("#showFormEdit").on("showMap", function () {
+        //     kvm.showItem("map");
+        // });
 
         $(".h2-div").on("click", function (evt) {
             var h2 = $(evt.target),
@@ -1782,7 +1806,7 @@ var kvm = {
         }
     },
 
-    coalesce: function (...arguments: any[]) {
+    coalesce: function (...t: any[]) {
         var i, undefined, arg;
 
         for (i = 0; i < arguments.length; i++) {
@@ -1794,7 +1818,7 @@ var kvm = {
         return null;
     },
 
-    coalempty: function (...arguments: any[]) {
+    coalempty: function (...t: any[]) {
         var i, undefined, arg;
 
         for (i = 0; i < arguments.length; i++) {
@@ -1981,6 +2005,13 @@ var kvm = {
         return "#" + componentToHex(parts[0]) + componentToHex(parts[1]) + componentToHex(parts[2]);
     },
 };
+if (document.readyState === "interactive" || document.readyState === "complete") {
+    kvm.init();
+}
 
-kvm.loadHeadFile("js/controller/mapper.js", "js");
-kvm.loadHeadFile("js/controller/files.js", "js");
+kvm.controller.files = FileUtils;
+kvm.controller.mapper = Mapper;
+// kvm.loadHeadFile("js/controller/mapper.js", "js");
+// kvm.loadHeadFile("js/controller/files.js", "js");
+
+window["kvm"] = kvm;

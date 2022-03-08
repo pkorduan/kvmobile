@@ -1,4 +1,9 @@
-kvm.views.mapper = {};
+import { config, kvm } from "../app";
+import * as wkx from "wkx";
+import * as L from "leaflet";
+import { Buffer } from "buffer";
+
+// kvm.views.mapper = {};
 /*
 auch ne Variante wie man die Features in die Karte bekommt:
 $.getJSON("script_dass_geojson_liefert.php?id=xy", function(data) {
@@ -34,7 +39,10 @@ $.getJSON("script_dass_geojson_liefert.php?id=xy", function(data) {
 *   On mapMove oder mapZoom wechselt nach Mode 1
 */
 
-kvm.controller.mapper = {
+// kvm.controller.mapper = {
+export const Mapper = {
+    watchId: undefined,
+
     // ToDo Keys der anderen Typen als Point müssen den Geometrietypen entsprechen, die in geometry_type des Layers übergeben werden.
     coordsLevelsDeep: {
         POINT: 0, // kvm.wkx.Geometry.parse('SRID=4326;POINT(10 20)')
@@ -237,9 +245,9 @@ kvm.controller.mapper = {
     wkbToLatLngs: function (wkb) {
         // ToDo hier ggf. den Geometrietyp auch aus this.geometry_type auslesen und nicht aus der übergebenen geom
         // Problem dann, dass man die Funktion nur benutzen kann für den Geometrietype des activeLayer
-        var wkx = kvm.wkx.Geometry.parse(new kvm.Buffer(wkb, "hex")),
-            coordsLevelDeep = this.coordsLevelsDeep[wkx.toWkt().split("(")[0].toUpperCase()],
-            coords = wkx.toGeoJSON().coordinates;
+        var geom = wkx.Geometry.parse(new Buffer(wkb, "hex")),
+            coordsLevelDeep = this.coordsLevelsDeep[geom.toWkt().split("(")[0].toUpperCase()],
+            coords = geom.toGeoJSON()["coordinates"];
         return coordsLevelDeep == 0 ? L.GeoJSON.coordsToLatLng(coords) : L.GeoJSON.coordsToLatLngs(coords, coordsLevelDeep);
     },
 };
