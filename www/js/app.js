@@ -1,6 +1,6 @@
 window.open = cordova.InAppBrowser.open;
 kvm = {
-  version: '1.7.12',
+  version: '1.7.13',
   Buffer: require('buffer').Buffer,
   wkx: require('wkx'),
   controls: {},

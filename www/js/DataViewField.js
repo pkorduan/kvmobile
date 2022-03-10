@@ -21,14 +21,14 @@ function DataViewField(divId, settings) {
   this.element = $('<div id="' + this.get('index') + '" class="data-view-value">');
 
   this.setValue = function(val) {
-    console.log('DataViewField.setValue %s with value: %s', this.settings.name, val);
+    //console.log('DataViewField.setValue %s with value: %s', this.settings.name, val);
     if (val && this.get('type') == 'timestamp') {
       datetime = new Date(val);
       val = datetime.toLocaleDateString() + ' ' + datetime.toLocaleTimeString();
       this.element.html(kvm.coalesce(val, ''));
     }
     else if (this.get('form_element_type') == 'Dokument') {
-      kvm.log('DataViewField.setValue for Document Attribute with value: ' +  val, 4);
+      //kvm.log('DataViewField.setValue for Document Attribute with value: ' +  val, 4);
       var val = kvm.coalesce(val, ''),
           images,
           localFile,
@@ -43,13 +43,13 @@ function DataViewField(divId, settings) {
         $('#imagePreviewDiv').hide();
       }
       else {
-        kvm.log('Add images to previews div: ' + val, 4);
+        //kvm.log('Add images to previews div: ' + val, 4);
         images = kvm.removeBraces(val).split(',');
-        kvm.log('images: ' + JSON.stringify(images), 4);
+        //kvm.log('images: ' + JSON.stringify(images), 4);
         for (i = 0; i < images.length; i++) {
           remoteFile = images[i];
           localFile = kvm.removeOriginalName(kvm.serverToLocalPath(remoteFile));
-          kvm.log('images[' + i + ']: ' + remoteFile, 4);
+          //kvm.log('images[' + i + ']: ' + remoteFile, 4);
 
           window.resolveLocalFileSystemURL(
             localFile,
@@ -105,7 +105,13 @@ function DataViewField(divId, settings) {
         FROM\
           " + subFormTable + "\
       ";
-      console.log('SQL: %s', sql);
+      //console.log('SQL: %s', sql);
+    }
+    else if (this.get('form_element_type') == 'Auswahlfeld') {
+      console.log('SetValue for Auswahlfeld %s', this.get('name'));
+      var option = this.get('options').filter(function(option) { return (option.value == val); });
+      console.log('Option: %o', option);
+      this.element.html(option.length > 0 ? option[0].output : '');
     }
     else {
       this.element.html(kvm.coalesce(val, ''));

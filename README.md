@@ -8,6 +8,8 @@ https://github.com/srahn/kvwmap/
 http://kvwmap.de
 
 # Change log
+## 1.7.13
+	* Zeige Output von Auswahlfeld-Attributen in DataView an Stelle von Werten
 ## 1.7.12
 	* Fix Bug beim erstmaligen Wechseln zwkschen Layern nach dem Laden von der Stelle.
 ## 1.7.11
