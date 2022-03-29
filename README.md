@@ -8,6 +8,8 @@ https://github.com/srahn/kvwmap/
 http://kvwmap.de
 
 # Change log
+## 1.8.0
+	* Switch to TypeScript, jquery only in app context, use node build chain with webpack
 ## 1.7.12
 	* Fix Bug beim erstmaligen Wechseln zwkschen Layern nach dem Laden von der Stelle.
 ## 1.7.11

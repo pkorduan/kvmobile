@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
   <head>
-    <TITLE>kvmobile 1.7.12</TITLE>
+    <TITLE>kvmobile 1.8.0</TITLE>
     <META charset="UTF-8">
     <meta name="format-detection" content="telephone=no">
     <meta name="msapplication-tap-highlight" content="no">
@@ -30,29 +30,36 @@ child-src * 'self' blob: http:
     <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-1.3.1/leaflet.css"/>
     <link rel="stylesheet" type="text/css" href="3rdparty/Leaflet.markercluster-1.3.0/dist/MarkerCluster.css"/>
     <link rel="stylesheet" type="text/css" href="3rdparty/Leaflet.markercluster-1.3.0/dist/MarkerCluster.Default.css"/>
-    <!--link rel="stylesheet" type="text/css" href="3rdparty/leaflet-gps-master/dist/leaflet-gps.min.css"/-->
+    
     <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-locatecontrol-gh-pages/dist/L.Control.Locate.min.css"/>
     <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-betterscale-master/L.Control.BetterScale.css"/>
     <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-geoman/leaflet-geoman.css"/>
     <link rel="stylesheet" type="text/css" href="3rdparty/leaflet-easy-button/easy-button.css"/>
     <link rel="stylesheet" href="3rdparty/maplibre/maplibre-gl.css">
     <link rel="stylesheet" type="text/css" href="css/style.css"/>
+    <style>
+      .hidden {
+        display: none;
+      }
+    </style>
+
     <script src="cordova.js"></script>
+<!--        
     <script src="3rdparty/jquery-3.5.1/jquery.min.js"></script>
+
     <script src="3rdparty/leaflet-1.3.1/leaflet.js"></script>
+
+
     <script src="3rdparty/leaflet-1.3.1/Leaflet.Editable.js"></script>
     <script src="3rdparty/leaflet-1.3.1/Path.Drag.js"></script>
-    <!--script src="3rdparty/Leaflet.markercluster-1.3.0/dist/leaflet.markercluster.js"></script//-->
-    <!--script src="3rdparty/leaflet-gps-master/dist/leaflet-gps.min.js"></script-->
+-->    
     <script src="3rdparty/indexdb/index-min.js"></script>
 
+<!--
     <script src="3rdparty/Leaflet.TileLayer/maplibre-gl-unminified.js"></script>
-    <!--script src="3rdparty/maplibre/maplibre-gl.js"></script-->
-
+    
     <script src="3rdparty/leaflet-maplibre/leaflet-maplibre-gl.js"></script>
 
-
-    <!--script src="3rdparty/Leaflet.VectorGrid/dist/Leaflet.VectorGrid.bundled.js"></script-->
 
     <script src="3rdparty/leaflet-locatecontrol-gh-pages/dist/L.Control.Locate.min.js"></script>
     <script src="3rdparty/leaflet-betterscale-master/L.Control.BetterScale.js"></script>
@@ -63,9 +70,10 @@ child-src * 'self' blob: http:
     <script src="3rdparty/leaflet-easy-button/easy-button.js"></script>
     <script src="3rdparty/wkx-0.4.2/dist/wkx.min.js"></script>
     <script src="3rdparty/md5/js/md5.min.js"></script>
+-->
     
     <!--script src="3rdparty/Leaflet.TileLayer/Leaflet.MTBTileAccessor.js"></script-->
-    <script src="js/config.js"></script>
+<!--    <script src="js/config.js"></script>
     <script src="js/Layer.js"></script>
     <script src="js/Overlay.js"></script>
     <script src="js/CheckboxFormField.js"></script>
@@ -87,12 +95,12 @@ child-src * 'self' blob: http:
     <script src="js/syncStatus.js"></script>
     <script src="js/networkStatus.js"></script>
     <script src="js/gpsStatus.js"></script>
-    <script src="js/teststyle.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/teststyle.js"></script> -->
+    <script type="module" src="js/app.js"></script>
   </head>
-  <body onload="kvm.init()">
+  <body">
 
-    <div id="sperr_div" class="modal" ondblclick="$(this).hide()">
+    <div id="sperr_div" class="modal">
       <i class="fa fa-spinner fa-pulse fa-2x"></i><p id="sperr_div_content" style="margin-top: 20px">Lade Daten ...</p>
     </div>
 
@@ -165,7 +173,7 @@ child-src * 'self' blob: http:
 -->
     <div class="h2-div"><h2 id="h2_anzeigefilter" class="b-collapsed">Anzeigefilter</h2></div>
     <div id="anzeigeFilterDiv">
-      <select id="statusFilterSelect" style="50%">
+      <select id="statusFilterSelect">
         <option value="" selected>kein Filter</option>
       </select>
       <div class="settings-label">Anzahl der Zeilen:</div><input type="number" id="limit" value="1000" size="5"/><br>
@@ -314,10 +322,10 @@ child-src * 'self' blob: http:
       Name<br>
       <input id="kvwmapServerNameField" name="kvwmapServerName" type="text" value="Server kvwmap LK-ROS"><br>
       URL<br>
-      <input id="kvwmapServerUrlField" name="kvwmapServerUrl" type="text" value="https://"><br>
+      <input id="kvwmapServerUrlField" name="kvwmapServerUrl" type="text"><br>
       Nutzername<br>
       <input id="kvwmapServerLoginNameField" name="kvwmapServerLoginName" type="text" value=""><br>
-      Password <i class="fa fa-eye-slash" aria-hidden="true" onclick="$(this).toggleClass('fa-eye fa-eye-slash'); if ($('#kvwmapServerPasswortField').attr('type') == 'text') { $('#kvwmapServerPasswortField').attr('type', 'password') } else { $('#kvwmapServerPasswortField').attr('type', 'text'); }"></i><br>
+      Password <i class="fa fa-eye-slash" aria-hidden="true" onclick="this.classList.toggle('fa-eye'); this.classList.toggle('fa-eye-slash'); document.getElementById('kvwmapServerPasswortField').type = (document.getElementById('kvwmapServerPasswortField') === 'text' ? 'password' : 'text');"></i><br>
       <input id="kvwmapServerPasswortField" name="kvwmapServerPasswort" type="password" value=""><br>
       Stelle<br>
       <button id="requestStellenButton" class="settings-button">
@@ -432,22 +440,22 @@ child-src * 'self' blob: http:
 
     <div class="h2-div"><h2 id="h2_update" class="b-collapsed">Update</h2></div>
     <div>
-			Nach neuen Updates suchen.<p>
-			Der nachstehende Link öffnet eine Web-Seite im Standardbrowser Ihres Gerätes mit den letzten Versionen von kvwmobile.<br>
-			Zum aktualisieren der App laden Sie die apk-Datei mit der höchsten Versionsnummer herunter.<br>
-			Bestätigen Sie mit "OK" dass Sie die Datei behalten möchten wenn Sie gefragt werden.<br>
-			Klicken Sie dann auf "Öffnen" und stellen Sie wenn Sie gefragt werden ein, dass Sie der Quelle vertrauen.<br>
-			Danach klicken Sie auf "Installieren". Nach dem Installationsvorgang werden Sie gefragt ob Sie die App öffnen wollen. Bestätigen Sie das und die neue Version wird gestartet.<br>
-			Danach können Sie den Browser wieder schließen und in kvmobile prüfen ob die neue Version läuft. Die Versionsnummer wird unter Einstellungen > Geräteinformationen angezeigt.<p>
-				<a
-					href="https://gdi-service.de/public/kvmobile"
-				  onclick="window.open('https://gdi-service.de/public/kvmobile', '_system'); return false;"
-				>Download-Bereich</a>
+    Nach neuen Updates suchen.<p>
+      Der nachstehende Link öffnet eine Web-Seite im Standardbrowser Ihres Gerätes mit den letzten Versionen von kvwmobile.<br>
+      Zum aktualisieren der App laden Sie die apk-Datei mit der höchsten Versionsnummer herunter.<br>
+      Bestätigen Sie mit "OK" dass Sie die Datei behalten möchten wenn Sie gefragt werden.<br>
+      Klicken Sie dann auf "Öffnen" und stellen Sie wenn Sie gefragt werden ein, dass Sie der Quelle vertrauen.<br>
+      Danach klicken Sie auf "Installieren". Nach dem Installationsvorgang werden Sie gefragt ob Sie die App öffnen wollen. Bestätigen Sie das und die neue Version wird gestartet.<br>
+      Danach können Sie den Browser wieder schließen und in kvmobile prüfen ob die neue Version läuft. Die Versionsnummer wird unter Einstellungen > Geräteinformationen angezeigt.<p>
+        <a
+          href="https://gdi-service.de/public/kvmobile"
+          onclick="window.open('https://gdi-service.de/public/kvmobile', '_system');"
+        >Download-Bereich</a>
     </div>
     <hr>
 
     <div style="margin-bottom: 20px">
-		</div>
+    </div>
   </div>
 
   <!-- Logs -->
@@ -463,10 +471,10 @@ child-src * 'self' blob: http:
       <h1 id="featurelistHeading" style="font-size: 24px"></h1>
     </div>
     <div style="float: right; margin-right: 5px">
-      <h1><i id="showSearch" class="fa fa-search" aria-hidden="true" onclick="$('#searchHaltestelle').toggle()"></i></h1>
+      <h1><i id="showSearch" class="fa fa-search" aria-hidden="true" onclick="document.getElementById('searchHaltestelle').toggle('hidden')"></i></h1>
     </div>
     <div style="clear: both;"></div>
-    <input type="search" id="searchHaltestelle" placeholder="Datensatz suchen" aria-label"Liste der Datensätze durchsuchen" autocomplete="off" style="margin-left: 6px; margin-bottom: 4px; padding-left: 4px; padding-top: 2px; padding-bottom: 2px; font-size: 24px; width: 97%; border-radius: 5px; display: none">
+    <input type="search" id="searchHaltestelle" placeholder="Datensatz suchen" aria-label"Liste der Datensätze durchsuchen" autocomplete="off" class="hidden" style="margin-left: 6px; margin-bottom: 4px; padding-left: 4px; padding-top: 2px; padding-bottom: 2px; font-size: 24px; width: 97%; border-radius: 5px;">
     <!--div class="center">
       <div class="pagination">
         <a class="page_first_link" href="#" page="0" onclick="kvm.paginate(this)" style="display: none">&laquo;</a>
@@ -522,7 +530,7 @@ child-src * 'self' blob: http:
   <div id="debugs" class="deb">
     <div style="padding: 2px;"><h1>Debugmeldungen</h1></div>
     <div id="debText" style="clear: both; height: 300px; overflow: auto;"></div>
-    <div style="text-align: center; padding: 2px;"><input type="button" value="Schließen" onclick="$('#debugs').hide()"></div>
+    <div style="text-align: center; padding: 2px;"><input type="button" value="Schließen" onclick="document.getElementById('debugs').classList.toggle('hidden')"></div>
   </div>
   <div class="clear"></div>
 

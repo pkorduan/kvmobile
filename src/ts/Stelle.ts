@@ -3,7 +3,7 @@ import { config, kvm } from "./app";
 import { Overlay } from "./Overlay";
 
 export function Stelle(settings = {}) {
-    this.settings = typeof settings == "string" ? $.parseJSON(settings) : settings;
+    this.settings = typeof settings == "string" ? JSON.parse(settings) : settings;
 
     this.get = function (key) {
         return this.settings[key];
@@ -53,7 +53,7 @@ export function Stelle(settings = {}) {
      * Request all stellen from active serversetting
      */
     this.requestStellen = function () {
-        kvm.log("Stelle.requestStellen");
+        kvm.log("Stelle.requestStellen: \"" + this.getStellenUrl() + "\"");
         var fileTransfer = new FileTransfer(),
             filename = cordova.file.dataDirectory + "stellen.json",
             url = this.getStellenUrl();
@@ -75,7 +75,7 @@ export function Stelle(settings = {}) {
 
                             if (typeof this.result === "string" && this.result.indexOf('form name="login"') == -1) {
                                 if (kvm.isValidJsonString(this.result)) {
-                                    const resultObj = $.parseJSON(this.result);
+                                    const resultObj = JSON.parse(this.result);
                                     if (resultObj.success) {
                                         // TODO notused
                                         const validResult = true;
@@ -124,6 +124,7 @@ export function Stelle(settings = {}) {
             },
             function (err) {
                 var errMsg = "Fehler beim Download der Stellendaten code: " + err.code + " status: " + err.http_status + " Prüfen Sie ob der Nutzer vom dem Gerät aus mit seiner IP auf die Stelle zugreifen darf und die Domain in config.xml eingetragen ist.";
+                console.error(err);
                 kvm.msg(errMsg);
                 $("#sperr_div").hide();
             },
