@@ -496,7 +496,7 @@ export function Layer(stelle, settings = {}): void {
               try {
                 /// TODO !!!!
                 (<any>this.result) = (<any>this.result).replace("\n", "\\\n");
-                collection = $.parseJSON(<any>this.result);
+                collection = JSON.parse(<any>this.result);
                 kvm.log("Anzahl empfangene Datensätze: " + collection.features.length, 3);
                 var layer = kvm.activeLayer;
                 kvm.log("Version in Response: " + collection.lastDeltaVersion, 3);
@@ -514,7 +514,7 @@ export function Layer(stelle, settings = {}): void {
                   $("#sperr_div").hide();
                 }
               } catch (e) {
-                errMsg = "Fehler beim Parsen der heruntergeladenen Daten: " + this.result;
+                errMsg = "Fehler beim Parsen der heruntergeladenen Daten: " + this.result.slice(0, 1000);
                 //console.log('Anfrage: %s', kvm.getSyncUrl)
                 kvm.msg(errMsg, "Fehler");
                 kvm.log(errMsg, 1);
@@ -2955,7 +2955,7 @@ export function Layer(stelle, settings = {}): void {
           penging on layer where the feature belongs to
   */
   this.setActive = function () {
-    console.error("Layer.setActive()");
+    console.log("Layer.setActive()");
     kvm.log("Setze Layer " + this.get("title") + " (" + (this.get("alias") ? this.get("alias") : "kein Aliasname") + ") auf aktiv.", 3);
     kvm.activeLayer = this;
     kvm.store.setItem("activeLayerId", this.get("id"));

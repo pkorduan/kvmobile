@@ -121,7 +121,7 @@ export const configurations = [
         online: true,
         type: "vectortile",
         //'https://api.mapbox.com/styles/v1/pkorduan/ckrg05q6c4x7n17nr0kjbe6j9.html?fresh=true&title=view&access_token=pk.eyJ1IjoicGtvcmR1YW4iLCJhIjoiY2lxbm54b2Q4MDAzaGkzbWFodWtka2NsaCJ9.SiUN3rvZ1pbyOyZ3xQh-Hg#{z}/{x}/{y}',
-        url: "http://gdi-service.de:8080/data/v3/{z}/{x}/{y}.pbf",
+        url: "https://gdi-service.de/tileserver-gl/data/v3/{z}/{x}/{y}.pbf",
         style: "teststyle.json",
         interactiv: false,
         params: {

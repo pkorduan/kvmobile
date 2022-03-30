@@ -166,7 +166,7 @@ export const kvm = {
             console.info("Tile %s found in DB", key);
             callback(null, d, null, null);
           } else {
-            const url = params.url.replace("custom", "http");
+            const url = params.url.replace("custom", "https");
             console.info("Tile %s not in DB. Fetching from url: %s", key, url);
             fetch(url).then((t) => {
               t.arrayBuffer().then((arr) => {
@@ -179,7 +179,7 @@ export const kvm = {
         })
         .catch((err) => {
           console.info("error=>fetching", err);
-          fetch(params.url.replace("custom", "http")).then((t) => {
+          fetch(params.url.replace("custom", "https")).then((t) => {
             t.arrayBuffer().then((arr) => {
               const xx = arr.slice(0);
               kvm.saveTile(key, xx);
@@ -192,7 +192,7 @@ export const kvm = {
       // request the json describing the source
       // original will be fetched
       // in the response the protocol the tiles will be changed from http to custom
-      let url = params.url.replace("custom", "http");
+      let url = params.url.replace("custom", "https");
       // switch between on and offline
       if (navigator.onLine) {
         fetch(url)
@@ -200,7 +200,7 @@ export const kvm = {
             t.json().then((data) => {
               console.info(data);
               kvm.orgTileUrl = data.tiles[0];
-              data.tiles[0] = data.tiles[0].replace("http", "custom");
+              data.tiles[0] = data.tiles[0].replace("https", "custom");
               kvm.saveTileServerConfiguration(data);
               // callback(err: ?Error, tileJSON: ?Object)
               callback(null, data);
@@ -1534,12 +1534,21 @@ export const kvm = {
               kvm.getTilesUrls(L.latLng(params.south, params.west), L.latLng(params.north, params.east), z, bl.url).forEach(function (url) {
                 //console.log('url: %s', url);
                 const key = kvm.getTileKey(url);
-                fetch(url).then((t) => {
-                  t.arrayBuffer().then((arr) => {
-                    kvm.saveTile(key, arr.slice(0));
-                    //console.info('Tile saved to DB');
+                fetch(url)
+                  .then((t) => {
+                    console.info("result ", t);
+                    t.arrayBuffer()
+                      .then((arr) => {
+                        kvm.saveTile(key, arr.slice(0));
+                        //console.info('Tile saved to DB');
+                      })
+                      .catch((reason) => {
+                        console.info("Fehler by arraybuffer", reason);
+                      });
+                  })
+                  .catch((reason) => {
+                    console.info("Fehler by fetch", reason);
                   });
-                });
               });
             }
             kvm.msg("Fertig.", "Kartenverwaltung");
