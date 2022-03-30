@@ -1793,7 +1793,7 @@ export const kvm = {
               kvm.log('downloadData onloadend');
               var items = [];
               kvm.log('downloadData result: ' + this.result)
-              items = $.parseJSON(this.result);
+              items = JSON.parse(this.result);
               if (items.length > 0) {
                 kvm.log('Mindestens 1 Datensatz empfangen.');
                 // Warum kvm.writeData writeData ist eine Methode von Layer
@@ -1969,7 +1969,7 @@ export const kvm = {
       return resultObj;
     }
 
-    resultObj = $.parseJSON(layerResult);
+    resultObj = JSON.parse(layerResult);
 
     if (!resultObj.success) {
       kvm.log("Result success ist false!", 4);

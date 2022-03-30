@@ -9,7 +9,14 @@ http://kvwmap.de
 
 # Change log
 ## 1.8.0
-	* Switch to TypeScript, jquery only in app context, use node build chain with webpack
+  * Bugfixes
+    * Fix Bug, that overlays will not be loaded in offline mode
+    * Fix Bug, that vector will tiles not be shown in map in offline mode
+    * Make sync overlay button inactive in offline mode
+	* Code Structure
+  	* Switch to TypeScript, jquery only in app context, use node build chain with webpack
+  	* Switch some functions to classes
+  	* Switch from $.parseJSON to native JSON.parse
 ## 1.7.12
 	* Fix Bug beim erstmaligen Wechseln zwkschen Layern nach dem Laden von der Stelle.
 ## 1.7.11

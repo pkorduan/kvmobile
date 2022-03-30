@@ -375,7 +375,7 @@ export function Overlay(stelle, settings = {}): void {
       this.globalId +
       '" value="' +
       this.globalId +
-      '" class="settings-button sync-overlay-button overlay-function-button">\
+      '" class="settings-button sync-overlay-button active-button overlay-function-button">\
             <i id="syncOverlayIcon_' +
       this.globalId +
       '" class="fa fa-refresh" aria-hidden="true"></i>\

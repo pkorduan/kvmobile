@@ -11,7 +11,7 @@ declare var config: any;
 export function Layer(stelle, settings = {}): void {
   var layer_ = this;
   this.stelle = stelle;
-  this.settings = typeof settings == "string" ? $.parseJSON(settings) : settings;
+  this.settings = typeof settings == "string" ? JSON.parse(settings) : settings;
   kvm.log("Erzeuge Layerobjekt für Layer " + this.settings.title + " (id: " + this.settings.id + ") in Stelle: " + stelle.get("id"), 3);
   if (this.settings["name_attribute"] == "") {
     this.settings["name_attribute"] = this.settings["id_attribute"];
@@ -296,13 +296,13 @@ export function Layer(stelle, settings = {}): void {
 
   this.createTables = function () {
     kvm.log("Layer.createTables", 3);
-    var layerIds = $.parseJSON(kvm.store.getItem("layerIds_" + this.stelle.get("id"))),
+    var layerIds = JSON.parse(kvm.store.getItem("layerIds_" + this.stelle.get("id"))),
       layer_ = this,
       i;
 
     for (i = 0; i < layerIds.length; i++) {
       this.set("id", layerIds[i]);
-      this.settings = $.parseJSON(kvm.store.getItem("layerSettings_" + this.getGlobalId()));
+      this.settings = JSON.parse(kvm.store.getItem("layerSettings_" + this.getGlobalId()));
       this.attributes = $.map(this.settings.attributes, function (attribute) {
         return new Attribute(layer_, attribute);
       });
@@ -605,7 +605,7 @@ export function Layer(stelle, settings = {}): void {
     var success = function (r) {
       kvm.log("Erfolgreich hochgeladen ResponseCode: " + r.responseCode, 3);
       kvm.log("Response: " + JSON.stringify(r.response), 4);
-      var response = $.parseJSON(r.response);
+      var response = JSON.parse(r.response);
 
       if (response.success) {
         kvm.log("Synchronisierung erfolgreich auf dem Server durchgeführt.", 3);
@@ -839,7 +839,7 @@ export function Layer(stelle, settings = {}): void {
       },
       success: function (r) {
         //console.log('Response: %o', r);
-        var data = $.parseJSON(r);
+        var data = JSON.parse(r);
         if (data.success) {
           kvm.log(data.msg);
           kvm.log("Bild: " + this.img + " erfolgreich gelöscht.", 4);
@@ -2815,7 +2815,7 @@ export function Layer(stelle, settings = {}): void {
       this.getGlobalId() +
       '" value="' +
       this.getGlobalId() +
-      '" class="settings-button sync-layer-button layer-function-button">\
+      '" class="settings-button sync-layer-button active-button layer-function-button">\
             <i id="syncLayerIcon_' +
       this.getGlobalId() +
       '" class="fa fa-refresh" aria-hidden="true"></i>\
@@ -2826,7 +2826,7 @@ export function Layer(stelle, settings = {}): void {
       this.getGlobalId() +
       '" value="' +
       this.getGlobalId() +
-      '" class="settings-button sync-images-button layer-function-button">\
+      '" class="settings-button sync-images-button active-button layer-function-button">\
             <i id="syncImagesIcon_' +
       this.getGlobalId() +
       '" class="fa fa-upload" aria-hidden="true"></i>\
@@ -2837,7 +2837,7 @@ export function Layer(stelle, settings = {}): void {
       this.getGlobalId() +
       '" value="' +
       this.getGlobalId() +
-      '" class="settings-button clear-layer-button layer-function-button">\
+      '" class="settings-button clear-layer-button active-button layer-function-button">\
             <i id="clearLayerIcon_' +
       this.getGlobalId() +
       '" class="fa fa-ban" aria-hidden="true"></i>\
@@ -2848,7 +2848,7 @@ export function Layer(stelle, settings = {}): void {
       this.getGlobalId() +
       '" value="' +
       this.getGlobalId() +
-      '" class="settings-button reload-layer-button layer-function-button">\
+      '" class="settings-button reload-layer-button active-button layer-function-button">\
             <i id="reloadLayerIcon_' +
       this.getGlobalId() +
       '" class="fa fa-window-restore" aria-hidden="true"></i>\
