@@ -59,6 +59,7 @@ export const kvm = {
   saveTile: <any>undefined,
   readTile: <any>undefined,
   orgTileUrl: <any>undefined,
+  debug: <any>undefined,
 
   // showItem: <(p:any)=>void>undefined,
   // log: <(p:any)=>void>undefined,
@@ -526,10 +527,12 @@ export const kvm = {
     this.initStatusFilter();
     this.initLocalBackupPath();
 
+    let stelle: Stelle = undefined;
     if (this.store.getItem("activeStelleId")) {
       var activeStelleId = this.store.getItem("activeStelleId"),
-        activeStelleSettings = this.store.getItem("stelleSettings_" + activeStelleId),
-        stelle = new Stelle(activeStelleSettings);
+        activeStelleSettings = this.store.getItem("stelleSettings_" + activeStelleId);
+
+      stelle = new Stelle(activeStelleSettings);
 
       kvm.log("Aktive Stelle " + activeStelleId + " gefunden.", 3);
 
@@ -588,17 +591,18 @@ export const kvm = {
           stelle.requestOverlays();
         } else {
           var overlay,
-            overlayIds = $.parseJSON(this.store.getItem("overlayIds_" + activeStelleId));
+            overlayIds = JSON.parse(kvm.store.getItem("overlayIds_" + activeStelleId));
+
           for (let overlayId of overlayIds) {
             console.log("Lade OverlaySettings for overlayId: %s", overlayId);
-            const overlaySettings = this.store.getItem("overlaySettings_" + activeStelleId + "_" + overlayId);
+            const overlaySettings = kvm.store.getItem("overlaySettings_" + overlayId);
             if (overlaySettings != null) {
               overlay = new Overlay(stelle, overlaySettings);
               kvm.overlays.push(overlay);
-              overlay.saveSettingsToStore(); // save layersettings to local storage
-              overlay.appendToApp();
-              overlay.addOverlayToMap(); // create the leaflet overlay and add to map
+              //              overlay.saveSettingsToStore(); // save layersettings to local storage
               overlay.loadData();
+              //              overlay.addOverlayToMap(); // create the leaflet overlay and add to map
+              overlay.appendToApp();
             }
           }
         }
@@ -610,7 +614,7 @@ export const kvm = {
       }
     } else {
       kvm.msg("Wählen Sie eine Konfiguration aus und Stellen die Zugangsdaten zum Server ein.");
-      var stelle = new Stelle("{}");
+      stelle = new Stelle("{}");
       stelle.viewDefaultSettings();
       activeView = "settings";
       this.showSettingsDiv("server");
@@ -895,6 +899,7 @@ export const kvm = {
       return L.tileLayer(backgroundLayerSetting.url, backgroundLayerSetting.params);
     } else if (backgroundLayerSetting.type == "vectortile") {
       //      return L.vectorGrid.protobuf(backgroundLayerSetting.url, backgroundLayerSetting.params);
+
       return (<any>L).maplibreGL({
         style: maplibreStyleObj,
         interactive: backgroundLayerSetting.interactiv,
@@ -1513,9 +1518,13 @@ export const kvm = {
       navigator.notification.confirm(
         "Alle Vektorkacheln vom Gebiet LK-EE herunterladen? Vergewissern Sie sich, dass Sie in einem Netz mit guter Anbindung sind.",
         function (buttonIndex) {
-          if (buttonIndex == 1) {
+          if (buttonIndex === 1) {
             // ja
-            kvm.msg("Ich beginne mit dem Download der Kacheln.", "Kartenverwaltung");
+            //kvm.msg("Ich beginne mit dem Download der Kacheln.", "Kartenverwaltung");
+            document.getElementById("sperr_div").style.display = "block";
+            let sperrDivContent = document.getElementById("sperr_div_content");
+            sperrDivContent.innerHTML = '<b>Kartenverwaltung</b><br><br>Download der Kacheln:<br><br><div id="sperr_div_progress_div"></div>';
+            let sperrDivProgressDiv = document.getElementById("sperr_div_progress_div");
             // hide the button and show a progress div
             // find p1, p2 and zoom levels to fetch data in layer configuration
             // get urls for vector tiles to download
@@ -1529,10 +1538,19 @@ export const kvm = {
               key;
 
             //console.log('Fetch vector tiles for p1: %s,%s p2: %s,%s', params.south, params.west, params.north, params.east);
+            const tileLinks = [];
+
             for (var z = params.minZoom; z <= params.maxZoom; z++) {
               //console.log('Zoom level: %s', z);
-              kvm.getTilesUrls(L.latLng(params.south, params.west), L.latLng(params.north, params.east), z, bl.url).forEach(function (url) {
-                //console.log('url: %s', url);
+              kvm.getTilesUrls(L.latLng(params.south, params.west), L.latLng(params.north, params.east), z, bl.url).forEach((url) => tileLinks.push(url));
+            }
+            let i = 0;
+            const iSoll = tileLinks.length;
+            console.log("soll:" + iSoll);
+
+            function download() {
+              if (tileLinks.length > 0) {
+                const url = tileLinks.pop();
                 const key = kvm.getTileKey(url);
                 fetch(url)
                   .then((t) => {
@@ -1540,18 +1558,27 @@ export const kvm = {
                     t.arrayBuffer()
                       .then((arr) => {
                         kvm.saveTile(key, arr.slice(0));
-                        //console.info('Tile saved to DB');
+                        i++;
+                        sperrDivProgressDiv.innerHTML = i + " von " + iSoll + " runtergeladen";
+                        download();
                       })
                       .catch((reason) => {
                         console.info("Fehler by arraybuffer", reason);
+                        download();
                       });
                   })
                   .catch((reason) => {
                     console.info("Fehler by fetch", reason);
+                    download();
                   });
-              });
+              } else {
+                console.info("downloaded " + i + " von " + iSoll);
+                document.getElementById("sperr_div_content").innerHTML = "";
+                document.getElementById("sperr_div").style.display = "none";
+                kvm.msg("Download abgeschlossen!", "Kartenverwaltung");
+              }
             }
-            kvm.msg("Fertig.", "Kartenverwaltung");
+            download();
           }
           if (buttonIndex == 2) {
             // nein

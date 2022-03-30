@@ -6,7 +6,8 @@ import { Attribute } from "./Attribute";
 export function Overlay(stelle, settings = {}): void {
   var overlay_ = this;
   this.stelle = stelle;
-  this.settings = typeof settings == "string" ? $.parseJSON(settings) : settings;
+  this.settings = typeof settings == "string" ? JSON.parse(settings) : settings;
+
   if (this.settings["name_attribute"] == "") {
     this.settings["name_attribute"] = this.settings["id_attribute"];
     console.log("Set id_attribute: %s as name_attribute", this.settings["id_attribute"]);
@@ -65,14 +66,16 @@ export function Overlay(stelle, settings = {}): void {
   this.saveSettingsToStore = function () {
     kvm.log("Speicher Settings für Overlay: " + this.settings.title, 3);
     kvm.store.setItem("overlaySettings_" + this.globalId, JSON.stringify(this.settings));
-    kvm.store.setItem(
-      "overlayIds_" + this.stelle.get("id"),
-      JSON.stringify(
-        $.map(kvm.overlays, function (overlay) {
-          return overlay.get("id");
-        })
-      )
-    );
+    const overlayIdsItem = "overlayIds_" + this.stelle.get("id");
+
+    if (kvm.store.getItem(overlayIdsItem) === null) {
+      kvm.store.setItem(overlayIdsItem, "[]");
+    }
+    let overlayIds = JSON.parse(kvm.store.getItem(overlayIdsItem));
+    if (!overlayIds.includes(this.globalId)) {
+      overlayIds.push(this.globalId);
+      kvm.store.setItem(overlayIdsItem, JSON.stringify(overlayIds));
+    }
   };
 
   /*
@@ -182,12 +185,15 @@ export function Overlay(stelle, settings = {}): void {
    */
   this.loadData = function () {
     console.log("loadData Load Features from store to overlay %s", this.globalId);
-    this.features = $.parseJSON(kvm.store.getItem("overlayFeatures_" + this.globalId));
+    this.features = JSON.parse(kvm.store.getItem("overlayFeatures_" + this.globalId));
     console.log("Add " + this.features.length + " Features to the overlay");
     this.drawFeatures(this.features);
     kvm.overlays[this.globalId] = this;
   };
 
+  /*
+   * function read features from remote server, draw it on the map and add overlay to layer control
+   */
   this.reloadData = function () {
     kvm.log("Frage Daten vom Server ab.<br>Das kann je nach Datenmenge und<br>Internetverbindung einige Minuten dauern.", 3, true);
     var fileTransfer = new FileTransfer(),

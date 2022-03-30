@@ -495,8 +495,8 @@ export function Layer(stelle, settings = {}): void {
               //console.log('Download Ergebnis (Head 1000): %s', this.result.substring(0, 1000));
               try {
                 /// TODO !!!!
-                (<any>this.result) = (<any>this.result).replace("\n", "\\\n");
-                collection = JSON.parse(<any>this.result);
+                //(<any>this.result) = (<any>this.result).replace("\n", "\\\n");
+                collection = JSON.parse(<string>this.result);
                 kvm.log("Anzahl empfangene Datensätze: " + collection.features.length, 3);
                 var layer = kvm.activeLayer;
                 kvm.log("Version in Response: " + collection.lastDeltaVersion, 3);
@@ -2931,7 +2931,7 @@ export function Layer(stelle, settings = {}): void {
     const settings = JSON.stringify(this.settings);
 
     kvm.store.setItem("layerSettings_" + this.getGlobalId(), settings);
-    console.log("layerSettings_%s eingetragen. store: %o", this.getGlobalId(), kvm.store);
+    console.log("layerSettings_%s eingetragen.", this.getGlobalId());
 
     if ($.inArray(this.get("id"), layerIds) < 0) {
       layerIds.push(this.get("id"));

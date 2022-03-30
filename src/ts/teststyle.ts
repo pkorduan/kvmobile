@@ -10,7 +10,7 @@ export const maplibreStyleObj = {
       url: "custom://gdi-service.de/tileserver-gl/data/v3.json",
     },
   },
-  glyphs: "https://gdi-service.de/tileserver-gl/fonts/{fontstack}/{range}.pbf",
+  glyphs: "file:///android_asset/www/openmaptiles-fonts/{fontstack}/{range}.pbf",
   layers: [
     {
       id: "background",
