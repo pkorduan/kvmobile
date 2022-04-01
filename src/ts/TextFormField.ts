@@ -10,31 +10,35 @@ import { kvm } from "./app";
  *     </div>
  *   </div>
  */
-export function TextFormField(formId, settings): void {
-    //console.log('Erzeuge TextformField with settings %o', settings);
-    (this.settings = settings),
-        (this.get = function (key) {
-            return this.settings[key];
-        });
+export class TextFormField {
+    settings: any;
+    selector: string;
+    element: JQuery<HTMLElement>;
 
-    this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
+    constructor(formId, settings) {
+        //console.log('Erzeuge TextformField with settings %o', settings);
+        this.settings = settings;
+        this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
+        this.element = $('\
+            <input\
+            type="text"\
+            id="' + this.get("index") + '"\
+            name="' + this.get("name") + '"\
+            value=""' + (this.get("privilege") == "0" ? " disabled" : "") + "\
+            />");
+    }
 
-    this.element = $('\
-    <input\
-      type="text"\
-      id="' + this.get("index") + '"\
-      name="' + this.get("name") + '"\
-      value=""' + (this.get("privilege") == "0" ? " disabled" : "") + "\
-    />");
+    get(key) {
+        return this.settings[key];
+    }
 
-    this.setValue = function (val) {
+    setValue(val) {
         console.log("TextFormField " + this.get("name") + " setValue with value: %o", val);
         if (kvm.coalesce(val, "") == "" && this.get("default")) {
             val = this.get("default");
         }
-
         this.element.val(val == null || val == "null" ? "" : val);
-    };
+    }
 
     /*
      * get the value from form field expect
@@ -42,7 +46,7 @@ export function TextFormField(formId, settings): void {
      * when no action is given in options specified or
      * action == option
      */
-    this.getValue = function (action = "") {
+    getValue = function (action = "") {
         //console.log('TextFormField.getValue');
         var val = this.element.val();
 
@@ -57,14 +61,12 @@ export function TextFormField(formId, settings): void {
         return val;
     };
 
-    this.bindEvents = function () {
+    bindEvents() {
         //console.log('TextFormField.bindEvents');
         $("#featureFormular input[id=" + this.get("index") + "]").on("keyup", function () {
             if (!$("#saveFeatureButton").hasClass("active-button")) {
                 $("#saveFeatureButton").toggleClass("active-button inactive-button");
             }
         });
-    };
-
-    return this;
+    }
 }

@@ -11,46 +11,51 @@ import { kvm } from "./app";
  *     </div>
  *   </div>
  */
-export function UserFormField(formId, settings): void {
-    //console.log('Erzeuge UserFormField with settings %o', settings);
-    (this.settings = settings),
-        (this.get = function (key) {
-            return this.settings[key];
-        });
+export class UserFormField {
+    settings: any;
+    selector: string;
+    element: JQuery<HTMLElement>;
 
-    (this.selector = "#" + formId + " input[id=" + this.get("index") + "]"), (this.element = $('\
-    <input\
-      type="text"\
-      id="' + this.get("index") + '"\
-      name="' + this.get("name") + '"\
-      value="" disabled\
-    />'));
+    constructor(formId, settings) {
+        //console.log('Erzeuge UserFormField with settings %o', settings);
+        this.settings = settings;
+        this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
+        this.element = $('\
+        <input\
+          type="text"\
+          id="' + this.get("index") + '"\
+          name="' + this.get("name") + '"\
+          value="" disabled\
+        />');
+    }
 
-    this.setValue = function (val) {
+    get(key) {
+        return this.settings[key];
+    }
+
+    setValue(val) {
         if (kvm.coalesce(val, "") == "" && this.get("default")) {
             val = this.get("default");
         }
 
         this.element.val(val == null || val == "null" ? "" : val);
-    };
+    }
 
-    this.getValue = function (action = "") {
+    getValue(action = "") {
         kvm.log("UserFormField.getValue", 4);
         var val = this.element.val();
         if (typeof val === "undefined" || val == "") {
             val = null;
         }
         return val;
-    };
+    }
 
-    this.getAutoValue = function () {
+    getAutoValue() {
         kvm.log("UserFormField.getAutoValue");
         return kvm.store.getItem("userName");
-    };
+    }
 
-    this.bindEvents = function () {
+    bindEvents() {
         // bind no event on this form element
-    };
-
-    return this;
+    }
 }

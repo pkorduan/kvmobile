@@ -11,46 +11,47 @@ import { kvm } from "./app";
  *     </div>
  *   </div>
  */
-export function UserIDFormField(formId, settings): void {
-    //console.log('Erzeuge UserIDFormField with settings %o', settings);
-    (this.settings = settings),
-        (this.get = function (key) {
-            return this.settings[key];
-        });
+export class UserIDFormField {
+    settings: any;
+    selector: string;
+    element: JQuery<HTMLElement>;
+    constructor(formId, settings) {
+        //console.log('Erzeuge UserIDFormField with settings %o', settings);
+        this.settings = settings;
+        this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
+        this.element = $('\
+        <input\
+        type="text"\
+        id="' + this.get("index") + '"\
+        name="' + this.get("name") + '"\
+        value="" disabled\
+        />');
+    }
 
-    (this.selector = "#" + formId + " input[id=" + this.get("index") + "]"), (this.element = $('\
-    <input\
-      type="text"\
-      id="' + this.get("index") + '"\
-      name="' + this.get("name") + '"\
-      value="" disabled\
-    />'));
+    get(key) {
+        return this.settings[key];
+    }
 
-    this.setValue = function (val) {
+    setValue(val) {
         if (kvm.coalesce(val, "") == "" && this.get("default")) {
             val = this.get("default");
         }
-
         this.element.val(val == null || val == "null" ? "" : val);
-    };
+    }
 
-    this.getValue = function (action = "") {
+    getValue(action = "") {
         kvm.log("UserIDFormField.getValue", 4);
         var val = this.element.val();
         if (typeof val === "undefined" || val == "") {
             val = null;
         }
         return val;
-    };
+    }
 
-    this.getAutoValue = function () {
+    getAutoValue() {
         kvm.log("UserIDFormField.getAutoValue");
         return kvm.store.getItem("userId");
-    };
+    }
 
-    this.bindEvents = function () {
-        // bind no event on this form element
-    };
-
-    return this;
+    bindEvents() {}
 }

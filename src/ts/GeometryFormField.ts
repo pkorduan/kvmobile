@@ -12,22 +12,27 @@ import * as wkx from "wkx";
  *     </div>
  *   </div>
  */
-export function GeometrieFormField(formId, settings): void {
-    this.settings = settings;
+export class GeometrieFormField {
+    settings: any;
+    element: JQuery<HTMLElement>;
+    selector: string;
+    constructor(formId, settings) {
+        this.settings = settings;
+        this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
+        this.element = $('\
+        <input\
+        type="hidden"\
+        id="' + this.get("index") + '"\
+        name="' + this.get("name") + '"\
+        value=""' + (this.get("privilege") == "0" ? " disabled" : "") + "\
+        />");
+    }
 
-    this.get = function (key) {
+    get(key) {
         return this.settings[key];
-    };
+    }
 
-    (this.selector = "#" + formId + " input[id=" + this.get("index") + "]"), (this.element = $('\
-    <input\
-      type="hidden"\
-      id="' + this.get("index") + '"\
-      name="' + this.get("name") + '"\
-      value=""' + (this.get("privilege") == "0" ? " disabled" : "") + "\
-    />"));
-
-    this.setValue = function (val) {
+    setValue(val) {
         kvm.log("GeometrieFormField.setValue with value:" + val);
         var geom = wkx.Geometry.parse(<any>new Buffer(val, "hex"));
         this.element.val(geom.toEwkb().toString("hex"));
@@ -41,9 +46,9 @@ export function GeometrieFormField(formId, settings): void {
           val = Math.round(geom.x * faktor) / faktor + ' ' + Math.round(geom.y * faktor) / faktor;
     }
 */
-    };
+    }
 
-    this.getValue = function (action = "") {
+    getValue(action = "") {
         //console.log('GeometrieFormField.getValue');
         var val = this.element.val();
 
@@ -56,9 +61,9 @@ export function GeometrieFormField(formId, settings): void {
     }
 */
         return val;
-    };
+    }
 
-    this.bindEvents = function () {
+    bindEvents() {
         //console.log('SelectFormField.bindEvents');
         $("#featureFormular input[id=" + this.get("index") + "]").on("change", function () {
             if (!$("#saveFeatureButton").hasClass("active-button")) {
@@ -179,7 +184,5 @@ export function GeometrieFormField(formId, settings): void {
             //        kvm.activeLayer.activeFeature = feature;
             console.log("Trigger Funktion geomChanged: fertig");
         });
-    };
-
-    return this;
+    }
 }

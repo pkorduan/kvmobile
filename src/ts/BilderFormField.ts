@@ -1,27 +1,37 @@
 /// <reference types="cordova-plugin-camera"/>
 
 import { config, kvm } from "./app";
-export function BilderFormField(formId, settings): void {
-    this.settings = settings;
-    this.images_div_id = "images_" + settings["index"];
 
-    this.get = function (key) {
+export class BilderFormField {
+    settings: any;
+    images_div_id: string;
+    selector: string;
+    element: JQuery<HTMLElement>;
+
+    moveFile: (srcFile, dstDir) => void;
+
+    constructor(formId, settings) {
+        this.settings = settings;
+        this.images_div_id = "images_" + settings["index"];
+        this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
+        this.element = $('<div class="form-value">').append('\
+        <input\
+        type="hidden"\
+        id="' + this.get("index") + '"\
+        name="' + this.get("name") + '"\
+        value=""' + (this.get("privilege") == "0" ? " disabled" : "") + "\
+        />");
+        this.moveFile = this.moveFile_.bind(this);
+    }
+    get(key) {
         return this.settings[key];
-    };
-
-    (this.selector = "#" + formId + " input[id=" + this.get("index") + "]"), (this.element = $('<div class="form-value">').append('\
-    <input\
-      type="hidden"\
-      id="' + this.get("index") + '"\
-      name="' + this.get("name") + '"\
-      value=""' + (this.get("privilege") == "0" ? " disabled" : "") + "\
-    />"));
+    }
 
     /* Assign the value of the feature to the form field as it is in the database and
      * create corresponding form and view elements.
      * @params any set to '' if val is undefined, null, 'null' or NAN
      */
-    this.setValue = function (val) {
+    setValue(val) {
         kvm.log("BilderFormField.setValue with value: " + val, 4);
         var val = kvm.coalesce(val, ""),
             images,
@@ -67,9 +77,9 @@ export function BilderFormField(formId, settings): void {
                 );
             }
         }
-    };
+    }
 
-    this.getValue = function (action = "") {
+    getValue(action = "") {
         //console.log('BilderFormField.getValue');
         var val = this.element.val();
 
@@ -78,7 +88,7 @@ export function BilderFormField(formId, settings): void {
         }
 
         return val;
-    };
+    }
 
     /*
      * src is the file shown in view
@@ -86,7 +96,7 @@ export function BilderFormField(formId, settings): void {
      * Images not downloaded yet to the device are default no_image.png
      * otherwise src is equal to name
      */
-    this.addImage = function (src, name = "") {
+    addImage(src, name = "") {
         kvm.log("BilderFormField: Add Image to FormField", 4);
         name = name == "" ? src : name;
         const img_div = $('<div class="img" src="' + src + '" style="background-image: url(' + src + ');" field_id="' + this.get("index") + '"name="' + name + '"></div>');
@@ -151,21 +161,21 @@ export function BilderFormField(formId, settings): void {
                 });
             }
         });
-    };
+    }
 
-    this.addImgNameToVal = function (newImg) {
+    addImgNameToVal(newImg) {
         var val = this.getValue();
         val = val == null ? kvm.addBraces(newImg) : kvm.addBraces(kvm.removeBraces(val) + "," + newImg);
         this.element.val(val);
         this.element.trigger("change");
         return val;
-    };
+    }
 
     /*
      * Remove the image tag witch have this src and
      * the corresponding path from hidden formfield
      */
-    this.dropImage = function (imgDiv) {
+    dropImage(imgDiv) {
         var imageField = this.element,
             src = imgDiv.attr("src"),
             activeLayer = kvm.activeLayer,
@@ -186,9 +196,9 @@ export function BilderFormField(formId, settings): void {
 
         imageField.trigger("change");
         imgDiv.remove();
-    };
+    }
 
-    this.bindEvents = function () {
+    bindEvents() {
         //console.log('BildFormField.bindEvents');
         $("#featureFormular input[id=" + this.get("index") + "]").on("change", function () {
             // console.log('event on saveFeatureButton');
@@ -206,9 +216,9 @@ export function BilderFormField(formId, settings): void {
     );
 */
         $("#dropAllPictureButton_" + this.get("index")).bind("click", { context: this }, this.dropAllPictures);
-    };
+    }
 
-    this.dropAllPictures = function (evt) {
+    dropAllPictures(evt) {
         var context = evt.data.context;
         //console.log('BilderformField.dropAllPictures');
         navigator.notification.confirm(
@@ -227,12 +237,12 @@ export function BilderFormField(formId, settings): void {
             "",
             ["ja", "nein"]
         );
-    };
+    }
 
     /**
      * capture a picture
      */
-    this.takePicture = function (evt) {
+    takePicture(evt) {
         kvm.log("BilderFormField.takePicture: " + JSON.stringify(evt), 4);
 
         navigator.camera.getPicture(
@@ -260,7 +270,7 @@ export function BilderFormField(formId, settings): void {
                 saveToPhotoAlbum: $("#cameraOptionsSaveToPhotoAlbum").is(":checked"),
             }
         );
-    };
+    }
 
     /*
      * Move the srcFile to dstDir and return dstFile
@@ -268,7 +278,7 @@ export function BilderFormField(formId, settings): void {
      * @param String dstDir, Path of the destination directory
      * @return String Path and name of the file at destination directory
      */
-    this.moveFile = function (srcFile, dstDir) {
+    moveFile_(srcFile, dstDir) {
         var dstFile = dstDir + srcFile.substring(srcFile.lastIndexOf("/") + 1);
 
         kvm.log("moveFile " + srcFile + " nach " + dstDir, 4);
@@ -305,19 +315,17 @@ export function BilderFormField(formId, settings): void {
                 console.log(JSON.stringify(e));
             }
         );
-    }.bind(this);
+    }
 
     /*
      * Extract the local image path from an local image file string
      * eg. file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/1525249567531.jpg
      * extract between file:///storage/ and /Android/data/de.gdiservice.kvmobile/files/
      */
-    this.getLocalImgPath = function (imageData) {
+    getLocalImgPath(imageData) {
         var result;
         kvm.log("getLocalImgPath for imageData: " + imageData);
         result = "file:///storage/" + imageData.split("file:///storage/")[1].split("/Android/data/de.gdiservice.kvmobile/files/")[0] + "/Android/data/de.gdiservice.kvmobile/files/";
         kvm.log("getLocalImgPath returning: " + result);
-    };
-
-    return this;
+    }
 }

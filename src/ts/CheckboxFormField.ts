@@ -1,17 +1,24 @@
-export function CheckboxFormField(formId, settings): void {
-    (this.settings = settings),
-        (this.get = function (key) {
-            return this.settings[key];
-        });
+export class CheckboxFormField {
+    settings: any;
+    selector: string;
+    element: JQuery<HTMLElement>;
 
-    (this.selector = "#" + formId + " input[id=" + this.get("index") + "]"), (this.element = $('\
-    <input\
-      type="checkbox"\
-      id="' + this.get("index") + '"\
-      name="' + this.get("name") + '"' + (this.get("privilege") == "0" ? " disabled" : "") + "\
-    />"));
+    constructor(formId, settings) {
+        this.settings = settings;
+        this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
+        this.element = $('\
+        <input\
+          type="checkbox"\
+          id="' + this.get("index") + '"\
+          name="' + this.get("name") + '"' + (this.get("privilege") == "0" ? " disabled" : "") + "\
+        />");
+    }
 
-    this.setValue = function (val) {
+    get(key) {
+        return this.settings[key];
+    }
+
+    setValue(val) {
         //console.log('CheckboxFormField.setValue with value: ' + val);
         if (!val && this.get("default")) {
             val = this.get("default");
@@ -22,21 +29,19 @@ export function CheckboxFormField(formId, settings): void {
         if (val == "t") {
             this.element.prop("checked", true);
         }
-    };
+    }
 
-    this.getValue = function (action = "") {
+    getValue(action = "") {
         // console.log('CheckboxFormField.getValue');
         return this.element.prop("checked") ? "t" : this.element.val() == "" ? null : "f";
-    };
+    }
 
-    this.bindEvents = function () {
+    bindEvents() {
         //console.log('CheckboxFormField.bindEvents');
         $("#featureFormular input[id=" + this.get("index") + "]").on("change", function () {
             if (!$("#saveFeatureButton").hasClass("active-button")) {
                 $("#saveFeatureButton").toggleClass("active-button inactive-button");
             }
         });
-    };
-
-    return this;
+    }
 }
