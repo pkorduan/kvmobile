@@ -4,6 +4,8 @@ import { Overlay } from "./Overlay";
 
 export class Stelle {
   settings: any;
+  numLayers: any;
+  numOverlays: any;
   constructor(settings = {}) {
     this.settings = typeof settings == "string" ? JSON.parse(settings) : settings;
   }
