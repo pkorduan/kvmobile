@@ -24,6 +24,7 @@ require("leaflet");
 require("leaflet.locatecontrol");
 require("leaflet-betterscale");
 require("leaflet-easybutton");
+require("leaflet-editable");
 import type from "../../node_modules/leaflet-easybutton/src/easy-button";
 import { LatLngExpression } from "leaflet";
 require("proj4leaflet");
@@ -177,13 +178,17 @@ class Kvm {
           } else {
             const url = params.url.replace("custom", "https");
             console.info("Tile %s not in DB. Fetching from url: %s", key, url);
-            fetch(url).then((t) => {
-              t.arrayBuffer().then((arr) => {
-                kvm.saveTile(key, arr.slice(0));
-                console.info("Tile %s saved in DB", key);
-                callback(null, arr);
+            if (navigator.onLine) {
+              fetch(url).then((t) => {
+                t.arrayBuffer().then((arr) => {
+                  kvm.saveTile(key, arr.slice(0));
+                  console.info("Tile %s saved in DB", key);
+                  callback(null, arr);
+                });
               });
-            });
+            } else {
+              //   console.log('Kachel % nicht in DB gefunden und nicht online', url);
+            }
           }
         })
         .catch((err) => {
