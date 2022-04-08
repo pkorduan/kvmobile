@@ -357,9 +357,11 @@ export function Feature(
     $(".feature-item").removeClass("selected-feature-item");
   };
 
-  this.zoomTo = function (layer) {
+  this.zoomTo = function (layer, zoom) {
     if (this.options.geometry_type == "Point") {
-      kvm.map.setZoom(18);
+      if (zoom) {
+        kvm.map.setZoom(18);
+      }
       kvm.map.panTo(layer.getLatLng());
     } else {
       kvm.map.flyToBounds(layer.getBounds());
@@ -376,7 +378,7 @@ export function Feature(
       kvm.log("Select feature in map " + this.layerId, 4);
       layer.setStyle(this.getSelectedStyle());
 
-      this.zoomTo(layer);
+      this.zoomTo(layer, zoom);
       /*
       if (zoom) {
         kvm.map.setZoom(17);

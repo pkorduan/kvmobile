@@ -106,6 +106,7 @@ export function Overlay(stelle, settings = {}): void {
     });
     console.log("Add Overlay with title: %s to layers control.", title);
     kvm.controls.layers.addOverlay(this.layerGroup, title);
+    //    this.layerGroup.bringToBack();
   };
 
   this.getOverlayStyle = function (geoJsonFeature) {
@@ -121,21 +122,21 @@ export function Overlay(stelle, settings = {}): void {
 
   this.getOverlayCircleMarkerStyle = function (geoJsonFeature) {
     //console.log('this: %o', this.settings.classes[0].style);
-    var s = this.settings.classes[0].style,
-      d = {
-        color: "#284084",
-        fill: true,
-        fillOpacity: 0.5,
-        fillColor: "#3a5dbf",
-        weight: 4,
-      },
-      r = {
-        color: s.color ? kvm.rgbToHex(s.color) : d.color,
-        weight: s.weight || d.weight,
-        fill: d.fill,
-        fillOpacity: s.opacity ? s.opacity / 100 : d.fillOpacity,
-        fillColor: s.fillColor ? kvm.rgbToHex(s.fillColor) : d.fillColor,
-      };
+    const s = this.settings.classes[0].style;
+    const d = {
+      color: "#284084",
+      fill: true,
+      fillOpacity: 0.5,
+      fillColor: "#3a5dbf",
+      weight: 4,
+    };
+    const r = {
+      color: s.color ? kvm.rgbToHex(s.color) : d.color,
+      weight: s.weight || d.weight,
+      fill: d.fill,
+      fillOpacity: s.opacity ? s.opacity / 100 : d.fillOpacity,
+      fillColor: s.fillColor ? kvm.rgbToHex(s.fillColor) : d.fillColor,
+    };
     //console.log('r: %o', r);
     return r;
   };

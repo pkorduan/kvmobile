@@ -563,6 +563,27 @@ class Kvm {
           - Wenn es der aktive Layer ist, aktiv schalten
       */
       if (this.store.getItem("layerIds_" + activeStelleId)) {
+        // Prüfe ob Netz ist, wenn nicht lade die Overlays vom Store
+        if (navigator.onLine) {
+          stelle.requestOverlays();
+        } else {
+          var overlay,
+            overlayIds = JSON.parse(kvm.store.getItem("overlayIds_" + activeStelleId));
+
+          for (let overlayId of overlayIds) {
+            console.log("Lade OverlaySettings for overlayId: %s", overlayId);
+            const overlaySettings = kvm.store.getItem("overlaySettings_" + overlayId);
+            if (overlaySettings != null) {
+              overlay = new Overlay(stelle, overlaySettings);
+              kvm.overlays.push(overlay);
+              //              overlay.saveSettingsToStore(); // save layersettings to local storage
+              overlay.loadData();
+              //              overlay.addOverlayToMap(); // create the leaflet overlay and add to map
+              overlay.appendToApp();
+            }
+          }
+        }
+
         // Auslesen der layersettings
         var layerIds = JSON.parse(this.store.getItem("layerIds_" + activeStelleId));
         for (let layerId of layerIds) {
@@ -596,27 +617,6 @@ class Kvm {
               2000
             );
             */
-          }
-        }
-
-        // Prüfe ob Netz ist, wenn nicht lade die Overlays vom Store
-        if (navigator.onLine) {
-          stelle.requestOverlays();
-        } else {
-          var overlay,
-            overlayIds = JSON.parse(kvm.store.getItem("overlayIds_" + activeStelleId));
-
-          for (let overlayId of overlayIds) {
-            console.log("Lade OverlaySettings for overlayId: %s", overlayId);
-            const overlaySettings = kvm.store.getItem("overlaySettings_" + overlayId);
-            if (overlaySettings != null) {
-              overlay = new Overlay(stelle, overlaySettings);
-              kvm.overlays.push(overlay);
-              //              overlay.saveSettingsToStore(); // save layersettings to local storage
-              overlay.loadData();
-              //              overlay.addOverlayToMap(); // create the leaflet overlay and add to map
-              overlay.appendToApp();
-            }
           }
         }
       } else {
@@ -701,17 +701,24 @@ class Kvm {
       origin: [-464849.38, 6310160.14],
       resolutions: [16384, 8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1],
     });
+    this.myRenderer = new L.Canvas({ padding: 0.5, tolerance: 7 });
+    //this.myRenderer = new L.SVG();
 
-    var map = L.map("map", <any>{
-        // crs: crs25833,
-        editable: true,
-        center: L.latLng(this.mapSettings.startCenterLat, this.mapSettings.startCenterLon),
-        zoom: this.mapSettings.startZoom,
-        minZoom: this.mapSettings.minZoom,
-        maxZoom: this.mapSettings.maxZoom,
-        layers: this.backgroundLayers[1],
-      }),
-      baseMaps = {};
+    const map = new L.Map("map", <any>{
+      // crs: crs25833,
+      editable: true,
+      center: L.latLng(this.mapSettings.startCenterLat, this.mapSettings.startCenterLon),
+      zoom: this.mapSettings.startZoom,
+      minZoom: this.mapSettings.minZoom,
+      maxZoom: this.mapSettings.maxZoom,
+      layers: this.backgroundLayers[1],
+      renderer: this.myRenderer,
+    });
+    const baseMaps = {};
+    console.error("register layeradd event on map");
+    map.on("layeradd", (evt) => {
+      console.log("layeradd %", evt.target);
+    });
 
     // TODO
     (<any>map).setMaxBounds(L.bounds(L.point(this.mapSettings.west, this.mapSettings.south), L.point(this.mapSettings.east, this.mapSettings.north)));
@@ -720,8 +727,11 @@ class Kvm {
     }
 
     //    L.PM.initialize({ optIn: true });
-    kvm.myRenderer = L.canvas({ padding: 0.5, tolerance: 7 });
-    kvm.controls.layers = L.control.layers(baseMaps).addTo(map);
+    kvm.controls.layers = L.control
+      .layers(baseMaps, null, {
+        autoZIndex: true,
+      })
+      .addTo(map);
     kvm.controls.locate = L.control
       .locate({
         position: "topright",
@@ -1568,7 +1578,7 @@ class Kvm {
                   const key = kvm.getTileKey(url);
                   fetch(url)
                     .then((t) => {
-                      console.info("result ", t);
+                      // console.info("result ", t);
                       t.arrayBuffer()
                         .then((arr) => {
                           kvm.saveTile(key, arr.slice(0));
