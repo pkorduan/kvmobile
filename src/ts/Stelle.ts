@@ -102,7 +102,7 @@ export class Stelle {
                     }
                     $("#kvwmapServerStelleSelectField").show();
                   } else {
-                    errMsg = "Fehler beim Abfragen der Stellendaten. " + resultObj.err_msg;
+                    errMsg = "Fehler beim Abfragen der Stellendaten. " + (resultObj.err_msg ? resultObj.err_msg : "");
                   }
                 } else {
                   errMsg =
@@ -147,7 +147,7 @@ export class Stelle {
     var url = this.get("url"),
       file = this.getUrlFile(url);
 
-    url += file + "go=mobile_get_stellen" + "&" + "login_name=" + this.get("login_name") + "&" + "passwort=" + encodeURIComponent(this.get("passwort"));
+    url += file + "go=mobile_get_stellen" + "&login_name=" + this.get("login_name") + "&passwort=" + encodeURIComponent(this.get("passwort")) + "&format=json";
     return url;
   }
 
@@ -428,8 +428,8 @@ export class Stelle {
                 kvm.setConnectionStatus();
                 $("#sperr_div").hide();
               } else {
-                kvm.log("Fehlerausgabe von parseLayerResult!", 4);
-                kvm.msg(resultObj.errMsg, "Downloadfehler");
+                console.log("err_msg in resultObj: %s", resultObj.err_msg);
+                kvm.msg(resultObj.errMsg + (resultObj.err_msg ? resultObj.err_msg : ""), "Downloadfehler");
               }
               $("#sperr_div").hide();
             };
@@ -461,15 +461,13 @@ export class Stelle {
     url +=
       file +
       "go=mobile_get_layers" +
-      "&" +
-      "login_name=" +
+      "&login_name=" +
       this.get("login_name") +
-      "&" +
-      "passwort=" +
+      "&passwort=" +
       (options.hidePassword ? "*****" : encodeURIComponent(this.get("passwort"))) +
-      "&" +
-      "Stelle_ID=" +
-      this.get("Stelle_ID");
+      "&Stelle_ID=" +
+      this.get("Stelle_ID") +
+      "&format=json";
     return url;
   }
 

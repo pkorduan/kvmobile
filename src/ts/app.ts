@@ -1999,7 +1999,7 @@ class Kvm {
 
     if (!resultObj.success) {
       kvm.log("Result success ist false!", 4);
-      resultObj.errMsg = "Fehler beim Abfragen der Layerdaten. Falsche Serverparameter oder Fehler auf dem Server.";
+      resultObj.errMsg = "Fehler beim Abfragen der Layerdaten. Falsche Serverparameter, Authentifizierungsfehler oder Fehler auf dem Server.";
     }
 
     return resultObj;
