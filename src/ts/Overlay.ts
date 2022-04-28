@@ -2,44 +2,60 @@ import * as L from "leaflet";
 
 import { kvm } from "./app";
 import { Attribute } from "./Attribute";
+import { Stelle } from "./Stelle";
 
-export function Overlay(stelle, settings = {}): void {
-  var overlay_ = this;
-  this.stelle = stelle;
-  this.settings = typeof settings == "string" ? JSON.parse(settings) : settings;
+export class Overlay {
+  //var overlay_ = this;
+  stelle: Stelle;
+  settings: any;
+  globalId: String;
+  attributes: any;
+  features: any;
+  layerGroup: any;
+  attribute_index: any;
 
-  if (this.settings["name_attribute"] == "") {
-    this.settings["name_attribute"] = this.settings["id_attribute"];
-    console.log("Set id_attribute: %s as name_attribute", this.settings["id_attribute"]);
+  constructor(stelle: Stelle, settings = {}) {
+    let overlay_ = this;
+    this.stelle = stelle;
+    this.settings = typeof settings == "string" ? JSON.parse(settings) : settings;
+
+    if (this.settings["name_attribute"] == "") {
+      this.settings["name_attribute"] = this.settings["id_attribute"];
+      console.log("Set id_attribute: %s as name_attribute", this.settings["id_attribute"]);
+    }
+    this.globalId = this.getGlobalId();
+    kvm.log("Erzeuge Overlayobjekt für Overlay " + this.settings.title + " (globalId: " + this.globalId + ")", 3);
+    this.attributes = [];
+    this.layerGroup = L.layerGroup();
+    this.features = [];
+
+    if (this.settings.attributes) {
+      this.attributes = $.map(this.settings.attributes, function (attribute) {
+        return new Attribute(overlay_, attribute);
+      });
+      this.attribute_index = this.attributes.reduce((hash, elem) => {
+        hash[elem.settings.name] = Object.keys(hash).length;
+        return hash;
+      }, {});
+    }
+
+    this.features = {};
   }
-  this.globalId = this.stelle.get("id") + "_" + this.settings.id;
-  kvm.log("Erzeuge Overlayobjekt für Overlay " + this.settings.title + " (globalId: " + this.globalId + ")", 3);
-  this.attributes = [];
-  this.layerGroup = L.layerGroup();
-  this.features = [];
 
-  if (this.settings.attributes) {
-    this.attributes = $.map(this.settings.attributes, function (attribute) {
-      return new Attribute(overlay_, attribute);
-    });
-    this.attribute_index = this.attributes.reduce((hash, elem) => {
-      hash[elem.settings.name] = Object.keys(hash).length;
-      return hash;
-    }, {});
-  }
-
-  this.features = {};
-
-  this.get = function (key) {
+  get = function (key) {
     return this.settings[key];
   };
 
-  this.set = function (key, value) {
+  set = function (key, value) {
     this.settings[key] = value;
     return this.settings[key];
   };
 
-  this.getDokumentAttributeNames = function () {
+  getGlobalId() {
+    return this.stelle.get("id") + "_" + this.get("id");
+  }
+
+  getDokumentAttributeNames = function () {
     return $.map(this.attributes, function (attr) {
       if (attr.get("form_element_type") == "Dokument") {
         return attr.get("name");
@@ -47,7 +63,7 @@ export function Overlay(stelle, settings = {}): void {
     });
   };
 
-  this.isEmpty = function () {
+  isEmpty = function () {
     console.log("isEmpty? syncVersion: ", this.get("syncVersion"));
     return (
       typeof this.get("syncVersion") == "undefined" ||
@@ -58,12 +74,12 @@ export function Overlay(stelle, settings = {}): void {
     );
   };
 
-  this.setEmpty = function () {
+  setEmpty = function () {
     this.set("syncVersion", 0);
     this.runningSyncVersion = 0;
   };
 
-  this.saveSettingsToStore = function () {
+  saveSettingsToStore = function () {
     kvm.log("Speicher Settings für Overlay: " + this.settings.title, 3);
     kvm.store.setItem("overlaySettings_" + this.globalId, JSON.stringify(this.settings));
     const overlayIdsItem = "overlayIds_" + this.stelle.get("id");
@@ -84,21 +100,34 @@ export function Overlay(stelle, settings = {}): void {
    * Other than removeFromApp this function do not remove the overlay
    * from the list of overlays in settings view
    */
-  this.removeFromApp = function () {
+  removeFromApp = function () {
     console.log("  requestOverlays) fkt: removeFromApp");
+    // remove layer from layer control
     kvm.controls.layers.removeLayer(this.layerGroup);
+    // remove layer from map
     kvm.map.removeLayer(this.layerGroup);
     this.layerGroup.clearLayers();
+    // empty the layerGroup
     this.layerGroup = L.layerGroup();
+    // empty the features list
     this.features = [];
+    // empty the overlsays variable of kvm
     delete kvm.overlays[this.globalId];
+    console.log("Remove overlay %s from list", this.globalId);
+    // remove the list element
     $("#overlay_" + this.globalId).remove();
+    // update the overlayIds list in store
     kvm.store.setItem("overlayIds_" + this.stelle.get("id"), JSON.stringify(Object.keys(kvm.overlays)));
+    // remove the overlay item in store
     kvm.store.removeItem("overlaySettings_" + this.globalId);
+    // remove the overy features in store
     kvm.store.removeItem("overlayFeatures_" + this.globalId);
   };
 
-  this.drawFeatures = function (features) {
+  /**
+   * function draw features on the map and add overlay to layer control
+   */
+  drawFeatures = function (features) {
     var title = this.getTitle();
     kvm.log("Zeichne Features of overlay " + title, 3);
     this.layerGroup = L.geoJSON(features, {
@@ -109,7 +138,7 @@ export function Overlay(stelle, settings = {}): void {
     //    this.layerGroup.bringToBack();
   };
 
-  this.getOverlayStyle = function (geoJsonFeature) {
+  getOverlayStyle = function (geoJsonFeature) {
     //console.log('getOverlayStyle: %o', this);
     if (this.settings.geometry_type == "Point") {
       return this.getOverlayCircleMarkerStyle(geoJsonFeature);
@@ -120,7 +149,7 @@ export function Overlay(stelle, settings = {}): void {
     }
   };
 
-  this.getOverlayCircleMarkerStyle = function (geoJsonFeature) {
+  getOverlayCircleMarkerStyle = function (geoJsonFeature) {
     //console.log('this: %o', this.settings.classes[0].style);
     const s = this.settings.classes[0].style;
     const d = {
@@ -141,7 +170,7 @@ export function Overlay(stelle, settings = {}): void {
     return r;
   };
 
-  this.getOverlayPolylineStyle = function (geoJsonFeature) {
+  getOverlayPolylineStyle = function (geoJsonFeature) {
     //console.log('this: %o', this.settings.classes[0].style);
     var s = this.settings.classes[0].style,
       d = {
@@ -160,7 +189,7 @@ export function Overlay(stelle, settings = {}): void {
     return r;
   };
 
-  this.getOverlayPolygonStyle = function (geoJsonFeature) {
+  getOverlayPolygonStyle = function (geoJsonFeature) {
     //console.log('getOverlayPolygonStyle this: %o', this.settings.classes[0].style);
     var s = this.settings.classes[0].style,
       d = {
@@ -184,7 +213,7 @@ export function Overlay(stelle, settings = {}): void {
   /*
    * function read features from store and draw it on the map
    */
-  this.loadData = function () {
+  loadData = function () {
     console.log("loadData Load Features from store to overlay %s", this.globalId);
     this.features = JSON.parse(kvm.store.getItem("overlayFeatures_" + this.globalId));
     console.log("Add " + this.features.length + " Features to the overlay");
@@ -195,8 +224,8 @@ export function Overlay(stelle, settings = {}): void {
   /*
    * function read features from remote server, draw it on the map and add overlay to layer control
    */
-  this.reloadData = function () {
-    kvm.log("Frage Daten vom Server ab.<br>Das kann je nach Datenmenge und<br>Internetverbindung einige Minuten dauern.", 3, true);
+  reloadData = function () {
+    console.log("Frage Daten vom Server ab.<br>Das kann je nach Datenmenge und<br>Internetverbindung einige Minuten dauern.");
     var fileTransfer = new FileTransfer(),
       globalId = this.globalId,
       filename = "data_overlay_" + globalId + ".json",
@@ -263,14 +292,17 @@ export function Overlay(stelle, settings = {}): void {
     );
   };
 
-  this.appendToApp = function () {
+  /**
+   * function append overlay in overlay list and bind events on function buttons
+   */
+  appendToApp = function () {
     console.log("Overlay.appendToApp: %s", this.get("title"));
     kvm.log("Füge Overlay " + this.get("title") + " zur Overlayliste hinzu.", 3);
     $("#overlay_list").append(this.getListItem());
     this.bindOverlayEvents();
   };
 
-  this.bindOverlayEvents = function () {
+  bindOverlayEvents = function () {
     console.log("bind events for overlay: %s", this.globalId);
 
     $("#overlay-functions-button_" + this.globalId).on("click", function (evt) {
@@ -317,11 +349,11 @@ export function Overlay(stelle, settings = {}): void {
     });
   };
 
-  this.getTitle = function () {
+  getTitle = function () {
     return kvm.coalempty(this.get("alias"), this.get("title"), this.get("table_name"), this.globalId);
   };
 
-  this.getUrl = function () {
+  getUrl = function () {
     kvm.log("Layer.getUrl", 4);
     var url = this.stelle.get("url"),
       file = this.stelle.getUrlFile(url);
@@ -339,19 +371,12 @@ export function Overlay(stelle, settings = {}): void {
       "&" +
       "passwort=" +
       encodeURIComponent(this.stelle.get("passwort")) +
-      "&" +
-      "go=Daten_Export_Exportieren" +
-      "&" +
-      "export_format=GeoJSON" +
-      "&" +
-      "all=1" +
-      "&" +
-      "epsg=4326";
-    console.log("Url zum laden des Overlay " + this.get("title") + ": " + url, 3);
+      "&go=Daten_Export_Exportieren&export_format=GeoJSONPlus&all=1&epsg=4326";
+    console.log("Url zum laden des Overlay " + this.get("title") + ": %s", url);
     return url;
   };
 
-  this.downloadError = function (error) {
+  downloadError = function (error) {
     kvm.log("download error source " + error.source);
     kvm.log("download error target " + error.target);
     kvm.log("download error code: " + error.code);
@@ -359,7 +384,7 @@ export function Overlay(stelle, settings = {}): void {
     alert("Fehler beim herunterladen der Datei von der Url: " + error.source + "! Error code: " + error.code + " http_status: " + error.http_status);
   };
 
-  this.getListItem = function () {
+  getListItem = function () {
     var html =
       '\
       <div id="overlay_' +
@@ -386,6 +411,4 @@ export function Overlay(stelle, settings = {}): void {
       <div style="clear: both"></div>';
     return html;
   };
-
-  return this;
 }

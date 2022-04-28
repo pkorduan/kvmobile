@@ -33,6 +33,7 @@ export function Feature(
     id_attribute: "uuid",
     geometry_type: "Point",
     geometry_attribute: "geom",
+    globalLayerId: 0,
     new: true,
   }
 ) {
@@ -41,6 +42,7 @@ export function Feature(
   this.options = options; // Optionen, die beim Erzeugen des Features mit übergeben wurden. Siehe Default-Argument in init-Klasse.
   this.id = this.data[options.id_attribute];
   this.layerId = ""; // Id des Layers (z.B. circleMarkers) in dem das Feature gezeichnet ist
+  this.globalLayerId = options.globalLayerId; // Id des Layers zu dem das Feature gehört
   /*
   console.log('Erzeuge eine editierbare Geometrie vom Feature');
   this.editableLayer = kvm.controller.mapper.createEditable(this); // In vorheriger Version wurde hier L.marker(kvm.map.getCenter()) verwendet. ToDo: muss das hier überhaupt gesetzt werden, wenn es denn dann doch beim setEditable erzeugt wird?
@@ -123,7 +125,7 @@ export function Feature(
     console.log("setLatLngs in feature with geom: %o", geom);
     if (this.editableLayer) {
       var newLatLngs = this.wkxToLatLngs(geom),
-        oldLatLngs = this.getLatLng();
+        oldLatLngs = this.getLatLngs();
 
       console.log("vergleiche alte mit neuer coord");
       if (oldLatLngs != newLatLngs) {
@@ -140,8 +142,8 @@ export function Feature(
   };
 
   this.getLatLngs = function () {
-    console.log("getLatLngs");
-    if (this.options.geometry_attribute == "Point") {
+    console.log("Feature.getLatLngs()");
+    if (this.options.geometry_type == "Point") {
       return this.editableLayer.getLatLng();
     } else {
       return this.editableLayer.getLatLngs();
@@ -164,24 +166,51 @@ export function Feature(
         return [p.y, p.x];
       });
     } else if (this.options.geometry_type == "Polygon") {
-      /* returns a latlngs array in the form
-      [
-        [[37, -109.05],[41, -109.03],[41, -102.05],[37, -102.04]], // outer ring
-        [[37.29, -108.58],[40.71, -108.58],[40.71, -102.50],[37.29, -102.50]] // hole 1
-        [[37.01, -108.58],[37.02, -108.58],[37.02, -102.50],[37.01, -102.50]] // hole 1
-      ]
-      */
-      return [
-        geom.exteriorRing.map(function (point) {
-          return [point.y, point.x];
-        }),
-      ].concat(
-        geom.interiorRings.map(function (interiorRing) {
-          return interiorRing.map(function (point) {
-            return [point.x, point.y];
-          });
-        })
-      );
+      if (geom.constructor.name === "Polygon") {
+        /* returns a latlngs array in the form
+        [
+          [[37, -109.05],[41, -109.03],[41, -102.05],[37, -102.04]], // outer ring
+          [[37.29, -108.58],[40.71, -108.58],[40.71, -102.50],[37.29, -102.50]] // hole 1
+          [[37.01, -108.58],[37.02, -108.58],[37.02, -102.50],[37.01, -102.50]] // hole 1
+        ]
+        */
+        return [
+          geom.exteriorRing.map(function (point) {
+            return [point.y, point.x];
+          }),
+        ].concat(
+          geom.interiorRings.map(function (interiorRing) {
+            return interiorRing.map(function (point) {
+              return [point.x, point.y];
+            });
+          })
+        );
+      } else {
+        /* return a latlngs array for MultiPolygon in the form
+       [
+          [ // first polygon
+            [[37, -109.05],[41, -109.03],[41, -102.05],[37, -102.04]], // outer ring
+            [[37.29, -108.58],[40.71, -108.58],[40.71, -102.50],[37.29, -102.50]] // hole
+          ],
+          [ // second polygon
+            [[41, -111.03],[45, -111.04],[45, -104.05],[41, -104.05]]
+          ]
+        ]
+        */
+        return geom.polygons.map(function (polygon) {
+          return [
+            polygon.exteriorRing.map(function (point) {
+              return [point.y, point.x];
+            }),
+          ].concat(
+            polygon.interiorRings.map(function (interiorRing) {
+              return interiorRing.map(function (point) {
+                return [point.x, point.y];
+              });
+            })
+          );
+        });
+      }
       //      return [geom.exteriorRing.map(function(point) { return [point.y, point.x]; }).slice(0, -1)].concat(geom.interiorRings.map(function(interiorRing) { return interiorRing.map(function(point) { return [ point.x, point.y]; }).slice(0, -1); }));
     }
   };
@@ -325,13 +354,13 @@ export function Feature(
       WHERE\
         uuid = '" + this.get(this.options.id_attribute) + "'\
     ";
-    kvm.log("Frage feature uuid: " + this.get(this.options.id_attribute) + " mit sql: " + sql + " ab.", 3);
+    console.log("Frage feature " + this.options.id_attribute + ": " + this.get(this.options.id_attribute) + " mit sql: " + sql + " ab.");
     kvm.db.executeSql(
       sql,
       [],
       function (rs) {
-        kvm.log("Objekt aktualisiert.", 3);
-        kvm.log("Feature.update result: " + JSON.stringify(rs.rows.item(0)));
+        console.log("Objekt aktualisiert.");
+        //console.log("Feature.update result: " + JSON.stringify(rs.rows.item(0)));
         var data = rs.rows.item(0);
         kvm.activeLayer.activeFeature.data = typeof data == "string" ? JSON.parse(data) : data;
 
@@ -344,7 +373,14 @@ export function Feature(
         }
       },
       function (error) {
-        kvm.log("Fehler bei der Abfrage des Features mit uuid " + this.get(this.options.id_attribute) + " aus lokaler Datenbank: " + error.message);
+        kvm.msg(
+          "Fehler bei der Abfrage des Features mit " +
+            this.options.id_attribute +
+            ": " +
+            this.get(this.options.id_attribute) +
+            " aus lokaler Datenbank: " +
+            error.message
+        );
       }
     );
   };
@@ -370,12 +406,12 @@ export function Feature(
   };
 
   this.select = function (zoom) {
-    kvm.log("Markiere Feature " + this.id, 4);
+    //console.log("Markiere Feature " + this.id);
     var layer = (<any>kvm.map)._layers[this.layerId];
 
     if (this.newGeom) {
-      console.log("Feature has newGeom");
-      kvm.log("Select feature in map " + this.layerId, 4);
+      //console.log("Feature has newGeom");
+      //console.log("Select feature in map " + this.layerId);
       layer.setStyle(this.getSelectedStyle());
 
       this.zoomTo(layer, zoom);
@@ -414,14 +450,22 @@ export function Feature(
   };
 
   this.getLabelValue = function () {
-    var layer = kvm.activeLayer,
-      label_attribute = layer.get("name_attribute"),
-      formField = layer.attributes[layer.attribute_index[label_attribute]].formField,
-      label_value = "";
+    const layer = kvm.activeLayer;
+    let label_value = "";
+    const label_attribute = layer.get("name_attribute");
 
-    if (this.get(label_attribute)) {
-      label_value = formField.getFormattedValue ? formField.getFormattedValue(this.get(label_attribute)) : this.get(label_attribute);
+    if (parseInt(layer.get("privileg")) > 0) {
+      const formField = layer.attributes[layer.attribute_index[label_attribute]].formField;
+      if (this.get(label_attribute)) {
+        label_value = formField.getFormattedValue ? formField.getFormattedValue(this.get(label_attribute)) : this.get(label_attribute);
+      }
     } else {
+      const viewField = layer.attributes[layer.attribute_index[label_attribute]].viewField;
+      if (this.get(label_attribute)) {
+        label_value = viewField.element.html();
+      }
+    }
+    if (label_value == "") {
       label_value = "Datensatz " + this.get(this.options.id_attribute);
     }
     return label_value;
@@ -507,6 +551,8 @@ export function Feature(
       return this.getSelectedCircleMarkerStyle();
     } else if (this.options.geometry_type == "Line") {
       return this.getSelectedPolylineStyle();
+    } else if (this.options.geometry_type == "Polygon") {
+      return this.getSelectedPolygonStyle();
     }
   };
 
@@ -525,6 +571,19 @@ export function Feature(
       fill: false,
       color: "#ff2828",
       weight: 5,
+      opacity: 0.7,
+    };
+  };
+
+  this.getSelectedPolygonStyle = function () {
+    //console.log('getSelectedPolygonStyle');
+    return {
+      stroke: true,
+      fill: true,
+      fillColor: "#fcae95",
+      fillOpacity: 0.7,
+      color: "#a02802",
+      weight: 3,
       opacity: 0.7,
     };
   };

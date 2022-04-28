@@ -33,10 +33,10 @@ require("@maplibre/maplibre-gl-leaflet");
 
 declare var FingerprintAuth: typeof FingerprintAuthT;
 
-export var config: any;
+//export var config: any;
 
 class Kvm {
-  version: "1.8.0";
+  version: "1.8.2";
   // Buffer: require("buffer").Buffer,
   // wkx: require("wkx"),
   controls: any = {};
@@ -62,6 +62,7 @@ class Kvm {
   readTile: any;
   orgTileUrl: any;
   debug: any;
+  config: any;
 
   backgroundLayers: Layer[];
   backgroundLayerSettings: any[];
@@ -277,13 +278,14 @@ class Kvm {
 
   onDeviceReady() {
     kvm.store = window.localStorage;
+    console.log("onDeviceReady");
     var foundConfiguration = configurations.filter(function (c) {
       return c.name == (kvm.store.getItem("configName") ? kvm.store.getItem("configName") : "Standard");
     });
     if (foundConfiguration.length == 0) {
-      config = configurations[0];
+      kvm.config = configurations[0];
     } else {
-      config = foundConfiguration[0];
+      kvm.config = foundConfiguration[0];
     }
     /*
     // Write log to cordova.file.externalDataDirectory
@@ -448,13 +450,13 @@ class Kvm {
 
     this.db = window.sqlitePlugin.openDatabase(
       {
-        name: config.dbname + ".db",
+        name: kvm.config.dbname + ".db",
         location: "default",
         androidDatabaseImplementation: 2,
       },
       function (db) {
         //kvm.log('Lokale Datenbank geöffnet.', 3);
-        $("#dbnameText").html(config.dbname + ".db");
+        $("#dbnameText").html(kvm.config.dbname + ".db");
 
         //kvm.startApplication();
 
@@ -511,6 +513,28 @@ class Kvm {
     );
   }
 
+  /**
+   * function do neccessary things when the application start
+   * load several data, status and settings and update the GUI with up to date values
+   * load last active stelle, associated layer, last active layer and overlays
+   * reload overlays when online
+   * Show featurelist by default
+   * Inform user when he shall do something next or if some thing is wrong
+   *
+   * Laden von Layern (layer mit sync == 1)
+   *  - Wenn layerIds für die aktiveStelle registriert sind im store
+   *    - layer aus store abfragen und für jede layerId folgendes ausführen:
+   *    - Auslesen der layersettings
+   *    - Layer Objekt erzeugen
+   *    - Layer zur Layerliste, kvm.layers und Karte hinzufügen
+   *    - Daten des Layer aus Datenbank abfragen und zeichnen
+   *    - Wenn es der aktive Layer ist, aktiv schalten
+   * Laden von Overlays (layer mit sync != 1)
+   *  - Wenn Netz ist
+   *    - layer synchronisieren
+   *  - Wenn kein Netz ist
+   *    - Anzeigen, dass layer nicht synchronisiert werden können
+   */
   startApplication() {
     let activeView = "featurelist";
     kvm.log("onDeviceReady", 4);
@@ -552,18 +576,9 @@ class Kvm {
       stelle.viewSettings();
       stelle.setActive();
 
-      /*
-        Laden von Layern
-        - Prüfen ob layerIds für die aktiveStelle registriert sind im store
-        - Wenn ja aus store abfragen und für jede layerId folgendes ausführen:
-          - Auslesen der layersettings
-          - Layer Objekt erzeugen
-          - Layer zur Layerliste, kvm.layers und Karte hinzufügen
-          - Daten des Layer aus Datenbank abfragen und zeichnen
-          - Wenn es der aktive Layer ist, aktiv schalten
-      */
       if (this.store.getItem("layerIds_" + activeStelleId)) {
         // Prüfe ob Netz ist, wenn nicht lade die Overlays vom Store
+        /*
         if (navigator.onLine) {
           stelle.requestOverlays();
         } else {
@@ -583,6 +598,7 @@ class Kvm {
             }
           }
         }
+        */
 
         // Auslesen der layersettings
         var layerIds = JSON.parse(this.store.getItem("layerIds_" + activeStelleId));
@@ -599,24 +615,6 @@ class Kvm {
               console.log("layer: %s readData", layer.get("alias"));
               layer.readData();
             }
-            /*
-            // ToDo do not createTable instead attach schema database for layer if not exists
-            // before create LayerList();
-            //layer.createTable();
-            setTimeout(
-              function () {
-                kvm.controller.mapper.createLayerList(stelle);
-                kvm.log('Setze Layer: ' + layer.get('schema_name') + '.' + layer.get('table_name'), 3);
-                layer.setActive();
-                kvm.layerDataLoaded = false;
-                kvm.featureListLoaded = false;
-                //layer.loadFeaturesToMap();
-                layer.readData($('#limit').val(), $('#offset').val()); // load from loacl db to feature list
-               
-              },
-              2000
-            );
-            */
           }
         }
       } else {
@@ -859,7 +857,7 @@ class Kvm {
   initColorSelector() {
     let markerStyles;
     if (!(markerStyles = JSON.parse(kvm.store.getItem("markerStyles")))) {
-      markerStyles = config.markerStyles;
+      markerStyles = kvm.config.markerStyles;
       kvm.store.setItem("markerStyles", JSON.stringify(markerStyles));
     }
     Object.values(markerStyles).forEach(this.addColorSelector);
@@ -875,7 +873,7 @@ class Kvm {
   initLocalBackupPath() {
     let localBackupPath;
     if (!(localBackupPath = kvm.store.getItem("localBackupPath"))) {
-      localBackupPath = config.localBackupPath;
+      localBackupPath = kvm.config.localBackupPath;
       kvm.store.setItem("localBackupPath", localBackupPath);
     }
     $("#localBackupPath").val(localBackupPath);
@@ -883,7 +881,7 @@ class Kvm {
 
   initMapSettings() {
     if (!(this.mapSettings = JSON.parse(kvm.store.getItem("mapSettings")))) {
-      this.saveMapSettings(config.mapSettings);
+      this.saveMapSettings(kvm.config.mapSettings);
     }
     $("#newPosSelect").val(this.mapSettings.newPosSelect);
     $("#mapSettings_west").val(this.mapSettings.west);
@@ -903,7 +901,7 @@ class Kvm {
   }
 
   initBackgroundLayers() {
-    this.saveBackgroundLayerSettings(config.backgroundLayerSettings);
+    this.saveBackgroundLayerSettings(kvm.config.backgroundLayerSettings);
     $("#backgroundLayersTextarea").val(kvm.store.getItem("backgroundLayerSettings"));
     this.backgroundLayers = [];
     for (var i = 0; i < this.backgroundLayerSettings.length; ++i) {
@@ -1135,8 +1133,8 @@ class Kvm {
     );
 
     $("#logLevel").on("change", function () {
-      config.logLevel = $("#logLevel").val();
-      kvm.store.setItem("logLevel", config.logLevel);
+      kvm.config.logLevel = $("#logLevel").val();
+      kvm.store.setItem("logLevel", kvm.config.logLevel);
       kvm.msg("Protokollierungsstufe geändert!", "Protokollierung");
     });
 
@@ -1146,7 +1144,7 @@ class Kvm {
     });
 
     $("#resetBackgroundLayerSettingsButton").on("click", function () {
-      kvm.saveBackgroundLayerSettings(config.backgroundLayerSettings);
+      kvm.saveBackgroundLayerSettings(kvm.config.backgroundLayerSettings);
       kvm.msg("Einstellung zu Hintergrundlayern aus config Datei erfolgreich wiederhergestellt.");
     });
 
@@ -1318,8 +1316,9 @@ class Kvm {
           "Datensatz wirklich Löschen?",
           function (buttonIndex) {
             if (buttonIndex == 1) {
+              let id_attribute = kvm.activeLayer.get("id_attribute");
               // ja
-              kvm.log("Lösche Feature uuid: " + kvm.activeLayer.activeFeature.get("uuid"), 3);
+              console.log("Lösche Feature " + id_attribute + ": " + kvm.activeLayer.activeFeature.get(id_attribute));
               kvm.controller.mapper.clearWatch();
               kvm.activeLayer.runDeleteStrategy();
               kvm.activeLayer.createImgDeltas(
@@ -1353,7 +1352,7 @@ class Kvm {
         delta = "",
         errMsg = "";
 
-      if ($("#featureFormular input[name=" + kvm.activeLayer.get("id_attribute") + "]").val()) {
+      if ($("#featureFormular input[name=" + kvm.activeLayer.get("geometry_attribute") + "]").val()) {
         var notNullErrMsg = kvm.activeLayer.notNullValid();
         if (notNullErrMsg == "") {
           navigator.notification.confirm(
@@ -1425,6 +1424,7 @@ class Kvm {
     });
 
     $("#newFeatureButton").on("click", function () {
+      console.log("Event newFeatureButton click");
       kvm.activeLayer.newFeature();
       kvm.activeLayer.editFeature();
       //kvm.showGeomStatus();
@@ -1555,7 +1555,7 @@ class Kvm {
               // download the files in background and update the progress div
               // confirm the finish
               // hide the progress div and show the delete and update button
-              var bl = config.backgroundLayerSettings.filter(function (l) {
+              var bl = kvm.config.backgroundLayerSettings.filter(function (l) {
                   return l.type == "vectortile" && l.label == "Vektorkacheln offline";
                 })[0],
                 params = bl.params,
@@ -1616,6 +1616,25 @@ class Kvm {
         ["ja", "nein"]
       );
     });
+
+    $("#sperr_div").on("dblclick", function (evt) {
+      navigator.notification.confirm(
+        "Sperrbildschirm aufheben?",
+        function (buttonIndex) {
+          if (buttonIndex == 1) {
+            // ja
+            $("#sperr_div").hide();
+          }
+          if (buttonIndex == 2) {
+            // nein
+            // Do nothing
+            $("#sperr_dev").show();
+          }
+        },
+        "",
+        ["ja", "nein"]
+      );
+    });
   }
 
   bindFeatureItemClickEvents() {
@@ -1649,7 +1668,7 @@ class Kvm {
     kvm.log("Lade LogLevel", 4);
     var logLevel = kvm.store.getItem("logLevel");
     if (logLevel == null) {
-      logLevel = config.logLevel;
+      logLevel = kvm.config.logLevel;
       kvm.store.setItem("logLevel", logLevel);
     }
     $("#logLevel").val(logLevel);
@@ -1724,7 +1743,9 @@ class Kvm {
         if ($("#historyFilter").is(":checked")) {
           $("#restoreFeatureButton").show();
         } else {
-          $("#editFeatureButton, #tplFeatureButton").show();
+          if (parseInt(kvm.activeLayer.get("privileg")) > 0) {
+            $("#editFeatureButto, #tplFeatureButton").show();
+          }
         }
         $("#dataView").show().scrollTop(0);
         break;
@@ -1768,8 +1789,10 @@ class Kvm {
   showDefaultMenu() {
     $(".menu-button").hide();
     //  $("#backArrow, #saveFeatureButton, #deleteFeatureButton, #backToFormButton").hide();
-    $("#showSettings, #showFeatureList, #showMap, #newFeatureButton").show();
-    if (kvm.activeLayer && parseInt(kvm.activeLayer.get("privileg")) > 0) $("#newFeatureButton").show();
+    $("#showSettings, #showFeatureList, #showMap").show();
+    if (kvm.activeLayer && parseInt(kvm.activeLayer.get("privileg")) > 0) {
+      $("#newFeatureButton").show();
+    }
   }
 
   showFormMenu() {
@@ -1883,9 +1906,12 @@ class Kvm {
   }
 
   log(msg: any, level = 3, show_in_sperr_div: boolean = false) {
-    if (level <= (typeof kvm.store == "undefined" ? config.logLevel : kvm.store.getItem("logLevel")) && (typeof msg === "string" || msg instanceof String)) {
+    if (
+      level <= (typeof kvm.store == "undefined" ? kvm.config.logLevel : kvm.store.getItem("logLevel")) &&
+      (typeof msg === "string" || msg instanceof String)
+    ) {
       msg = this.replacePassword(msg);
-      if (config.debug) {
+      if (kvm.config.debug) {
         console.log("Log msg: " + msg);
       }
       setTimeout(function () {
@@ -1898,9 +1924,9 @@ class Kvm {
   }
 
   alog(msg, arg: any = "", level = 3, show_in_sperr_div = false) {
-    if (level <= config.logLevel) {
+    if (level <= kvm.config.logLevel) {
       msg = this.replacePassword(msg);
-      if (config.debug) {
+      if (kvm.config.debug) {
         var e = new Error();
         if (!e.stack)
           try {
@@ -2022,8 +2048,15 @@ class Kvm {
    * but can be used also for all other enclosing character
    */
   removeBraces(val) {
-    kvm.log("kvm.removeBraces " + val, 4);
+    console.log("kvm.removeBraces on: %s", val);
     var result = val.substring(1, val.length - 1);
+    return result;
+  }
+
+  /* Remove leading and trainling character from string */
+  removeQuotas(val) {
+    console.log("kvm.removeQuotas from val: %s", val);
+    let result = val.substring(1, val.length - 1);
     return result;
   }
 
@@ -2049,7 +2082,7 @@ class Kvm {
    * Replace server image path by local image path
    */
   serverToLocalPath(src) {
-    var result = config.localImgPath + src.substring(src.lastIndexOf("/") + 1);
+    var result = kvm.config.localImgPath + src.substring(src.lastIndexOf("/") + 1);
     kvm.log("kvm.serverToLocalPath convert: " + src + " to: " + result, 4);
     return result;
   }

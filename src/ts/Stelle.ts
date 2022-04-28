@@ -1,5 +1,5 @@
 import { Layer } from "./Layer";
-import { config, kvm } from "./app";
+import { kvm } from "./app";
 import { Overlay } from "./Overlay";
 
 export class Stelle {
@@ -19,11 +19,11 @@ export class Stelle {
   }
 
   viewDefaultSettings() {
-    $("#kvwmapServerIdField").val(config.kvwmapServerId);
-    $("#kvwmapServerNameField").val(config.kvwmapServerName);
-    $("#kvwmapServerUrlField").val(config.kvwmapServerUrl);
-    $("#kvwmapServerLoginNameField").val(config.kvwmapServerLoginName);
-    $("#kvwmapServerPasswortField").val(config.kvwmapServerPasswort);
+    $("#kvwmapServerIdField").val(kvm.config.kvwmapServerId);
+    $("#kvwmapServerNameField").val(kvm.config.kvwmapServerName);
+    $("#kvwmapServerUrlField").val(kvm.config.kvwmapServerUrl);
+    $("#kvwmapServerLoginNameField").val(kvm.config.kvwmapServerLoginName);
+    $("#kvwmapServerPasswortField").val(kvm.config.kvwmapServerPasswort);
   }
 
   viewSettings() {
@@ -273,41 +273,42 @@ export class Stelle {
               kvm.log("  requestLayers) Download der Layerdaten abgeschlossen.");
               var items = [],
                 validationResult = "";
-              kvm.log("  requestLayers) Download Result: " + this.result, 4);
+              //console.log("  requestLayers) Download Result: %o", this.result);
               const resultObj = <any>kvm.parseLayerResult(this.result);
 
               if (resultObj.success) {
                 var layers = [],
                   overlay_layers = [];
-                kvm.alog("  requestLayers) Download der Layer der Stelle erfolgreich.", "", 3);
+                console.log("  requestLayers) Download der Layer der Stelle erfolgreich.");
                 //console.log('resultObj: %o', resultObj);
 
                 // remove existing layers
                 console.log("  requestLayers) Entferne existierende Layer aus der Anwendung.");
-                $("#layer_list").html("");
+                document.getElementById("layer_list").innerHTML = "";
                 if ("layerIds_" + kvm.activeStelle.get("id") in kvm.store) {
                   JSON.parse(kvm.store["layerIds_" + kvm.activeStelle.get("id")]).map(function (id) {
-                    if (kvm.layers[id]) {
-                      kvm.layers[id].removeFromApp();
+                    let globalId = kvm.activeStelle.get("id") + "_" + id;
+                    if (kvm.layers[globalId]) {
+                      console.log("  requestLayers) Remove Layer " + globalId + " from app.");
+                      kvm.layers[globalId].removeFromApp();
                     }
                   });
                 }
                 kvm.store.removeItem("activeLayerId");
-
+                /*
                 // remove existing overlays
                 console.log("  requestLayers) Entferne existierende Overlays aus der Anwendung.");
-                // Entferne Overlays aus dem Layer control
+                document.getElementById("overlay_list").innerHTML = "";
                 if ("overlayIds_" + kvm.activeStelle.get("id") in kvm.store) {
                   JSON.parse(kvm.store["overlayIds_" + kvm.activeStelle.get("id")]).map(function (id) {
                     var globalId = kvm.activeStelle.get("id") + "_" + id;
-                    $("#overlay_" + globalId).remove();
                     if (kvm.overlays[globalId]) {
-                      console.log("  requestLayers) Remove Overlay " + globalId + " from overlay list.");
+                      console.log("  requestLayers) Remove Overlay " + globalId + " from app.");
                       kvm.overlays[globalId].removeFromApp();
                     }
                   });
                 }
-
+*/
                 $("#featurelistHeading").html("Noch keine Layer synchronisiert");
                 $("#featurelistBody").html(
                   'Wählen Sie unter Einstellungen in der Gruppe "Layer" einen Layer aus. Öffnen Sie dann das Optionen Menü und wählen die Funktion "Daten synchronisieren"!'
@@ -320,18 +321,15 @@ export class Stelle {
                 // add requested layers
                 console.log("  requestLayers) Füge neu runtergeladene Layer zur Anwendung hinzu.");
                 $.each(resultObj.layers, function (index, layerSetting) {
-                  var layer, overlay;
+                  let layer;
                   console.log("  requestLayers) Layer.requestLayers create layer with settings: %o", layerSetting);
-                  if (layerSetting.sync == 1) {
-                    layer = new Layer(kvm.activeStelle, layerSetting);
-                    layer.createTable(this);
-                    layer.appendToApp();
-                  } else {
-                    console.log("  requestLayers) Zeige Overlay %s an.", layerSetting.title);
-                    overlay = new Overlay(kvm.activeStelle, layerSetting);
-                    overlay.saveSettingsToStore(); // save layersettings to local storage
-                    overlay.appendToApp();
-                    overlay.reloadData(); // load data of overlay from remote resource, save the data in local storage and add it to the overlay in leaflet
+                  layer = new Layer(kvm.activeStelle, layerSetting);
+                  layer.createTable(this);
+                  layer.appendToApp();
+                  if (layerSetting.sync != 1) {
+                    console.log("  requestLayer Overlay: %s", layerSetting.title);
+                    // lade die Daten runter und speicher sie in lokaler Datenbank
+                    //layer.requestData();
                   }
                 });
 
@@ -359,7 +357,9 @@ export class Stelle {
     );
   }
 
-  /*
+  /**
+   * This function is depricated, overlays now are layers with sync = 0
+   *
    * Request all layers from stelle,
    * remove existing overlays from app
    * write overlays to store,
@@ -368,7 +368,7 @@ export class Stelle {
    * change to function getOverlayUrl() and Methode mobile_get_layers to mobile_get_overlays
    */
   requestOverlays() {
-    //console.log('Layer.requestLayers for stelle: %o', this);
+    //console.log('Layer.requestOverlays for stelle: %o', this);
     var fileTransfer = new FileTransfer(),
       filename = cordova.file.dataDirectory + "layers_stelle_" + this.get("id") + ".json",
       //filename = 'temp_file.json',
@@ -420,9 +420,9 @@ export class Stelle {
                   if (layerSetting.sync != 1) {
                     console.log("  requestOverlays) Zeige Overlay %s an.", layerSetting.title);
                     overlay = new Overlay(kvm.activeStelle, layerSetting);
-                    overlay.reloadData(); // load data of overlay from remote resource, save the data in local storage and add it to the overlay in leaflet
-                    overlay.appendToApp();
-                    overlay.saveSettingsToStore(); // save layersettings to local storage
+                    overlay.reloadData(); // read features from remote server, draw it on the map and add overlay to layer control
+                    overlay.appendToApp(); // append overlay in overlay list and bind events
+                    //overlay.saveSettingsToStore(); // do not save layersettings to local storage any more
                   }
                 });
                 kvm.setConnectionStatus();

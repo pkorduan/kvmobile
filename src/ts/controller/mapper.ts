@@ -1,4 +1,4 @@
-import { config, kvm } from "../app";
+import { kvm } from "../app";
 import * as wkx from "wkx";
 import * as L from "leaflet";
 import { Buffer } from "buffer";
@@ -96,6 +96,7 @@ export const Mapper = {
       // TODO 3x (<any>kvm.map)
       (<any>kvm.map)._layers[feature.editableLayer._leaflet_id].on("dragend", function (evt) {
         console.log("draged");
+        kvm.controller.mapper.clearWatch();
         var latlng = feature.editableLayer.getLatLng();
         console.log("trigger geomChanged mit latlng: %o", latlng);
         $(document).trigger("geomChanged", [{ geom: feature.aLatLngsToWkx([latlng]), exclude: "latlngs" }]);
@@ -164,13 +165,23 @@ export const Mapper = {
     this.watchId = navigator.geolocation.watchPosition(
       function (location) {
         var latlng = L.latLng(location.coords.latitude, location.coords.longitude);
-        console.log("gps Location: %s", latlng.toString());
-        if (this.lastLatlng.distanceTo(latlng) > (config.minTrackDistance ? config.minTrackDistance : 5)) {
-          console.log("Add Point to Line at Location: %s", latlng.toString());
+        //console.log("gps Location: %s", latlng.toString());
+        if (this.lastLatlng.distanceTo(latlng) > (kvm.config.minTrackDistance ? kvm.config.minTrackDistance : 5)) {
+          //console.log("Add Point to Line at Location: %s", latlng.toString());
           kvm.map.flyTo(latlng);
-          kvm.activeLayer.activeFeature.editableLayer.addLatLng(latlng);
+          kvm.activeLayer.activeFeature.editableLayer.setLatLng(latlng);
           this.lastLatlng = latlng;
         }
+      }.bind(this)
+    );
+  },
+
+  startUpdateMarkerWithGps: function () {
+    this.watchId = navigator.geolocation.watchPosition(
+      function (location) {
+        var latlng = L.latLng(location.coords.latitude, location.coords.longitude);
+        console.log("trigger geomChanged mit latlng: %o", latlng);
+        $(document).trigger("geomChanged", [{ geom: kvm.activeLayer.activeFeature.aLatLngsToWkx([latlng]) }]);
       }.bind(this)
     );
   },

@@ -8,6 +8,10 @@ https://github.com/srahn/kvwmap/
 http://kvwmap.de
 
 # Change log
+## 1.8.1
+  * Bugfixes
+    * Fix canot create a new dataset
+    * Fix download when offline
 ## 1.8.0
   * Bugfixes
     * Fix Bug, that overlays will not be loaded in offline mode
