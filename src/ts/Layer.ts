@@ -2974,11 +2974,11 @@ export class Layer {
         <div id="styleLayerDiv" style="display: none">\
           <label for="color">Zeichenfarbe: </label>\
           <input type="color" id="color" name="color" value="#ff0000"><br>\
-          <label for="width">Strichstärke: </label>\
+          <label for="width">Strichstärke (1-10): </label>\
           <input type="range" id="width" name="width" min="1" max="10"><br>\
           <label for="fillcolor">Füllfarbe: </label>\
           <input type="color" id="fillcolor" name="fillcolor" value="#ff0000"><br>\
-          <label for="width">Durchsichtigkeit: </label>\
+          <label for="width">Durchsichtigkeit (0-100): </label>\
           <input type="range" id="opacity" name="opacity" min="0" max="100">\
           </div>\
       </div>\
