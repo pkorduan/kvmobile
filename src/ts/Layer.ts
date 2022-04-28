@@ -2972,13 +2972,13 @@ export class Layer {
       '" class="fa fa-paint-brush" aria-hidden="true"></i>\
         </button> Layer Stylen\
         <div id="styleLayerDiv" style="display: none">\
-          <label for="color">Zeichenfarbe</label>\
-          <input type="color" id="color" name="color" value="#ff0000">\
-          <label for="width">Strichstärke</label><br>\
-          <input type="range" id="width" name="width" min="1" max="10">\
-          <label for="fillcolor">Füllfarbe</label>\
-          <input type="color" id="fillcolor" name="fillcolor" value="#ff0000">\
-          <label for="width">Durchsichtigkeit</label><br>\
+          <label for="color">Zeichenfarbe: </label>\
+          <input type="color" id="color" name="color" value="#ff0000"><br>\
+          <label for="width">Strichstärke: </label>\
+          <input type="range" id="width" name="width" min="1" max="10"><br>\
+          <label for="fillcolor">Füllfarbe: </label>\
+          <input type="color" id="fillcolor" name="fillcolor" value="#ff0000"><br>\
+          <label for="width">Durchsichtigkeit: </label>\
           <input type="range" id="opacity" name="opacity" min="0" max="100">\
           </div>\
       </div>\
