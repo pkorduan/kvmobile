@@ -1246,7 +1246,7 @@ export class Layer {
         });
 
         // Setze default Style für Kartenobjekt
-        vectorLayer.setStyle(feature.getNormalStyle());
+        vectorLayer.setStyle((this.settings.color && this.settings.color != '' ? this.getLayerStyle() : feature.getNormalStyle()));
 
         // Kartenobjekt als Layer zur Layergruppe hinzufügen
         this.layerGroup.addLayer(vectorLayer);
@@ -1259,6 +1259,37 @@ export class Layer {
     this.layerGroup.addTo(kvm.map);
     this.selectLayerInControl();
     kvm.log("layerGroup zur Karte hinzugefügt.", 4);
+  }
+
+  getLayerStyle() {
+    let style: any = {};
+    style.color = this.settings.color;
+    style.opacity = this.settings.opacity;
+    style.fillcolor = this.settings.fillcolor;
+    style.fillopacity = this.settings.opacity;
+    style.width = this.settings.width;
+    if (this.settings.geometry_type == "Point") {
+      return this.getNormalCircleMarkerStyle(style);
+    } else if (this.settings.geometry_type == "Line") {
+      return this.getNormalPolylineStyle(style);
+    } else if (this.settings.geometry_type == "Polygon") {
+      return this.getNormalPolygonStyle(style);
+    }
+  }
+
+  getNormalCircleMarkerStyle(style) {
+    return style;
+  }
+
+  getNormalPolylineStyle(style) {
+    style.stroke = true;
+    style.fill = false;
+    return style;
+  }
+
+  getNormalPolygonStyle(style) {
+    style.stroke = true;
+    return style;
   }
 
   selectLayerInControl() {
@@ -1289,8 +1320,8 @@ export class Layer {
           href="#"\
           title="Geometrie ändern"\
           onclick="kvm.activeLayer.editFeature(\'' +
-          feature.get(this.get("id_attribute")) +
-          '\')"\
+        feature.get(this.get("id_attribute")) +
+        '\')"\
         ><span class="fa-stack fa-lg">\
             <i class="fa fa-square fa-stack-2x"></i>\
             <i class="fa fa-pencil fa-stack-1x fa-inverse"></i>\
@@ -1326,12 +1357,12 @@ export class Layer {
     }
     this.activeFeature = new Feature(
       '{ "' +
-        this.get("id_attribute") +
-        '": "' +
-        kvm.uuidv4() +
-        '", "version": "' +
-        ((this.get("syncVersion") == "null" ? 0 : this.get("syncVersion")) + 1) +
-        '"}',
+      this.get("id_attribute") +
+      '": "' +
+      kvm.uuidv4() +
+      '", "version": "' +
+      ((this.get("syncVersion") == "null" ? 0 : this.get("syncVersion")) + 1) +
+      '"}',
       {
         id_attribute: this.get("id_attribute"),
         geometry_type: this.get("geometry_type"),
@@ -1660,18 +1691,18 @@ export class Layer {
 
           kvm.log(
             "Vergleiche " +
-              attr.get("form_element_type") +
-              " Attribut: " +
-              key +
-              "(" +
-              oldVal +
-              " (" +
-              typeof oldVal +
-              ") vs. " +
-              newVal +
-              "(" +
-              typeof newVal +
-              "))"
+            attr.get("form_element_type") +
+            " Attribut: " +
+            key +
+            "(" +
+            oldVal +
+            " (" +
+            typeof oldVal +
+            ") vs. " +
+            newVal +
+            "(" +
+            typeof newVal +
+            "))"
           );
 
           if (oldVal != newVal) {
@@ -1921,8 +1952,8 @@ export class Layer {
   addAutoChanges(changes, action) {
     kvm.log("Layer.addAutoChanges mit action " + action, 4);
     var changesKeys = $.map(changes, function (change) {
-        return change.key;
-      }),
+      return change.key;
+    }),
       autoChanges = $.map(this.attributes, function (attr) {
         if (attr.isAutoAttribute(action) && !changesKeys.includes(attr.get("name"))) {
           var autoValue = attr.formField.getAutoValue();
@@ -2490,9 +2521,9 @@ export class Layer {
                   // navigator.notification.alert("Fehler bei der Speicherung der Änderungsdaten für das Bild in der delta-Tabelle!\nFehlercode: " + error.code + "\nMeldung: " + error.message);
                   navigator.notification.alert(
                     "Fehler bei der Speicherung der Änderungsdaten für das Bild in der delta-Tabelle!\nFehlercode: " +
-                      error.code +
-                      "\nMeldung: " +
-                      error.message,
+                    error.code +
+                    "\nMeldung: " +
+                    error.message,
                     undefined
                   );
                 }
@@ -2533,11 +2564,11 @@ export class Layer {
     this.context.numExecutedDeltas++;
     kvm.log(
       "execServerDeltaSuccessFunc numExecutedDeltas: " +
-        this.context.numExecutedDeltas +
-        " context.numReturnedDeltas: " +
-        this.context.numReturnedDeltas +
-        " numReturnedDeltas: " +
-        this.numReturnedDeltas
+      this.context.numExecutedDeltas +
+      " context.numReturnedDeltas: " +
+      this.context.numReturnedDeltas +
+      " numReturnedDeltas: " +
+      this.numReturnedDeltas
     );
     if (this.context.numExecutedDeltas == this.context.numReturnedDeltas) {
       var newVersion = parseInt(this.response.syncData[this.response.syncData.length - 1].push_to_version);
@@ -2718,7 +2749,7 @@ export class Layer {
       const layer = kvm.activeLayer;
 
       if (layer.isEmpty()) {
-        navigator.notification.confirm("Layer ist schon geleert!", function (buttonIndex) {}, "Datenbank", ["OK"]);
+        navigator.notification.confirm("Layer ist schon geleert!", function (buttonIndex) { }, "Datenbank", ["OK"]);
       } else {
         navigator.notification.confirm(
           "Alle lokale Daten und nicht hochgeladene Änderungen wirklich Löschen?",
@@ -2754,7 +2785,7 @@ export class Layer {
         } else {
           navigator.notification.confirm(
             "Layer ist noch nicht geleert. Die Daten des Layers auf dem Endgerät müssen erst gelöscht werden.",
-            function (buttonIndex) {},
+            function (buttonIndex) { },
             "Datenbank",
             ["OK"]
           );
@@ -2780,6 +2811,25 @@ export class Layer {
         );
       }
     });
+
+    $(".style-layer-button" + (layerGlobalId > 0 ? "[id='styleLayerButton_" + layerGlobalId + "']" : "")).on('click', function (evt) {
+      var id = (<any>evt.target).value;
+      const layer = kvm.activeLayer;
+      let target = $(evt.target);
+      $('#styleLayerDiv').toggle();
+    });
+
+    $(".style-layer-ok-button" + (layerGlobalId > 0 ? "[id='styleLayerButton_" + layerGlobalId + "']" : "")).on('click', function (evt) {
+      var id = (<any>evt.target).value;
+      const layer = kvm.activeLayer;
+      let target = $(evt.target);
+      ['color', 'fillcolor', 'width', 'opacity'].forEach(function (formvar) {
+        kvm.activeLayer.settings[formvar] = $('#styleLayerDiv_' + target.val() + ' input[name=color]').val();
+      });
+      kvm.activeLayer.saveToStore();
+      kvm.activeLayer.readData();
+    });
+
     /*
     $('#short_password_field').on(
       'keyup',
@@ -2789,7 +2839,7 @@ export class Layer {
         }
       }
     );
-
+ 
     $('#password_field').on(
       'keyup',
       function(e) {
@@ -2801,7 +2851,7 @@ export class Layer {
         }
       }
     );
-
+ 
     $('#password_view_checkbox').on(
       'change',
       function(e) {
@@ -2814,7 +2864,7 @@ export class Layer {
         }
       }
     );
-
+ 
     $('#password_ok_button').on(
       'click',
       function(e) {
@@ -2971,7 +3021,17 @@ export class Layer {
       this.getGlobalId() +
       '" class="fa fa-paint-brush" aria-hidden="true"></i>\
         </button> Layer Stylen\
-        <div id="styleLayerDiv" style="display: none">\
+        <button id="styleLayerOkButton_' +
+      this.getGlobalId() +
+      '" value="' +
+      this.getGlobalId() +
+      '" class="settings-button" style="float: right">\
+            <i id="styleLayerOkIcon_' +
+      this.getGlobalId() +
+      '" class="fa fa-check" style="font-size: 24px; color: #00a800" aria-hidden="true"></i>\
+          </button>\
+        <div id="styleLayerDiv_' +
+      this.getGlobalId() + '" style="display: none">\
           <label for="color">Zeichenfarbe: </label>\
           <input type="color" id="color" name="color" value="#ff0000"><br>\
           <label for="width">Strichstärke (1-10): </label>\
@@ -3049,11 +3109,11 @@ export class Layer {
     kvm.log("download error http_status: " + error.http_status);
     alert(
       "Fehler beim herunterladen der Datei von der Url: " +
-        kvm.replacePassword(error.source) +
-        "! Error code: " +
-        error.code +
-        " http_status: " +
-        error.http_status
+      kvm.replacePassword(error.source) +
+      "! Error code: " +
+      error.code +
+      " http_status: " +
+      error.http_status
     );
   }
 
