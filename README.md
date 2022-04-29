@@ -8,6 +8,13 @@ https://github.com/srahn/kvwmap/
 http://kvwmap.de
 
 # Change log
+## 1.8.4
+  * Value for Range and select fields for layer style
+## 1.8.3
+  * User defined layer styles
+## 1.8.2
+  * Code Structure
+    * Load Overlays as non editable layers
 ## 1.8.1
   * Bugfixes
     * Fix canot create a new dataset

@@ -36,7 +36,7 @@ declare var FingerprintAuth: typeof FingerprintAuthT;
 //export var config: any;
 
 class Kvm {
-  version: "1.8.2";
+  version: "1.8.4";
   // Buffer: require("buffer").Buffer,
   // wkx: require("wkx"),
   controls: any = {};

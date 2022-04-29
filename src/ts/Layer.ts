@@ -1246,7 +1246,7 @@ export class Layer {
         });
 
         // Setze default Style für Kartenobjekt
-        vectorLayer.setStyle((this.settings.color && this.settings.color != '' ? this.getLayerStyle() : feature.getNormalStyle()));
+        vectorLayer.setStyle(this.settings.color && this.settings.color != "" ? this.getLayerStyle() : feature.getNormalStyle());
 
         // Kartenobjekt als Layer zur Layergruppe hinzufügen
         this.layerGroup.addLayer(vectorLayer);
@@ -1264,9 +1264,9 @@ export class Layer {
   getLayerStyle() {
     let style: any = {};
     style.color = this.settings.color;
-    style.opacity = this.settings.opacity;
-    style.fillcolor = this.settings.fillcolor;
-    style.fillopacity = this.settings.opacity;
+    style.opacity = this.settings.opacity / 100;
+    style.fillColor = this.settings.fillcolor;
+    style.fillOpacity = this.settings.fillOpacity / 100;
     style.width = this.settings.width;
     if (this.settings.geometry_type == "Point") {
       return this.getNormalCircleMarkerStyle(style);
@@ -1320,8 +1320,8 @@ export class Layer {
           href="#"\
           title="Geometrie ändern"\
           onclick="kvm.activeLayer.editFeature(\'' +
-        feature.get(this.get("id_attribute")) +
-        '\')"\
+          feature.get(this.get("id_attribute")) +
+          '\')"\
         ><span class="fa-stack fa-lg">\
             <i class="fa fa-square fa-stack-2x"></i>\
             <i class="fa fa-pencil fa-stack-1x fa-inverse"></i>\
@@ -1357,12 +1357,12 @@ export class Layer {
     }
     this.activeFeature = new Feature(
       '{ "' +
-      this.get("id_attribute") +
-      '": "' +
-      kvm.uuidv4() +
-      '", "version": "' +
-      ((this.get("syncVersion") == "null" ? 0 : this.get("syncVersion")) + 1) +
-      '"}',
+        this.get("id_attribute") +
+        '": "' +
+        kvm.uuidv4() +
+        '", "version": "' +
+        ((this.get("syncVersion") == "null" ? 0 : this.get("syncVersion")) + 1) +
+        '"}',
       {
         id_attribute: this.get("id_attribute"),
         geometry_type: this.get("geometry_type"),
@@ -1691,18 +1691,18 @@ export class Layer {
 
           kvm.log(
             "Vergleiche " +
-            attr.get("form_element_type") +
-            " Attribut: " +
-            key +
-            "(" +
-            oldVal +
-            " (" +
-            typeof oldVal +
-            ") vs. " +
-            newVal +
-            "(" +
-            typeof newVal +
-            "))"
+              attr.get("form_element_type") +
+              " Attribut: " +
+              key +
+              "(" +
+              oldVal +
+              " (" +
+              typeof oldVal +
+              ") vs. " +
+              newVal +
+              "(" +
+              typeof newVal +
+              "))"
           );
 
           if (oldVal != newVal) {
@@ -1952,8 +1952,8 @@ export class Layer {
   addAutoChanges(changes, action) {
     kvm.log("Layer.addAutoChanges mit action " + action, 4);
     var changesKeys = $.map(changes, function (change) {
-      return change.key;
-    }),
+        return change.key;
+      }),
       autoChanges = $.map(this.attributes, function (attr) {
         if (attr.isAutoAttribute(action) && !changesKeys.includes(attr.get("name"))) {
           var autoValue = attr.formField.getAutoValue();
@@ -2521,9 +2521,9 @@ export class Layer {
                   // navigator.notification.alert("Fehler bei der Speicherung der Änderungsdaten für das Bild in der delta-Tabelle!\nFehlercode: " + error.code + "\nMeldung: " + error.message);
                   navigator.notification.alert(
                     "Fehler bei der Speicherung der Änderungsdaten für das Bild in der delta-Tabelle!\nFehlercode: " +
-                    error.code +
-                    "\nMeldung: " +
-                    error.message,
+                      error.code +
+                      "\nMeldung: " +
+                      error.message,
                     undefined
                   );
                 }
@@ -2564,11 +2564,11 @@ export class Layer {
     this.context.numExecutedDeltas++;
     kvm.log(
       "execServerDeltaSuccessFunc numExecutedDeltas: " +
-      this.context.numExecutedDeltas +
-      " context.numReturnedDeltas: " +
-      this.context.numReturnedDeltas +
-      " numReturnedDeltas: " +
-      this.numReturnedDeltas
+        this.context.numExecutedDeltas +
+        " context.numReturnedDeltas: " +
+        this.context.numReturnedDeltas +
+        " numReturnedDeltas: " +
+        this.numReturnedDeltas
     );
     if (this.context.numExecutedDeltas == this.context.numReturnedDeltas) {
       var newVersion = parseInt(this.response.syncData[this.response.syncData.length - 1].push_to_version);
@@ -2749,7 +2749,7 @@ export class Layer {
       const layer = kvm.activeLayer;
 
       if (layer.isEmpty()) {
-        navigator.notification.confirm("Layer ist schon geleert!", function (buttonIndex) { }, "Datenbank", ["OK"]);
+        navigator.notification.confirm("Layer ist schon geleert!", function (buttonIndex) {}, "Datenbank", ["OK"]);
       } else {
         navigator.notification.confirm(
           "Alle lokale Daten und nicht hochgeladene Änderungen wirklich Löschen?",
@@ -2785,7 +2785,7 @@ export class Layer {
         } else {
           navigator.notification.confirm(
             "Layer ist noch nicht geleert. Die Daten des Layers auf dem Endgerät müssen erst gelöscht werden.",
-            function (buttonIndex) { },
+            function (buttonIndex) {},
             "Datenbank",
             ["OK"]
           );
@@ -2811,23 +2811,35 @@ export class Layer {
         );
       }
     });
-
-    $(".style-layer-button" + (layerGlobalId > 0 ? "[id='styleLayerButton_" + layerGlobalId + "']" : "")).on('click', function (evt) {
-      var id = (<any>evt.target).value;
-      const layer = kvm.activeLayer;
-      let target = $(evt.target);
-      $('#styleLayerDiv').toggle();
+    console.log("Register event for styleLayerButton with layerId: ", layerGlobalId);
+    /*
+    $("#styleLayerButton_" + layerGlobalId).on("click", function (evt) {
+      console.log("test");
+    });
+    */
+    $(".style-layer-button" + (layerGlobalId > 0 ? "[id='styleLayerButton_" + layerGlobalId + "']" : "")).on("click", function (evt) {
+      const layerGlobalId = evt.target.getAttribute("value") || evt.target.parentElement.getAttribute("value");
+      console.log("click on style-layer-button id: ", layerGlobalId);
+      $("#styleLayerDiv_" + layerGlobalId).toggle();
     });
 
-    $(".style-layer-ok-button" + (layerGlobalId > 0 ? "[id='styleLayerButton_" + layerGlobalId + "']" : "")).on('click', function (evt) {
-      var id = (<any>evt.target).value;
-      const layer = kvm.activeLayer;
-      let target = $(evt.target);
-      ['color', 'fillcolor', 'width', 'opacity'].forEach(function (formvar) {
-        kvm.activeLayer.settings[formvar] = $('#styleLayerDiv_' + target.val() + ' input[name=color]').val();
+    $(".style-layer-div input").on("change", function (evt) {
+      const globalLayerId = evt.target.parentElement.parentElement.parentElement.getAttribute("value");
+      console.log("Input Feld %s in style-layer-div %s changed", evt.target.getAttribute("name"), "styleLayerDiv_" + globalLayerId);
+      $("#styleLayerOkButton_" + globalLayerId).show();
+    });
+
+    $("#styleLayerOkButton_" + layerGlobalId).on("click", function (evt) {
+      const globalLayerId = evt.currentTarget.getAttribute("value");
+      console.log("click on style-layer-ok-button id: ", globalLayerId);
+      ["color", "fillcolor", "width", "opacity", "fillOpacity"].forEach(function (formvar) {
+        kvm.activeLayer.settings[formvar] = $(
+          "#styleLayerDiv_" + globalLayerId + " input[name='" + formvar + "'], #styleLayerDiv_" + globalLayerId + " select[name='" + formvar + "']"
+        ).val();
       });
       kvm.activeLayer.saveToStore();
       kvm.activeLayer.readData();
+      $(evt.currentTarget).hide();
     });
 
     /*
@@ -2954,98 +2966,104 @@ export class Layer {
   }
 
   getListItem() {
-    var html =
-      '\
-      <div id="layer_' +
-      this.getGlobalId() +
-      '">\
-        <input type="radio" name="activeLayerId" value="' +
-      this.getGlobalId() +
-      '"/> ' +
-      (this.get("alias") ? this.get("alias") : this.get("title")) +
-      '\
-        <i id="layer-functions-button_' +
-      this.getGlobalId() +
-      '" class="layer-functions-button fa fa-ellipsis-v" aria-hidden="true"></i>\
+    console.log("getListItem for layerId: ", this.getGlobalId());
+    var html = `\
+      <div id="layer_${this.getGlobalId()}">\
+        <input type="radio" name="activeLayerId" value="${this.getGlobalId()}"/> ${this.get("alias") ? this.get("alias") : this.get("title")}\
+        <i id="layer-functions-button_${this.getGlobalId()}" class="layer-functions-button fa fa-ellipsis-v" aria-hidden="true"></i>\
         <div class="layer-functions-div">\
-          <button id="syncLayerButton_' +
-      this.getGlobalId() +
-      '" value="' +
-      this.getGlobalId() +
-      '" class="settings-button sync-layer-button active-button layer-function-button">\
-            <i id="syncLayerIcon_' +
-      this.getGlobalId() +
-      '" class="fa fa-refresh" aria-hidden="true"></i>\
+          <button id="syncLayerButton_${this.getGlobalId()}" value="${this.getGlobalId()}" class="settings-button sync-layer-button active-button layer-function-button">\
+            <i id="syncLayerIcon_${this.getGlobalId()}" class="fa fa-refresh" aria-hidden="true"></i>\
           </button> Daten synchronisieren\
         </div>\
         <div class="layer-functions-div">\
-          <button id="syncImagesButton_' +
-      this.getGlobalId() +
-      '" value="' +
-      this.getGlobalId() +
-      '" class="settings-button sync-images-button active-button layer-function-button">\
-            <i id="syncImagesIcon_' +
-      this.getGlobalId() +
-      '" class="fa fa-upload" aria-hidden="true"></i>\
+          <button id="syncImagesButton_${this.getGlobalId()}" value="${this.getGlobalId()}" class="settings-button sync-images-button active-button layer-function-button">\
+            <i id="syncImagesIcon_${this.getGlobalId()}" class="fa fa-upload" aria-hidden="true"></i>\
           </button> Bilder synchronisieren\
         </div>\
         <div class="layer-functions-div">\
-          <button id="clearLayerButton_' +
-      this.getGlobalId() +
-      '" value="' +
-      this.getGlobalId() +
-      '" class="settings-button clear-layer-button active-button layer-function-button">\
-            <i id="clearLayerIcon_' +
-      this.getGlobalId() +
-      '" class="fa fa-ban" aria-hidden="true"></i>\
+          <button id="clearLayerButton_${this.getGlobalId()}" value="${this.getGlobalId()}" class="settings-button clear-layer-button active-button layer-function-button">\
+            <i id="clearLayerIcon_${this.getGlobalId()}" class="fa fa-ban" aria-hidden="true"></i>\
           </button> Lokale Daten löschen\
         </div>\
         <div class="layer-functions-div">\
-          <button id="reloadLayerButton_' +
-      this.getGlobalId() +
-      '" value="' +
-      this.getGlobalId() +
-      '" class="settings-button reload-layer-button active-button layer-function-button">\
-            <i id="reloadLayerIcon_' +
-      this.getGlobalId() +
-      '" class="fa fa-window-restore" aria-hidden="true"></i>\
+          <button id="reloadLayerButton_${this.getGlobalId()}" value="${this.getGlobalId()}" class="settings-button reload-layer-button active-button layer-function-button">\
+            <i id="reloadLayerIcon_${this.getGlobalId()}" class="fa fa-window-restore" aria-hidden="true"></i>\
           </button> Layer neu laden\
         </div>\
         <div class="layer-functions-div">\
-        <button id="styleLayerButton_' +
-      this.getGlobalId() +
-      '" value="' +
-      this.getGlobalId() +
-      '" class="settings-button style-layer-button active-button layer-function-button">\
-          <i id="styleLayerIcon_' +
-      this.getGlobalId() +
-      '" class="fa fa-paint-brush" aria-hidden="true"></i>\
-        </button> Layer Stylen\
-        <button id="styleLayerOkButton_' +
-      this.getGlobalId() +
-      '" value="' +
-      this.getGlobalId() +
-      '" class="settings-button" style="float: right">\
-            <i id="styleLayerOkIcon_' +
-      this.getGlobalId() +
-      '" class="fa fa-check" style="font-size: 24px; color: #00a800" aria-hidden="true"></i>\
+          <button id="styleLayerButton_${this.getGlobalId()}" value="${this.getGlobalId()}" class="settings-button style-layer-button active-button layer-function-button">\
+            <i id="styleLayerIcon_${this.getGlobalId()}" class="fa fa-paint-brush" aria-hidden="true"></i>\
+          </button> Layer Stylen\
+          <button id="styleLayerOkButton_${this.getGlobalId()}" value="${this.getGlobalId()}" class="settings-button style-layer-ok-button">\
+            <i id="styleLayerOkIcon_${this.getGlobalId()}" class="fa fa-check" style="font-size: 24px; color: #00a800" aria-hidden="true"></i>\
           </button>\
-        <div id="styleLayerDiv_' +
-      this.getGlobalId() + '" style="display: none">\
-          <label for="color">Zeichenfarbe: </label>\
-          <input type="color" id="color" name="color" value="#ff0000"><br>\
-          <label for="width">Strichstärke (1-10): </label>\
-          <input type="range" id="width" name="width" min="1" max="10"><br>\
-          <label for="fillcolor">Füllfarbe: </label>\
-          <input type="color" id="fillcolor" name="fillcolor" value="#ff0000"><br>\
-          <label for="width">Durchsichtigkeit (0-100): </label>\
-          <input type="range" id="opacity" name="opacity" min="0" max="100">\
+          <div id="styleLayerDiv_${this.getGlobalId()}" class="layer-functions-div style-layer-div" value="${this.getGlobalId()}" style="display: none">\
+            <form oninput="opacityOutput.value = opacity.value; fillOpacityOutput.value = fillOpacity.value;">\
+              <div class="style-layer-setting-div">\
+                <label class="style-layer-setting-label" for="color">Zeichenfarbe:</label> <input class="style-layer-setting-input" type="color" id="color" name="color" value="${
+                  this.get("color") || "#4444ff"
+                }">\
+              </div>\
+              <div style="clear: both"></div>\
+              <div class="style-layer-setting-div">\
+                <label class="style-layer-setting-label" for="fillcolor">Füllfarbe:</label> <input class="style-layer-setting-input" type="color" id="fillcolor" name="fillcolor" value="${
+                  this.get("color") || "#0000ff"
+                }">\
+              </div>\
+              <div style="clear: both"></div>\
+              <div class="style-layer-setting-div">\
+                <label class="style-layer-setting-label" for="width">Strichstärke:</label>\
+                <select name="width" class="style-layer-setting-input" class="style-layer-setting-input" style="width: 33px">
+                ${[1, 2, 3, 4, 5, 6, 7, 8, 9]
+                  .map(function (width) {
+                    console.log("thi: ", this);
+                    return '<option value="' + width + '">' + width + "</option>";
+                  })
+                  .join("")}</select>
+                </div>\
+              <div style="clear: both"></div>\
+              <div class="style-layer-setting-div">\
+                <label class="style-layer-setting-label" for="opacity">Deckkraft Linie:</label>\
+                <output class="style-layer-setting-label" style="margin-left: 10px;" for="opacity" name="opacityOutput">${this.get("opacity") || "80"}</output>\
+                <input class="style-layer-setting-input" type="range" id="opacity" name="opacity" min="0" max="100" value="${this.get("opacity") || "80"}">\
+              </div>\
+              <div style="clear: both"></div>\
+              <div class="style-layer-setting-div">\
+                <label class="style-layer-setting-label" for="fillOpacity">Deckkraft Fläche:</label>\
+                <output class="style-layer-setting-label" style="margin-left: 10px;" for="fillOpacity" name="fillOpacityOutput">${
+                  this.get("fillOpacity") || "80"
+                }</output>\
+                <input class="style-layer-setting-input" type="range" id="fillOpacity" name="fillOpacity" min="0" max="100" value="${
+                  this.get("fillOpacity") || "80"
+                }"">\
+              </div>\
+            </form>\
           </div>\
-      </div>\
         </div>\
-      <div style="clear: both"></div>';
+      </div>\
+      <div style="clear: both"></div>`;
     return html;
   }
+
+  /*  <form oninput="opacityOutput.value = opacity.value; fillOpacityOutput.value = fillOpacity.value;">\
+  <label for="color_${this.getGlobalId()}">Zeichenfarbe:</label>\
+  <input type="color" id="color_${this.getGlobalId()}" name="color_${this.getGlobalId()}" value="${this.get("color") || "#4444ff"}"><br>\
+  <label for="fillcolor_${this.getGlobalId()}">Füllfarbe:</label>\
+  <input type="color" id="fillcolor_${this.getGlobalId()}" name="fillcolor_${this.getGlobalId()}" value="${
+this.get("fillcolor") || "#0000ff"
+}"><br>\
+  <label for="width_${this.getGlobalId()}">Strichstärke: ${this.get("width") || "1"}</label>\
+  <input type="number" id="width_${this.getGlobalId()}" name="width_${this.getGlobalId()}" size="2" min="1" max="10" value="${
+this.get("width") || "1"
+}"><br>\
+  <label for="opacity">Deckkraft Linie:</label>\
+  <output for="opacity" name="opacityOutput">${this.get("opacity") || "80"}</output>\
+  <input type="range" id="opacity" name="opacity" min="0" max="100" value="${this.get("opacity") || "80"}"><br>\
+  <label for="fillOpacity">Deckkraft Fläche:</label>
+  <output for="fillOpacity" name="fillOpacityOutput">${this.get("fillOpacity") || "80"}</output>\
+  <input type="range" id="fillOpacity" name="fillOpacity" min="0" max="100" value="${this.get("fillOpacity") || "80"}">\
+</form>\*/
 
   getSyncUrl() {
     kvm.log("Layer.getSyncUrl", 4);
@@ -3109,11 +3127,11 @@ export class Layer {
     kvm.log("download error http_status: " + error.http_status);
     alert(
       "Fehler beim herunterladen der Datei von der Url: " +
-      kvm.replacePassword(error.source) +
-      "! Error code: " +
-      error.code +
-      " http_status: " +
-      error.http_status
+        kvm.replacePassword(error.source) +
+        "! Error code: " +
+        error.code +
+        " http_status: " +
+        error.http_status
     );
   }
 
