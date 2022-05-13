@@ -36,7 +36,7 @@ declare var FingerprintAuth: typeof FingerprintAuthT;
 //export var config: any;
 
 class Kvm {
-  version: "1.8.4";
+  version: "1.8.6";
   // Buffer: require("buffer").Buffer,
   // wkx: require("wkx"),
   controls: any = {};
@@ -537,7 +537,7 @@ class Kvm {
    */
   startApplication() {
     let activeView = "featurelist";
-    kvm.log("onDeviceReady", 4);
+    console.log("onDeviceReady");
 
     const dbPromise = idb.openDB("keyval-store", 1, {
       upgrade(db) {
@@ -571,7 +571,7 @@ class Kvm {
 
       stelle = new Stelle(activeStelleSettings);
 
-      kvm.log("Aktive Stelle " + activeStelleId + " gefunden.", 3);
+      console.log("Aktive Stelle " + activeStelleId + " gefunden.");
 
       stelle.viewSettings();
       stelle.setActive();
@@ -608,11 +608,23 @@ class Kvm {
           if (layerSettings != null) {
             const layer = new Layer(stelle, layerSettings);
             layer.appendToApp();
-            if (this.store.getItem("activeLayerId") && this.store.getItem("activeLayerId") == layerId) {
-              console.log("layer: %s setActive", layer.get("alias"));
-              layer.setActive();
+            if (layer.get("id") == kvm.store.getItem("activeLayerId")) {
+              kvm.activeLayer = layer;
+            }
+            /*
+             * Load layer data and setActive when layer is activ
+             */
+            if (layer.get("privileg") == 0) {
+              /*
+               * Update none-editable layer with latest deltas from server
+               * sendDeltas > writeFile > upload (with empty rows only to get new deltas from server)
+               * > for each received delta: execServerDeltaSuccessFunc
+               * > (saveToStore, clearDeltas, readData)
+               */
+              layer.sendDeltas({ rows: [] });
             } else {
-              console.log("layer: %s readData", layer.get("alias"));
+              // Only read data for layer
+              console.log("layer: %s readData", layer.get("title"));
               layer.readData();
             }
           }
@@ -713,9 +725,8 @@ class Kvm {
       renderer: this.myRenderer,
     });
     const baseMaps = {};
-    console.error("register layeradd event on map");
-    map.on("layeradd", (evt) => {
-      console.log("layeradd %", evt.target);
+    map.on("popupopen", function (evt) {
+      kvm.controls.layers.collapse();
     });
 
     // TODO
@@ -1744,7 +1755,7 @@ class Kvm {
           $("#restoreFeatureButton").show();
         } else {
           if (parseInt(kvm.activeLayer.get("privileg")) > 0) {
-            $("#editFeatureButto, #tplFeatureButton").show();
+            $("#editFeatureButton, #tplFeatureButton").show();
           }
         }
         $("#dataView").show().scrollTop(0);
@@ -1893,7 +1904,11 @@ class Kvm {
     if (kvm.activeStelle) {
       return s.replace(kvm.activeStelle.settings.passwort, "secretPwFromStelleSetting");
     } else {
-      return s.replace($("#kvwmapServerPasswortField").val(), "secretPwFromForm");
+      if ($("#kvwmapServerPasswortField").val()) {
+        return s.replace($("#kvwmapServerPasswortField").val(), "secretPwFromForm");
+      } else {
+        return s;
+      }
     }
   }
 

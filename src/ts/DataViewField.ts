@@ -123,6 +123,16 @@ export class DataViewField {
           " + subFormTable + "\
       ";
       console.log("SQL: %s", sql);
+    } else if (this.get("form_element_type") == "Auswahlfeld") {
+      const output =
+        this.get("options") && Array.isArray(this.get("options")) && parseInt(val) >= 0 && parseInt(val) < Object.keys(this.get("options")).length
+          ? this.get("options")[val].output
+          : val.toString();
+      this.element.html(output);
+      return output;
+    } else if (this.get("form_element_type") == "Checkbox") {
+      const output = val ? (val === "t" ? "ja" : "nein") : "";
+      this.element.html(output);
     } else {
       this.element.html(kvm.coalesce(val, ""));
     }

@@ -8,6 +8,16 @@ https://github.com/srahn/kvwmap/
 http://kvwmap.de
 
 # Change log
+## 1.8.6
+  * Features
+    * Show output of select fields in data view
+    * Show yes or no for boolean fields in data view 
+  * Bugfixes
+    * Highlight Layer in control correct
+    * Sync correct at start
+## 1.8.5
+  * Overlays section removed in settings view
+  * Add configuration for LK V-R
 ## 1.8.4
   * Value for Range and select fields for layer style
 ## 1.8.3
