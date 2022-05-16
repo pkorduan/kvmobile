@@ -22,7 +22,7 @@ label {
   color: #263286;
 }
 
-.h2-div + div {
+.h2-div+div {
   display: none;
 }
 
@@ -37,11 +37,11 @@ label {
   float: right;
 }
 
-#mapSettingsDiv > input {
+#mapSettingsDiv>input {
   width: 100px;
 }
 
-#mapSettingsDiv > select {
+#mapSettingsDiv>select {
   width: 60px;
 }
 
@@ -49,16 +49,23 @@ label {
   display: none;
   float: right;
 }
+
 .style-layer-setting-label {
   float: left
 }
+
 .style-layer-setting-input {
   /*position: absolute;*/
   /*left: 150px;*/
   margin-left: 10px
 }
+
 .style-layer-setting-div {
   height: 36px
+}
+
+.use-custom-style-div {
+  height: 36px;
 }
 
 .layer-functions-button {
@@ -330,10 +337,19 @@ button#gpsControlButton.kvm-gps-track {
   border: 2px solid lightgray;
   border-radius: 5px;
 }
+
 /*
 .popup-link {
   
 }*/
+
+.visible {
+  display: block;
+}
+
+.hidden {
+  display: none;
+}
 
 .feature-status-0 {
   background-color: #dd8181;
@@ -367,7 +383,7 @@ button#gpsControlButton.kvm-gps-track {
   background: #e6ffb2;
   margin-bottom: 5px;
   font-size: 18px;
-  width:37px;
+  width: 37px;
 }
 
 .settings-button-active {
@@ -418,41 +434,42 @@ button#gpsControlButton.kvm-gps-track {
 .form-div {
   border: 1px solid rgb(38, 50, 134);
 }
-.gps-signal-level-0 > .bar-1,
-.gps-signal-level-0 > .bar-2,
-.gps-signal-level-0 > .bar-3,
-.gps-signal-level-0 > .bar-4,
-.gps-signal-level-0 > .bar-5 {
+
+.gps-signal-level-0>.bar-1,
+.gps-signal-level-0>.bar-2,
+.gps-signal-level-0>.bar-3,
+.gps-signal-level-0>.bar-4,
+.gps-signal-level-0>.bar-5 {
   fill: rgb(236, 236, 236);
 }
 
-.gps-signal-level-1 > .bar-1 {
+.gps-signal-level-1>.bar-1 {
   fill: #263286;
 }
 
-.gps-signal-level-2 > .bar-1,
-.gps-signal-level-2 > .bar-2 {
+.gps-signal-level-2>.bar-1,
+.gps-signal-level-2>.bar-2 {
   fill: #263286;
 }
 
-.gps-signal-level-3 > .bar-1,
-.gps-signal-level-3 > .bar-2,
-.gps-signal-level-3 > .bar-3 {
+.gps-signal-level-3>.bar-1,
+.gps-signal-level-3>.bar-2,
+.gps-signal-level-3>.bar-3 {
   fill: #263286;
 }
 
-.gps-signal-level-4 > .bar-1,
-.gps-signal-level-4 > .bar-2,
-.gps-signal-level-4 > .bar-3,
-.gps-signal-level-4 > .bar-4 {
+.gps-signal-level-4>.bar-1,
+.gps-signal-level-4>.bar-2,
+.gps-signal-level-4>.bar-3,
+.gps-signal-level-4>.bar-4 {
   fill: #263286;
 }
 
-.gps-signal-level-5 > .bar-1,
-.gps-signal-level-5 > .bar-2,
-.gps-signal-level-5 > .bar-3,
-.gps-signal-level-5 > .bar-4,
-.gps-signal-level-5 > .bar-5 {
+.gps-signal-level-5>.bar-1,
+.gps-signal-level-5>.bar-2,
+.gps-signal-level-5>.bar-3,
+.gps-signal-level-5>.bar-4,
+.gps-signal-level-5>.bar-5 {
   fill: #263286;
 }
 
@@ -468,16 +485,24 @@ button#gpsControlButton.kvm-gps-track {
 }
 
 .modal {
-  display: none; /* Hidden by default */
-  position: fixed; /* Stay in place */
-  z-index: 1; /* Sit on top */
+  display: none;
+  /* Hidden by default */
+  position: fixed;
+  /* Stay in place */
+  z-index: 1;
+  /* Sit on top */
   left: 0;
   top: 0;
-  width: 100%; /* Full width */
-  height: 100%; /* Full height */
-  overflow: auto; /* Enable scroll if needed */
-  background-color: rgb(0, 0, 0); /* Fallback color */
-  background-color: rgba(0, 0, 0, 0.5); /* Black w/ opacity */
+  width: 100%;
+  /* Full width */
+  height: 100%;
+  /* Full height */
+  overflow: auto;
+  /* Enable scroll if needed */
+  background-color: rgb(0, 0, 0);
+  /* Fallback color */
+  background-color: rgba(0, 0, 0, 0.5);
+  /* Black w/ opacity */
   color: lightgray;
   text-align: center;
   vertical-align: middle;
@@ -487,13 +512,18 @@ button#gpsControlButton.kvm-gps-track {
 
 .login {
   display: none;
-  position: fixed; /* Stay in place */
-  z-index: 1; /* Sit on top */
+  position: fixed;
+  /* Stay in place */
+  z-index: 1;
+  /* Sit on top */
   left: 0;
   top: 0;
-  width: 100%; /* Full width */
-  height: 100%; /* Full height */
-  overflow: auto; /* Enable scroll if needed */
+  width: 100%;
+  /* Full width */
+  height: 100%;
+  /* Full height */
+  overflow: auto;
+  /* Enable scroll if needed */
   background-color: #eeeeee;
   text-align: center;
   vertical-align: middle;
@@ -580,14 +610,16 @@ button#gpsControlButton.kvm-gps-track {
 }
 
 .deb {
-  display: none; /* Hidden by default */
+  display: none;
+  /* Hidden by default */
   position: fixed;
   z-index: 1;
   left: 0;
   top: 0;
   width: 100%;
   height: 400px;
-  background-color: white; /* Fallback color */
+  background-color: white;
+  /* Fallback color */
   color: black;
   text-align: left;
   font-size: 20px;
@@ -645,6 +677,7 @@ button#gpsControlButton.kvm-gps-track {
 #gps-signal-icon {
   fill: rgb(236, 236, 236);
 }
+
 .center {
   text-align: center;
 }
@@ -673,72 +706,106 @@ button#gpsControlButton.kvm-gps-track {
 
 /* The slider itself */
 .camera-options-slider {
-  -webkit-appearance: none; /* Override default CSS styles */
+  -webkit-appearance: none;
+  /* Override default CSS styles */
   appearance: none;
-  width: 60%; /* Full-width */
-  height: 25px; /* Specified height */
-  background: #d3d3d3; /* Grey background */
-  outline: none; /* Remove outline */
-  opacity: 0.7; /* Set transparency (for mouse-over effects on hover) */
-  -webkit-transition: 0.2s; /* 0.2 seconds transition on hover */
+  width: 60%;
+  /* Full-width */
+  height: 25px;
+  /* Specified height */
+  background: #d3d3d3;
+  /* Grey background */
+  outline: none;
+  /* Remove outline */
+  opacity: 0.7;
+  /* Set transparency (for mouse-over effects on hover) */
+  -webkit-transition: 0.2s;
+  /* 0.2 seconds transition on hover */
   transition: opacity 0.2s;
 }
 
 /* Mouse-over effects */
 .camera-options-slider:hover {
-  opacity: 1; /* Fully shown on mouse-over */
+  opacity: 1;
+  /* Fully shown on mouse-over */
 }
 
 /* The slider handle (use -webkit- (Chrome, Opera, Safari, Edge) and -moz- (Firefox) to override default look) */
 .camera-options-slider::-webkit-slider-thumb {
-  -webkit-appearance: none; /* Override default look */
+  -webkit-appearance: none;
+  /* Override default look */
   appearance: none;
-  width: 25px; /* Set a specific slider handle width */
-  height: 25px; /* Slider handle height */
-  background: #4caf50; /* Green background */
-  cursor: pointer; /* Cursor on hover */
+  width: 25px;
+  /* Set a specific slider handle width */
+  height: 25px;
+  /* Slider handle height */
+  background: #4caf50;
+  /* Green background */
+  cursor: pointer;
+  /* Cursor on hover */
 }
 
 .camera-options-slider::-moz-range-thumb {
-  width: 25px; /* Set a specific slider handle width */
-  height: 25px; /* Slider handle height */
-  background: #4caf50; /* Green background */
-  cursor: pointer; /* Cursor on hover */
+  width: 25px;
+  /* Set a specific slider handle width */
+  height: 25px;
+  /* Slider handle height */
+  background: #4caf50;
+  /* Green background */
+  cursor: pointer;
+  /* Cursor on hover */
 }
 
 /* The slider itself */
 .min-track-distance-slider {
-  -webkit-appearance: none; /* Override default CSS styles */
+  -webkit-appearance: none;
+  /* Override default CSS styles */
   appearance: none;
-  width: 60% !important; /* Full-width */
-  height: 25px; /* Specified height */
-  background: #d3d3d3; /* Grey background */
-  outline: none; /* Remove outline */
-  opacity: 0.7; /* Set transparency (for mouse-over effects on hover) */
-  -webkit-transition: 0.2s; /* 0.2 seconds transition on hover */
+  width: 60% !important;
+  /* Full-width */
+  height: 25px;
+  /* Specified height */
+  background: #d3d3d3;
+  /* Grey background */
+  outline: none;
+  /* Remove outline */
+  opacity: 0.7;
+  /* Set transparency (for mouse-over effects on hover) */
+  -webkit-transition: 0.2s;
+  /* 0.2 seconds transition on hover */
   transition: opacity 0.2s;
 }
 
 /* Mouse-over effects */
 .min-track-distance-slider:hover {
-  opacity: 1; /* Fully shown on mouse-over */
+  opacity: 1;
+  /* Fully shown on mouse-over */
 }
 
 /* The slider handle (use -webkit- (Chrome, Opera, Safari, Edge) and -moz- (Firefox) to override default look) */
 .min-track-distance-slider::-webkit-slider-thumb {
-  -webkit-appearance: none; /* Override default look */
+  -webkit-appearance: none;
+  /* Override default look */
   appearance: none;
-  width: 25px; /* Set a specific slider handle width */
-  height: 25px; /* Slider handle height */
-  background: #4caf50; /* Green background */
-  cursor: pointer; /* Cursor on hover */
+  width: 25px;
+  /* Set a specific slider handle width */
+  height: 25px;
+  /* Slider handle height */
+  background: #4caf50;
+  /* Green background */
+  cursor: pointer;
+  /* Cursor on hover */
 }
 
 .min-track-distance-slider::-moz-range-thumb {
-  width: 25px; /* Set a specific slider handle width */
-  height: 25px; /* Slider handle height */
-  background: #4caf50; /* Green background */
-  cursor: pointer; /* Cursor on hover */
+  width: 25px;
+  /* Set a specific slider handle width */
+  height: 25px;
+  /* Slider handle height */
+  background: #4caf50;
+  /* Green background */
+  cursor: pointer;
+  /* Cursor on hover */
 }
 
 .fa-2x {

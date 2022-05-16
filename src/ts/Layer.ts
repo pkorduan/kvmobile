@@ -1281,11 +1281,21 @@ export class Layer {
 
   getLayerStyle() {
     let style: any = {};
-    style.color = this.settings.color;
-    style.opacity = this.settings.opacity / 100;
-    style.fillColor = this.settings.fillcolor;
-    style.fillOpacity = this.settings.fillOpacity / 100;
-    style.width = this.settings.width;
+    if (this.settings.useCustomStyle || this.settings.get('classes').length == 0) {
+      style.color = this.settings.color;
+      style.opacity = this.settings.opacity / 100;
+      style.fillColor = this.settings.fillcolor;
+      style.fillOpacity = this.settings.fillOpacity / 100;
+      style.width = this.settings.width;
+    }
+    else {
+      const classStyle = this.settings.classes[0].style;
+      style.color = classStyle.color || '#7777FF';
+      style.opacity = (classStyle.opacity || 100) / 100;
+      style.fillColor = classStyle.fillcolor || '#0000FF';
+      style.fillOpacity = (classStyle.fillOpacity || 100) / 100;
+      style.width = classStyle.width || 1;
+    }
     if (this.settings.geometry_type == "Point") {
       return this.getNormalCircleMarkerStyle(style);
     } else if (this.settings.geometry_type == "Line") {
@@ -1338,8 +1348,8 @@ export class Layer {
           href="#"\
           title="Geometrie ändern"\
           onclick="kvm.activeLayer.editFeature(\'' +
-          feature.get(this.get("id_attribute")) +
-          '\')"\
+        feature.get(this.get("id_attribute")) +
+        '\')"\
         ><span class="fa-stack fa-lg">\
             <i class="fa fa-square fa-stack-2x"></i>\
             <i class="fa fa-pencil fa-stack-1x fa-inverse"></i>\
@@ -1375,12 +1385,12 @@ export class Layer {
     }
     this.activeFeature = new Feature(
       '{ "' +
-        this.get("id_attribute") +
-        '": "' +
-        kvm.uuidv4() +
-        '", "version": "' +
-        ((this.get("syncVersion") == "null" ? 0 : this.get("syncVersion")) + 1) +
-        '"}',
+      this.get("id_attribute") +
+      '": "' +
+      kvm.uuidv4() +
+      '", "version": "' +
+      ((this.get("syncVersion") == "null" ? 0 : this.get("syncVersion")) + 1) +
+      '"}',
       {
         id_attribute: this.get("id_attribute"),
         geometry_type: this.get("geometry_type"),
@@ -1709,18 +1719,18 @@ export class Layer {
 
           kvm.log(
             "Vergleiche " +
-              attr.get("form_element_type") +
-              " Attribut: " +
-              key +
-              "(" +
-              oldVal +
-              " (" +
-              typeof oldVal +
-              ") vs. " +
-              newVal +
-              "(" +
-              typeof newVal +
-              "))"
+            attr.get("form_element_type") +
+            " Attribut: " +
+            key +
+            "(" +
+            oldVal +
+            " (" +
+            typeof oldVal +
+            ") vs. " +
+            newVal +
+            "(" +
+            typeof newVal +
+            "))"
           );
 
           if (oldVal != newVal) {
@@ -1970,8 +1980,8 @@ export class Layer {
   addAutoChanges(changes, action) {
     kvm.log("Layer.addAutoChanges mit action " + action, 4);
     var changesKeys = $.map(changes, function (change) {
-        return change.key;
-      }),
+      return change.key;
+    }),
       autoChanges = $.map(this.attributes, function (attr) {
         if (attr.isAutoAttribute(action) && !changesKeys.includes(attr.get("name"))) {
           var autoValue = attr.formField.getAutoValue();
@@ -2539,9 +2549,9 @@ export class Layer {
                   // navigator.notification.alert("Fehler bei der Speicherung der Änderungsdaten für das Bild in der delta-Tabelle!\nFehlercode: " + error.code + "\nMeldung: " + error.message);
                   navigator.notification.alert(
                     "Fehler bei der Speicherung der Änderungsdaten für das Bild in der delta-Tabelle!\nFehlercode: " +
-                      error.code +
-                      "\nMeldung: " +
-                      error.message,
+                    error.code +
+                    "\nMeldung: " +
+                    error.message,
                     undefined
                   );
                 }
@@ -2588,11 +2598,11 @@ export class Layer {
     this.context.numExecutedDeltas++;
     kvm.log(
       "execServerDeltaSuccessFunc numExecutedDeltas: " +
-        this.context.numExecutedDeltas +
-        " context.numReturnedDeltas: " +
-        this.context.numReturnedDeltas +
-        " numReturnedDeltas: " +
-        this.numReturnedDeltas
+      this.context.numExecutedDeltas +
+      " context.numReturnedDeltas: " +
+      this.context.numReturnedDeltas +
+      " numReturnedDeltas: " +
+      this.numReturnedDeltas
     );
     if (this.context.numExecutedDeltas == this.context.numReturnedDeltas) {
       var newVersion = parseInt(this.response.syncData[this.response.syncData.length - 1].push_to_version);
@@ -2751,7 +2761,7 @@ export class Layer {
       const layer = kvm.activeLayer;
 
       if (layer.isEmpty()) {
-        navigator.notification.confirm("Layer ist schon geleert!", function (buttonIndex) {}, "Datenbank", ["OK"]);
+        navigator.notification.confirm("Layer ist schon geleert!", function (buttonIndex) { }, "Datenbank", ["OK"]);
       } else {
         navigator.notification.confirm(
           "Alle lokale Daten und nicht hochgeladene Änderungen wirklich Löschen?",
@@ -2787,7 +2797,7 @@ export class Layer {
         } else {
           navigator.notification.confirm(
             "Layer ist noch nicht geleert. Die Daten des Layers auf dem Endgerät müssen erst gelöscht werden.",
-            function (buttonIndex) {},
+            function (buttonIndex) { },
             "Datenbank",
             ["OK"]
           );
@@ -2825,9 +2835,16 @@ export class Layer {
       $("#styleLayerDiv_" + layerGlobalId).toggle();
     });
 
-    $(".style-layer-div input").on("change", function (evt) {
+    $(".style-layer-div input, .style-layer-div select").on("change", function (evt) {
       const globalLayerId = evt.target.parentElement.parentElement.parentElement.getAttribute("value");
       console.log("Input Feld %s in style-layer-div %s changed", evt.target.getAttribute("name"), "styleLayerDiv_" + globalLayerId);
+      $("#styleLayerOkButton_" + globalLayerId).show();
+    });
+
+    $(".use-custom-style-div input").on('change', function (evt) {
+      const globalLayerId = evt.target.parentElement.parentElement.parentElement.getAttribute("value");
+      console.log("useCustomStyle Checkbox changed");
+      $('.style-layer-setting-div').toggleClass('visble hidden');
       $("#styleLayerOkButton_" + globalLayerId).show();
     });
 
@@ -2839,6 +2856,7 @@ export class Layer {
           "#styleLayerDiv_" + globalLayerId + " input[name='" + formvar + "'], #styleLayerDiv_" + globalLayerId + " select[name='" + formvar + "']"
         ).val();
       });
+      kvm.activeLayer.settings.useCustomStyle = $("#styleLayerDiv_" + globalLayerId + " input[name='useCustomStyle']").is(':checked');
       kvm.activeLayer.saveToStore();
       kvm.activeLayer.readData();
       $(evt.currentTarget).hide();
@@ -2975,7 +2993,8 @@ export class Layer {
 
   getListItem() {
     console.log("getListItem for layerId: ", this.getGlobalId());
-    var html = `\
+    const customStyleClass = (this.get("useCustomStyle") ? 'visible' : 'hidden');
+    const html = `\
       <div id="layer_${this.getGlobalId()}">\
         <input type="radio" name="activeLayerId" value="${this.getGlobalId()}"/> ${this.get("alias") ? this.get("alias") : this.get("title")}\
         <i id="layer-functions-button_${this.getGlobalId()}" class="layer-functions-button fa fa-ellipsis-v" aria-hidden="true"></i>\
@@ -3008,42 +3027,44 @@ export class Layer {
           </button>\
           <div id="styleLayerDiv_${this.getGlobalId()}" class="layer-functions-div style-layer-div" value="${this.getGlobalId()}" style="display: none">\
             <form oninput="opacityOutput.value = opacity.value; fillOpacityOutput.value = fillOpacity.value;">\
-              <div class="style-layer-setting-div">\
-                <label class="style-layer-setting-label" for="color">Zeichenfarbe:</label> <input class="style-layer-setting-input" type="color" id="color" name="color" value="${
-                  this.get("color") || "#4444ff"
-                }">\
+              <div class="use-custom-style-div">\
+                <label class="style-layer-setting-label" for="useCustomStyle">Verwende eigenen Style:</label>\
+                <input class="style-layer-setting-input" type="checkbox" id="useCustomStyle" name="useCustomStyle" value="1" ${(this.get("useCustomStyle") ? ' checked' : '')
+      }">\
               </div>\
               <div style="clear: both"></div>\
-              <div class="style-layer-setting-div">\
-                <label class="style-layer-setting-label" for="fillcolor">Füllfarbe:</label> <input class="style-layer-setting-input" type="color" id="fillcolor" name="fillcolor" value="${
-                  this.get("color") || "#0000ff"
-                }">\
+              <div class="style-layer-setting-div ${customStyleClass}">\
+                <label class="style-layer-setting-label" for="color">Zeichenfarbe:</label> <input class="style-layer-setting-input" type="color" id="color" name="color" value="${this.get("color") || "#4444ff"
+      }">\
               </div>\
               <div style="clear: both"></div>\
-              <div class="style-layer-setting-div">\
+              <div class="style-layer-setting-div ${customStyleClass}">\
+                <label class="style-layer-setting-label" for="fillcolor">Füllfarbe:</label> <input class="style-layer-setting-input" type="color" id="fillcolor" name="fillcolor" value="${this.get("color") || "#0000ff"
+      }">\
+              </div>\
+              <div style="clear: both"></div>\
+              <div class="style-layer-setting-div ${customStyleClass}">\
                 <label class="style-layer-setting-label" for="width">Strichstärke:</label>\
                 <select name="width" class="style-layer-setting-input" class="style-layer-setting-input" style="width: 33px">
                 ${[1, 2, 3, 4, 5, 6, 7, 8, 9]
-                  .map(function (width) {
-                    return '<option value="' + width + '">' + width + "</option>";
-                  })
-                  .join("")}</select>
+        .map(function (width) {
+          return '<option value="' + width + '">' + width + "</option>";
+        })
+        .join("")}</select>
                 </div>\
               <div style="clear: both"></div>\
-              <div class="style-layer-setting-div">\
+              <div class="style-layer-setting-div ${customStyleClass}">\
                 <label class="style-layer-setting-label" for="opacity">Deckkraft Linie:</label>\
                 <output class="style-layer-setting-label" style="margin-left: 10px;" for="opacity" name="opacityOutput">${this.get("opacity") || "80"}</output>\
                 <input class="style-layer-setting-input" type="range" id="opacity" name="opacity" min="0" max="100" value="${this.get("opacity") || "80"}">\
               </div>\
               <div style="clear: both"></div>\
-              <div class="style-layer-setting-div">\
+              <div class="style-layer-setting-div ${customStyleClass}">\
                 <label class="style-layer-setting-label" for="fillOpacity">Deckkraft Fläche:</label>\
-                <output class="style-layer-setting-label" style="margin-left: 10px;" for="fillOpacity" name="fillOpacityOutput">${
-                  this.get("fillOpacity") || "80"
-                }</output>\
-                <input class="style-layer-setting-input" type="range" id="fillOpacity" name="fillOpacity" min="0" max="100" value="${
-                  this.get("fillOpacity") || "80"
-                }"">\
+                <output class="style-layer-setting-label" style="margin-left: 10px;" for="fillOpacity" name="fillOpacityOutput">${this.get("fillOpacity") || "80"
+      }</output>\
+                <input class="style-layer-setting-input" type="range" id="fillOpacity" name="fillOpacity" min="0" max="100" value="${this.get("fillOpacity") || "80"
+      }"">\
               </div>\
             </form>\
           </div>\
@@ -3142,11 +3163,11 @@ this.get("width") || "1"
     kvm.log("download error http_status: " + error.http_status);
     alert(
       "Fehler beim herunterladen der Datei von der Url: " +
-        kvm.replacePassword(error.source) +
-        "! Error code: " +
-        error.code +
-        " http_status: " +
-        error.http_status
+      kvm.replacePassword(error.source) +
+      "! Error code: " +
+      error.code +
+      " http_status: " +
+      error.http_status
     );
   }
 
