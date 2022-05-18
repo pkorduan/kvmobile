@@ -35,7 +35,7 @@ export class Layer {
     this.stelle = stelle;
     this.settings = typeof settings == "string" ? JSON.parse(settings) : settings;
     this.title = kvm.coalempty(this.get("alias"), this.get("title"), this.get("table_name"), "overlay" + this.getGlobalId());
-    kvm.log("Erzeuge Layerobjekt für Layer " + this.settings.title + " (id: " + this.settings.id + ") in Stelle: " + stelle.get("id"), 3);
+    console.log("%s: Erzeuge Layerobjekt (id: %s) in Stelle: ", this.title, stelle.get("id"));
     if (this.settings["name_attribute"] == "") {
       this.settings["name_attribute"] = this.settings["id_attribute"];
       console.log("Set id_attribute: %s as name_attribute", this.settings["id_attribute"]);
@@ -50,6 +50,9 @@ export class Layer {
 
     this.attributes = [];
     this.runningSyncVersion = 0;
+    if (typeof this.get("syncVersion") === "undefined") {
+      this.set("syncVersion", this.runningSyncVersion);
+    }
     this.layerGroup = L.layerGroup();
     this.attributes = "uuid";
 
@@ -226,7 +229,7 @@ export class Layer {
         if (this.layerGroup) {
           this.layerGroup.clearLayers();
         }
-        console.log("  readData) > drawFeatures");
+        console.log("%s: readData) > drawFeatures", this.title);
         this.drawFeatures();
         $("#sperr_div").hide();
       }.bind(this),
@@ -588,14 +591,14 @@ export class Layer {
    * > saveToStore, clearDeltas, readData
    */
   sendDeltas(deltas) {
-    console.log(this.get("title") + ": Layer.sendDeltas: %o", deltas);
+    console.log(this.title + ": Layer.sendDeltas: %o", deltas);
     const deltas_ = deltas;
 
     window.requestFileSystem(
       window.TEMPORARY,
       5 * 1024 * 1024,
       function (fs) {
-        kvm.log("file system open: " + fs.name, 4);
+        kvm.log(this.title + ": file system open: " + fs.name, 4);
         var fileName = "delta_layer_" + this.getGlobalId() + ".json";
         var dirEntry = fs.root;
 
@@ -625,17 +628,17 @@ export class Layer {
   }
 
   writeFile(fileEntry, deltas) {
-    console.log(this.get("title") + ": writeFile");
+    console.log(this.title + ": writeFile");
     // Create a FileWriter object for our FileEntry (log.txt).
     fileEntry.createWriter(
       function (fileWriter) {
         fileWriter.onwriteend = function () {
-          console.log(this.get("title") + ": Datei erfolgreich geschrieben.");
+          console.log(this.title + ": Datei erfolgreich geschrieben.");
           this.upload(fileEntry);
         }.bind(this);
 
         fileWriter.onerror = function (e) {
-          kvm.log("Fehler beim Schreiben der Datei: " + e.toString(), 1);
+          kvm.log(this.title + ": Fehler beim Schreiben der Datei: " + e.toString(), 1);
           $("#sperr_div").hide();
         };
         let dataObj;
@@ -650,10 +653,10 @@ export class Layer {
   }
 
   upload(fileEntry) {
-    console.log(this.get("title") + ": upload deltas file");
+    console.log(this.title + ": upload deltas file");
     var fileURL = fileEntry.toURL();
     var success = function (r) {
-      console.log(this.get("title") + ": Erfolgreich hochgeladen ResponseCode: %o Response: %o", r.responseCode, r.response);
+      console.log(this.title + ": Erfolgreich hochgeladen ResponseCode: %o Response: %o", r.responseCode, r.response);
       var response = JSON.parse(r.response);
 
       if (response.success) {
@@ -730,7 +733,7 @@ export class Layer {
     options.mimeType = "application/json";
 
     var ft = new FileTransfer();
-    console.log(this.get("title") + ": upload to server: %s with options: %o", server, options);
+    console.log(this.title + ": upload to server: %s with options: %o", server, options);
     ft.upload(fileURL, encodeURI(server), success, fail, options);
   }
 
@@ -1221,7 +1224,7 @@ export class Layer {
    * Zeichnet die Features in die Karte
    */
   drawFeatures() {
-    console.log("Zeichne " + Object.keys(this.features).length + " Features von Layer " + this.get("title"));
+    console.log("%s: Zeichne %s Features.", this.title, Object.keys(this.features).length);
     const layerRenderer = undefined; //new L.SVG();
 
     $.each(this.features, (key, feature) => {
@@ -1245,7 +1248,7 @@ export class Layer {
         }
 
         const popupFunc = () => {
-          console.log("call getPopup from layer: %o", layer);
+          console.log("%s: Call getPopup", layer.title);
           return layer.getPopup(
             feature,
             kvm.activeLayer.getGlobalId() == layer.getGlobalId() && !(kvm.activeLayer.activeFeature && kvm.activeLayer.activeFeature.editable)
@@ -1258,7 +1261,7 @@ export class Layer {
         // und gerade kein anderes feature editiert wird.
         vectorLayer.on("click", function (evt) {
           if (evt.target.options.featureId in kvm.activeLayer.features && !(kvm.activeLayer.activeFeature && kvm.activeLayer.activeFeature.editable)) {
-            console.log("Select the clicked feature");
+            console.log("%s Select the clicked feature.", kvm.activeLayer.title);
             kvm.activeLayer.selectFeature(kvm.activeLayer.features[evt.target.options.featureId], false);
           }
         });
@@ -1281,18 +1284,19 @@ export class Layer {
 
   getLayerStyle() {
     let style: any = {};
-    if (this.settings.useCustomStyle || this.settings.get('classes').length == 0) {
+    if (this.settings.useCustomStyle || this.settings.get("classes").length == 0) {
+      console.log("%s: Use settings style", this.title);
       style.color = this.settings.color;
       style.opacity = this.settings.opacity / 100;
       style.fillColor = this.settings.fillcolor;
       style.fillOpacity = this.settings.fillOpacity / 100;
       style.width = this.settings.width;
-    }
-    else {
+    } else {
+      console.log("%s: Use styles from first class.", this.title);
       const classStyle = this.settings.classes[0].style;
-      style.color = classStyle.color || '#7777FF';
+      style.color = classStyle.color || "#7777FF";
       style.opacity = (classStyle.opacity || 100) / 100;
-      style.fillColor = classStyle.fillcolor || '#0000FF';
+      style.fillColor = classStyle.fillcolor || "#0000FF";
       style.fillOpacity = (classStyle.fillOpacity || 100) / 100;
       style.width = classStyle.width || 1;
     }
@@ -1348,8 +1352,8 @@ export class Layer {
           href="#"\
           title="Geometrie ändern"\
           onclick="kvm.activeLayer.editFeature(\'' +
-        feature.get(this.get("id_attribute")) +
-        '\')"\
+          feature.get(this.get("id_attribute")) +
+          '\')"\
         ><span class="fa-stack fa-lg">\
             <i class="fa fa-square fa-stack-2x"></i>\
             <i class="fa fa-pencil fa-stack-1x fa-inverse"></i>\
@@ -1385,12 +1389,12 @@ export class Layer {
     }
     this.activeFeature = new Feature(
       '{ "' +
-      this.get("id_attribute") +
-      '": "' +
-      kvm.uuidv4() +
-      '", "version": "' +
-      ((this.get("syncVersion") == "null" ? 0 : this.get("syncVersion")) + 1) +
-      '"}',
+        this.get("id_attribute") +
+        '": "' +
+        kvm.uuidv4() +
+        '", "version": "' +
+        ((this.get("syncVersion") == "null" ? 0 : this.get("syncVersion")) + 1) +
+        '"}',
       {
         id_attribute: this.get("id_attribute"),
         geometry_type: this.get("geometry_type"),
@@ -1719,18 +1723,18 @@ export class Layer {
 
           kvm.log(
             "Vergleiche " +
-            attr.get("form_element_type") +
-            " Attribut: " +
-            key +
-            "(" +
-            oldVal +
-            " (" +
-            typeof oldVal +
-            ") vs. " +
-            newVal +
-            "(" +
-            typeof newVal +
-            "))"
+              attr.get("form_element_type") +
+              " Attribut: " +
+              key +
+              "(" +
+              oldVal +
+              " (" +
+              typeof oldVal +
+              ") vs. " +
+              newVal +
+              "(" +
+              typeof newVal +
+              "))"
           );
 
           if (oldVal != newVal) {
@@ -1980,8 +1984,8 @@ export class Layer {
   addAutoChanges(changes, action) {
     kvm.log("Layer.addAutoChanges mit action " + action, 4);
     var changesKeys = $.map(changes, function (change) {
-      return change.key;
-    }),
+        return change.key;
+      }),
       autoChanges = $.map(this.attributes, function (attr) {
         if (attr.isAutoAttribute(action) && !changesKeys.includes(attr.get("name"))) {
           var autoValue = attr.formField.getAutoValue();
@@ -2549,9 +2553,9 @@ export class Layer {
                   // navigator.notification.alert("Fehler bei der Speicherung der Änderungsdaten für das Bild in der delta-Tabelle!\nFehlercode: " + error.code + "\nMeldung: " + error.message);
                   navigator.notification.alert(
                     "Fehler bei der Speicherung der Änderungsdaten für das Bild in der delta-Tabelle!\nFehlercode: " +
-                    error.code +
-                    "\nMeldung: " +
-                    error.message,
+                      error.code +
+                      "\nMeldung: " +
+                      error.message,
                     undefined
                   );
                 }
@@ -2598,11 +2602,11 @@ export class Layer {
     this.context.numExecutedDeltas++;
     kvm.log(
       "execServerDeltaSuccessFunc numExecutedDeltas: " +
-      this.context.numExecutedDeltas +
-      " context.numReturnedDeltas: " +
-      this.context.numReturnedDeltas +
-      " numReturnedDeltas: " +
-      this.numReturnedDeltas
+        this.context.numExecutedDeltas +
+        " context.numReturnedDeltas: " +
+        this.context.numReturnedDeltas +
+        " numReturnedDeltas: " +
+        this.numReturnedDeltas
     );
     if (this.context.numExecutedDeltas == this.context.numReturnedDeltas) {
       var newVersion = parseInt(this.response.syncData[this.response.syncData.length - 1].push_to_version);
@@ -2633,7 +2637,7 @@ export class Layer {
    * Do not read data for listing and mapping
    */
   appendToApp() {
-    console.log("Füge Layer " + this.get("title") + " zur Layerliste hinzu.");
+    //console.log("%s: Füge Layer zur Layerliste hinzu.", this.title);
     $("#layer_list").append(this.getListItem());
     this.bindLayerEvents(this.getGlobalId());
     //    kvm.map.addLayer(this.layerGroup);
@@ -2761,7 +2765,7 @@ export class Layer {
       const layer = kvm.activeLayer;
 
       if (layer.isEmpty()) {
-        navigator.notification.confirm("Layer ist schon geleert!", function (buttonIndex) { }, "Datenbank", ["OK"]);
+        navigator.notification.confirm("Layer ist schon geleert!", function (buttonIndex) {}, "Datenbank", ["OK"]);
       } else {
         navigator.notification.confirm(
           "Alle lokale Daten und nicht hochgeladene Änderungen wirklich Löschen?",
@@ -2797,7 +2801,7 @@ export class Layer {
         } else {
           navigator.notification.confirm(
             "Layer ist noch nicht geleert. Die Daten des Layers auf dem Endgerät müssen erst gelöscht werden.",
-            function (buttonIndex) { },
+            function (buttonIndex) {},
             "Datenbank",
             ["OK"]
           );
@@ -2835,17 +2839,16 @@ export class Layer {
       $("#styleLayerDiv_" + layerGlobalId).toggle();
     });
 
-    $(".style-layer-div input, .style-layer-div select").on("change", function (evt) {
+    $("#styleLayerDiv_" + layerGlobalId + " input, #styleLayerDiv_" + layerGlobalId + " select").on("change", function (evt) {
       const globalLayerId = evt.target.parentElement.parentElement.parentElement.getAttribute("value");
       console.log("Input Feld %s in style-layer-div %s changed", evt.target.getAttribute("name"), "styleLayerDiv_" + globalLayerId);
       $("#styleLayerOkButton_" + globalLayerId).show();
     });
 
-    $(".use-custom-style-div input").on('change', function (evt) {
+    $("#useCustomStyle_" + layerGlobalId).on("change", function (evt) {
       const globalLayerId = evt.target.parentElement.parentElement.parentElement.getAttribute("value");
-      console.log("useCustomStyle Checkbox changed");
-      $('.style-layer-setting-div').toggleClass('visble hidden');
-      $("#styleLayerOkButton_" + globalLayerId).show();
+      console.log("#useCustomStyle_" + layerGlobalId + " Checkbox changed");
+      $(".style-layer-setting-div").toggleClass("visble hidden");
     });
 
     $("#styleLayerOkButton_" + layerGlobalId).on("click", function (evt) {
@@ -2856,7 +2859,7 @@ export class Layer {
           "#styleLayerDiv_" + globalLayerId + " input[name='" + formvar + "'], #styleLayerDiv_" + globalLayerId + " select[name='" + formvar + "']"
         ).val();
       });
-      kvm.activeLayer.settings.useCustomStyle = $("#styleLayerDiv_" + globalLayerId + " input[name='useCustomStyle']").is(':checked');
+      kvm.activeLayer.settings.useCustomStyle = $("#useCustomStyle_" + globalLayerId).is(":checked");
       kvm.activeLayer.saveToStore();
       kvm.activeLayer.readData();
       $(evt.currentTarget).hide();
@@ -2993,7 +2996,7 @@ export class Layer {
 
   getListItem() {
     console.log("getListItem for layerId: ", this.getGlobalId());
-    const customStyleClass = (this.get("useCustomStyle") ? 'visible' : 'hidden');
+    const customStyleClass = this.get("useCustomStyle") ? "visible" : "hidden";
     const html = `\
       <div id="layer_${this.getGlobalId()}">\
         <input type="radio" name="activeLayerId" value="${this.getGlobalId()}"/> ${this.get("alias") ? this.get("alias") : this.get("title")}\
@@ -3029,28 +3032,31 @@ export class Layer {
             <form oninput="opacityOutput.value = opacity.value; fillOpacityOutput.value = fillOpacity.value;">\
               <div class="use-custom-style-div">\
                 <label class="style-layer-setting-label" for="useCustomStyle">Verwende eigenen Style:</label>\
-                <input class="style-layer-setting-input" type="checkbox" id="useCustomStyle" name="useCustomStyle" value="1" ${(this.get("useCustomStyle") ? ' checked' : '')
-      }">\
+                <input class="style-layer-setting-input" type="checkbox" id="useCustomStyle_${this.getGlobalId()}" name="useCustomStyle" value="1" ${
+      this.get("useCustomStyle") ? " checked" : ""
+    } style="width: 30px; height: 30px">\
               </div>\
               <div style="clear: both"></div>\
               <div class="style-layer-setting-div ${customStyleClass}">\
-                <label class="style-layer-setting-label" for="color">Zeichenfarbe:</label> <input class="style-layer-setting-input" type="color" id="color" name="color" value="${this.get("color") || "#4444ff"
-      }">\
+                <label class="style-layer-setting-label" for="color">Zeichenfarbe:</label> <input class="style-layer-setting-input" type="color" id="color" name="color" value="${
+                  this.get("color") || "#4444ff"
+                }">\
               </div>\
               <div style="clear: both"></div>\
               <div class="style-layer-setting-div ${customStyleClass}">\
-                <label class="style-layer-setting-label" for="fillcolor">Füllfarbe:</label> <input class="style-layer-setting-input" type="color" id="fillcolor" name="fillcolor" value="${this.get("color") || "#0000ff"
-      }">\
+                <label class="style-layer-setting-label" for="fillcolor">Füllfarbe:</label> <input class="style-layer-setting-input" type="color" id="fillcolor" name="fillcolor" value="${
+                  this.get("color") || "#0000ff"
+                }">\
               </div>\
               <div style="clear: both"></div>\
               <div class="style-layer-setting-div ${customStyleClass}">\
                 <label class="style-layer-setting-label" for="width">Strichstärke:</label>\
                 <select name="width" class="style-layer-setting-input" class="style-layer-setting-input" style="width: 33px">
                 ${[1, 2, 3, 4, 5, 6, 7, 8, 9]
-        .map(function (width) {
-          return '<option value="' + width + '">' + width + "</option>";
-        })
-        .join("")}</select>
+                  .map(function (width) {
+                    return '<option value="' + width + '">' + width + "</option>";
+                  })
+                  .join("")}</select>
                 </div>\
               <div style="clear: both"></div>\
               <div class="style-layer-setting-div ${customStyleClass}">\
@@ -3061,10 +3067,12 @@ export class Layer {
               <div style="clear: both"></div>\
               <div class="style-layer-setting-div ${customStyleClass}">\
                 <label class="style-layer-setting-label" for="fillOpacity">Deckkraft Fläche:</label>\
-                <output class="style-layer-setting-label" style="margin-left: 10px;" for="fillOpacity" name="fillOpacityOutput">${this.get("fillOpacity") || "80"
-      }</output>\
-                <input class="style-layer-setting-input" type="range" id="fillOpacity" name="fillOpacity" min="0" max="100" value="${this.get("fillOpacity") || "80"
-      }"">\
+                <output class="style-layer-setting-label" style="margin-left: 10px;" for="fillOpacity" name="fillOpacityOutput">${
+                  this.get("fillOpacity") || "80"
+                }</output>\
+                <input class="style-layer-setting-input" type="range" id="fillOpacity" name="fillOpacity" min="0" max="100" value="${
+                  this.get("fillOpacity") || "80"
+                }"">\
               </div>\
             </form>\
           </div>\
@@ -3163,31 +3171,31 @@ this.get("width") || "1"
     kvm.log("download error http_status: " + error.http_status);
     alert(
       "Fehler beim herunterladen der Datei von der Url: " +
-      kvm.replacePassword(error.source) +
-      "! Error code: " +
-      error.code +
-      " http_status: " +
-      error.http_status
+        kvm.replacePassword(error.source) +
+        "! Error code: " +
+        error.code +
+        " http_status: " +
+        error.http_status
     );
   }
 
   saveToStore() {
-    kvm.log("Speicher Settings für Layer: " + this.settings.title, 3);
+    console.log(this.title + ": Speicher Layer Settings");
     //console.log('layerIds vor dem Speichern: %o', kvm.store.getItem('layerIds_' + this.stelle.get('id')));
     this.settings.loaded = false;
     const layerIds = JSON.parse(kvm.store.getItem("layerIds_" + this.stelle.get("id"))) || [];
     const settings = JSON.stringify(this.settings);
 
     kvm.store.setItem("layerSettings_" + this.getGlobalId(), settings);
-    console.log("layerSettings_%s eingetragen.", this.getGlobalId());
+    //console.log("%s: layerSettings_%s eingetragen.", this.title, this.getGlobalId());
 
     if ($.inArray(this.get("id"), layerIds) < 0) {
       layerIds.push(this.get("id"));
-      console.log("layer id in layerIds Liste aufgenommen.");
+      //console.log(this.title + ": layer id in layerIds Liste aufgenommen.");
       kvm.store.setItem("layerIds_" + this.stelle.get("id"), JSON.stringify(layerIds));
-      console.log("neue layerId %s eingetragen.", this.get("id"));
+      //console.log("%s: neue layerId %s eingetragen.", this.title, this.get("id"));
     }
-    console.log("layerIds nach dem Speichern: %o", kvm.store.getItem("layerIds_" + this.stelle.get("id")));
+    //console.log("%s: layerIds nach dem Speichern: %o", this.title, kvm.store.getItem("layerIds_" + this.stelle.get("id")));
   }
 
   /**

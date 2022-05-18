@@ -615,6 +615,7 @@ class Kvm {
              * Load layer data and setActive when layer is activ
              */
             if (layer.get("privileg") == 0) {
+              console.log("Update none-editable layer: %s", layer.title);
               /*
                * Update none-editable layer with latest deltas from server
                * sendDeltas > writeFile > upload (with empty rows only to get new deltas from server)
