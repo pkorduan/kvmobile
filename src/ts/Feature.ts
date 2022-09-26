@@ -43,7 +43,7 @@ export function Feature(
   this.id = this.data[options.id_attribute];
   this.layerId = ""; // Id des Layers (z.B. circleMarkers) in dem das Feature gezeichnet ist
   this.globalLayerId = options.globalLayerId; // Id des Layers zu dem das Feature gehört
-  /*
+  /*kvm
   console.log('Erzeuge eine editierbare Geometrie vom Feature');
   this.editableLayer = kvm.controller.mapper.createEditable(this); // In vorheriger Version wurde hier L.marker(kvm.map.getCenter()) verwendet. ToDo: muss das hier überhaupt gesetzt werden, wenn es denn dann doch beim setEditable erzeugt wird?
   */
@@ -496,6 +496,36 @@ export function Feature(
       markerStyleIndex = this.get("status") >= 0 && this.get("status") < numStyles ? this.get("status") : 0;
     $("#" + this.get(this.options.id_attribute)).html(this.getLabelValue());
     $("#" + this.get(this.options.id_attribute)).css("background-color", markerStyles[markerStyleIndex].fillColor);
+  };
+
+  /**
+   * This function return a style for this feature
+   * If the classitem value matches a class its style will be returned.
+   * If not the defaultStyle of the layer will be returned.
+   * For all missing settings in class style, default values will be taken.
+   */
+  this.getStyle = function (layer) {
+    let matchingClass: any = {};
+    let style: any = {};
+    let defaultStyle = layer.getDefaultStyle();
+    if (typeof (matchingClass = layer.getClass(this.get(layer.settings.classitem))) == "undefined") {
+      style = defaultStyle;
+    } else {
+      console.log("%s: Use styles from matching class.", this.title);
+      const classStyle = matchingClass.style;
+      style.color = classStyle.color || defaultStyle.color;
+      style.opacity = classStyle.opacity / 100 || defaultStyle.opatity;
+      style.fillColor = classStyle.fillColor || defaultStyle.fillcolor;
+      style.fillOpacity = classStyle.fillOpacity / 100 || defaultStyle.fillOpacity;
+      style.width = classStyle.width || defaultStyle.width;
+    }
+    if (this.options.geometry_type == "Point") {
+      return layer.getNormalCircleMarkerStyle();
+    } else if (this.options.geometry_type == "Line") {
+      return layer.getNormalPolylineStyle();
+    } else if (this.options.geometry_type == "Polygon") {
+      return layer.getNormalPolygonStyle();
+    }
   };
 
   this.getNormalStyle = function () {

@@ -277,7 +277,7 @@ export const configurations = [
     ],
   },
   {
-    name: "LK V-R",
+    name: "LK-VR",
     dbname: "kvmobile",
     localImgPath: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/",
     localTilePath: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/",
@@ -509,7 +509,7 @@ export const configurations = [
         label: "Luftbilder online",
         online: true,
         type: "wms",
-        url: "https://isk.geobasis-bb.de/ows/dop20c_wms",
+        url: "https://isk.geobasis-bb.de/mapproxy/dop20c/service/wms",
         params: {
           layers: "bebb_dop20c",
           format: "image/png",

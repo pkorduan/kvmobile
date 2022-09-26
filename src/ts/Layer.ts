@@ -315,7 +315,7 @@ export class Layer {
       [],
       function (rs) {
         console.log("Daten erfolgreich in Datenbank geschrieben.");
-        if (this.get("sync")) {
+        if (parseInt(this.get("sync"))) {
           this.set("syncVersion", this.runningSyncVersion);
           $("#syncVersionSpan_" + this.getGlobalId()).html(this.runningSyncVersion.toString());
           this.set("syncLastLocalTimestamp", Date());
@@ -681,11 +681,13 @@ export class Layer {
             }.bind(this)
           );
         } else {
-          this.set("syncVersion", parseInt(response.syncData[response.syncData.length - 1].push_to_version));
-          this.runningSyncVersion = this.get("syncVersion");
-          this.saveToStore();
-          //kvm.msg("Keine Änderungen vom Server bekommen! Die aktuelle Version ist: " + this.get("syncVersion"), this.get('title'));
-          this.clearDeltas("sql");
+          if (response.syncData.length > 0) {
+            this.set("syncVersion", parseInt(response.syncData[response.syncData.length - 1].push_to_version));
+            this.runningSyncVersion = this.get("syncVersion");
+            this.saveToStore();
+            //kvm.msg("Keine Änderungen vom Server bekommen! Die aktuelle Version ist: " + this.get("syncVersion"), this.get('title'));
+            this.clearDeltas("sql");
+          }
           this.readData($("#limit").val(), $("#offset").val());
         }
       } else {
@@ -1266,8 +1268,11 @@ export class Layer {
           }
         });
 
-        // Setze default Style für Kartenobjekt
-        vectorLayer.setStyle(this.settings.color && this.settings.color != "" ? this.getLayerStyle() : feature.getNormalStyle());
+        // Setze Style für Kartenobjekt
+        vectorLayer.setStyle(layer.hasClasses() ? feature.getStyle(layer) : layer.getDefaultStyle());
+
+        // feature.getNormalStyle());
+        //this.settings.useCustomStyle) ? this.getCustomStyle() : this.getClassStyle());
 
         // Kartenobjekt als Layer zur Layergruppe hinzufügen
         this.layerGroup.addLayer(vectorLayer);
@@ -1282,30 +1287,47 @@ export class Layer {
     kvm.log("layerGroup zur Karte hinzugefügt.", 4);
   }
 
-  getLayerStyle() {
-    let style: any = {};
-    if (this.settings.useCustomStyle || this.settings.get("classes").length == 0) {
-      console.log("%s: Use settings style", this.title);
-      style.color = this.settings.color;
-      style.opacity = this.settings.opacity / 100;
-      style.fillColor = this.settings.fillcolor;
-      style.fillOpacity = this.settings.fillOpacity / 100;
-      style.width = this.settings.width;
-    } else {
-      console.log("%s: Use styles from first class.", this.title);
-      const classStyle = this.settings.classes[0].style;
-      style.color = classStyle.color || "#7777FF";
-      style.opacity = (classStyle.opacity || 100) / 100;
-      style.fillColor = classStyle.fillcolor || "#0000FF";
-      style.fillOpacity = (classStyle.fillOpacity || 100) / 100;
-      style.width = classStyle.width || 1;
-    }
+  /**
+    This Function returns the first class of the layer
+    where value matches with the expression.
+    If no expression match it returns undefined
+  */
+  getClass(value) {
+    return this.settings.classes.find((element) => {
+      return element.expression.trim() == "" || element.expression == value;
+    });
+  }
+
+  /*
+  getCustomStyle() {
+    console.log("%s: Use styles from first class.", this.title);
+    const classStyle = this.settings.classes[0].style;
+    style.color = classStyle.color || "#7777FF";
+    style.opacity = (classStyle.opacity || 100) / 100;
+    style.fillColor = classStyle.fillcolor || "#0000FF";
+    style.fillOpacity = (classStyle.fillOpacity || 100) / 100;
+    style.width = classStyle.width || 1;
+  }
+*/
+  hasClasses() {
+    return this.settings.classes.length > 0;
+  }
+
+  getDefaultStyle() {
+    let defaultStyle: any = {};
+    defaultStyle = {
+      color: "#000000",
+      opacity: 0.8,
+      fillColor: "#333333",
+      fillOpacity: 0.8,
+      width: 1,
+    };
     if (this.settings.geometry_type == "Point") {
-      return this.getNormalCircleMarkerStyle(style);
+      return this.getNormalCircleMarkerStyle(defaultStyle);
     } else if (this.settings.geometry_type == "Line") {
-      return this.getNormalPolylineStyle(style);
+      return this.getNormalPolylineStyle(defaultStyle);
     } else if (this.settings.geometry_type == "Polygon") {
-      return this.getNormalPolygonStyle(style);
+      return this.getNormalPolygonStyle(defaultStyle);
     }
   }
 
@@ -2598,7 +2620,7 @@ export class Layer {
   }
 
   execServerDeltaSuccessFunc(rs) {
-    console.log(this.get("title") + ": execServerDeltaSuccessFunc");
+    console.log(this.context.get("title") + ": execServerDeltaSuccessFunc");
     this.context.numExecutedDeltas++;
     kvm.log(
       "execServerDeltaSuccessFunc numExecutedDeltas: " +
@@ -2614,7 +2636,7 @@ export class Layer {
       this.context.saveToStore();
       kvm.msg("Synchronisierung erfolgreich abgeschlossen!  Die aktuelle Version ist: " + newVersion);
       this.context.clearDeltas("sql");
-      console.log(this.get("title") + ": call readData at the end of execServerDeltaSuccessFunc");
+      console.log(this.context.get("title") + ": call readData at the end of execServerDeltaSuccessFunc");
       this.context.readData($("#limit").val(), $("#offset").val());
     } else {
       //console.log(this.context.numExecutedDeltas + '. Delta ausgeführt! Weiter ...');
@@ -2848,7 +2870,7 @@ export class Layer {
     $("#useCustomStyle_" + layerGlobalId).on("change", function (evt) {
       const globalLayerId = evt.target.parentElement.parentElement.parentElement.getAttribute("value");
       console.log("#useCustomStyle_" + layerGlobalId + " Checkbox changed");
-      $(".style-layer-setting-div").toggleClass("visble hidden");
+      $(".style-layer-setting-div").toggleClass("visible hidden");
     });
 
     $("#styleLayerOkButton_" + layerGlobalId).on("click", function (evt) {

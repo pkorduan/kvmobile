@@ -8,6 +8,12 @@ window.open = (<any>cordova).InAppBrowser.open; // oder casten mit window.open =
 
 import * as idb from "idb";
 import { configurations } from "./configurations";
+import {
+  BackgroundGeolocation,
+  BackgroundGeolocationConfig,
+  BackgroundGeolocationEvents,
+  BackgroundGeolocationResponse,
+} from "@awesome-cordova-plugins/background-geolocation/ngx";
 import { GpsStatus } from "./gpsStatus";
 import { SyncStatus } from "./syncStatus";
 import { Stelle } from "./Stelle";
@@ -25,7 +31,7 @@ require("leaflet.locatecontrol");
 require("leaflet-betterscale");
 require("leaflet-easybutton");
 require("leaflet-editable");
-import type from "../../node_modules/leaflet-easybutton/src/easy-button";
+import type from "leaflet-easybutton";
 import { LatLngExpression } from "leaflet";
 require("proj4leaflet");
 
@@ -36,7 +42,7 @@ declare var FingerprintAuth: typeof FingerprintAuthT;
 //export var config: any;
 
 class Kvm {
-  version: "1.8.6";
+  version: "1.8.7";
   // Buffer: require("buffer").Buffer,
   // wkx: require("wkx"),
   controls: any = {};
@@ -66,6 +72,7 @@ class Kvm {
 
   backgroundLayers: Layer[];
   backgroundLayerSettings: any[];
+  backgroundGeolocation: BackgroundGeolocation;
 
   // showItem: <(p:any)=>void>undefined,
   // log: <(p:any)=>void>undefined,
@@ -287,48 +294,61 @@ class Kvm {
     } else {
       kvm.config = foundConfiguration[0];
     }
-    /*
+
     // Write log to cordova.file.externalDataDirectory
     // which is at file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/
-    window.resolveLocalFileSystemURL(cordova.file.externalDataDirectory, function(dir) {
+    window.resolveLocalFileSystemURL(cordova.file.externalDataDirectory, function (dir) {
       //console.log("got main dir",dir);
-      dir.getFile("log.txt", {create:true}, function(file) {
+      dir.getFile("log.txt", { create: true }, function (file) {
         //console.log("got the file", file);
         logOb = file;
         kvm.writeLog("App started");
       });
     });
+    /*
+    kvm.backgroundGeolocation = new BackgroundGeolocation();
+    const bgConfig: BackgroundGeolocationConfig = {
+      desiredAccuracy: 10,
+      stationaryRadius: 20,
+      distanceFilter: 30,
+      debug: true, //  enable this hear sounds for background-geolocation life-cycle.
+      stopOnTerminate: false, // enable this to clear background location settings when the app terminates
+    };
+
+    kvm.backgroundGeolocation.configure(bgConfig).then(() => {
+      kvm.backgroundGeolocation.on(BackgroundGeolocationEvents.location).subscribe((location: BackgroundGeolocationResponse) => {
+        console.log(location);
+        kvm.msg(location, "Location");
+        // IMPORTANT:  You must execute the finish method here to inform the native plugin that you're finished,
+        // and the background-task may be completed.  You must do this regardless if your operations are successful or not.
+        // IF YOU DON'T, ios will CRASH YOUR APP for spending too much time in the background.
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "https://gdi-service.de/kvwmap_pet_dev/custom/layouts/snippets/track_location.php");
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.onreadystatechange = () => {
+          // In local files, status is 0 upon success in Mozilla Firefox
+          if (xhr.readyState === XMLHttpRequest.DONE) {
+            const status = xhr.status;
+            if (status === 0 || (status >= 200 && status < 400)) {
+              // The request has been completed successfully
+              console.log(xhr.responseText);
+            } else {
+              // Oh no! There has been an error with the request!
+            }
+          }
+        };
+        xhr.send(JSON.stringify(location));
+        //kvm.backgroundGeolocation.finish(); // FOR IOS ONLY
+      });
+    });
+
+    kvm.backgroundGeolocation.start();
 */
     /*
-    BackgroundGeolocation.configure({
-      startForeground: true,
-//      locationProvider: BackgroundGeolocation.ACTIVITY_PROVIDER,
-      locationProvider: BackgroundGeolocation.DISTANCE_FILTER_PROVIDER,
-      desiredAccuracy: BackgroundGeolocation.HIGH_ACCURACY,
-      stationaryRadius: 1,
-      distanceFilter: 1,
-      notificationTitle: 'Background tracking',
-      notificationText: 'enabled',
-      debug: true,
-      interval: 10000,
-      fastestInterval: 5000,
-      activitiesInterval: 10000,
-      url: 'https://gdi-service.de/kvwmap_pet_dev/custom/layouts/snippets/track_location.php',
-      httpHeaders: {
-        'X-FOO': 'bar'
-      },
-      // customize post properties
-      postTemplate: {
-        lat: '@latitude',
-        lon: '@longitude'
-      },
-      maxLocations: 1000
-    });
- 
-    BackgroundGeolocation.on('location', function(location) {
+    BackgroundGeolocation.on("location", function (location) {
       // handle your locations here
-      console.log('loc: %o', location);
-      kvm.writeLog('event location: ' + location.time + ' ' + location.latitude + ' ' + location.longitude);
+      console.log("loc: %o", location);
+      kvm.writeLog("event location: " + location.time + " " + location.latitude + " " + location.longitude);
 
       // to perform long running operation on iOS
       // you need to create background task
@@ -362,84 +382,132 @@ class Kvm {
       });
 
     });
+*/
+    /* Das hier bis Ende Kommentar einfügen nach start.
+BackgroundGeolocation.configure({
+  startForeground: true,
+  locationProvider: BackgroundGeolocation.ACTIVITY_PROVIDER,
+  locationProvider: BackgroundGeolocation.DISTANCE_FILTER_PROVIDER,
+  desiredAccuracy: BackgroundGeolocation.HIGH_ACCURACY,
+  stationaryRadius: 1,
+  distanceFilter: 1,
+  notificationTitle: "Background tracking",
+  notificationText: "enabled",
+  debug: true,
+  interval: 10000,
+  fastestInterval: 5000,
+  activitiesInterval: 10000,
+  url: "https://gdi-service.de/kvwmap_pet_dev/custom/layouts/snippets/track_location.php",
+  httpHeaders: {
+    "X-FOO": "bar",
+  },
+  // customize post properties
+  postTemplate: {
+    lat: "@latitude",
+    lon: "@longitude",
+    time: "@time",
+    accuracy: "@accuracy",
+    provider: "@provider"
+  },
+  maxLocations: 1000,
+});
 
-    BackgroundGeolocation.on('stationary', function(stationaryLocation) {
-      // handle stationary locations here
-      console.log('stationary: %o', stationaryLocation);
-      kvm.writeLog('stationary: ' + stationaryLocation.time + ' ' + stationaryLocation.latitude + ' ' + stationaryLocation.longitude);
-    });
- 
-    BackgroundGeolocation.on('error', function(error) {
-      console.log('[ERROR] BackgroundGeolocation error:', error.code, error.message);
-    });
+BackgroundGeolocation.on("location", function (location) {
+  // handle your locations here
+  console.log("loc: %o", location);
+  kvm.writeLog("event location: " + location.time + " " + location.latitude + " " + location.longitude);
+});
 
-    BackgroundGeolocation.on('start', function() {
-      console.log('[INFO] BackgroundGeolocation service has been started');
-    });
+BackgroundGeolocation.on("stationary", function (stationaryLocation) {
+  // handle stationary locations here
+  console.log(new Date() + "stationary: %o", stationaryLocation);
+  kvm.writeLog(new Date() + "stationary: " + stationaryLocation.time + " " + stationaryLocation.latitude + " " + stationaryLocation.longitude);
+});
 
-    BackgroundGeolocation.on('stop', function() {
-      console.log('[INFO] BackgroundGeolocation service has been stopped');
-    });
+BackgroundGeolocation.on("error", function (error) {
+  console.log(new Date() + " [ERROR] BackgroundGeolocation error:", error.code, error.message);
+});
 
-    BackgroundGeolocation.on('authorization', function(status) {
-      console.log('[INFO] BackgroundGeolocation authorization status: ' + status);
-      if (status !== BackgroundGeolocation.AUTHORIZED) {
-        // we need to set delay or otherwise alert may not be shown
-        setTimeout(function() {
-          var showSettings = confirm('App requires location tracking permission. Would you like to open app settings?');
-          if (showSetting) {
-            return BackgroundGeolocation.showAppSettings();
-          }
-        }, 1000);
+BackgroundGeolocation.on("start", function () {
+  console.log(new Date() + "[INFO] BackgroundGeolocation service has been started");
+});
+
+BackgroundGeolocation.on("stop", function () {
+  console.log(new Date() + "[INFO] BackgroundGeolocation service has been stopped");
+});
+
+BackgroundGeolocation.on("authorization", function (status) {
+  console.log(new Date() + "[INFO] BackgroundGeolocation authorization status: " + status);
+  if (status !== BackgroundGeolocation.AUTHORIZED) {
+    // we need to set delay or otherwise alert may not be shown
+    setTimeout(function () {
+      var showSettings = confirm("App requires location tracking permission. Would you like to open app settings?");
+      if (showSetting) {
+        return BackgroundGeolocation.showAppSettings();
       }
-    });
+    }, 1000);
+  }
+});
 
-    BackgroundGeolocation.on('background', function() {
-      console.log('[INFO] App is in background');
-      // you can also reconfigure service (changes will be applied immediately)
-      BackgroundGeolocation.configure({ debug: true });
-      kvm.writeLog('go to background: ');
-    });
+BackgroundGeolocation.on("background", function () {
+  console.log(new Date() + "[INFO] App is in background");
+  // you can also reconfigure service (changes will be applied immediately)
+  BackgroundGeolocation.configure({ debug: true });
+  kvm.writeLog("go to background: ");
+});
 
-    BackgroundGeolocation.on('foreground', function() {
-      console.log('[INFO] App is in foreground');
-      BackgroundGeolocation.configure({ debug: false });
-      kvm.writeLog('go to foreground: ');
-    });
+BackgroundGeolocation.on("foreground", function () {
+  console.log(new Date() + "[INFO] App is in foreground");
+  BackgroundGeolocation.configure({ debug: false });
+  kvm.writeLog("go to foreground: ");
+});
 
-    BackgroundGeolocation.on('abort_requested', function() {
-      console.log('[INFO] Server responded with 285 Updates Not Required');
+BackgroundGeolocation.on("abort_requested", function () {
+  console.log(new Date() + "[INFO] Server responded with 285 Updates Not Required");
 
-      // Here we can decide whether we want stop the updates or not.
-      // If you've configured the server to return 285, then it means the server does not require further update.
-      // So the normal thing to do here would be to `BackgroundGeolocation.stop()`.
-      // But you might be counting on it to receive location updates in the UI, so you could just reconfigure and set `url` to null.
-    });
+  // Here we can decide whether we want stop the updates or not.
+  // If you've configured the server to return 285, then it means the server does not require further update.
+  // So the normal thing to do here would be to `BackgroundGeolocation.stop()`.
+  // But you might be counting on it to receive location updates in the UI, so you could just reconfigure and set `url` to null.
+});
 
-    BackgroundGeolocation.on('http_authorization', () => {
-      console.log('[INFO] App needs to authorize the http requests');
-    });
+BackgroundGeolocation.on("http_authorization", () => {
+  console.log(new Date() + "[INFO] App needs to authorize the http requests");
+});
 
-    BackgroundGeolocation.checkStatus(function(status) {
-      console.log('[INFO] BackgroundGeolocation service is running', status.isRunning);
-      console.log('[INFO] BackgroundGeolocation services enabled', status.locationServicesEnabled);
-      console.log('[INFO] BackgroundGeolocation auth status: ' + status.authorization);
+BackgroundGeolocation.checkStatus(function (status) {
+  console.log(new Date() + "[INFO] BackgroundGeolocation service is running", status.isRunning);
+  console.log(new Date() + "[INFO] BackgroundGeolocation services enabled", status.locationServicesEnabled);
+  console.log(new Date() + "[INFO] BackgroundGeolocation auth status: " + status.authorization);
 
-      // you don't need to check status before start (this is just the example)
-      if (!status.isRunning) {
-//        BackgroundGeolocation.start(); //triggers start on start event
-      }
-    });
+  // you don't need to check status before start (this is just the example)
+  if (!status.isRunning) {
+    //        BackgroundGeolocation.start(); //triggers start on start event
+  }
+});
 
-    BackgroundGeolocation.getCurrentLocation(function(location) { console.log('loc: %o', location); }, function(fail) { console.log('fail: %o', fail); }, {});
+BackgroundGeolocation.getCurrentLocation(
+  function (location) {
+    console.log("loc: %o", location);
+  },
+  function (fail) {
+    console.log("fail: %o", fail);
+  },
+  {}
+);
 
-  //  BackgroundGeolocation.getLocations(
-  //    function (locations) {
-  //      console.log(locations);
-  //    }
-  //  );
+BackgroundGeolocation.start();
+
+bis hier */
+
+    /*
+    //  BackgroundGeolocation.getLocations(
+    //    function (locations) {
+    //      console.log(locations);
+    //    }
+    //  );
     //BackgroundGeolocation.getLogEntries(1000, 0, 'TRACE', function(entry) { console.log('log: %o', entry); }, function(fail) { console.log('log fail: %o', fail); })
-
+    /*
     try {
       BackgroundGeolocation.start();
     }
@@ -447,7 +515,6 @@ class Kvm {
       console.log('gestartet Fehler: %o', e);
     }
 */
-
     this.db = window.sqlitePlugin.openDatabase(
       {
         name: kvm.config.dbname + ".db",
@@ -557,7 +624,7 @@ class Kvm {
     this.loadDeviceData();
     SyncStatus.load(this.store);
     this.setConnectionStatus();
-    this.setGpsStatus();
+    // this.setGpsStatus();
     this.initConfigOptions();
     this.initMap();
     this.initColorSelector();
@@ -913,7 +980,28 @@ class Kvm {
   }
 
   initBackgroundLayers() {
-    this.saveBackgroundLayerSettings(kvm.config.backgroundLayerSettings);
+    this.saveBackgroundLayerSettings(
+      kvm.store.backgroundLayerSettings ? JSON.parse(kvm.store.getItem("backgroundLayerSettings")) : kvm.config.backgroundLayerSettings
+    );
+    //this.saveBackgroundLayerSettings(kvm.config.backgroundLayerSettings);
+    kvm.backgroundLayerSettings.forEach((l, i) => {
+      $("#backgroundLayerSettingsDiv").append(
+        '<div id="backgroundLayerDiv_' +
+          i +
+          '"><b>' +
+          l.label +
+          '</b><br>URL:<br><input id="backgroundLayerURL_' +
+          i +
+          '" type="text" value="' +
+          l.url +
+          '"></input></div>'
+      );
+      if (l.params.layers) {
+        $("#backgroundLayerDiv_" + i).append(
+          '<br>Layer:<br><input id="backgroundLayerLayer_' + i + '" type="text" value="' + l.params.layers + '" style="font-size: 20px;"></input>'
+        );
+      }
+    });
     $("#backgroundLayersTextarea").val(kvm.store.getItem("backgroundLayerSettings"));
     this.backgroundLayers = [];
     for (var i = 0; i < this.backgroundLayerSettings.length; ++i) {
@@ -1156,8 +1244,26 @@ class Kvm {
     });
 
     $("#resetBackgroundLayerSettingsButton").on("click", function () {
+      kvm.config.backgroundLayerSettings.forEach((l, i) => {
+        $("#backgroundLayerURL_" + i).val(l.url);
+        if (l.params.layers) {
+          $("#backgroundLayerLayer_" + i).val(l.params.layers);
+        }
+      });
       kvm.saveBackgroundLayerSettings(kvm.config.backgroundLayerSettings);
       kvm.msg("Einstellung zu Hintergrundlayern aus config Datei erfolgreich wiederhergestellt.");
+    });
+
+    $("#changeBackgroundLayerSettingsButton").on("click", function () {
+      kvm.backgroundLayerSettings.forEach((l, i) => {
+        l.url = $("#backgroundLayerURL_" + i).val();
+        if (l.params.layers) {
+          l.params.layers = $("#backgroundLayerLayer_" + i).val();
+        }
+      });
+      console.log("Neue BackgroundLayerSettings: ", kvm.backgroundLayerSettings);
+      kvm.saveBackgroundLayerSettings(kvm.backgroundLayerSettings);
+      kvm.msg("Einstellung zu Hintergrundlayern übernommen. Diese werden erst nach einem Neustart der Anwendung wirksam!");
     });
 
     $("localBackupPath").on("change", function () {
@@ -1567,7 +1673,7 @@ class Kvm {
               // download the files in background and update the progress div
               // confirm the finish
               // hide the progress div and show the delete and update button
-              var bl = kvm.config.backgroundLayerSettings.filter(function (l) {
+              var bl = kvm.backgroundLayerSettings.filter(function (l) {
                   return l.type == "vectortile" && l.label == "Vektorkacheln offline";
                 })[0],
                 params = bl.params,

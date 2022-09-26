@@ -1,7 +1,7 @@
 {
   "name": "de.gdi-service.kvmobile",
   "displayName": "kvmobile",
-  "version": "1.8.6",
+  "version": "1.8.7",
   "description": "Anwendung zur Erfassung von Geodaten und zum synchronisieren mit dem Web-GIS kvwmap.",
   "main": "index.js",
   "scripts": {
@@ -12,7 +12,10 @@
   "author": "Peter Korduan",
   "license": "GPL 3.0",
   "dependencies": {
+    "@angular/core": "^14.1.2",
+    "@awesome-cordova-plugins/background-geolocation": "^5.44.0",
     "@maplibre/maplibre-gl-leaflet": "^0.0.15",
+    "@mauron85/cordova-plugin-background-geolocation": "^3.1.0",
     "com.ionic.keyboard": "https://github.com/Telerik-Verified-Plugins/Keyboard",
     "cordova-plugin-android-fingerprint-auth": "^1.5.0",
     "cordova-plugin-camera": "^2.4.1",
@@ -66,7 +69,8 @@
         "ACCOUNT_TYPE": "$PACKAGE_NAME.account",
         "CONTENT_AUTHORITY": "$PACKAGE_NAME"
       },
-      "cordova-plugin-inappbrowser": {}
+      "cordova-plugin-inappbrowser": {},
+      "@mauron85/cordova-plugin-background-geolocation": {}
     },
     "platforms": [
       "browser"

@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
   <head>
-    <TITLE>kvmobile 1.8.6</TITLE>
+    <TITLE>kvmobile 1.8.7</TITLE>
     <META charset="UTF-8">
     <meta name="format-detection" content="telephone=no">
     <meta name="msapplication-tap-highlight" content="no">
@@ -315,7 +315,7 @@ child-src * 'self' blob: http:
       <input id="kvwmapServerUrlField" name="kvwmapServerUrl" type="text"><br>
       Nutzername<br>
       <input id="kvwmapServerLoginNameField" name="kvwmapServerLoginName" type="text" value=""><br>
-      Password <i class="fa fa-eye-slash" aria-hidden="true" onclick="this.classList.toggle('fa-eye'); this.classList.toggle('fa-eye-slash'); document.getElementById('kvwmapServerPasswortField').type = (document.getElementById('kvwmapServerPasswortField') === 'text' ? 'password' : 'text');"></i><br>
+      Password <i class="fa fa-eye" aria-hidden="true" onclick="this.classList.toggle('fa-eye'); this.classList.toggle('fa-eye-slash'); document.getElementById('kvwmapServerPasswortField').type = (document.getElementById('kvwmapServerPasswortField').type === 'text' ? 'password' : 'text');"></i><br>
       <input id="kvwmapServerPasswortField" name="kvwmapServerPasswort" type="password" value=""><br>
       Stelle<br>
       <button id="requestStellenButton" class="settings-button">
@@ -352,11 +352,16 @@ child-src * 'self' blob: http:
 
     <div class="h2-div"><h2 id="h2_hintergrundlayer" class="b-collapsed">Hintergrundlayer</h2></div>
     <div id="backgroundLayersDiv">
-      <textarea id="backgroundLayersTextarea" style="height: 200px">
+      <textarea id="backgroundLayersTextarea" style="height: 200px; display: none">
       </textarea>
+      <div id="backgroundLayerSettingsDiv">
+      </div>
       <button id="resetBackgroundLayerSettingsButton" class="settings-button">
-        <i class="fa fa-refresh" aria-hidden="true"> Reset Einstellungen</i>
-       </button>
+        <i class="fa fa-refresh" aria-hidden="true"> Zurücksetzen</i>
+      </button>
+      <button id="changeBackgroundLayerSettingsButton" class="settings-button">
+        <i class="fa fa-floppy-o" aria-hidden="true"> Speichern</i>
+      </button>
     </div>
     <hr>
 

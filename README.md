@@ -8,6 +8,11 @@ https://github.com/srahn/kvwmap/
 http://kvwmap.de
 
 # Change log
+## 1.8.7
+  * Features
+    * Changable Backgroundlayer URL's
+  * Bugfixes
+    * Fix error with wrong context in execServerDeltaSuccessFunc wenn sync deltas from server to client.
 ## 1.8.6
   * Features
     * Show output of select fields in data view
