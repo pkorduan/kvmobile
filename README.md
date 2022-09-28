@@ -3,11 +3,63 @@ Mobile client for web gis kvwmap.
 
 Anwendung zur Erfassung von Geodaten und zum synchronisieren mit dem Web-GIS kvwmap.
 
-https://github.com/srahn/kvwmap/
+Git-Repo von kvwmap: https://github.com/srahn/kvwmap/
 
-http://kvwmap.de
+Doku zu kvwmap: https://kvwmap.de
+
+Doku zum Plugin mobile von kvwmap: https://kvwmap.de/index.php/Plugins#Mobile_.28f.C3.BCr_kvmobile.29
+
+Doku zu kvmobile: https://kvwmap.de/index.php/kvmobile
+
+Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.de/public/kvmobile/
 
 # Change log
+## 1.9.0
+  * Features
+    * Make only synced layer editable
+    * Sync Layer allways if app is started
+    * Style Layer with classes style from server
+    * Show Style in layer section
+    * Show more layer infos
+    * Save Database to Documents or in user defined location
+    * Less confirm messages when saving data
+  * Bugfixes
+    * Fix bug in removeBrackets and removeQuotas
+## 1.8.7
+  * Features
+    * Changable Backgroundlayer URL's
+  * Bugfixes
+    * Fix error with wrong context in execServerDeltaSuccessFunc wenn sync deltas from server to client.
+## 1.8.6
+  * Features
+    * Show output of select fields in data view
+    * Show yes or no for boolean fields in data view 
+  * Bugfixes
+    * Highlight Layer in control correct
+    * Sync correct at start
+## 1.8.5
+  * Overlays section removed in settings view
+  * Add configuration for LK V-R
+## 1.8.4
+  * Value for Range and select fields for layer style
+## 1.8.3
+  * User defined layer styles
+## 1.8.2
+  * Code Structure
+    * Load Overlays as non editable layers
+## 1.8.1
+  * Bugfixes
+    * Fix canot create a new dataset
+    * Fix download when offline
+## 1.8.0
+  * Bugfixes
+    * Fix Bug, that overlays will not be loaded in offline mode
+    * Fix Bug, that vector will tiles not be shown in map in offline mode
+    * Make sync overlay button inactive in offline mode
+	* Code Structure
+  	* Switch to TypeScript, jquery only in app context, use node build chain with webpack
+  	* Switch some functions to classes
+  	* Switch from $.parseJSON to native JSON.parse
 ## 1.7.13
 	* Zeige Output von Auswahlfeld-Attributen in DataView an Stelle von Werten
 ## 1.7.12

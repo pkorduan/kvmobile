@@ -122,19 +122,10 @@
   "cordova-plugin-background-geolocation": {
     "source": {
       "type": "registry",
-      "id": "cordova-plugin-background-geolocation"
+      "id": "@mauron85/cordova-plugin-background-geolocation@^3.1.0"
     },
     "is_top_level": true,
-    "variables": {
-      "GOOGLE_PLAY_SERVICES_VERSION": "11+",
-      "ANDROID_SUPPORT_LIBRARY_VERSION": "26+",
-      "ICON": "@mipmap/ic_launcher",
-      "SMALL_ICON": "@mipmap/ic_launcher",
-      "ACCOUNT_NAME": "@string/app_name",
-      "ACCOUNT_LABEL": "@string/app_name",
-      "ACCOUNT_TYPE": "$PACKAGE_NAME.account",
-      "CONTENT_AUTHORITY": "$PACKAGE_NAME"
-    }
+    "variables": {}
   },
   "cordova-plugin-inappbrowser": {
     "source": {
