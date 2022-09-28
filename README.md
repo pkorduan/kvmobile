@@ -3,11 +3,28 @@ Mobile client for web gis kvwmap.
 
 Anwendung zur Erfassung von Geodaten und zum synchronisieren mit dem Web-GIS kvwmap.
 
-https://github.com/srahn/kvwmap/
+Git-Repo von kvwmap: https://github.com/srahn/kvwmap/
 
-http://kvwmap.de
+Doku zu kvwmap: https://kvwmap.de
+
+Doku zum Plugin mobile von kvwmap: https://kvwmap.de/index.php/Plugins#Mobile_.28f.C3.BCr_kvmobile.29
+
+Doku zu kvmobile: https://kvwmap.de/index.php/kvmobile
+
+Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.de/public/kvmobile/
 
 # Change log
+## 1.9.0
+  * Features
+    * Make only synced layer editable
+    * Sync Layer allways if app is started
+    * Style Layer with classes style from server
+    * Show Style in layer section
+    * Show more layer infos
+    * Save Database to Documents or in user defined location
+    * Less confirm messages when saving data
+  * Bugfixes
+    * Fix bug in removeBrackets and removeQuotas
 ## 1.8.7
   * Features
     * Changable Backgroundlayer URL's

@@ -53,7 +53,7 @@ export class DataViewField {
         $("#imagePreviewDiv").hide();
       } else {
         console.log("setValue add images to previews div: %s", val);
-        images = kvm.removeBraces(val).split(",");
+        images = kvm.removeBrackes(val).split(",");
         for (i = 0; i < images.length; i++) {
           remoteFile = images[i];
           localFile = kvm.removeOriginalName(kvm.serverToLocalPath(remoteFile));

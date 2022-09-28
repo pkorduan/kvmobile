@@ -6,6 +6,7 @@ import { kvm } from "./app";
 import { Attribute } from "./Attribute";
 import { Feature } from "./Feature";
 import { Stelle } from "./Stelle";
+import { Klasse } from "./Klasse";
 
 //declare var config: any;
 
@@ -29,6 +30,9 @@ export class Layer {
   title: string;
   numReturnedDeltas: string;
   response: any;
+  hasSyncPrivilege: boolean;
+  hasEditPrivilege: boolean;
+  hasDeletePrivilege: boolean;
 
   constructor(stelle: Stelle, settings = {}) {
     var layer_ = this;
@@ -49,6 +53,9 @@ export class Layer {
     //-----------------------------------------------
 
     this.attributes = [];
+    this.hasSyncPrivilege = this.getSyncPrivilege();
+    this.hasEditPrivilege = this.getEditPrivilege();
+    this.hasDeletePrivilege = this.getDeletePrivilege();
     this.runningSyncVersion = 0;
     if (typeof this.get("syncVersion") === "undefined") {
       this.set("syncVersion", this.runningSyncVersion);
@@ -1269,7 +1276,9 @@ export class Layer {
         });
 
         // Setze Style für Kartenobjekt
-        vectorLayer.setStyle(layer.hasClasses() ? feature.getStyle(layer) : layer.getDefaultStyle());
+        var style = layer.hasClasses() ? feature.getStyle(layer) : layer.getDefaultStyle();
+        console.log("Draw feature %o with style %o", feature, style);
+        vectorLayer.setStyle(style);
 
         // feature.getNormalStyle());
         //this.settings.useCustomStyle) ? this.getCustomStyle() : this.getClassStyle());
@@ -1314,35 +1323,21 @@ export class Layer {
   }
 
   getDefaultStyle() {
-    let defaultStyle: any = {};
-    defaultStyle = {
+    let style = {
       color: "#000000",
       opacity: 0.8,
       fillColor: "#333333",
       fillOpacity: 0.8,
-      width: 1,
+      weight: 2,
+      stroke: true,
+      fill: this.settings.geometry_type != "Line",
     };
-    if (this.settings.geometry_type == "Point") {
-      return this.getNormalCircleMarkerStyle(defaultStyle);
-    } else if (this.settings.geometry_type == "Line") {
-      return this.getNormalPolylineStyle(defaultStyle);
-    } else if (this.settings.geometry_type == "Polygon") {
-      return this.getNormalPolygonStyle(defaultStyle);
-    }
-  }
-
-  getNormalCircleMarkerStyle(style) {
     return style;
   }
 
-  getNormalPolylineStyle(style) {
-    style.stroke = true;
-    style.fill = false;
-    return style;
-  }
-
-  getNormalPolygonStyle(style) {
-    style.stroke = true;
+  getSelectedStyle(style) {
+    style.color = "#FF0000";
+    style.weight = 4;
     return style;
   }
 
@@ -1368,7 +1363,7 @@ export class Layer {
       (isActive ? "popup-functions" : "no-popup-functions") +
       '"\
       >' +
-      (parseInt(this.get("privileg")) > 0
+      (this.hasEditPrivilege
         ? '\
         <a class="edit-feature"\
           href="#"\
@@ -2127,7 +2122,7 @@ export class Layer {
     //console.log('Blende Sperrdiv aus');
     // Sperrdiv entfernen
     $("#sperr_div").hide();
-    kvm.msg(this.succMsg, "Hinweis");
+    //kvm.msg(this.succMsg, "Hinweis");
   }
   /**
    * write delta dataset to database expect:
@@ -3046,12 +3041,28 @@ export class Layer {
         <div class="layer-functions-div">\
           <button id="styleLayerButton_${this.getGlobalId()}" value="${this.getGlobalId()}" class="settings-button style-layer-button active-button layer-function-button">\
             <i id="styleLayerIcon_${this.getGlobalId()}" class="fa fa-paint-brush" aria-hidden="true"></i>\
-          </button> Layer Stylen\
+          </button> Layer Style\
           <button id="styleLayerOkButton_${this.getGlobalId()}" value="${this.getGlobalId()}" class="settings-button style-layer-ok-button">\
             <i id="styleLayerOkIcon_${this.getGlobalId()}" class="fa fa-check" style="font-size: 24px; color: #00a800" aria-hidden="true"></i>\
           </button>\
-          <div id="styleLayerDiv_${this.getGlobalId()}" class="layer-functions-div style-layer-div" value="${this.getGlobalId()}" style="display: none">\
-            <form oninput="opacityOutput.value = opacity.value; fillOpacityOutput.value = fillOpacity.value;">\
+          <div id="styleLayerDiv_${this.getGlobalId()}" class="style-layer-div" value="${this.getGlobalId()}" style="display: none">\
+            <div id="classesDiv_${this.getGlobalId()}" class="classes-div">\
+              ${this.getClassStyleItems()}\
+            </div>\
+          </div>\
+        </div>\
+        <div class="layer-functions-div">\
+          <button id="infoLayerButton_${this.getGlobalId()}" value="${this.getGlobalId()}" class="settings-button info-layer-button active-button layer-function-button">\
+            <i id="infoLayerIcon_${this.getGlobalId()}" class="fa fa-info" aria-hidden="true"></i>\
+          </button> Layerinfo\
+          <div id="infoLayerDiv_${this.getGlobalId()}" class="layer-functions-div info-layer-div" value="${this.getGlobalId()}" style="display: none">\
+            ${this.getLayerinfoItems().join("<br>")}\
+          </div>
+        </div>\
+      </div>\
+      <div style="clear: both"></div>`;
+    /**
+             <form oninput="opacityOutput.value = opacity.value; fillOpacityOutput.value = fillOpacity.value;">\
               <div class="use-custom-style-div">\
                 <label class="style-layer-setting-label" for="useCustomStyle">Verwende eigenen Style:</label>\
                 <input class="style-layer-setting-input" type="checkbox" id="useCustomStyle_${this.getGlobalId()}" name="useCustomStyle" value="1" ${
@@ -3097,19 +3108,35 @@ export class Layer {
                 }"">\
               </div>\
             </form>\
-          </div>\
-        </div>\
-        <div class="layer-functions-div">\
-          <button id="infoLayerButton_${this.getGlobalId()}" value="${this.getGlobalId()}" class="settings-button info-layer-button active-button layer-function-button">\
-            <i id="infoLayerIcon_${this.getGlobalId()}" class="fa fa-info" aria-hidden="true"></i>\
-          </button> Layerinfo\
-          <div id="infoLayerDiv_${this.getGlobalId()}" class="layer-functions-div info-layer-div" value="${this.getGlobalId()}" style="display: none">\
-            syncVersion = <span id="syncVersionSpan_${this.getGlobalId()}">${this.get("syncVersion")}</span>
-          </div>
-        </div>\
-      </div>\
-      <div style="clear: both"></div>`;
+ */
     return html;
+  }
+  getLayerinfoItems() {
+    let layerinfoItems: String[] = [];
+    layerinfoItems.push(`Layer-ID: ${this.get("id")}`);
+    layerinfoItems.push(`Geometrietyp: ${this.get("geometry_type")}`);
+    layerinfoItems.push(`Synchronisierbar: ${this.hasEditPrivilege ? "Ja" : "Nein"}`);
+    layerinfoItems.push(`Hinzufügen und Editieren von Datensätzen erlaubt: ${this.hasEditPrivilege ? "Ja" : "Nein"}`);
+    layerinfoItems.push(`Löschen von Datensätzen erlaubt: ${this.hasEditPrivilege ? "Ja" : "Nein"}`);
+    layerinfoItems.push(`Tabellenname: ${this.get("table_name")}`);
+    layerinfoItems.push(`Feld für ID: ${this.get("id_attribute")}`);
+    layerinfoItems.push(`Feld für Geometrie: ${this.get("geometry_attribute")}`);
+    layerinfoItems.push(`Feld für Datensatzbezeichnung: ${this.get("classitem")}`);
+    layerinfoItems.push(`Feld für Klassifizierung: ${this.get("classitem")}`);
+
+    if (this.hasEditPrivilege) {
+      layerinfoItems.push(`Sync-Version: <span id="syncVersionSpan_${this.getGlobalId()}">${this.get("syncVersion")}</span>`);
+    }
+    return layerinfoItems;
+  }
+
+  getClassStyleItems() {
+    return this.settings.classes
+      .map((settings) => {
+        let klasse = new Klasse(settings);
+        return `<div class="class-div">${klasse.getLegendItem(this.get("geometry_type"))}</div>`;
+      })
+      .join("");
   }
 
   /*  <form oninput="opacityOutput.value = opacity.value; fillOpacityOutput.value = fillOpacity.value;">\
@@ -3220,6 +3247,18 @@ this.get("width") || "1"
     //console.log("%s: layerIds nach dem Speichern: %o", this.title, kvm.store.getItem("layerIds_" + this.stelle.get("id")));
   }
 
+  getSyncPrivilege() {
+    return parseInt(this.get("sync")) > 0;
+  }
+
+  getEditPrivilege() {
+    return this.getSyncPrivilege() && parseInt(this.get("privileg")) > 0;
+  }
+
+  getDeletePrivilege() {
+    return this.getSyncPrivilege() && parseInt(this.get("privileg")) == 2;
+  }
+
   /**
    * Select layer in layerlist
    * - Create layerFilter
@@ -3256,7 +3295,7 @@ this.get("width") || "1"
 
     // Set dataView and if editable featureForm
     $("#formular").html("");
-    if (parseInt(this.get("privileg")) > 0) {
+    if (this.hasEditPrivilege) {
       this.createFeatureForm();
     }
     this.createDataView();
@@ -3267,12 +3306,13 @@ this.get("width") || "1"
     $("#layer_" + kvm.activeLayer.getGlobalId() + " > .layer-functions-button").show();
     $("#layer_" + kvm.activeLayer.getGlobalId() + " > .layer-functions-button").removeClass("fa-ellipsis-v fa-window-close-o");
     $("#layer_" + kvm.activeLayer.getGlobalId() + " > .layer-functions-button").addClass("fa-ellipsis-v");
-    if (parseInt(this.get("privileg")) > 0) {
+    if (this.hasEditPrivilege) {
       $("#newFeatureButton, #editFeatureButton").show();
     } else {
       $("#newFeatureButton, #editFeatureButton").hide();
     }
 
+    // ToDo: Die Kommentare überarbeiten.
     // Load Features from Database, recreate FeatureList and draw in map
     // readData hier raus, weil alle layer immer schon geladen sind,
     // nach sync wird auch erst readData aufgerufen und wenn layer

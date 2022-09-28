@@ -59,14 +59,13 @@ export class BilderFormField {
         .hide();
       $("#dropAllPictureButton_" + this.get("index")).hide();
     } else {
-      console.log("Add images to previews div: %s" + val);
-      images = kvm.removeBraces(val).split(",");
+      console.log("Add images to previews div: %s", val);
+      images = kvm.removeBrackes(val).split(",");
       console.log("images: %s", JSON.stringify(images));
       for (i = 0; i < images.length; i++) {
         remoteFile = kvm.removeQuotas(images[i]);
         localFile = kvm.removeOriginalName(kvm.serverToLocalPath(remoteFile));
         console.log("images[" + i + "]: %s" + remoteFile);
-
         window.resolveLocalFileSystemURL(
           localFile,
           function (fileEntry) {
@@ -181,7 +180,7 @@ export class BilderFormField {
 
   addImgNameToVal(newImg) {
     var val = this.getValue();
-    val = val == null ? kvm.addBraces(newImg) : kvm.addBraces(kvm.removeBraces(val) + "," + newImg);
+    val = val == null ? kvm.addBraces(newImg) : kvm.addBraces(kvm.removeBrackes(val) + "," + newImg);
     this.element.val(val);
     this.element.trigger("change");
     return val;
@@ -202,7 +201,7 @@ export class BilderFormField {
     // remove image string from field value
     imageField.val(
       kvm.addBraces(
-        $.map(kvm.removeBraces(imageField.val()).split(","), function (path) {
+        $.map(kvm.removeBrackes(imageField.val()).split(","), function (path) {
           if (path.indexOf(src.substring(src.lastIndexOf("/") + 1)) < 0) {
             return path;
           }

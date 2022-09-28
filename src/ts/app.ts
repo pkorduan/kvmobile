@@ -18,6 +18,7 @@ import { GpsStatus } from "./gpsStatus";
 import { SyncStatus } from "./syncStatus";
 import { Stelle } from "./Stelle";
 import { Layer } from "./Layer";
+import { Klasse } from "./Klasse";
 import { Overlay } from "./Overlay";
 import { maplibreStyleObj } from "./teststyle";
 import { NetworkStatus } from "./networkStatus";
@@ -42,7 +43,7 @@ declare var FingerprintAuth: typeof FingerprintAuthT;
 //export var config: any;
 
 class Kvm {
-  version: "1.8.7";
+  version: "1.9.0";
   // Buffer: require("buffer").Buffer,
   // wkx: require("wkx"),
   controls: any = {};
@@ -297,14 +298,16 @@ class Kvm {
 
     // Write log to cordova.file.externalDataDirectory
     // which is at file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/
+    /*
     window.resolveLocalFileSystemURL(cordova.file.externalDataDirectory, function (dir) {
-      //console.log("got main dir",dir);
+      console.log("got main dir", dir);
       dir.getFile("log.txt", { create: true }, function (file) {
-        //console.log("got the file", file);
-        logOb = file;
+        console.log("got the file", file);
+        //logOb = file;
         kvm.writeLog("App started");
       });
     });
+    */
     /*
     kvm.backgroundGeolocation = new BackgroundGeolocation();
     const bgConfig: BackgroundGeolocationConfig = {
@@ -678,21 +681,20 @@ bis hier */
             if (layer.get("id") == kvm.store.getItem("activeLayerId")) {
               kvm.activeLayer = layer;
             }
-            /*
-             * Load layer data and setActive when layer is activ
+            /**
+             * Load data and set active layer
              */
-            if (layer.get("privileg") == 0) {
-              console.log("Update none-editable layer: %s", layer.title);
-              /*
-               * Update none-editable layer with latest deltas from server
-               * sendDeltas > writeFile > upload (with empty rows only to get new deltas from server)
-               * > for each received delta: execServerDeltaSuccessFunc
-               * > (saveToStore, clearDeltas, readData)
-               */
-              layer.sendDeltas({ rows: [] });
+            console.log("Update layer: %s", layer.get("title"));
+            if (layer.hasSyncPrivilege) {
+              if (layer.hasEditPrivilege) {
+                console.log("SyncData with local deltas if exists.");
+                layer.syncData();
+              } else {
+                console.log("Only get deltas from server.");
+                layer.sendDeltas({ rows: [] });
+              }
             } else {
-              // Only read data for layer
-              console.log("layer: %s readData", layer.get("title"));
+              console.log("Only read data from local database.");
               layer.readData();
             }
           }
@@ -1266,10 +1268,10 @@ bis hier */
       kvm.msg("Einstellung zu Hintergrundlayern übernommen. Diese werden erst nach einem Neustart der Anwendung wirksam!");
     });
 
-    $("localBackupPath").on("change", function () {
+    $("#localBackupPath").on("change", function () {
       // TODO Bug??
       // kvm.store.setItem("localBackupPath", this.val());
-      kvm.store.setItem("localBackupPath", (<any>this).val());
+      kvm.store.setItem("localBackupPath", $(this).val().toString());
     });
 
     $("#saveDatabaseButton").on("click", function () {
@@ -1279,10 +1281,10 @@ bis hier */
           ' mit der Dateiendung .db gespeichert. Ohne Eingabe wird der Name "Sicherung_" + aktuellem Zeitstempel + ".db" vergeben.',
         function (arg) {
           if (arg.input1 == "") {
-            arg.input1 = "Sicherung_" + kvm.now();
+            arg.input1 = "Sicherung_" + kvm.now().toString().replace("T", "_").replace(/:/g, "-").replace("Z", "");
           }
           kvm.controller.files.copyFile(
-            "file:///data/user/0/de.gdiservice.kvmobile/databases/",
+            cordova.file.applicationStorageDirectory + "databases/",
             "kvmobile.db",
             kvm.store.getItem("localBackupPath"),
             arg.input1 + ".db"
@@ -1429,7 +1431,7 @@ bis hier */
 
     $("#deleteFeatureButton").on("click", function (evt) {
       kvm.log("Klick auf deleteFeatureButton.", 4);
-      if (kvm.activeLayer && parseInt(kvm.activeLayer.get("privileg")) == 2) {
+      if (kvm.activeLayer && kvm.activeLayer.hasDeletePrivilege) {
         navigator.notification.confirm(
           "Datensatz wirklich Löschen?",
           function (buttonIndex) {
@@ -1626,6 +1628,7 @@ bis hier */
       navigator.notification.confirm(
         "Alle lokalen Daten, Änderungen und Einstellungen wirklich Löschen?",
         function (buttonIndex) {
+          console.log("click on button: %s", buttonIndex);
           if (buttonIndex == 1) {
             // ja
             if (kvm.layers.length == 0) {
@@ -1636,21 +1639,21 @@ bis hier */
                 layer.clearData();
               });
             }
+            kvm.layers = [];
+            $("#layer_list").html("");
+            kvm.activeLayer = kvm.activeStelle = kvm.store = undefined;
+            window.localStorage.clear();
+            kvm.msg(
+              "Fertig!\nStarten Sie die Anwendung neu und fragen Sie die Stelle und Layer unter Einstellungen neu ab.",
+              "Reset Datenbank und Einstellungen"
+            );
           }
           if (buttonIndex == 2) {
             // nein
-            // Do nothing
+            kvm.msg("Ok, nichts passiert!", "Reset Datenbank und Einstellungen");
           }
-          kvm.layers = [];
-          $("#layer_list").html("");
-          kvm.activeLayer = kvm.activeStelle = kvm.store = undefined;
-          window.localStorage.clear();
-          kvm.msg(
-            "Fertig!\nStarten Sie die Anwendung neu und fragen Sie die Stelle und Layer unter Einstellungen neu ab.",
-            "Reset Datenbank und Einstellungen"
-          );
         },
-        "",
+        "Reset Datenbank und Einstellungen",
         ["ja", "nein"]
       );
     });
@@ -1847,7 +1850,7 @@ bis hier */
       case "mapEdit":
         $(".menu-button").hide();
         $("#showFormEdit, #saveFeatureButton, #saveFeatureButton, #cancelFeatureButton").show();
-        if (kvm.activeLayer && parseInt(kvm.activeLayer.get("privileg")) == 2 && !kvm.activeLayer.activeFeature.options.new) {
+        if (kvm.activeLayer && kvm.activeLayer.hasDeletePrivilege && !kvm.activeLayer.activeFeature.options.new) {
           $("#deleteFeatureButton").show();
         }
         $("#map").show();
@@ -1861,7 +1864,7 @@ bis hier */
         if ($("#historyFilter").is(":checked")) {
           $("#restoreFeatureButton").show();
         } else {
-          if (parseInt(kvm.activeLayer.get("privileg")) > 0) {
+          if (kvm.activeLayer.hasEditPrivilege) {
             $("#editFeatureButton, #tplFeatureButton").show();
           }
         }
@@ -1870,7 +1873,7 @@ bis hier */
       case "formular":
         $(".menu-button").hide();
         $("#showMapEdit, #saveFeatureButton, #saveFeatureButton, #cancelFeatureButton").show();
-        if (kvm.activeLayer && parseInt(kvm.activeLayer.get("privileg")) == 2 && !kvm.activeLayer.activeFeature.options.new) {
+        if (kvm.activeLayer && kvm.activeLayer.hasDeletePrivilege && !kvm.activeLayer.activeFeature.options.new) {
           $("#deleteFeatureButton").show();
         }
         $("#formular").show().scrollTop(0);
@@ -1908,7 +1911,7 @@ bis hier */
     $(".menu-button").hide();
     //  $("#backArrow, #saveFeatureButton, #deleteFeatureButton, #backToFormButton").hide();
     $("#showSettings, #showFeatureList, #showMap").show();
-    if (kvm.activeLayer && parseInt(kvm.activeLayer.get("privileg")) > 0) {
+    if (kvm.activeLayer && kvm.activeLayer.hasEditPrivilege) {
       $("#newFeatureButton").show();
     }
   }
@@ -1916,7 +1919,7 @@ bis hier */
   showFormMenu() {
     $(".menu-button").hide();
     $("#showFeatureList, #showMap, #saveFeatureButton").show();
-    if (kvm.activeLayer && parseInt(kvm.activeLayer.get("privileg")) == 2) {
+    if (kvm.activeLayer && kvm.activeLayer.hasDeletePrivilege) {
       $("#deleteFeatureButton").show();
     }
   }
@@ -2165,30 +2168,27 @@ bis hier */
   }
 
   /*
-   * Remove first and last caracter from string
-   * in this class used to remove the braces {...} from array values
-   * but can be used also for all other enclosing character
+   * Remove first and last curly brackets {} from string
    */
-  removeBraces(val) {
-    console.log("kvm.removeBraces on: %s", val);
-    var result = val.substring(1, val.length - 1);
-    return result;
+  removeBrackes(val): string {
+    //console.log("kvm.removeBrackes from: %s", val);
+    return val.substring(val.indexOf("{") + 1, val.lastIndexOf("}"));
   }
 
-  /* Remove leading and trainling character from string */
-  removeQuotas(val) {
-    console.log("kvm.removeQuotas from val: %s", val);
-    let result = val.substring(1, val.length - 1);
-    return result;
+  /**
+   * Remove leading and trainling single and double quotas from string
+   */
+  removeQuotas(val): string {
+    //console.log("kvm.removeQuotas from: %s", val);
+    return val.replace(/^["'](.+(?=["']$))["']$/, "$1");
   }
 
   /*
    * Add braces around the value to make an array
    */
-  addBraces(val) {
-    kvm.log("kvm.addBraces " + val, 4);
-    var result = "{" + val + "}";
-    return result;
+  addBraces(val): string {
+    //console.log("kvm.addBraces to: %s", val);
+    return "{" + val + "}";
   }
 
   /*

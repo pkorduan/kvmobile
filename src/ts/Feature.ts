@@ -388,7 +388,7 @@ export function Feature(
   this.unselect = function () {
     kvm.log("Deselektiere Feature " + this.layerId, 4);
     if (this.layerId) {
-      (<any>kvm.map)._layers[this.layerId].setStyle(this.getNormalStyle());
+      (<any>kvm.map)._layers[this.layerId].setStyle(this.getStyle(kvm.activeLayer));
     }
     $(".feature-item").removeClass("selected-feature-item");
   };
@@ -412,7 +412,7 @@ export function Feature(
     if (this.newGeom) {
       //console.log("Feature has newGeom");
       //console.log("Select feature in map " + this.layerId);
-      layer.setStyle(this.getSelectedStyle());
+      layer.setStyle(kvm.activeLayer.getSelectedStyle(this.getStyle(kvm.activeLayer)));
 
       this.zoomTo(layer, zoom);
       /*
@@ -454,7 +454,7 @@ export function Feature(
     let label_value = "";
     const label_attribute = layer.get("name_attribute");
 
-    if (parseInt(layer.get("privileg")) > 0) {
+    if (layer.hasEditPrivilege) {
       const formField = layer.attributes[layer.attribute_index[label_attribute]].formField;
       if (this.get(label_attribute)) {
         label_value = formField.getFormattedValue ? formField.getFormattedValue(this.get(label_attribute)) : this.get(label_attribute);
@@ -511,21 +511,16 @@ export function Feature(
     if (typeof (matchingClass = layer.getClass(this.get(layer.settings.classitem))) == "undefined") {
       style = defaultStyle;
     } else {
-      console.log("%s: Use styles from matching class.", this.title);
+      console.log("%s: Use styles from matching class.", layer.title);
       const classStyle = matchingClass.style;
-      style.color = classStyle.color || defaultStyle.color;
-      style.opacity = classStyle.opacity / 100 || defaultStyle.opatity;
-      style.fillColor = classStyle.fillColor || defaultStyle.fillcolor;
+      style.color = kvm.rgbToHex(layer.get("geometry_type") == "Line" ? classStyle.fillColor : classStyle.color) || defaultStyle.color;
+      style.opacity = classStyle.opacity / 100 || defaultStyle.opacity;
+      style.fillColor = kvm.rgbToHex(layer.get("geometry_type") == "Line" ? classStyle.color : classStyle.fillColor) || defaultStyle.fillcolor;
       style.fillOpacity = classStyle.fillOpacity / 100 || defaultStyle.fillOpacity;
-      style.width = classStyle.width || defaultStyle.width;
+      style.weight = classStyle.weight || defaultStyle.weight;
     }
-    if (this.options.geometry_type == "Point") {
-      return layer.getNormalCircleMarkerStyle();
-    } else if (this.options.geometry_type == "Line") {
-      return layer.getNormalPolylineStyle();
-    } else if (this.options.geometry_type == "Polygon") {
-      return layer.getNormalPolygonStyle();
-    }
+    style.fill = this.options.geometry_type != "Line";
+    return style;
   };
 
   this.getNormalStyle = function () {
@@ -573,49 +568,6 @@ export function Feature(
       numStyles = Object.keys(markerStyles).length,
       markerStyleIndex = this.get("status") >= 0 && this.get("status") < numStyles ? this.get("status") : 0;
     return markerStyles[markerStyleIndex];
-  };
-
-  this.getSelectedStyle = function () {
-    //console.log('Feature.getSelectedStyle');
-    if (this.options.geometry_type == "Point") {
-      return this.getSelectedCircleMarkerStyle();
-    } else if (this.options.geometry_type == "Line") {
-      return this.getSelectedPolylineStyle();
-    } else if (this.options.geometry_type == "Polygon") {
-      return this.getSelectedPolygonStyle();
-    }
-  };
-
-  this.getSelectedCircleMarkerStyle = function () {
-    //console.log('getSelectedCircleMarkerStyle');
-    var style = JSON.parse(JSON.stringify(this.getNormalCircleMarkerStyle()));
-    style.weight = 5;
-    style.color = "#ff2828";
-    return style;
-  };
-
-  this.getSelectedPolylineStyle = function () {
-    //console.log('getSelectedPolylineStyle');
-    return {
-      stroke: true,
-      fill: false,
-      color: "#ff2828",
-      weight: 5,
-      opacity: 0.7,
-    };
-  };
-
-  this.getSelectedPolygonStyle = function () {
-    //console.log('getSelectedPolygonStyle');
-    return {
-      stroke: true,
-      fill: true,
-      fillColor: "#fcae95",
-      fillOpacity: 0.7,
-      color: "#a02802",
-      weight: 3,
-      opacity: 0.7,
-    };
   };
 
   this.getEditModeStyle = function () {
