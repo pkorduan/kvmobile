@@ -17,8 +17,10 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 ## 1.9.4
   * Feature
     * A click on the feature lists header deselect the currently active feature.
+    * Set circle marker radius on class size param.
   * Bugfix
     * Fix click on Google to search in feature list.
+    * Use also class styles after geometry editing and edit canceling.
 ## 1.9.3
   * Maintainance
     * Get and show AppVersion from cordova build environment, No need anymore to change the version number in index.html and app.js

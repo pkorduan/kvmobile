@@ -31,6 +31,7 @@ export class Klasse {
       fillColor: `rgb(${(this.layer.get("geometry_type") == "Line" ? this.get("style").color : this.get("style").fillColor) || defaultPathOptions.fillColor})`,
       fillOpacity: this.get("style").fillOpacity / 100 || defaultPathOptions.fillOpacity,
       weight: this.get("style").weight || defaultPathOptions.weight,
+      size: this.get("style").size || defaultPathOptions.size,
     };
     return pathOptions;
   }

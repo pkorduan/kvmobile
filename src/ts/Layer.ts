@@ -1288,6 +1288,9 @@ export class Layer {
         var style = layer.hasClasses() ? feature.getStyle(layer) : layer.getDefaultPathOptions();
         console.log("Draw feature %o with style %o", feature, style);
         vectorLayer.setStyle(style);
+        if (this.get("geometry_type") == "Point") {
+          vectorLayer.setRadius(style.size);
+        }
 
         // feature.getNormalStyle());
         //this.settings.useCustomStyle) ? this.getCustomStyle() : this.getClassStyle());
@@ -1340,6 +1343,7 @@ export class Layer {
       weight: 2,
       stroke: true,
       fill: this.settings.geometry_type != "Line",
+      size: 6,
     };
     return style;
   }
@@ -1568,26 +1572,34 @@ export class Layer {
   cancelEditGeometry(featureId?) {
     kvm.log("cancelEditGeometry");
     var feature = this.activeFeature;
+
     if (featureId) {
       // Ermittelt die layer_id des circleMarkers des Features
-      var layer = (<any>kvm.map)._layers[feature.layerId];
+      let vectorLayer = (<any>kvm.map)._layers[feature.layerId];
 
       // Zoom zur ursprünglichen Geometrie
-      feature.zoomTo((<any>kvm.map)._layers[feature.layerId]);
+      feature.zoomTo(vectorLayer);
 
       //Setzt den Style des circle Markers auf den alten zurück
-      (<any>kvm.map)._layers[feature.layerId].setStyle(feature.getNormalStyle());
+      //layer.setStyle(feature.getNormalStyle()); Wird nicht mehr verwendet
+
+      var style = this.hasClasses() ? feature.getStyle(this) : this.getDefaultPathOptions();
+      console.log("Set style after cancleEditGeometry: %o", style);
+      vectorLayer.setStyle(style);
+      if (this.get("geometry_type") == "Point") {
+        vectorLayer.setRadius(style.size);
+      }
 
       // Binded das Popup an den dazugehörigen Layer
       // Popup zum Kartenobjekt hinzufügen
-      const popupFct = (layer) => {
+      const popupFct = (vectorLayer) => {
         console.log("popupFct activelayer: %s, this: %s", kvm.activeLayer.getGlobalId(), this.getGlobalId());
         return this.getPopup(
           feature,
           kvm.activeLayer.getGlobalId() == this.getGlobalId() && !(kvm.activeLayer.activeFeature && kvm.activeLayer.activeFeature.editable)
         );
       };
-      (<any>kvm.map)._layers[feature.layerId].bindPopup(popupFct);
+      vectorLayer.bindPopup(popupFct);
 
       this.selectFeature(feature);
     } else {
@@ -1622,9 +1634,8 @@ export class Layer {
    */
   saveGeometry(feature) {
     //console.log('saveGeometry mit feature: %o', feature);
-    var layer, vectorLayer;
-    let latlng;
-    let latlngs;
+    var latlng;
+    var latlngs;
     if (feature.options.geometry_type == "Point") {
       latlng = feature.editableLayer.getLatLng();
       //      console.log('latlng: %o', latlng);
@@ -1638,7 +1649,7 @@ export class Layer {
 
     if (feature.layerId) {
       //console.log('feature.layerId: %s', feature.layerId);
-      var layer = (<any>kvm.map)._layers[feature.layerId];
+      var vectorLayer = (<any>kvm.map)._layers[feature.layerId];
       //console.log('layer extrahiert: %o', layer);
     }
 
@@ -1650,7 +1661,7 @@ export class Layer {
     //    //  - Die Änderung im Featureobjekt vorgenommen
     //    feature.geom = feature.newGeom;
 
-    if (layer) {
+    if (vectorLayer) {
       this.layerGroup.removeLayer(feature.layerId);
     }
     /*
@@ -1690,7 +1701,14 @@ export class Layer {
     vectorLayer.bindPopup(popupFct);
 
     //console.log('Style der neuen Geometrie auf default setzen');
-    vectorLayer.setStyle(feature.getNormalStyle());
+    //vectorLayer.setStyle(feature.getNormalStyle()); veraltet wird nicht mehr verwendet
+
+    var style = this.hasClasses() ? feature.getStyle(this) : this.getDefaultPathOptions();
+    console.log("SetStyle after saveGeometry: %o", style);
+    vectorLayer.setStyle(style);
+    if (this.get("geometry_type") == "Point") {
+      vectorLayer.setRadius(style.size);
+    }
 
     //console.log('Setze click event for vectorLayer');
     vectorLayer.on("click", function (evt) {
@@ -1707,10 +1725,6 @@ export class Layer {
     //console.log('Frage layerId ab und ordne feature zu.');
     // layer_id abfragen und in Feature als layerId speichern
     feature.layerId = this.layerGroup.getLayerId(vectorLayer);
-
-    //console.log('setze layer variable mit vectorLayer id: %s', feature.layerId);
-    layer = (<any>kvm.map)._layers[feature.layerId];
-    //console.log('layer variable jetzt: %o', layer);
 
     //console.log('Setze feature auf nicht mehr editierbar.');
     // editierbare Geometrie aus der Karte löschen und damit Popup der editierbaren Geometrie schließen
