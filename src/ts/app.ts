@@ -43,7 +43,6 @@ declare var FingerprintAuth: typeof FingerprintAuthT;
 //export var config: any;
 
 class Kvm {
-  version: "1.9.0";
   // Buffer: require("buffer").Buffer,
   // wkx: require("wkx"),
   controls: any = {};
@@ -689,6 +688,8 @@ bis hier */
               if (layer.hasEditPrivilege) {
                 console.log("SyncData with local deltas if exists.");
                 layer.syncData();
+                console.log("SyncImages with local images if exists.");
+                layer.syncImages();
               } else {
                 console.log("Only get deltas from server.");
                 layer.sendDeltas({ rows: [] });
@@ -798,6 +799,11 @@ bis hier */
     map.on("popupopen", function (evt) {
       kvm.controls.layers.collapse();
     });
+    /* ToDo Hier Klickevent einführen welches das gerade selectierte Feature deseletiert.
+    map.on('click', function(evt) {
+      console.log('Click in Map with evt: %o', evt);
+    });
+    */
 
     // TODO
     (<any>map).setMaxBounds(L.bounds(L.point(this.mapSettings.west, this.mapSettings.south), L.point(this.mapSettings.east, this.mapSettings.north)));
@@ -1602,6 +1608,10 @@ bis hier */
       });
     });
 
+    $("#showSearch").on("click", function () {
+      $("#searchHaltestelle").toggle();
+    });
+
     $("#geoLocationButton").on("click", kvm.getGeoLocation);
 
     $("#cameraOptionsQualitySlider").on("input", function () {
@@ -1738,6 +1748,12 @@ bis hier */
       );
     });
 
+    $("#featurelistHeading").on("click", (evt) => {
+      if (kvm.activeLayer && kvm.activeLayer.activeFeature) {
+        kvm.activeLayer.activeFeature.unselect();
+      }
+    });
+
     $("#sperr_div").on("dblclick", function (evt) {
       navigator.notification.confirm(
         "Sperrbildschirm aufheben?",
@@ -1797,31 +1813,17 @@ bis hier */
 
   loadDeviceData() {
     kvm.log("loadDeviceData", 4);
-    $("#deviceDataText").html(
-      "kvmobile Version: " +
-        kvm.version +
-        "<br>" +
-        "Cordova Version: " +
-        device.cordova +
-        "<br>" +
-        "Modell: " +
-        device.model +
-        "<br>" +
-        "Platform: " +
-        device.platform +
-        "<br>" +
-        "Uuid: " +
-        device.uuid +
-        "<br>" +
-        "Android Version: " +
-        device.version +
-        "<br>" +
-        "Hersteller: " +
-        device.manufacturer +
-        "<br>" +
-        "Seriennummer: " +
-        device.serial
-    );
+    (<any>cordova).getAppVersion.getVersionNumber((versionNumber) => {
+      $("#cordovaAppVersion").html(versionNumber);
+      document.title = "kvmobile " + versionNumber;
+    });
+    $("#deviceCordova").html(device.cordova);
+    $("#deviceModel").html(device.model);
+    $("#devicePlatform").html(device.platform);
+    $("#deviceUuid").html(device.uuid);
+    $("#deviceVersion").html(device.version);
+    $("#deviceManufacturer").html(device.manufacturer);
+    $("#deviceSerial").html(device.serial);
   }
 
   showItem(item) {

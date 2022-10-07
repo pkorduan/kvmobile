@@ -2,6 +2,7 @@ import { Buffer } from "buffer";
 import * as wkx from "wkx";
 import * as L from "leaflet";
 import { kvm } from "./app";
+import { Klasse } from "./Klasse";
 /*
  * Klasse zum Vorhalten der Datenobjekte zur Laufzeit der Anwendung
  * Ein Feature ist leer (außer die automatisch generierte uuid) wenn es neu angelegt werden soll
@@ -387,8 +388,11 @@ export function Feature(
 
   this.unselect = function () {
     kvm.log("Deselektiere Feature " + this.layerId, 4);
+    var layer = (<any>kvm.map)._layers[this.layerId];
     if (this.layerId) {
-      (<any>kvm.map)._layers[this.layerId].setStyle(this.getStyle(kvm.activeLayer));
+      layer.setStyle(this.getStyle(kvm.activeLayer));
+      kvm.map.zoomIn();
+      kvm.map.zoomOut(); // To refresh layer style
     }
     $(".feature-item").removeClass("selected-feature-item");
   };
@@ -503,23 +507,17 @@ export function Feature(
    * If the classitem value matches a class its style will be returned.
    * If not the defaultStyle of the layer will be returned.
    * For all missing settings in class style, default values will be taken.
+   * @return leafletPathOptions
    */
   this.getStyle = function (layer) {
-    let matchingClass: any = {};
+    let matchingClass: Klasse;
     let style: any = {};
-    let defaultStyle = layer.getDefaultStyle();
     if (typeof (matchingClass = layer.getClass(this.get(layer.settings.classitem))) == "undefined") {
-      style = defaultStyle;
+      style = layer.getDefaultPathOptions();
     } else {
       console.log("%s: Use styles from matching class.", layer.title);
-      const classStyle = matchingClass.style;
-      style.color = kvm.rgbToHex(layer.get("geometry_type") == "Line" ? classStyle.fillColor : classStyle.color) || defaultStyle.color;
-      style.opacity = classStyle.opacity / 100 || defaultStyle.opacity;
-      style.fillColor = kvm.rgbToHex(layer.get("geometry_type") == "Line" ? classStyle.color : classStyle.fillColor) || defaultStyle.fillcolor;
-      style.fillOpacity = classStyle.fillOpacity / 100 || defaultStyle.fillOpacity;
-      style.weight = classStyle.weight || defaultStyle.weight;
+      style = matchingClass.getLeafletPathOptions();
     }
-    style.fill = this.options.geometry_type != "Line";
     return style;
   };
 

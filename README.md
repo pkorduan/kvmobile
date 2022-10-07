@@ -14,6 +14,23 @@ Doku zu kvmobile: https://kvwmap.de/index.php/kvmobile
 Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.de/public/kvmobile/
 
 # Change log
+## 1.9.4
+  * Feature
+    * A click on the feature lists header deselect the currently active feature.
+  * Bugfix
+    * Fix click on Google to search in feature list.
+## 1.9.3
+  * Maintainance
+    * Get and show AppVersion from cordova build environment, No need anymore to change the version number in index.html and app.js
+  * Bugfix
+    * Use Default Color if line have not a color in class style 
+## 1.9.2
+  * Features
+    * Beim Synchronisieren der Daten werden auch die lokal erfassten Bilder synchronisiert.
+    * Unterdrücken der Erfolgsmeldungen beim Speichern eines Datensätzes und eines Bildes
+## 1.9.1
+  * Features
+    * Style Layer also with opacity
 ## 1.9.0
   * Features
     * Make only synced layer editable

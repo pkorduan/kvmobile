@@ -9,19 +9,6 @@ module.exports = [
         ]
     },
     {
-        "file": "plugins/cordova-plugin-background-geolocation/www/BackgroundGeolocation.js",
-        "id": "cordova-plugin-background-geolocation.BackgroundGeolocation",
-        "pluginId": "cordova-plugin-background-geolocation",
-        "clobbers": [
-            "BackgroundGeolocation"
-        ]
-    },
-    {
-        "file": "plugins/cordova-plugin-background-geolocation/www/radio.js",
-        "id": "cordova-plugin-background-geolocation.radio",
-        "pluginId": "cordova-plugin-background-geolocation"
-    },
-    {
         "file": "plugins/cordova-plugin-camera/www/CameraConstants.js",
         "id": "cordova-plugin-camera.Camera",
         "pluginId": "cordova-plugin-camera",
@@ -356,6 +343,33 @@ module.exports = [
         "id": "cordova-sqlite-storage.SQLiteProxy",
         "pluginId": "cordova-sqlite-storage",
         "runs": true
+    },
+    {
+        "file": "plugins/cordova-plugin-background-geolocation/www/BackgroundGeolocation.js",
+        "id": "cordova-plugin-background-geolocation.BackgroundGeolocation",
+        "pluginId": "cordova-plugin-background-geolocation",
+        "clobbers": [
+            "BackgroundGeolocation"
+        ]
+    },
+    {
+        "file": "plugins/cordova-plugin-background-geolocation/www/radio.js",
+        "id": "cordova-plugin-background-geolocation.radio",
+        "pluginId": "cordova-plugin-background-geolocation"
+    },
+    {
+        "file": "plugins/cordova-plugin-app-version/www/AppVersionPlugin.js",
+        "id": "cordova-plugin-app-version.AppVersionPlugin",
+        "pluginId": "cordova-plugin-app-version",
+        "clobbers": [
+            "cordova.getAppVersion"
+        ]
+    },
+    {
+        "file": "plugins/cordova-plugin-app-version/src/browser/AppVersionProxy.js",
+        "id": "cordova-plugin-app-version.AppVersionProxy",
+        "pluginId": "cordova-plugin-app-version",
+        "runs": true
     }
 ];
 module.exports.metadata = 
@@ -363,7 +377,6 @@ module.exports.metadata =
 {
     "com.ionic.keyboard": "2.0.1",
     "cordova-plugin-android-fingerprint-auth": "1.5.0",
-    "cordova-plugin-background-geolocation": "3.1.0",
     "cordova-plugin-compat": "1.1.0",
     "cordova-plugin-camera": "2.4.1",
     "cordova-plugin-device": "1.1.6",
@@ -376,7 +389,9 @@ module.exports.metadata =
     "cordova-plugin-network-information": "1.3.3",
     "cordova-plugin-whitelist": "1.3.3",
     "cordova-sqlite-evplus-legacy-attach-detach-free": "0.8.3-pre5",
-    "cordova-sqlite-storage": "5.1.0"
+    "cordova-sqlite-storage": "5.1.0",
+    "cordova-plugin-background-geolocation": "3.1.0",
+    "cordova-plugin-app-version": "0.1.14"
 }
 // BOTTOM OF METADATA
 });

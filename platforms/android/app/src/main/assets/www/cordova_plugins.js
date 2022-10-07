@@ -18,19 +18,6 @@ cordova.define('cordova/plugin_list', function(require, exports, module) {
       ]
     },
     {
-      "id": "cordova-plugin-background-geolocation.BackgroundGeolocation",
-      "file": "plugins/cordova-plugin-background-geolocation/www/BackgroundGeolocation.js",
-      "pluginId": "cordova-plugin-background-geolocation",
-      "clobbers": [
-        "BackgroundGeolocation"
-      ]
-    },
-    {
-      "id": "cordova-plugin-background-geolocation.radio",
-      "file": "plugins/cordova-plugin-background-geolocation/www/radio.js",
-      "pluginId": "cordova-plugin-background-geolocation"
-    },
-    {
       "id": "cordova-plugin-camera.Camera",
       "file": "plugins/cordova-plugin-camera/www/CameraConstants.js",
       "pluginId": "cordova-plugin-camera",
@@ -329,12 +316,32 @@ cordova.define('cordova/plugin_list', function(require, exports, module) {
       "clobbers": [
         "SQLitePlugin"
       ]
+    },
+    {
+      "id": "cordova-plugin-background-geolocation.BackgroundGeolocation",
+      "file": "plugins/cordova-plugin-background-geolocation/www/BackgroundGeolocation.js",
+      "pluginId": "cordova-plugin-background-geolocation",
+      "clobbers": [
+        "BackgroundGeolocation"
+      ]
+    },
+    {
+      "id": "cordova-plugin-background-geolocation.radio",
+      "file": "plugins/cordova-plugin-background-geolocation/www/radio.js",
+      "pluginId": "cordova-plugin-background-geolocation"
+    },
+    {
+      "id": "cordova-plugin-app-version.AppVersionPlugin",
+      "file": "plugins/cordova-plugin-app-version/www/AppVersionPlugin.js",
+      "pluginId": "cordova-plugin-app-version",
+      "clobbers": [
+        "cordova.getAppVersion"
+      ]
     }
   ];
   module.exports.metadata = {
     "com.ionic.keyboard": "2.0.1",
     "cordova-plugin-android-fingerprint-auth": "1.5.0",
-    "cordova-plugin-background-geolocation": "3.1.0",
     "cordova-plugin-compat": "1.1.0",
     "cordova-plugin-camera": "2.4.1",
     "cordova-plugin-device": "1.1.6",
@@ -346,6 +353,8 @@ cordova.define('cordova/plugin_list', function(require, exports, module) {
     "cordova-plugin-inappbrowser": "5.0.0",
     "cordova-plugin-network-information": "1.3.3",
     "cordova-plugin-whitelist": "1.3.3",
-    "cordova-sqlite-evplus-legacy-attach-detach-free": "0.8.3-pre5"
+    "cordova-sqlite-evplus-legacy-attach-detach-free": "0.8.3-pre5",
+    "cordova-plugin-background-geolocation": "3.1.0",
+    "cordova-plugin-app-version": "0.1.14"
   };
 });

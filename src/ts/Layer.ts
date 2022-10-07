@@ -17,6 +17,7 @@ export class Layer {
   attributes: any;
   layerGroup: L.LayerGroup<any>;
   attribute_index: any;
+  classes: Klasse[];
   features: any;
   activeFeature: any;
   numFeatures: number;
@@ -71,6 +72,14 @@ export class Layer {
         hash[elem.settings.name] = Object.keys(hash).length;
         return hash;
       }, {});
+    }
+
+    if (this.settings.classes) {
+      this.classes = this.settings.classes.map((classSettings) => {
+        let klasse = new Klasse(classSettings);
+        klasse.layer = this;
+        return klasse;
+      });
     }
 
     this.features = {};
@@ -795,7 +804,7 @@ export class Layer {
             }
           }
         } else {
-          kvm.msg("Keine neuen Bilder zum Hochladen vorhanden.");
+          //kvm.msg("Keine neuen Bilder zum Hochladen vorhanden.");
           icon = $("#syncImagesIcon_" + this.getGlobalId());
           if (icon.hasClass("fa-spinner")) icon.toggleClass("fa-upload fa-spinner fa-spin");
           $("#sperr_div").hide();
@@ -840,7 +849,7 @@ export class Layer {
         $("#sperr_div").hide();
 
         var msg = "Fehler beim Hochladen der Datei: " + error.code + " source: " + error.code;
-        kvm.msg(msg);
+        //kvm.msg(msg);
         kvm.log(msg);
       }.bind(icon);
 
@@ -1238,7 +1247,7 @@ export class Layer {
 
     $.each(this.features, (key, feature) => {
       let vectorLayer;
-      const layer = this;
+      const layer: Layer = this;
 
       if (feature.newGeom) {
         //console.log('Zeichne Feature: %o in Layer: ', feature, this.get('title'));
@@ -1276,7 +1285,7 @@ export class Layer {
         });
 
         // Setze Style für Kartenobjekt
-        var style = layer.hasClasses() ? feature.getStyle(layer) : layer.getDefaultStyle();
+        var style = layer.hasClasses() ? feature.getStyle(layer) : layer.getDefaultPathOptions();
         console.log("Draw feature %o with style %o", feature, style);
         vectorLayer.setStyle(style);
 
@@ -1302,8 +1311,8 @@ export class Layer {
     If no expression match it returns undefined
   */
   getClass(value) {
-    return this.settings.classes.find((element) => {
-      return element.expression.trim() == "" || element.expression == value;
+    return this.classes.find((element) => {
+      return element.get("expression").trim() == "" || element.get("expression") == value;
     });
   }
 
@@ -1322,12 +1331,12 @@ export class Layer {
     return this.settings.classes.length > 0;
   }
 
-  getDefaultStyle() {
+  getDefaultPathOptions() {
     let style = {
       color: "#000000",
-      opacity: 0.8,
+      opacity: 1.0,
       fillColor: "#333333",
-      fillOpacity: 0.8,
+      fillOpacity: 1.0,
       weight: 2,
       stroke: true,
       fill: this.settings.geometry_type != "Line",
@@ -1919,7 +1928,7 @@ export class Layer {
     $(".popup-aendern-link").show();
     $("#saveFeatureButton").toggleClass("active-button inactive-button");
     kvm.controller.mapper.clearWatch();
-    kvm.msg(this.succMsg, "Hinweis");
+    //kvm.msg(this.succMsg, "Hinweis");
   }
   //e2ccff60-0d23-4d03-8b52-ca80f2da5b42
   /**
@@ -2734,6 +2743,9 @@ export class Layer {
               if (buttonIndex == 1) {
                 // ja
                 layer.syncData();
+                $("#syncImageIcon_" + layer.getGlobalId()).toggleClass("fa-upload fa-spinner fa-spin");
+                $("#sperr_div").show();
+                layer.syncImages();
               } else {
                 $("#syncLayerIcon_" + layer.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
                 $("#sperr_div").hide();
@@ -3021,13 +3033,13 @@ export class Layer {
         <div class="layer-functions-div">\
           <button id="syncLayerButton_${this.getGlobalId()}" value="${this.getGlobalId()}" class="settings-button sync-layer-button active-button layer-function-button">\
             <i id="syncLayerIcon_${this.getGlobalId()}" class="fa fa-refresh" aria-hidden="true"></i>\
-          </button> Daten synchronisieren\
+          </button> Daten Synchronisieren\
         </div>\
-        <div class="layer-functions-div">\
+        <!-- div class="layer-functions-div">\
           <button id="syncImagesButton_${this.getGlobalId()}" value="${this.getGlobalId()}" class="settings-button sync-images-button active-button layer-function-button">\
             <i id="syncImagesIcon_${this.getGlobalId()}" class="fa fa-upload" aria-hidden="true"></i>\
           </button> Bilder synchronisieren\
-        </div>\
+        </div//-->\
         <div class="layer-functions-div">\
           <button id="clearLayerButton_${this.getGlobalId()}" value="${this.getGlobalId()}" class="settings-button clear-layer-button active-button layer-function-button">\
             <i id="clearLayerIcon_${this.getGlobalId()}" class="fa fa-ban" aria-hidden="true"></i>\
@@ -3131,9 +3143,8 @@ export class Layer {
   }
 
   getClassStyleItems() {
-    return this.settings.classes
-      .map((settings) => {
-        let klasse = new Klasse(settings);
+    return this.classes
+      .map((klasse) => {
         return `<div class="class-div">${klasse.getLegendItem(this.get("geometry_type"))}</div>`;
       })
       .join("");

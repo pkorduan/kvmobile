@@ -119,6 +119,14 @@
     "is_top_level": false,
     "variables": {}
   },
+  "cordova-plugin-inappbrowser": {
+    "source": {
+      "type": "registry",
+      "id": "cordova-plugin-inappbrowser@5.0.0"
+    },
+    "is_top_level": true,
+    "variables": {}
+  },
   "cordova-plugin-background-geolocation": {
     "source": {
       "type": "registry",
@@ -127,10 +135,10 @@
     "is_top_level": true,
     "variables": {}
   },
-  "cordova-plugin-inappbrowser": {
+  "cordova-plugin-app-version": {
     "source": {
       "type": "registry",
-      "id": "cordova-plugin-inappbrowser@5.0.0"
+      "id": "cordova-plugin-app-version"
     },
     "is_top_level": true,
     "variables": {}
