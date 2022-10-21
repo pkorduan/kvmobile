@@ -40,10 +40,16 @@ export class Layer {
     this.stelle = stelle;
     this.settings = typeof settings == "string" ? JSON.parse(settings) : settings;
     this.title = kvm.coalempty(this.get("alias"), this.get("title"), this.get("table_name"), "overlay" + this.getGlobalId());
-    console.log("%s: Erzeuge Layerobjekt (id: %s) in Stelle: ", this.title, stelle.get("id"));
+    console.log(
+      "%s: Erzeuge Layerobjekt (id: %s) mit drawingorder: %s in Stelle: %s",
+      this.title,
+      this.settings.id,
+      this.settings.drawingorder,
+      stelle.get("id")
+    );
     if (this.settings["name_attribute"] == "") {
       this.settings["name_attribute"] = this.settings["id_attribute"];
-      console.log("Set id_attribute: %s as name_attribute", this.settings["id_attribute"]);
+      //console.log("Set id_attribute: %s as name_attribute", this.settings["id_attribute"]);
     }
     /*
     // diese 3 Settings werden hier statisch gesetzt für den Fall dass der Server die Attribute noch nicht per mobile_get_layer liefert.
@@ -428,6 +434,7 @@ export class Layer {
                 kvm.log("Tabelle erfolgreich angelegt.", 3);
                 // update layer name in layerlist for this layer
                 this.appendToApp();
+                this.saveToStore();
                 this.setActive();
                 kvm.setConnectionStatus();
               }.bind(this),
@@ -680,7 +687,6 @@ export class Layer {
         console.log(this.get("title") + ": response: %o", response);
         this.numExecutedDeltas = 0;
         this.numReturnedDeltas = response.deltas.length;
-        // TODO unused debug_r = response.deltas;
         console.log(this.get("title") + ": numReturendDeltas before execute deltas: %s", this.numReturnedDeltas);
         console.log(this.get("title") + ": response.deltas.length: %s", response.deltas.length);
 
@@ -2673,17 +2679,22 @@ export class Layer {
    * bind the events on functions buttons
    * add layer in layer control of the map
    * save layer object in kvm.layers array and
-   * save layerSettings to store
    * Do not read data for listing and mapping
    */
   appendToApp() {
     //console.log("%s: Füge Layer zur Layerliste hinzu.", this.title);
-    $("#layer_list").append(this.getListItem());
+    // ToDo: insert in list und addOverlay an richtiger Stelle entsprechend der Drawingorder
+    const index = kvm.activeStelle.getLayerDrawingIndex(this);
+    if (index == 0) {
+      $("#layer_list").prepend(this.getListItem());
+    } else {
+      //ToDo hier die Funktion einbauen, die an Hand des index die richtige Layer id findet.
+      $(this.getListItem()).insertAfter("#layer_" + kvm.activeStelle.getLayerDrawingGlobalId(index - 1));
+    }
     this.bindLayerEvents(this.getGlobalId());
     //    kvm.map.addLayer(this.layerGroup);
     kvm.controls.layers.addOverlay(this.layerGroup, '<span id="layerCtrLayerDiv_' + this.getGlobalId() + '">' + this.title + "</span>");
     kvm.layers[this.getGlobalId()] = this;
-    this.saveToStore();
   }
 
   /*
@@ -3023,10 +3034,9 @@ export class Layer {
     //console.log('Entferne layer von map');
     kvm.map.removeLayer(this.layerGroup);
     //console.log('Lösche activeLayer von kvm layers array');
-    const i = kvm.layers.indexOf(this.get("id"));
-    if (i > -1) {
-      kvm.layers.splice(i, 1);
-    }
+    delete kvm.layers[this.getGlobalId()];
+    //console.log('Lösche layer und seine id aus dem store');
+    this.removeFromStore();
   }
 
   addActiveFeature() {
@@ -3085,8 +3095,7 @@ export class Layer {
             ${this.getLayerinfoItems().join("<br>")}\
           </div>
         </div>\
-      </div>\
-      <div style="clear: both"></div>`;
+      </div>`;
     /**
              <form oninput="opacityOutput.value = opacity.value; fillOpacityOutput.value = fillOpacity.value;">\
               <div class="use-custom-style-div">\
@@ -3254,22 +3263,38 @@ this.get("width") || "1"
   }
 
   saveToStore() {
-    console.log(this.title + ": Speicher Layer Settings");
     //console.log('layerIds vor dem Speichern: %o', kvm.store.getItem('layerIds_' + this.stelle.get('id')));
     this.settings.loaded = false;
-    const layerIds = JSON.parse(kvm.store.getItem("layerIds_" + this.stelle.get("id"))) || [];
+    let layerIds = JSON.parse(kvm.store.getItem("layerIds_" + this.stelle.get("id"))) || [];
     const settings = JSON.stringify(this.settings);
 
     kvm.store.setItem("layerSettings_" + this.getGlobalId(), settings);
     //console.log("%s: layerSettings_%s eingetragen.", this.title, this.getGlobalId());
 
     if ($.inArray(this.get("id"), layerIds) < 0) {
-      layerIds.push(this.get("id"));
-      //console.log(this.title + ": layer id in layerIds Liste aufgenommen.");
+      console.log("%s->saveToStore: Insert layerId %s in layerIds List at index %s", this.title, this.get("id"), this.stelle.getLayerDrawingIndex(this));
+      layerIds.splice(this.stelle.getLayerDrawingIndex(this), 0, this.get("id"));
       kvm.store.setItem("layerIds_" + this.stelle.get("id"), JSON.stringify(layerIds));
-      //console.log("%s: neue layerId %s eingetragen.", this.title, this.get("id"));
     }
-    //console.log("%s: layerIds nach dem Speichern: %o", this.title, kvm.store.getItem("layerIds_" + this.stelle.get("id")));
+
+    console.log(
+      "%s->saveToStore: layerIds: %s, layerSettings_%s: %s",
+      this.title,
+      kvm.store.getItem("layerIds_" + this.stelle.get("id")),
+      this.getGlobalId(),
+      kvm.store.getItem("layerSettings_" + this.getGlobalId())
+    );
+  }
+
+  removeFromStore() {
+    //console.log("removeFromStore");
+    console.log("layerIds in Store vor dem Löschen: %s", kvm.store.getItem("layerIds_" + this.stelle.get("id")));
+    const layerIds = JSON.parse(kvm.store.getItem("layerIds_" + this.stelle.get("id"))) || [];
+    console.log("Entferne LayerID %s aus layerIds Liste im Store.", this.get("id"));
+    layerIds.splice(layerIds.indexOf(this.get("id")), 1);
+    kvm.store.setItem("layerIds_" + this.stelle.get("id"), JSON.stringify(layerIds));
+    console.log("layerIds in Store nach dem Löschen: %s", kvm.store.getItem("layerIds_" + this.stelle.get("id")));
+    kvm.store.removeItem("layerSettings_" + this.getGlobalId());
   }
 
   getSyncPrivilege() {

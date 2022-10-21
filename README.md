@@ -14,6 +14,9 @@ Doku zu kvmobile: https://kvwmap.de/index.php/kvmobile
 Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.de/public/kvmobile/
 
 # Change log
+## 1.9.5
+  * Feature
+    * Die Reihenfolge der Layer unter Einstellungen und in der Legende richtet sich nach der drawingorder vom Server
 ## 1.9.4
   * Feature
     * A click on the feature lists header deselect the currently active feature.

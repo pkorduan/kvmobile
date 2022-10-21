@@ -4,7 +4,6 @@ import { Overlay } from "./Overlay";
 
 export class Stelle {
   settings: any;
-  numLayers: any;
   numOverlays: any;
   constructor(settings = {}) {
     this.settings = typeof settings == "string" ? JSON.parse(settings) : settings;
@@ -74,7 +73,7 @@ export class Stelle {
             var reader = new FileReader();
 
             reader.onloadend = function () {
-              kvm.log("Download Result: " + this.result, 4);
+              //kvm.log("Download Result: " + this.result, 4);
               var errMsg = "";
 
               if (typeof this.result === "string" && this.result.indexOf('form name="login"') == -1) {
@@ -200,26 +199,22 @@ export class Stelle {
               var items = [],
                 validationResult = "";
 
-              kvm.log("Download Result: " + this.result, 4);
+              //kvm.log("Download Result: " + this.result, 4);
               const resultObj = <any>kvm.parseLayerResult(this.result);
 
               if (resultObj.success) {
-                kvm.log("layerResult is valid!", 4);
-                kvm.log("Download erfolgreich.", 3);
                 //console.log('resultObj: %o', resultObj);
-
-                //kvm.activeStelle.numLayers = resultObj.layers.length; Anzahl bleibt die gleiche wenn nur ein Layer neu geladen wird.
 
                 var layerSettings = resultObj.layers.filter(function (layer) {
                     return layer.id == layerId;
                   })[0],
                   layer;
 
-                kvm.activeLayer.removeFromApp();
+                kvm.activeLayer.removeFromApp(); // includes removeFromStore()
                 console.log("Erzeuge neuen Layer");
                 layer = new Layer(kvm.activeStelle, layerSettings);
-                layer.saveToStore();
-                layer.updateTable(); // function includes appendToApp() and setActive()
+                // layer.saveToStore(); // ist in appendToApp() enthalten
+                layer.updateTable(); // function includes appendToApp(), saveToStore and setActive()
               } else {
                 kvm.log("Fehlerausgabe von parseLayerResult!", 4);
                 kvm.msg(resultObj.errMsg, "2");
@@ -239,6 +234,33 @@ export class Stelle {
       this.downloadError,
       true
     );
+  }
+
+  /**
+   * Ermittelt den index des layers entsprechend seiner Zeichenreihenfolge.
+   * Im Beispiel von Zeichenreihenfolgen [10, 100, 100, 200, 200, 300, 400]
+   * würde die Funktion für der Layer mit drawingorder 200 den index 4 liefern.
+   * Ein splice(index, 0, Wert) würde den Wert vor die 300 eintragen.
+   * [10, 100, 100, 200, 200, 200, 300, 400]
+   */
+  getLayerDrawingIndex(layer) {
+    //console.log("Ermitteln des erforderlichen Index für die layerIds Liste entsprechend der drawingorder %o", layer);
+    const layers = Object.entries(kvm.layers);
+    let index = layers
+      .sort((a, b) => (parseInt(a[1].get("drawingorder")) > parseInt(b[1].get("drawingorder")) ? 1 : -1))
+      .findIndex(([k, v], i) => parseInt(v.get("drawingorder")) > parseInt(layer.get("drawingorder")));
+    if (index == -1) {
+      index = layers.length;
+    }
+    console.log("getLayerDrawingIndex für Layer %s: %s", layer.get("title"), index);
+    return index;
+  }
+
+  getLayerDrawingGlobalId(index) {
+    const layers = Object.entries(kvm.layers);
+    let globalId = layers.sort((a, b) => (parseInt(a[1].get("drawingorder")) > parseInt(b[1].get("drawingorder")) ? 1 : -1)).map(([k, v], i) => k)[index];
+    console.log("Stelle.getLayerDrawingGlobalId: %s", globalId);
+    return globalId;
   }
 
   downloadError(error: FileTransferError) {
@@ -295,29 +317,16 @@ export class Stelle {
                   });
                 }
                 kvm.store.removeItem("activeLayerId");
-                /*
-                // remove existing overlays
-                console.log("  requestLayers) Entferne existierende Overlays aus der Anwendung.");
-                document.getElementById("overlay_list").innerHTML = "";
-                if ("overlayIds_" + kvm.activeStelle.get("id") in kvm.store) {
-                  JSON.parse(kvm.store["overlayIds_" + kvm.activeStelle.get("id")]).map(function (id) {
-                    var globalId = kvm.activeStelle.get("id") + "_" + id;
-                    if (kvm.overlays[globalId]) {
-                      console.log("  requestLayers) Remove Overlay " + globalId + " from app.");
-                      kvm.overlays[globalId].removeFromApp();
-                    }
-                  });
-                }
-*/
+
                 $("#featurelistHeading").html("Noch keine Layer synchronisiert");
                 $("#featurelistBody").html(
                   'Wählen Sie unter Einstellungen in der Gruppe "Layer" einen Layer aus. Öffnen Sie dann das Optionen Menü und wählen die Funktion "Daten synchronisieren"!'
                 );
                 $("#showSearch").hide();
 
-                kvm.activeStelle.numLayers = resultObj.layers.filter(function (l) {
-                  return l.sync == 1;
-                }).length;
+                // Sortiere Layer settings nach drawing order
+                resultObj.layers.sort((a, b) => (parseInt(a.drawingorder) > parseInt(b.drawingorder) ? 1 : -1));
+
                 // add requested layers
                 console.log("  requestLayers) Füge neu runtergeladene Layer zur Anwendung hinzu.");
                 $.each(resultObj.layers, function (index, layerSetting) {
@@ -326,6 +335,7 @@ export class Stelle {
                   layer = new Layer(kvm.activeStelle, layerSetting);
                   layer.createTable(this);
                   layer.appendToApp();
+                  layer.saveToStore();
                   if (layerSetting.sync != 1) {
                     console.log("  requestLayer Overlay: %s", layerSetting.title);
                     // lade die Daten runter und speicher sie in lokaler Datenbank

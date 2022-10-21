@@ -812,9 +812,11 @@ bis hier */
     }
 
     //    L.PM.initialize({ optIn: true });
+    // ToDo sortFunction hinzufügen die nach drawingorder sortieren kann
     kvm.controls.layers = L.control
       .layers(baseMaps, null, {
         autoZIndex: true,
+        sortLayers: false,
       })
       .addTo(map);
     kvm.controls.locate = L.control

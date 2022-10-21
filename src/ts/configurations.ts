@@ -28,57 +28,6 @@ export const configurations = [
       "2": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#23a325" },
       "3": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#26a7f1" },
     },
-    /*
-          // LK-MSE
-          mapSettings: {
-            newPosSelect: 2,
-            minZoom: 8,
-            maxZoom: 18,
-            startZoom: 8,
-            west: 311109,
-            south: 5894500,
-            east: 428034,
-            north: 5990606,
-            startCenterLat: 53.50467,
-            startCenterLon: 12.96181
-          },
-          kvwmapServerUrl: 'https://geoport-lk-mse.de/supergis',
-          kvwmapServerLoginName: 'paulmobil',
-          kvwmapServerPasswort: '',
-          backgroundLayerOnline: {
-            type: 'tile',
-            url: 'https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png',
-            params: {
-              attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
-            }
-          }
-        */
-    /*
-          // LK-VG
-          mapSettings: {
-            newPosSelect: 2,
-            minZoom: 8,
-            maxZoom: 18,
-            startZoom: 8,
-            west: 339600,
-            south: 5894500,
-            east: 492200,
-            north: 6016500,
-            startCenterLat: 53.78441,
-            startCenterLon: 13.81898
-          },
-          kvwmapServerUrl: 'https://geoportal-vg.de/kvwmap_test',
-          kvwmapServerLoginName: 'kvmobile',
-          kvwmapServerPasswort: '',
-          backgroundLayerOnline: {
-            type: 'tile',
-            url: 'https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png',
-            params: {
-              attribution: 'Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.'
-            }
-          }
-        */
-    // LK-EE
     mapSettings: {
       newPosSelect: 1,
       minZoom: 7,
@@ -91,7 +40,7 @@ export const configurations = [
       startCenterLat: 51.6128,
       startCenterLon: 13.4658,
     },
-    kvwmapServerUrl: "https://geoportal.lkee.de/",
+    kvwmapServerUrl: "https://gdi-service.de/kvwmap_pet_dev",
     kvwmapServerLoginName: "korduanpeter",
     kvwmapServerPasswort: "",
     backgroundLayerSettings: [
@@ -388,7 +337,6 @@ export const configurations = [
   },
   {
     name: "LK-EE",
-    version: "1.7.3",
     dbname: "kvmobile",
     localImgPath: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/",
     localTilePath: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/",
@@ -517,6 +465,16 @@ export const configurations = [
           attribution: "LGB WMS DOP20",
         },
       },
+      /*      {
+        label: "Luftbilder offline",
+        online: false,
+        type: "tile",
+        url: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/dop-20/{z}/{x}/{y}.png",
+        params: {
+          attribution: "LGB WMS DOP20",
+        },
+      }
+*/
     ],
   },
   {
