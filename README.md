@@ -14,6 +14,19 @@ Doku zu kvmobile: https://kvwmap.de/index.php/kvmobile
 Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.de/public/kvmobile/
 
 # Change log
+## 1.9.8
+  * Feature
+    * Nicht Synchronisieren wenn kein Netz
+## 1.9.7
+  * Bugfixes
+    * Korrektur beim Laden der Layer und Daten
+## 1.9.6
+  * Feature
+    * Die App merkt sich welcher View als letztes offen war und zeigt diesen wieder an wenn die App neu gestartet wird.
+    * Die App merkt sich auch den zuletzt eingestellten Zoom und die Mitte vom Kartenview.
+    * Die Reihenfolge der Legende ändert sich gleich wenn ein neu geladener Layer eine neue drawingorder vom Server bekommen hat.
+  * Bugfix
+    * Wenn die App gestartet wurde wird jetzt der richtige activeLayer in der Legende fett hervorgehoben.
 ## 1.9.5
   * Feature
     * Die Reihenfolge der Layer unter Einstellungen und in der Legende richtet sich nach der drawingorder vom Server
@@ -21,7 +34,7 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
   * Feature
     * A click on the feature lists header deselect the currently active feature.
     * Set circle marker radius on class size param.
-  * Bugfix
+  * Bugfixes
     * Fix click on Google to search in feature list.
     * Use also class styles after geometry editing and edit canceling.
 ## 1.9.3

@@ -41,7 +41,7 @@ export const configurations = [
       startCenterLon: 13.4658,
     },
     kvwmapServerUrl: "https://gdi-service.de/kvwmap_pet_dev",
-    kvwmapServerLoginName: "korduanpeter",
+    kvwmapServerLoginName: "korduan",
     kvwmapServerPasswort: "",
     backgroundLayerSettings: [
       /*    {

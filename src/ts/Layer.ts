@@ -13,7 +13,7 @@ import { Klasse } from "./Klasse";
 export class Layer {
   stelle: Stelle;
   settings: any;
-  runningSyncVersion: number;
+  runningSyncVersion: number = 0;
   attributes: any;
   layerGroup: L.LayerGroup<any>;
   attribute_index: any;
@@ -29,11 +29,13 @@ export class Layer {
   other: string;
   msg: any;
   title: string;
-  numReturnedDeltas: string;
+  numReturnedDeltas: number;
   response: any;
   hasSyncPrivilege: boolean;
   hasEditPrivilege: boolean;
   hasDeletePrivilege: boolean;
+  numExecutedDeltas: number;
+  isLoaded: boolean = false;
 
   constructor(stelle: Stelle, settings = {}) {
     var layer_ = this;
@@ -63,16 +65,15 @@ export class Layer {
     this.hasSyncPrivilege = this.getSyncPrivilege();
     this.hasEditPrivilege = this.getEditPrivilege();
     this.hasDeletePrivilege = this.getDeletePrivilege();
-    this.runningSyncVersion = 0;
     if (typeof this.get("syncVersion") === "undefined") {
       this.set("syncVersion", this.runningSyncVersion);
     }
-    this.layerGroup = L.layerGroup();
+    this.layerGroup = L.layerGroup([], { attribution: this.get("drawingorder") });
     this.attributes = "uuid";
 
     if (this.settings.attributes) {
-      this.attributes = $.map(this.settings.attributes, function (attribute) {
-        return new Attribute(layer_, attribute);
+      this.attributes = $.map(this.settings.attributes, (attribute) => {
+        return new Attribute(this, attribute);
       });
       this.attribute_index = this.attributes.reduce((hash, elem) => {
         hash[elem.settings.name] = Object.keys(hash).length;
@@ -133,7 +134,7 @@ export class Layer {
    * - setActive if layer is active
    */
   readData(limit: any = 50000, offset: any = 0, order: any = "") {
-    console.log(this.get("title") + ": readData from table: " + this.get("schema_name") + "_" + this.get("table_name"));
+    //console.log(this.get("title") + ": readData from table: " + this.get("schema_name") + "_" + this.get("table_name"));
     //  order = (this.get('name_attribute') != '' ? this.get('name_attribute') : this.get('id_attribute'));
     $("#sperr_div").show();
 
@@ -201,12 +202,9 @@ export class Layer {
     kvm.db.executeSql(
       sql,
       [],
-      function (rs) {
+      (rs) => {
         console.log("Layer.readData result: " + JSON.stringify(rs));
-
-        var numRows = rs.rows.length,
-          item,
-          i;
+        const numRows = rs.rows.length;
 
         console.log("  readData) " + numRows + " Datensätze gelesen, erzeuge Featureliste neu...");
         this.numFeatures = numRows;
@@ -223,8 +221,8 @@ export class Layer {
         }
 
         // create the features for this layer
-        for (i = 0; i < numRows; i++) {
-          var item = rs.rows.item(i);
+        for (let i = 0; i < numRows; i++) {
+          const item = rs.rows.item(i);
           //console.log('Item ' + i + ': %o', item);
           //console.log('Erzeuge Feature %s: ', i);
           //console.log('Erzeuge Feature von item %o', item);
@@ -251,11 +249,12 @@ export class Layer {
         if (this.layerGroup) {
           this.layerGroup.clearLayers();
         }
-        console.log("%s: readData) > drawFeatures", this.title);
+        //console.log("%s: readData) > drawFeatures", this.title);
         this.drawFeatures();
+        kvm.activeStelle.finishLayerLoading(this);
         $("#sperr_div").hide();
-      }.bind(this),
-      function (error) {
+      },
+      (error) => {
         kvm.log("Fehler bei der Abfrage der Daten aus lokaler Datenbank: " + error.message);
         $("#sperr_div").hide();
       }
@@ -266,7 +265,7 @@ export class Layer {
    * create the list of features in list view at once
    */
   createFeatureList() {
-    console.log("createFeatureList for layer %s", this.get("title"));
+    //console.log("createFeatureList for layer %s", this.get("title"));
     kvm.log("Erzeuge die Liste der Datensätze neu.");
     $("#featurelistHeading").html(this.get("alias") ? this.get("alias") : this.get("title"));
     $("#featurelistBody").html("");
@@ -285,7 +284,7 @@ export class Layer {
     $("#featurelistBody").append(html);
     kvm.bindFeatureItemClickEvents();
     if (Object.keys(this.features).length > 0) {
-      kvm.showItem("featurelist");
+      //      kvm.showItem("featurelist");
       $("#numDatasetsText").html(Object.keys(this.features).length.toString()).show();
     }
     $("#sperr_div").hide();
@@ -302,22 +301,20 @@ export class Layer {
       keys = this.getTableColumns().join(", "),
       values =
         "(" +
-        $.map(items, function (item) {
+        $.map(items, (item) => {
           //console.log('item.geometry %', item.geometry);
           if (item.geometry) {
             return $.map(
-              kvm.activeLayer.attributes.filter(function (attr) {
+              this.attributes.filter((attr) => {
                 return attr.get("saveable") == "1";
               }),
-              function (attr) {
+              (attr) => {
                 var type = attr.get("type"),
-                  value = type == "geometry" ? this.item.geometry : this.item.properties[attr.get("name")];
+                  value = type == "geometry" ? item.geometry : item.properties[attr.get("name")];
                 //console.log('type: %s value: %s', type, value);
                 const v = attr.toSqliteValue(type, value);
                 return v;
-              }.bind({
-                item: item,
-              })
+              }
             ).join(", ");
           }
         }).join("), (") +
@@ -335,8 +332,9 @@ export class Layer {
     kvm.db.executeSql(
       sql,
       [],
-      function (rs) {
+      (rs) => {
         console.log("Daten erfolgreich in Datenbank geschrieben.");
+        this.isLoaded = true; // Layer successfully loaded. All other requestData calls will only sync
         if (parseInt(this.get("sync"))) {
           this.set("syncVersion", this.runningSyncVersion);
           $("#syncVersionSpan_" + this.getGlobalId()).html(this.runningSyncVersion.toString());
@@ -344,27 +342,25 @@ export class Layer {
         }
         this.saveToStore();
         this.readData();
-      }.bind(this),
-      function (error) {
+      },
+      (error) => {
         this.set("syncVersion", 0);
         $("#syncVersionSpan_" + this.getGlobalId()).html("0");
         kvm.log("Fehler beim Zugriff auf die Datenbank: " + error.message, 1);
         alert("Fehler beim Zugriff auf die Datenbank: " + error.message);
-      }.bind(this)
+      }
     );
   }
 
   createTables() {
     kvm.log("Layer.createTables", 3);
-    var layerIds = JSON.parse(kvm.store.getItem("layerIds_" + this.stelle.get("id"))),
-      layer_ = this,
-      i;
+    const layerIds = JSON.parse(kvm.store.getItem("layerIds_" + this.stelle.get("id")));
 
-    for (i = 0; i < layerIds.length; i++) {
+    for (let i = 0; i < layerIds.length; i++) {
       this.set("id", layerIds[i]);
       this.settings = JSON.parse(kvm.store.getItem("layerSettings_" + this.getGlobalId()));
-      this.attributes = $.map(this.settings.attributes, function (attribute) {
-        return new Attribute(layer_, attribute);
+      this.attributes = $.map(this.settings.attributes, (attribute) => {
+        return new Attribute(this, attribute);
       });
       this.createTable();
     }
@@ -434,9 +430,11 @@ export class Layer {
                 kvm.log("Tabelle erfolgreich angelegt.", 3);
                 // update layer name in layerlist for this layer
                 this.appendToApp();
-                this.saveToStore();
                 this.setActive();
+                kvm.activeStelle.sortOverlays();
+                this.saveToStore();
                 kvm.setConnectionStatus();
+                this.requestData();
               }.bind(this),
               function (error) {
                 var tableName = this.get("schema_name") + "_" + this.get("table_name");
@@ -536,46 +534,47 @@ export class Layer {
    */
   requestData() {
     // ToDo Ab hier in einem Fenster den Fortschritt des Ladevorganges anzeigen.
-    kvm.log("Frage Daten vom Server ab.<br>Das kann je nach Datenmenge und<br>Internetverbindung einige Minuten dauern.");
-    var fileTransfer = new FileTransfer(),
-      filename = "data_layer_" + this.getGlobalId() + ".json",
-      url = this.getSyncUrl();
+    //kvm.log("Frage Daten vom Server ab.<br>Das kann je nach Datenmenge und<br>Internetverbindung einige Minuten dauern.");
+    let fileTransfer = new FileTransfer();
+    let filename = "data_layer_" + this.getGlobalId() + ".json";
 
-    kvm.log("Speicher die Daten in Datei: " + cordova.file.dataDirectory + filename, 3);
+    const url = this.isLoaded ? this.getSyncUrl() : this.getDataUrl();
 
+    console.log("Speicher die Daten in Datei: %s", cordova.file.dataDirectory + filename);
+
+    //    this.setActive();
     fileTransfer.download(
       url,
       cordova.file.dataDirectory + filename,
-      function (fileEntry) {
+      (fileEntry) => {
         fileEntry.file(
-          function (file) {
+          (file) => {
             var reader = new FileReader();
 
-            reader.onloadend = function () {
+            reader.onloadend = (evt) => {
               kvm.log("Download der Daten ist abgeschlossen.", 3, true);
               var items = [],
                 collection: any = {},
                 errMsg = "";
 
-              //console.log('Download Ergebnis (Head 1000): %s', this.result.substring(0, 1000));
+              console.log("Download Ergebnis (Head 1000): %s", evt.target.result.toString().substring(0, 1000));
               //  try {
               /// TODO !!!!
               //(<any>this.result) = (<any>this.result).replace("\n", "\\\n");
-              collection = JSON.parse(<string>this.result);
-              var layer = kvm.activeLayer;
-              console.log("Layer " + layer.get("title") + ": Anzahl empfangene Datensätze: " + collection.features.length);
-              console.log("Layer " + layer.get("title") + ": Version in Response: " + collection.lastDeltaVersion);
-              layer.runningSyncVersion = collection.lastDeltaVersion;
-              console.log("Layer " + layer.get("title") + ": Version der Daten: " + layer.runningSyncVersion);
+              collection = JSON.parse(<string>evt.target.result);
+              //console.log("Layer " + layer.get("title") + ": Anzahl empfangene Datensätze: " + collection.features.length);
+              //console.log("Layer " + layer.get("title") + ": Version in Response: " + collection.lastDeltaVersion);
+              this.runningSyncVersion = collection.lastDeltaVersion;
+              //console.log("Layer " + layer.get("title") + ": Version der Daten: " + layer.runningSyncVersion);
               if (collection.features.length > 0) {
-                layer.writeData(collection.features);
+                this.writeData(collection.features);
               } else {
                 kvm.msg("Keine Daten zum Download vorhanden. Lokale Änderungen können jetzt synchronisiert werden.", "Hinweis");
-                layer.set("syncVersion", layer.runningSyncVersion);
-                $("#syncVersionSpan_" + layer.getGlobalId()).html(layer.runningSyncVersion.toString());
-                layer.set("syncLastLocalTimestamp", Date());
-                if ($("#syncLayerIcon_" + layer.getGlobalId()).hasClass("fa-spinner")) {
-                  $("#syncLayerIcon_" + layer.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
+                this.set("syncVersion", this.runningSyncVersion);
+                $("#syncVersionSpan_" + this.getGlobalId()).html(this.runningSyncVersion.toString());
+                this.set("syncLastLocalTimestamp", Date());
+                if ($("#syncLayerIcon_" + this.getGlobalId()).hasClass("fa-spinner")) {
+                  $("#syncLayerIcon_" + this.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
                 }
                 $("#sperr_div").hide();
               }
@@ -620,7 +619,7 @@ export class Layer {
     window.requestFileSystem(
       window.TEMPORARY,
       5 * 1024 * 1024,
-      function (fs) {
+      (fs) => {
         kvm.log(this.title + ": file system open: " + fs.name, 4);
         var fileName = "delta_layer_" + this.getGlobalId() + ".json";
         var dirEntry = fs.root;
@@ -631,11 +630,11 @@ export class Layer {
         dirEntry.getFile(
           fileName,
           { create: true, exclusive: false },
-          function (fileEntry) {
+          (fileEntry) => {
             // Write something to the file before uploading it.
             this.writeFile(fileEntry, deltas_);
-          }.bind(this),
-          function (err) {
+          },
+          (err) => {
             kvm.msg("Fehler beim Erzeugen der Delta-Datei, die geschickt werden soll.", "Upload Änderungen");
             if ($("#syncLayerIcon_" + this.getGlobalId()).hasClass("fa-spinner")) {
               $("#syncLayerIcon_" + this.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
@@ -643,8 +642,8 @@ export class Layer {
             }
           }
         );
-      }.bind(this),
-      function (err) {
+      },
+      (err) => {
         kvm.log("Fehler beim öffnen des Filesystems", 1);
       }
     );
@@ -653,32 +652,30 @@ export class Layer {
   writeFile(fileEntry, deltas) {
     console.log(this.title + ": writeFile");
     // Create a FileWriter object for our FileEntry (log.txt).
-    fileEntry.createWriter(
-      function (fileWriter) {
-        fileWriter.onwriteend = function () {
-          console.log(this.title + ": Datei erfolgreich geschrieben.");
-          this.upload(fileEntry);
-        }.bind(this);
+    fileEntry.createWriter((fileWriter) => {
+      fileWriter.onwriteend = () => {
+        console.log(this.title + ": Datei erfolgreich geschrieben.");
+        this.upload(fileEntry);
+      };
 
-        fileWriter.onerror = function (e) {
-          kvm.log(this.title + ": Fehler beim Schreiben der Datei: " + e.toString(), 1);
-          $("#sperr_div").hide();
-        };
-        let dataObj;
-        if (!deltas) {
-          dataObj = new Blob(["kein deltas Array vorhanden"], { type: "text/plain" });
-        } else {
-          dataObj = new Blob([JSON.stringify(deltas)], { type: "application/json" });
-        }
-        fileWriter.write(dataObj);
-      }.bind(this)
-    );
+      fileWriter.onerror = (e) => {
+        kvm.log(this.title + ": Fehler beim Schreiben der Datei: " + e.toString(), 1);
+        $("#sperr_div").hide();
+      };
+      let dataObj;
+      if (!deltas) {
+        dataObj = new Blob(["kein deltas Array vorhanden"], { type: "text/plain" });
+      } else {
+        dataObj = new Blob([JSON.stringify(deltas)], { type: "application/json" });
+      }
+      fileWriter.write(dataObj);
+    });
   }
 
   upload(fileEntry) {
     console.log(this.title + ": upload deltas file");
     var fileURL = fileEntry.toURL();
-    var success = function (r) {
+    var success = (r) => {
       console.log(this.title + ": Erfolgreich hochgeladen ResponseCode: %o Response: %o", r.responseCode, r.response);
       var response = JSON.parse(r.response);
 
@@ -691,17 +688,14 @@ export class Layer {
         console.log(this.get("title") + ": response.deltas.length: %s", response.deltas.length);
 
         if (this.numReturnedDeltas > 0) {
-          $.each(
-            response.deltas,
-            function (index, value) {
-              if (kvm.coalesce(value.sql, "") != "") {
-                this.execSql(
-                  this.pointToUnderlineName(value.sql, this.get("schema_name"), this.get("table_name")),
-                  this.execServerDeltaSuccessFunc.bind({ context: this, response: response, numReturnedDeltas: this.numReturnedDeltas })
-                );
-              }
-            }.bind(this)
-          );
+          response.deltas.forEach((value) => {
+            if (kvm.coalesce(value.sql, "") != "") {
+              this.execSql(
+                this.pointToUnderlineName(value.sql, this.get("schema_name"), this.get("table_name")),
+                this.execServerDeltaSuccessFunc.bind({ context: this, response: response, numReturnedDeltas: this.numReturnedDeltas })
+              );
+            }
+          });
         } else {
           if (response.syncData.length > 0) {
             this.set("syncVersion", parseInt(response.syncData[response.syncData.length - 1].push_to_version));
@@ -720,9 +714,9 @@ export class Layer {
       }
       $("#sperr_div").hide();
       // displayFileData(fileEntry.fullPath + " (content uploaded to server)");
-    }.bind(this);
+    };
 
-    var fail = function (error) {
+    var fail = (error) => {
       var msg = "Fehler beim Hochladen der Sync-Datei! Prüfe die Netzverbindung! Fehler Nr: " + error.code;
       kvm.msg(msg);
       kvm.log(msg, 1);
@@ -944,7 +938,7 @@ export class Layer {
    *     - Zeige Fehlermeldung an
    */
   syncData() {
-    kvm.log("Layer.syncData", 3);
+    //kvm.log("Layer.syncData", 3);
     var tableName = this.get("schema_name") + "_" + this.get("table_name");
 
     $("#sperr_div_content").html("Synchronisiere Daten mit Server.");
@@ -957,12 +951,12 @@ export class Layer {
       WHERE\
         type = 'sql'\
     ";
-    kvm.log("Layer.syncData: query deltas with sql: " + sql, 3);
+    //kvm.log("Layer.syncData: query deltas with sql: " + sql, 3);
     kvm.db.executeSql(
       sql,
       [],
-      function (rs) {
-        kvm.log("Layer.syncData query deltas success result:" + JSON.stringify(rs), 3);
+      (rs) => {
+        //kvm.log("Layer.syncData query deltas success result:" + JSON.stringify(rs), 3);
         var numRows = rs.rows.length,
           deltas = { rows: [] },
           i;
@@ -976,9 +970,9 @@ export class Layer {
         }
         // Sende Anfrage auch mit leeren rows Array um Änderungen vom Server zu bekommen.
         this.sendDeltas(deltas);
-      }.bind(this),
+      },
       function (error) {
-        kvm.log("Layer.syncData query deltas Fehler: " + JSON.stringify(error), 1);
+        //kvm.log("Layer.syncData query deltas Fehler: " + JSON.stringify(error), 1);
         kvm.msg("Fehler beim Zugriff auf die Datenbank");
         if ($("#syncLayerIcon_" + this.getGlobalId()).hasClass("fa-spinner")) {
           $("#syncLayerIcon_" + this.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
@@ -1198,7 +1192,7 @@ export class Layer {
    * - Startet das GPS-Tracking
    */
   loadFeatureToForm(feature, options = { editable: false }) {
-    console.log("Layer.loadFeatureToForm.");
+    //console.log("Layer.loadFeatureToForm.");
     this.activeFeature = feature;
 
     $.map(
@@ -1212,8 +1206,8 @@ export class Layer {
         if (this.options.new && attr.get("nullable") == 0 && attr.get("default") != "") {
           val = attr.get("default");
         }
-        console.log("Feature is new? %s", this.options.new);
-        console.log("Set %s %s: %s", attr.get("form_element_type"), key, val);
+        //console.log("Feature is new? %s", this.options.new);
+        //console.log("Set %s %s: %s", attr.get("form_element_type"), key, val);
         attr.formField.setValue(val);
         if (kvm.coalesce(attr.get("req_by"), "") != "") {
           req_by_idx = kvm.activeLayer.attribute_index[attr.get("req_by")];
@@ -1229,7 +1223,7 @@ export class Layer {
   }
 
   loadTplFeatureToForm(tplId) {
-    console.log("Layer.loadTplFeatureToForm.");
+    //console.log("Layer.loadTplFeatureToForm.");
     $.map(
       this.attributes,
       function (attr) {
@@ -1248,7 +1242,7 @@ export class Layer {
    * Zeichnet die Features in die Karte
    */
   drawFeatures() {
-    console.log("%s: Zeichne %s Features.", this.title, Object.keys(this.features).length);
+    //console.log("%s: Zeichne %s Features.", this.title, Object.keys(this.features).length);
     const layerRenderer = undefined; //new L.SVG();
 
     $.each(this.features, (key, feature) => {
@@ -1272,7 +1266,7 @@ export class Layer {
         }
 
         const popupFunc = () => {
-          console.log("%s: Call getPopup", layer.title);
+          //console.log("%s: Call getPopup", layer.title);
           return layer.getPopup(
             feature,
             kvm.activeLayer.getGlobalId() == layer.getGlobalId() && !(kvm.activeLayer.activeFeature && kvm.activeLayer.activeFeature.editable)
@@ -1285,14 +1279,14 @@ export class Layer {
         // und gerade kein anderes feature editiert wird.
         vectorLayer.on("click", function (evt) {
           if (evt.target.options.featureId in kvm.activeLayer.features && !(kvm.activeLayer.activeFeature && kvm.activeLayer.activeFeature.editable)) {
-            console.log("%s Select the clicked feature.", kvm.activeLayer.title);
+            //console.log("%s Select the clicked feature.", kvm.activeLayer.title);
             kvm.activeLayer.selectFeature(kvm.activeLayer.features[evt.target.options.featureId], false);
           }
         });
 
         // Setze Style für Kartenobjekt
         var style = layer.hasClasses() ? feature.getStyle(layer) : layer.getDefaultPathOptions();
-        console.log("Draw feature %o with style %o", feature, style);
+        //console.log("Draw feature %o with style %o", feature, style);
         vectorLayer.setStyle(style);
         if (this.get("geometry_type") == "Point") {
           vectorLayer.setRadius(style.size);
@@ -1308,10 +1302,11 @@ export class Layer {
         feature.layerId = this.layerGroup.getLayerId(vectorLayer);
       }
     });
-    kvm.log("Featuregeometrie gezeichnet", 4);
+    //kvm.log("Featuregeometrie gezeichnet", 4);
+    this.layerGroup.setZIndex(this.settings.drawingorder);
     this.layerGroup.addTo(kvm.map);
-    this.selectLayerInControl();
-    kvm.log("layerGroup zur Karte hinzugefügt.", 4);
+    this.selectActiveLayerInControl();
+    //kvm.log("layerGroup zur Karte hinzugefügt.", 4);
   }
 
   /**
@@ -1360,14 +1355,16 @@ export class Layer {
     return style;
   }
 
-  selectLayerInControl() {
-    console.log("selectLayerInControl layer: ", this.title);
-    $(".leaflet-control-layers-overlays span").removeClass("active-layer");
-    $("#layerCtrLayerDiv_" + this.getGlobalId()).addClass("active-layer");
+  selectActiveLayerInControl() {
+    //console.log("selectActiveLayerInControl layer: ", this.title);
+    if (kvm.activeLayer) {
+      $(".leaflet-control-layers-overlays span").removeClass("active-layer");
+      $("#layerCtrLayerDiv_" + kvm.activeLayer.getGlobalId()).addClass("active-layer");
+    }
   }
 
   getPopup(feature, isActive: Boolean) {
-    console.log("getPopup with feature %o, isActive: %", feature, isActive);
+    //console.log("getPopup with feature %o, isActive: %", feature, isActive);
     const html =
       "<b>" +
       this.get("title") +
@@ -1590,7 +1587,7 @@ export class Layer {
       //layer.setStyle(feature.getNormalStyle()); Wird nicht mehr verwendet
 
       var style = this.hasClasses() ? feature.getStyle(this) : this.getDefaultPathOptions();
-      console.log("Set style after cancleEditGeometry: %o", style);
+      // console.log("Set style after cancleEditGeometry: %o", style);
       vectorLayer.setStyle(style);
       if (this.get("geometry_type") == "Point") {
         vectorLayer.setRadius(style.size);
@@ -1599,7 +1596,7 @@ export class Layer {
       // Binded das Popup an den dazugehörigen Layer
       // Popup zum Kartenobjekt hinzufügen
       const popupFct = (vectorLayer) => {
-        console.log("popupFct activelayer: %s, this: %s", kvm.activeLayer.getGlobalId(), this.getGlobalId());
+        //console.log("popupFct activelayer: %s, this: %s", kvm.activeLayer.getGlobalId(), this.getGlobalId());
         return this.getPopup(
           feature,
           kvm.activeLayer.getGlobalId() == this.getGlobalId() && !(kvm.activeLayer.activeFeature && kvm.activeLayer.activeFeature.editable)
@@ -1738,6 +1735,10 @@ export class Layer {
 
     //console.log('Zoome zum Feature');
     this.selectFeature(feature, false);
+  }
+
+  isActive() {
+    return kvm.activeLayer && kvm.activeLayer.getGlobalId() == this.getGlobalId();
   }
 
   collectChanges(action) {
@@ -2683,7 +2684,6 @@ export class Layer {
    */
   appendToApp() {
     //console.log("%s: Füge Layer zur Layerliste hinzu.", this.title);
-    // ToDo: insert in list und addOverlay an richtiger Stelle entsprechend der Drawingorder
     const index = kvm.activeStelle.getLayerDrawingIndex(this);
     if (index == 0) {
       $("#layer_list").prepend(this.getListItem());
@@ -2968,7 +2968,7 @@ export class Layer {
     );
 */
   }
-
+  /*
   bindOverlayEvents = function () {
     console.log("bind events for overlay: %s", this.globalId);
 
@@ -3016,6 +3016,7 @@ export class Layer {
       }
     });
   };
+*/
 
   /**
    * Function remove layer from store, layer options list, clear data, remove from layer control, map and kvm.layers array
@@ -3029,6 +3030,8 @@ export class Layer {
     $("#layer_" + this.getGlobalId()).remove();
     //console.log('Lösche die Daten vom aktiven Layer');
     this.clearData();
+    this.isLoaded = false;
+    this.runningSyncVersion = 0;
     //console.log('Entferne layer aus layer control');
     kvm.controls.layers.removeLayer(this.layerGroup);
     //console.log('Entferne layer von map');
@@ -3224,6 +3227,31 @@ this.get("width") || "1"
     return url;
   }
 
+  getDataUrl() {
+    console.log(this.get("title") + ": Layer.getDataUrl");
+    var url = this.stelle.get("url"),
+      file = this.stelle.getUrlFile(url);
+
+    url +=
+      file +
+      "Stelle_ID=" +
+      this.stelle.get("Stelle_ID") +
+      "&" +
+      "login_name=" +
+      this.stelle.get("login_name") +
+      "&" +
+      "selected_layer_id=" +
+      this.get("id") +
+      "&" +
+      "passwort=" +
+      encodeURIComponent(this.stelle.get("passwort"));
+
+    // get all data as new base for deltas
+    url += "&go=Daten_Export_Exportieren&export_format=GeoJSONPlus&all=1&epsg=4326";
+    console.log(this.get("title") + ": Hole initial alle Daten mit Url: %s", url);
+    return url;
+  }
+
   getImgDownloadUrl(image) {
     console.log("Layer.getImgDownloadUrl for image: %s", image);
     let url = this.stelle.get("url");
@@ -3320,7 +3348,7 @@ this.get("width") || "1"
    * - createFeatureList
    */
   setActive() {
-    console.log("Setze Layer " + this.get("title") + " (" + (this.get("alias") ? this.get("alias") : "kein Aliasname") + ") aktiv.");
+    //console.log("Setze Layer " + this.get("title") + " (" + (this.get("alias") ? this.get("alias") : "kein Aliasname") + ") aktiv.");
 
     kvm.activeLayer = this;
     kvm.store.setItem("activeLayerId", this.get("id"));
@@ -3381,7 +3409,7 @@ this.get("width") || "1"
     //kvm.controls.layers.removeLayer(this.layerGroup);
     //console.log('Add layerGroup %s in setActive als overlay zum Layer Control hinzu.', this.get('title'));
     //kvm.controls.layers.addOverlay(this.layerGroup, kvm.coalesce(this.get('alias'), this.get('title'), this.get('table_name')));
-    kvm.activeLayer.selectLayerInControl();
+    this.selectActiveLayerInControl();
     $("input:checkbox.leaflet-control-layers-selector").map(function (i, e) {
       const layerLegendName = $(e).next().html();
       if (layerLegendName.includes(kvm.activeLayer.title)) {

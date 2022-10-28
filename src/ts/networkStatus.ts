@@ -1,3 +1,5 @@
+import { kvm } from "./app";
+
 declare var Connection;
 export const NetworkStatus = {
   load: function () {
@@ -41,5 +43,8 @@ export const NetworkStatus = {
     states[Connection.NONE] = "Keine Netzwerkverbindung";
 
     return (navigator.onLine ? "Wir sind online!" : "Wir haben kein Netz!") + " " + states[networkState];
+  },
+  noNetMsg: function (title = "Netzverbindung") {
+    kvm.msg("Sie sind nicht online!<br>Diese Funktion steht nur mit Netzverbindung zur Verfügung.<br>Bitte prüfen Sie Ihre Netzverbindung!", title);
   },
 };

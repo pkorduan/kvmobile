@@ -605,7 +605,7 @@ bis hier */
    *    - Anzeigen, dass layer nicht synchronisiert werden können
    */
   startApplication() {
-    let activeView = "featurelist";
+    let activeView = kvm.store.getItem("activeView") || "featurelist";
     console.log("onDeviceReady");
 
     const dbPromise = idb.openDB("keyval-store", 1, {
@@ -640,37 +640,16 @@ bis hier */
 
       stelle = new Stelle(activeStelleSettings);
 
-      console.log("Aktive Stelle " + activeStelleId + " gefunden.");
+      //console.log("Aktive Stelle " + activeStelleId + " gefunden.");
 
       stelle.viewSettings();
       stelle.setActive();
 
       if (this.store.getItem("layerIds_" + activeStelleId)) {
-        // Prüfe ob Netz ist, wenn nicht lade die Overlays vom Store
-        /*
-        if (navigator.onLine) {
-          stelle.requestOverlays();
-        } else {
-          var overlay,
-            overlayIds = JSON.parse(kvm.store.getItem("overlayIds_" + activeStelleId));
-
-          for (let overlayId of overlayIds) {
-            console.log("Lade OverlaySettings for overlayId: %s", overlayId);
-            const overlaySettings = kvm.store.getItem("overlaySettings_" + overlayId);
-            if (overlaySettings != null) {
-              overlay = new Overlay(stelle, overlaySettings);
-              kvm.overlays.push(overlay);
-              //              overlay.saveSettingsToStore(); // save layersettings to local storage
-              overlay.loadData();
-              //              overlay.addOverlayToMap(); // create the leaflet overlay and add to map
-              overlay.appendToApp();
-            }
-          }
-        }
-        */
-
         // Auslesen der layersettings
         var layerIds = JSON.parse(this.store.getItem("layerIds_" + activeStelleId));
+        stelle.loadAllLayers = true;
+        stelle.numLayers = layerIds.length;
         for (let layerId of layerIds) {
           //console.log('Lade Layersettings for layerId: %s', layerId);
           const layerSettings = this.store.getItem("layerSettings_" + activeStelleId + "_" + layerId);
@@ -678,13 +657,10 @@ bis hier */
             const layer = new Layer(stelle, layerSettings);
             layer.appendToApp();
             if (layer.get("id") == kvm.store.getItem("activeLayerId")) {
-              kvm.activeLayer = layer;
+              layer.setActive();
             }
-            /**
-             * Load data and set active layer
-             */
-            console.log("Update layer: %s", layer.get("title"));
-            if (layer.hasSyncPrivilege) {
+            //console.log("Update layer: %s", layer.get("title"));
+            if (navigator.onLine && layer.hasSyncPrivilege) {
               if (layer.hasEditPrivilege) {
                 console.log("SyncData with local deltas if exists.");
                 layer.syncData();
@@ -695,10 +671,13 @@ bis hier */
                 layer.sendDeltas({ rows: [] });
               }
             } else {
-              console.log("Only read data from local database.");
-              layer.readData();
+              //console.log("Only read data from local database.");
+              layer.readData(); // include drawFeatures
             }
           }
+        }
+        if (layerIds.length > 0) {
+          stelle.sortOverlays();
         }
       } else {
         kvm.msg("Laden Sie die Stellen und Layer vom Server.");
@@ -771,8 +750,8 @@ bis hier */
   }
 
   initMap() {
-    kvm.log("Karte initialisieren.", 3);
-    kvm.log("initialisiere Mapsettings", 3);
+    //kvm.log("Karte initialisieren.", 3);
+    //kvm.log("initialisiere Mapsettings", 3);
     this.initMapSettings();
 
     kvm.log("initialisiere backgroundLayers", 3);
@@ -782,14 +761,14 @@ bis hier */
       origin: [-464849.38, 6310160.14],
       resolutions: [16384, 8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1],
     });
-    this.myRenderer = new L.Canvas({ padding: 0.5, tolerance: 7 });
+    this.myRenderer = new L.Canvas({ padding: 0.5, tolerance: 0 });
     //this.myRenderer = new L.SVG();
 
     const map = new L.Map("map", <any>{
       // crs: crs25833,
       editable: true,
-      center: L.latLng(this.mapSettings.startCenterLat, this.mapSettings.startCenterLon),
-      zoom: this.mapSettings.startZoom,
+      center: JSON.parse(kvm.store.getItem("activeCenter")) || L.latLng(this.mapSettings.startCenterLat, this.mapSettings.startCenterLon),
+      zoom: kvm.store.getItem("activeZoom") || this.mapSettings.startZoom,
       minZoom: this.mapSettings.minZoom,
       maxZoom: this.mapSettings.maxZoom,
       layers: this.backgroundLayers[1],
@@ -799,6 +778,9 @@ bis hier */
     map.on("popupopen", function (evt) {
       kvm.controls.layers.collapse();
     });
+    map.on("zoomend", (evt) => kvm.store.setItem("activeZoom", evt.target.getZoom()));
+    map.on("moveend", (evt) => kvm.store.setItem("activeCenter", JSON.stringify(evt.target.getCenter())));
+
     /* ToDo Hier Klickevent einführen welches das gerade selectierte Feature deseletiert.
     map.on('click', function(evt) {
       console.log('Click in Map with evt: %o', evt);
@@ -817,6 +799,8 @@ bis hier */
       .layers(baseMaps, null, {
         autoZIndex: true,
         sortLayers: false,
+        sortFunction: (layerA, layerB, nameA, nameB) =>
+          parseInt(layerA.getAttribution()) > parseInt(layerB.getAttribution()) ? parseInt(layerA.getAttribution()) : parseInt(layerB.getAttribution()),
       })
       .addTo(map);
     kvm.controls.locate = L.control
@@ -1082,7 +1066,6 @@ bis hier */
           function (buttonIndex) {
             if (buttonIndex == 1) {
               // ja
-              // TODO
               (<any>navigator).app.exitApp();
             }
             if (buttonIndex == 2) {
@@ -1173,7 +1156,11 @@ bis hier */
 
     $("#requestLayersButton").on("click", function () {
       $("#sperr_div").show();
-      kvm.activeStelle.requestLayers();
+      if (navigator.onLine) {
+        kvm.activeStelle.requestLayers();
+      } else {
+        NetworkStatus.noNetMsg("Netzverbindung");
+      }
     });
 
     $("#saveServerSettingsButton").on("click", function () {
@@ -1828,8 +1815,12 @@ bis hier */
     $("#deviceSerial").html(device.serial);
   }
 
+  showActiveItem() {
+    this.showItem(kvm.store.getItem("activeView") || "featurelist");
+  }
+
   showItem(item) {
-    kvm.log("showItem: " + item, 4);
+    //kvm.log("showItem: " + item, 4);
     // erstmal alle panels ausblenden
     $(".panel").hide();
 
@@ -1886,6 +1877,7 @@ bis hier */
         kvm.showDefaultMenu();
         $("#settings").show();
     }
+    kvm.store.setItem("activeView", item);
   }
 
   collapseAllSettingsDiv() {

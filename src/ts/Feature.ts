@@ -515,7 +515,7 @@ export function Feature(
     if (typeof (matchingClass = layer.getClass(this.get(layer.settings.classitem))) == "undefined") {
       style = layer.getDefaultPathOptions();
     } else {
-      console.log("%s: Use styles from matching class.", layer.title);
+      //console.log("%s: Use styles from matching class.", layer.title);
       style = matchingClass.getLeafletPathOptions();
     }
     return style;
