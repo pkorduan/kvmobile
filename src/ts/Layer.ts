@@ -18,8 +18,8 @@ export class Layer {
   layerGroup: L.LayerGroup<any>;
   attribute_index: any;
   classes: Klasse[];
-  features: any;
-  activeFeature: any;
+  features: { [id: string]: Feature };
+  activeFeature: Feature;
   numFeatures: number;
   next: any;
   context: any;
@@ -36,6 +36,7 @@ export class Layer {
   hasDeletePrivilege: boolean;
   numExecutedDeltas: number;
   isLoaded: boolean = false;
+  isActive: boolean;
 
   constructor(stelle: Stelle, settings = {}) {
     var layer_ = this;
@@ -166,10 +167,11 @@ export class Layer {
         );
       })
       .get();
+    /*
     if ($("#statusFilterSelect").val() != "") {
       filter.push($("#statusFilterSelect").val());
     }
-
+*/
     if ($("#historyFilter").is(":checked")) {
       filter.push("endet IS NOT NULL");
     } else {
@@ -273,7 +275,7 @@ export class Layer {
 
     $.each(this.features, function (key, feature) {
       //console.log("append feature: %o to list", feature);
-      var needle = $("#searchHaltestelle").val().toString().toLowerCase(),
+      var needle = $("#searchFeatureField").val().toString().toLowerCase(),
         element = $(feature.listElement()),
         haystack = element.html().toLowerCase();
 
@@ -322,10 +324,18 @@ export class Layer {
 
     const sql =
       "\
-      INSERT INTO " + this.get("schema_name") + "_" + this.get("table_name") + " (\
-        " + keys + ")\
+      INSERT INTO " +
+      this.get("schema_name") +
+      "_" +
+      this.get("table_name") +
+      " (\
+        " +
+      keys +
+      ")\
       VALUES\
-        " + values + "\
+        " +
+      values +
+      "\
     ";
 
     console.log("Schreibe Daten mit Sql: " + sql.substring(0, 1000));
@@ -777,7 +787,11 @@ export class Layer {
       SELECT\
         * \
       FROM\
-        " + this.get("schema_name") + "_" + this.get("table_name") + "_deltas\
+        " +
+      this.get("schema_name") +
+      "_" +
+      this.get("table_name") +
+      "_deltas\
       WHERE\
         type = 'img'\
     ";
@@ -943,11 +957,14 @@ export class Layer {
 
     $("#sperr_div_content").html("Synchronisiere Daten mit Server.");
 
-    const sql = "\
+    const sql =
+      "\
       SELECT\
         * \
       FROM\
-        " + tableName + "_deltas\
+        " +
+      tableName +
+      "_deltas\
       WHERE\
         type = 'sql'\
     ";
@@ -996,8 +1013,13 @@ export class Layer {
    */
   clearData() {
     kvm.log("Layer.clearData", 4);
-    var sql = "\
-      DELETE FROM " + this.get("schema_name") + "_" + this.get("table_name") + "\
+    var sql =
+      "\
+      DELETE FROM " +
+      this.get("schema_name") +
+      "_" +
+      this.get("table_name") +
+      "\
     ";
     kvm.db.executeSql(
       sql,
@@ -1029,7 +1051,7 @@ export class Layer {
     );
 
     this.clearDeltas("all");
-    this.features = [];
+    this.features = {};
     $("#featurelistBody").html("");
     if (this.layerGroup) {
       this.layerGroup.clearLayers();
@@ -1040,8 +1062,13 @@ export class Layer {
   clearDeltas(type: string, delta?: string) {
     if (typeof delta === "undefined") delta = "";
     kvm.log("Layer.clearDeltas", 4);
-    var sql = "\
-      DELETE FROM " + this.get("schema_name") + "_" + this.get("table_name") + "_deltas\
+    var sql =
+      "\
+      DELETE FROM " +
+      this.get("schema_name") +
+      "_" +
+      this.get("table_name") +
+      "_deltas\
     ";
     if (type != "all") {
       sql += " WHERE type = '" + type + "'";
@@ -1128,9 +1155,11 @@ export class Layer {
 
   createDataView() {
     console.log("Layer.createDataView");
-    $("#dataView").html('\
+    $("#dataView").html(
+      '\
       <h1 style="margin-left: 5px;">Sachdaten</h1>\
-      <div id="dataViewDiv"></div>');
+      <div id="dataViewDiv"></div>'
+    );
     $.map(
       this.attributes.filter(function (attribute) {
         return attribute.get("type") != "geometry";
@@ -1173,17 +1202,52 @@ export class Layer {
         attr.viewField.setValue(val);
       }.bind(feature)
     );
-    this.selectFeature(feature, true);
+    //this.selectFeature(feature, true);
   }
 
-  selectFeature(feature, zoom = true) {
-    //console.log("Selectiere Feature " + feature.id + " Zoom: " + zoom);
+  /**
+   * Activate the feature if not allready activated and zoom to feature in Map
+   * Activated feature means
+   *  - it is styled as activated in map
+   *  - the popup is open direkt after selection, but can be closed by user later
+   *  - it is highlighted in feature list
+   *  - the data view is loaded with values of this feature
+   *  - edit function buttons are visible
+   * If zoom it true, the map zoom to features location
+   * @param feature
+   * @param zoom
+   */
+  activateFeature(feature, zoom = true) {
+    console.log(
+      "Activate Feature id: %s in Layer %s globalLayerId: %s, in LeafletLayer id: %s as activeFeature.",
+      feature.id,
+      this.title,
+      feature.globalLayerId,
+      feature.layerId
+    );
 
-    // deselect feature if a selected exists
     if (this.activeFeature) {
-      this.activeFeature.unselect();
+      this.deactivateFeature();
     }
-    this.activeFeature = feature.select(zoom);
+    this.activeFeature = feature.activate(zoom);
+    this.loadFeatureToView(feature, { editable: false });
+  }
+
+  /**
+   * Deactivate the selected feature if layer have one
+   */
+  deactivateFeature() {
+    if (this.activeFeature) {
+      console.log(
+        "Deactivate Feature id: %s in Layer %s globalLayerId: %s, in LeafletLayer id: %s as activeFeature.",
+        this.activeFeature.id,
+        this.title,
+        this.activeFeature.globalLayerId,
+        this.activeFeature.layerId
+      );
+      this.activeFeature.deactivate();
+      this.activeFeature = null;
+    }
   }
 
   /*
@@ -1254,38 +1318,38 @@ export class Layer {
         if (feature.options.geometry_type == "Point") {
           vectorLayer = L.circleMarker(feature.wkxToLatLngs(feature.newGeom), <any>{
             featureId: feature.id,
+            globalLayerId: layer.getGlobalId(),
           });
         } else if (feature.options.geometry_type == "Line") {
           vectorLayer = L.polyline(feature.wkxToLatLngs(feature.newGeom), <any>{
             featureId: feature.id,
+            globalLayerId: layer.getGlobalId(),
           });
         } else if (feature.options.geometry_type == "Polygon") {
           vectorLayer = L.polygon(feature.wkxToLatLngs(feature.newGeom), <any>{
             featureId: feature.id,
+            globalLayerId: layer.getGlobalId(),
           });
         }
 
         const popupFunc = () => {
           //console.log("%s: Call getPopup", layer.title);
-          return layer.getPopup(
-            feature,
-            kvm.activeLayer.getGlobalId() == layer.getGlobalId() && !(kvm.activeLayer.activeFeature && kvm.activeLayer.activeFeature.editable)
-          );
+          return layer.getPopup(feature);
         };
 
         vectorLayer.bindPopup(popupFunc);
 
         // Das angeklickte Feature selektieren wenn der Layer selektiert ist zu dem das Feature gehört
         // und gerade kein anderes feature editiert wird.
-        vectorLayer.on("click", function (evt) {
-          if (evt.target.options.featureId in kvm.activeLayer.features && !(kvm.activeLayer.activeFeature && kvm.activeLayer.activeFeature.editable)) {
-            //console.log("%s Select the clicked feature.", kvm.activeLayer.title);
-            kvm.activeLayer.selectFeature(kvm.activeLayer.features[evt.target.options.featureId], false);
-          }
-        });
+        vectorLayer.on("click", this.popupOpen);
+        // poupuclose event must not be considered because if the feature behind the popup
+        // witch has to be closed will be unselected only if another feature is selected
+        // popup close shall realy only close the popup not more.
+        //
+        //vectorLayer.on("popupclose", this.popupClose);
 
         // Setze Style für Kartenobjekt
-        var style = layer.hasClasses() ? feature.getStyle(layer) : layer.getDefaultPathOptions();
+        var style = layer.hasClasses() ? feature.getStyle() : layer.getDefaultPathOptions();
         //console.log("Draw feature %o with style %o", feature, style);
         vectorLayer.setStyle(style);
         if (this.get("geometry_type") == "Point") {
@@ -1363,46 +1427,48 @@ export class Layer {
     }
   }
 
-  getPopup(feature, isActive: Boolean) {
+  getPopup(feature) {
     //console.log("getPopup with feature %o, isActive: %", feature, isActive);
     const html =
-      "<b>" +
+      '<div style="min-width: 150px">\
+        <b>' +
       this.get("title") +
       "</b><br>" +
       feature.getLabelValue() +
       '<br>\
-      <div\
-        id="popupFunctions_' +
+        <div\
+          id="popupFunctions_' +
       this.getGlobalId() +
       '"\
-        class="' +
-      (isActive ? "popup-functions" : "no-popup-functions") +
+          class="' +
+      (this.isActive ? "popup-functions" : "no-popup-functions") +
       '"\
-      >' +
+        >' +
       (this.hasEditPrivilege
         ? '\
-        <a class="edit-feature"\
-          href="#"\
-          title="Geometrie ändern"\
-          onclick="kvm.activeLayer.editFeature(\'' +
+          <a class="edit-feature"\
+            href="#"\
+            title="Geometrie ändern"\
+            onclick="kvm.activeLayer.editFeature(\'' +
           feature.get(this.get("id_attribute")) +
           '\')"\
-        ><span class="fa-stack fa-lg">\
-            <i class="fa fa-square fa-stack-2x"></i>\
-            <i class="fa fa-pencil fa-stack-1x fa-inverse"></i>\
-        </span></i></a>'
+          ><span class="fa-stack fa-lg">\
+              <i class="fa fa-square fa-stack-2x"></i>\
+              <i class="fa fa-pencil fa-stack-1x fa-inverse"></i>\
+          </span></i></a>'
         : "") +
       '<a\
-          class="popup-link"\
-          href="#"\
-          title="Sachdaten anzeigen"\
-          onclick="kvm.activeLayer.showDataView(\'' +
+            class="popup-link"\
+            href="#"\
+            title="Sachdaten anzeigen"\
+            onclick="kvm.activeLayer.showDataView(\'' +
       feature.get(this.get("id_attribute")) +
       '\')"\
-        ><span class="fa-stack fa-lg">\
-            <i class="fa fa-square fa-stack-2x"></i>\
-            <i class="fa fa-bars fa-stack-1x fa-inverse"></i>\
-          </span></i></a>\
+          ><span class="fa-stack fa-lg">\
+              <i class="fa fa-square fa-stack-2x"></i>\
+              <i class="fa fa-bars fa-stack-1x fa-inverse"></i>\
+            </span></i></a>\
+        </div>\
       </div>\
     ';
     //console.log("getPopup returns html: %s", html);
@@ -1417,9 +1483,7 @@ export class Layer {
   newFeature() {
     console.log("Layer.newFeature");
 
-    if (this.activeFeature) {
-      this.activeFeature.unselect();
-    }
+    this.deactivateFeature();
     this.activeFeature = new Feature(
       '{ "' +
         this.get("id_attribute") +
@@ -1443,7 +1507,7 @@ export class Layer {
     console.log("Layer.editFeature");
 
     if (this.activeFeature == undefined && featureId != null) {
-      this.selectFeature(this.features[featureId], true);
+      this.activateFeature(this.features[featureId], true);
     }
 
     if (this.activeFeature.geom) {
@@ -1553,7 +1617,7 @@ export class Layer {
     }
     feature.setEditable(true);
 
-    feature.zoomTo(feature.editableLayer);
+    feature.zoomTo(true);
 
     $("deleteFeatureButton").hide();
     if ($("#dataView").is(":visible")) {
@@ -1581,12 +1645,12 @@ export class Layer {
       let vectorLayer = (<any>kvm.map)._layers[feature.layerId];
 
       // Zoom zur ursprünglichen Geometrie
-      feature.zoomTo(vectorLayer);
+      feature.zoomTo(false);
 
       //Setzt den Style des circle Markers auf den alten zurück
       //layer.setStyle(feature.getNormalStyle()); Wird nicht mehr verwendet
 
-      var style = this.hasClasses() ? feature.getStyle(this) : this.getDefaultPathOptions();
+      var style = this.hasClasses() ? feature.getStyle() : this.getDefaultPathOptions();
       // console.log("Set style after cancleEditGeometry: %o", style);
       vectorLayer.setStyle(style);
       if (this.get("geometry_type") == "Point") {
@@ -1595,21 +1659,19 @@ export class Layer {
 
       // Binded das Popup an den dazugehörigen Layer
       // Popup zum Kartenobjekt hinzufügen
+      // ToDo warum wird hier die popupFct noch mal hinzugefügt?
       const popupFct = (vectorLayer) => {
-        //console.log("popupFct activelayer: %s, this: %s", kvm.activeLayer.getGlobalId(), this.getGlobalId());
-        return this.getPopup(
-          feature,
-          kvm.activeLayer.getGlobalId() == this.getGlobalId() && !(kvm.activeLayer.activeFeature && kvm.activeLayer.activeFeature.editable)
-        );
+        console.log("popupFct wurde hinzugefügt in calcelEditGeometry");
+        return this.getPopup(feature);
       };
       vectorLayer.bindPopup(popupFct);
 
-      this.selectFeature(feature);
+      this.activateFeature(feature, false);
     } else {
       // Beende das Anlegen eines neuen Features
       kvm.map.removeLayer(kvm.activeLayer.activeFeature.editableLayer);
       // Löscht die editierbare Geometrie
-      feature.unselect();
+      feature.deactivate();
       kvm.showItem("map");
     }
     feature.setEditable(false);
@@ -1683,6 +1745,7 @@ export class Layer {
       vectorLayer = L.circleMarker(feature.wkxToLatLngs(feature.newGeom), <any>{
         renderer: kvm.myRenderer,
         featureId: feature.id,
+        globalLayerId: kvm.activeLayer.getGlobalId(),
       });
     } else if (feature.options.geometry_type == "Line") {
       vectorLayer = L.polyline(feature.wkxToLatLngs(feature.newGeom), <any>{
@@ -1696,17 +1759,14 @@ export class Layer {
 
     const popupFct = () => {
       console.log("popupFct for activelayer: %o in saveGeometry", kvm.activeLayer);
-      return this.getPopup(
-        feature,
-        kvm.activeLayer.getGlobalId() == this.getGlobalId() && !(kvm.activeLayer.activeFeature && kvm.activeLayer.activeFeature.editable)
-      );
+      return this.getPopup(feature);
     };
     vectorLayer.bindPopup(popupFct);
 
     //console.log('Style der neuen Geometrie auf default setzen');
     //vectorLayer.setStyle(feature.getNormalStyle()); veraltet wird nicht mehr verwendet
 
-    var style = this.hasClasses() ? feature.getStyle(this) : this.getDefaultPathOptions();
+    var style = this.hasClasses() ? feature.getStyle() : this.getDefaultPathOptions();
     console.log("SetStyle after saveGeometry: %o", style);
     vectorLayer.setStyle(style);
     if (this.get("geometry_type") == "Point") {
@@ -1714,12 +1774,11 @@ export class Layer {
     }
 
     //console.log('Setze click event for vectorLayer');
-    vectorLayer.on("click", function (evt) {
-      if (evt.target.options.featureId in kvm.activeLayer.features && !(kvm.activeLayer.activeFeature && kvm.activeLayer.activeFeature.editable)) {
-        console.log("Select the clicked feature");
-        kvm.activeLayer.selectFeature(kvm.activeLayer.features[evt.target.options.featureId], false);
-      }
+    vectorLayer.on("click", (evt) => {
+      evt.target.openPopup();
     });
+    vectorLayer.on("popupopen", this.popupOpen);
+    //vectorLayer.on("popupclose", this.popupClose);
 
     //console.log('Füge vectorLayer zur layerGroup hinzu.');
     // vectorLayer als Layer zur Layergruppe hinzufügen
@@ -1734,11 +1793,50 @@ export class Layer {
     feature.setEditable(false);
 
     //console.log('Zoome zum Feature');
-    this.selectFeature(feature, false);
+    this.activateFeature(feature, false);
   }
 
-  isActive() {
-    return kvm.activeLayer && kvm.activeLayer.getGlobalId() == this.getGlobalId();
+  /**
+   * Callback function of popupOpen event of map features
+   * activate the feature only if
+   * the layer is active and
+   * no active feature exists or
+   * (active feature is another and its currently not editable)
+   * the feature is not already selcted and
+   * no other feature is currently active and editable
+   * @param evt
+   */
+  popupOpen = (evt) => {
+    const featureId = evt.target.options.featureId;
+    const globalLayerId = evt.target.options.globalLayerId;
+    const kvmLayer = kvm.layers[globalLayerId];
+    const activeFeature = kvm.activeLayer.activeFeature;
+    console.log("Event Open Popup of feature: %s in layer: %s globalLayerId: %s", featureId, kvmLayer.title, globalLayerId);
+    if (kvmLayer.isActive && (!activeFeature || (activeFeature.id != featureId && !activeFeature.isEditable))) {
+      kvmLayer.activateFeature(kvmLayer.features[featureId], false);
+    }
+  };
+
+  // popupClose = (evt) => {
+  //   const mapFeature = evt.target;
+  //   const featureId = evt.target.options.featureId;
+  //   const globalLayerId = evt.target.options.globalLayerId;
+  //   const kvmLayer = kvm.layers[globalLayerId];
+  //   console.log(
+  //     "Event Close Popup of feature: %s in layer: %s globalLayerId: %s",
+  //     featureId,
+  //     kvmLayer.get("title"),
+  //     globalLayerId
+  //   );
+  //   kvmLayer.unselectFeature();
+  // };
+
+  hasActiveFeature() {
+    return this.activeFeature ? true : false;
+  }
+
+  isActiveFeature(feature) {
+    return this.hasActiveFeature() && this.activeFeature.id === feature.id;
   }
 
   collectChanges(action) {
@@ -2715,10 +2813,9 @@ export class Layer {
 
       //        layer.readData();
       // unselect active Feature
-      if (kvm.activeLayer && kvm.activeLayer.activeFeature) {
-        kvm.map.closePopup();
-        kvm.activeLayer.activeFeature.unselect();
-      }
+      kvm.map.closePopup();
+      kvm.store.setItem("layerFilter", "");
+      kvm.store.setItem("sortAttribute", "");
       layer.setActive(); // include loading filter, sort, data view, form and readData
       //        kvm.showItem('featurelist');
     });
@@ -3350,12 +3447,16 @@ this.get("width") || "1"
   setActive() {
     //console.log("Setze Layer " + this.get("title") + " (" + (this.get("alias") ? this.get("alias") : "kein Aliasname") + ") aktiv.");
 
+    this.isActive = true;
     kvm.activeLayer = this;
     kvm.store.setItem("activeLayerId", this.get("id"));
     $("#featurelistHeading").html(this.get("alias") ? this.get("alias") : this.get("title"));
 
     // Create layerFilter
     this.createLayerFilterForm();
+    // ToDo
+    // layerFilter für jeden Layer einzeln im Store speichern und auch beim Löschen
+    // und neu Laden des Layers löschen bzw. reseten
     var layerFilter = kvm.store.getItem("layerFilter");
     if (layerFilter) {
       this.loadLayerFilterValues(JSON.parse(layerFilter));
@@ -3366,6 +3467,10 @@ this.get("width") || "1"
     $.each(this.attributes, function (key, value) {
       $("#anzeigeSortSelect").append($('<option value="' + value.settings.name + '">' + value.settings.alias + "</option>"));
     });
+
+    // ToDo
+    // sortAttribute für jeden Layer einzeln im Store speichern und auch beim Löschen
+    // und neu Laden des Layers löschen bzw. reseten
     var sortAttribute = kvm.store.getItem("sortAttribute");
     if (sortAttribute) {
       $("#anzeigeSortSelect").val(sortAttribute);
@@ -3394,7 +3499,7 @@ this.get("width") || "1"
     // Load Features from Database, recreate FeatureList and draw in map
     // readData hier raus, weil alle layer immer schon geladen sind,
     // nach sync wird auch erst readData aufgerufen und wenn layer
-    // activ ist isActive(), hier also kein readData mehr
+    // activ ist isActive, hier also kein readData mehr
     //this.readData();
     this.createFeatureList();
 

@@ -38,7 +38,7 @@ export class DataViewField {
       val = datetime.toLocaleDateString() + " " + datetime.toLocaleTimeString();
       this.element.html(kvm.coalesce(val, ""));
     } else if (this.get("form_element_type") == "Dokument") {
-      kvm.log("DataViewField.setValue for Document Attribute with value: " + val, 4);
+      //kvm.log("DataViewField.setValue for Document Attribute with value: " + val, 4);
       val = kvm.coalesce(val, "");
       // let images;
       //   localFile,
@@ -117,17 +117,30 @@ export class DataViewField {
       const subFormFK = options[1];
       const subFormPreviewAttribute = options[2];
       const subFormTable = JSON.parse(kvm.store.getItem("layerSettings_" + stelleId + "_" + subFormLayerId)).table_name;
-      let sql = "\
+      let sql =
+        "\
         SELECT\
         FROM\
-          " + subFormTable + "\
+          " +
+        subFormTable +
+        "\
       ";
       //console.log("SQL: %s", sql);
     } else if (this.get("form_element_type") == "Auswahlfeld") {
-      const output =
-        this.get("options") && Array.isArray(this.get("options")) && parseInt(val) >= 0 && parseInt(val) < Object.keys(this.get("options")).length
-          ? this.get("options")[val].output
-          : val.toString();
+      let output = "";
+      if (
+        this.get("options") &&
+        Array.isArray(this.get("options")) &&
+        this.get("options").find((option) => {
+          return option.value === String(val);
+        })
+      ) {
+        output = this.get("options").find((option) => {
+          return option.value === String(val);
+        }).output;
+      } else {
+        output = val ? String(val) : "";
+      }
       this.element.html(output);
       return output;
     } else if (this.get("form_element_type") == "Checkbox") {

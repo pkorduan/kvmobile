@@ -18,9 +18,10 @@ import { GpsStatus } from "./gpsStatus";
 import { SyncStatus } from "./syncStatus";
 import { Stelle } from "./Stelle";
 import { Layer } from "./Layer";
+import { Feature } from "./Feature";
 import { Klasse } from "./Klasse";
 import { Overlay } from "./Overlay";
-import { maplibreStyleObj } from "./teststyle";
+import { maplibreStyleObj } from "./mapLibreStyles";
 import { NetworkStatus } from "./networkStatus";
 import { FileUtils } from "./controller/files";
 import { Mapper } from "./controller/mapper";
@@ -73,6 +74,7 @@ class Kvm {
   backgroundLayers: Layer[];
   backgroundLayerSettings: any[];
   backgroundGeolocation: BackgroundGeolocation;
+  isActive: boolean;
 
   // showItem: <(p:any)=>void>undefined,
   // log: <(p:any)=>void>undefined,
@@ -176,12 +178,12 @@ class Kvm {
     if (params.url.match(urlPattern)) {
       // matched tile url
       const key = kvm.getTileKey(params.url);
-      console.info("Searching for tile %s", key);
+      //      console.info("Searching for tile %s", key);
       kvm
         .readTile(key)
         .then((d) => {
           if (d) {
-            console.info("Tile %s found in DB", key);
+            //console.info("Tile %s found in DB", key);
             callback(null, d, null, null);
           } else {
             const url = params.url.replace("custom", "https");
@@ -220,7 +222,7 @@ class Kvm {
         fetch(url)
           .then((t) => {
             t.json().then((data) => {
-              console.info(data);
+              //console.info(data);
               kvm.orgTileUrl = data.tiles[0];
               data.tiles[0] = data.tiles[0].replace("https", "custom");
               kvm.saveTileServerConfiguration(data);
@@ -605,7 +607,9 @@ bis hier */
    *    - Anzeigen, dass layer nicht synchronisiert werden können
    */
   startApplication() {
-    let activeView = kvm.store.getItem("activeView") || "featurelist";
+    let activeView = ["settings", "map", "featurelist"].includes(kvm.store.getItem("activeView")) ? kvm.store.getItem("activeView") : "featurelist";
+
+    kvm.store.getItem("activeView") || "featurelist";
     console.log("onDeviceReady");
 
     const dbPromise = idb.openDB("keyval-store", 1, {
@@ -771,8 +775,12 @@ bis hier */
       zoom: kvm.store.getItem("activeZoom") || this.mapSettings.startZoom,
       minZoom: this.mapSettings.minZoom,
       maxZoom: this.mapSettings.maxZoom,
+      maxBounds: [
+        [this.mapSettings.south, this.mapSettings.west],
+        [this.mapSettings.north, this.mapSettings.east],
+      ],
       layers: this.backgroundLayers[1],
-      renderer: this.myRenderer,
+      //renderer: this.myRenderer,
     });
     const baseMaps = {};
     map.on("popupopen", function (evt) {
@@ -788,7 +796,11 @@ bis hier */
     */
 
     // TODO
-    (<any>map).setMaxBounds(L.bounds(L.point(this.mapSettings.west, this.mapSettings.south), L.point(this.mapSettings.east, this.mapSettings.north)));
+    /*    (<any>map).setMaxBounds([
+      [this.mapSettings.south, this.mapSettings.west],
+      [this.mapSettings.north, this.mapSettings.east],
+    ]);
+*/
     for (var i = 0; i < this.backgroundLayers.length; i++) {
       baseMaps[this.backgroundLayerSettings[i].label] = this.backgroundLayers[i];
     }
@@ -1009,14 +1021,20 @@ bis hier */
   }
 
   createBackgroundLayer(backgroundLayerSetting) {
-    console.error("createBackgroundLayer " + backgroundLayerSetting.type);
+    console.log("createBackgroundLayer " + backgroundLayerSetting.type);
     if (backgroundLayerSetting.type == "tile") {
       return L.tileLayer(backgroundLayerSetting.url, backgroundLayerSetting.params);
     } else if (backgroundLayerSetting.type == "vectortile") {
       //      return L.vectorGrid.protobuf(backgroundLayerSetting.url, backgroundLayerSetting.params);
 
       return (<any>L).maplibreGL({
-        style: maplibreStyleObj,
+        style:
+          maplibreStyleObj.find((style) => {
+            return style.id == this.config.style;
+          }) ||
+          maplibreStyleObj.find((style) => {
+            return style.id == "default";
+          }),
         interactive: backgroundLayerSetting.interactiv,
       });
     } else {
@@ -1128,23 +1146,38 @@ bis hier */
     });
 
     $("#requestStellenButton").on("click", function () {
-      if (navigator.onLine) {
-        if ($("#kvwmapServerUrlField").val() != "" && $("#kvwmapServerLoginNameField").val() != "" && $("#kvwmapServerPasswortField").val() != "") {
-          $("#sperr_div").show();
-          var stelle = new Stelle({
-            url: $("#kvwmapServerUrlField").val(),
-            login_name: $("#kvwmapServerLoginNameField").val(),
-            passwort: $("#kvwmapServerPasswortField").val(),
-          });
-          console.log("Stellenobjekt erzeugt um Stellen abfragen zu können: " + JSON.stringify(stelle));
-          kvm.log("Stellenobjekt erzeugt um Stellen abfragen zu können: " + JSON.stringify(stelle), 4);
-          stelle.requestStellen();
-        } else {
-          kvm.msg("Sie müssen erst die Server URL, Nutzername und Password angeben!");
-        }
-      } else {
-        kvm.msg("Kein Internet. Stellen Sie sicher, dass sie eine Netzverbindung haben!");
-      }
+      navigator.notification.confirm(
+        "Vor dem neu Laden der Stellen müssen alle Änderungen mit dem Server synchronisiert worden sein, sonst können Daten verloren gehen! Ich habe alle Layer synchronisiert. Jetzt andere Stelle auswählen?",
+        function (buttonIndex) {
+          if (buttonIndex == 1) {
+            // ja
+            if (navigator.onLine) {
+              if ($("#kvwmapServerUrlField").val() != "" && $("#kvwmapServerLoginNameField").val() != "" && $("#kvwmapServerPasswortField").val() != "") {
+                $("#sperr_div").show();
+                $("#activeStelleBezeichnungDiv").hide();
+                var stelle = new Stelle({
+                  url: $("#kvwmapServerUrlField").val(),
+                  login_name: $("#kvwmapServerLoginNameField").val(),
+                  passwort: $("#kvwmapServerPasswortField").val(),
+                });
+                console.log("Stellenobjekt erzeugt um Stellen abfragen zu können: " + JSON.stringify(stelle));
+                kvm.log("Stellenobjekt erzeugt um Stellen abfragen zu können: " + JSON.stringify(stelle), 4);
+                stelle.requestStellen();
+              } else {
+                kvm.msg("Sie müssen erst die Server URL, Nutzername und Password angeben!");
+              }
+            } else {
+              kvm.msg("Kein Internet. Stellen Sie sicher, dass sie eine Netzverbindung haben!");
+            }
+          }
+          if (buttonIndex == 2) {
+            // nein
+            kvm.msg("Ok, nichts passiert!", "Stellen abfragen");
+          }
+        },
+        "Stellen abfragen",
+        ["ja", "nein"]
+      );
     });
 
     $("#kvwmapServerStelleSelectField").on("change", function () {
@@ -1167,6 +1200,7 @@ bis hier */
       var stelle = new Stelle({
         id: $("#kvwmapServerIdField").val(),
         name: $("#kvwmapServerNameField").val(),
+        bezeichnung: $("#kvwmapServerStelleSelectField option:selected").text(),
         url: $("#kvwmapServerUrlField").val(),
         login_name: $("#kvwmapServerLoginNameField").val(),
         passwort: $("#kvwmapServerPasswortField").val(),
@@ -1181,6 +1215,8 @@ bis hier */
       if ($("#saveServerSettingsButton").hasClass("settings-button-active")) {
         $("#saveServerSettingsButton").toggleClass("settings-button settings-button-active");
       }
+      $("#kvwmapServerStelleSelectField, #saveServerSettingsButton").hide();
+      $("#requestStellenButton").show();
       if (navigator.onLine) {
         kvm.showSettingsDiv("layer");
         $("#requestLayersButton").show();
@@ -1214,13 +1250,13 @@ bis hier */
         console.error("Bug setting MinMax");
         //   kvm.map.setMaxBounds(
         //     L.bounds(
-        //       L.point(
-        //         $('#mapSettings_west').val(),
-        //         $('#mapSettings_south').val()
+        //       L.latLng(
+        //         $('#mapSettings_south').val(),
+        //         $('#mapSettings_west').val()
         //       ),
-        //       L.point(
-        //         $('#mapSettings_east').val(),
-        //         $('#mapSettings_north').val()
+        //       L.latLngpoint(
+        //         $('#mapSettings_north').val(),
+        //         $('#mapSettings_east').val()
         //       )
         //     )
         //   );
@@ -1587,8 +1623,8 @@ bis hier */
     });
 
     /* Clientside Filter according to http://stackoverflow.com/questions/12433835/client-side-searching-of-a-table-with-jquery */
-    /*** Search Haltestelle ***/
-    $("#searchHaltestelle").on("keyup paste change search", function () {
+    /*** Search Feature ***/
+    $("#searchFeatureField").on("keyup paste change search", function () {
       var needle = $(this).val().toString().toLowerCase(),
         haystack = $(".feature-item");
 
@@ -1598,7 +1634,7 @@ bis hier */
     });
 
     $("#showSearch").on("click", function () {
-      $("#searchHaltestelle").toggle();
+      $("#searchFeatureField").toggle();
     });
 
     $("#geoLocationButton").on("click", kvm.getGeoLocation);
@@ -1640,8 +1676,9 @@ bis hier */
             }
             kvm.layers = [];
             $("#layer_list").html("");
-            kvm.activeLayer = kvm.activeStelle = kvm.store = undefined;
+            kvm.activeLayer = kvm.activeStelle = undefined;
             window.localStorage.clear();
+            kvm.store = window.localStorage;
             kvm.msg(
               "Fertig!\nStarten Sie die Anwendung neu und fragen Sie die Stelle und Layer unter Einstellungen neu ab.",
               "Reset Datenbank und Einstellungen"
@@ -1738,8 +1775,8 @@ bis hier */
     });
 
     $("#featurelistHeading").on("click", (evt) => {
-      if (kvm.activeLayer && kvm.activeLayer.activeFeature) {
-        kvm.activeLayer.activeFeature.unselect();
+      if (kvm.activeLayer.hasActiveFeature()) {
+        kvm.map.closePopup();
       }
     });
 
@@ -1769,12 +1806,8 @@ bis hier */
   }
 
   featureItemClickEventFunction(evt) {
-    kvm.log("Öffne DataView für Feature " + kvm.activeLayer.features[evt.target.getAttribute("id")], 4);
-
-    kvm.activeLayer.selectFeature(kvm.activeLayer.features[evt.target.getAttribute("id")]);
-
-    kvm.activeLayer.loadFeatureToView(kvm.activeLayer.activeFeature, { editable: false });
-
+    console.log("featureItemClickEvent on feature id: %o", evt.target.id);
+    kvm.activeLayer.activateFeature(kvm.activeLayer.features[evt.target.id], false);
     kvm.showItem("dataView");
   }
 
@@ -1816,11 +1849,11 @@ bis hier */
   }
 
   showActiveItem() {
-    this.showItem(kvm.store.getItem("activeView") || "featurelist");
+    return this.showItem(["settings", "map", "featurelist"].includes(kvm.store.getItem("activeView")) ? kvm.store.getItem("activeView") : "featurelist");
   }
 
-  showItem(item) {
-    //kvm.log("showItem: " + item, 4);
+  showItem(item): void {
+    console.log("showItem: %o", item);
     // erstmal alle panels ausblenden
     $(".panel").hide();
 
@@ -1840,6 +1873,9 @@ bis hier */
       case "map":
         kvm.showDefaultMenu();
         $("#map").show();
+        if (kvm.activeLayer && kvm.activeLayer.activeFeature) {
+          kvm.activeLayer.activeFeature.zoomTo(false);
+        }
         kvm.map.invalidateSize();
         break;
       case "mapEdit":

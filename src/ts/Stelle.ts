@@ -54,6 +54,7 @@ export class Stelle {
     kvm.log("Stelle.js setActive", 4);
     kvm.activeStelle = this;
     kvm.store.setItem("activeStelleId", this.get("id"));
+    $("#activeStelleBezeichnungDiv").html(this.get("bezeichnung")).show();
   }
 
   /*

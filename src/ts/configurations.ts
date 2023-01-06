@@ -71,7 +71,7 @@ export const configurations = [
         type: "vectortile",
         //'https://api.mapbox.com/styles/v1/pkorduan/ckrg05q6c4x7n17nr0kjbe6j9.html?fresh=true&title=view&access_token=pk.eyJ1IjoicGtvcmR1YW4iLCJhIjoiY2lxbm54b2Q4MDAzaGkzbWFodWtka2NsaCJ9.SiUN3rvZ1pbyOyZ3xQh-Hg#{z}/{x}/{y}',
         url: "https://gdi-service.de/tileserver-gl/data/v3/{z}/{x}/{y}.pbf",
-        style: "teststyle.json",
+        style: "default",
         interactiv: false,
         params: {
           minZoom: 7,
@@ -356,12 +356,12 @@ export const configurations = [
     mapSettings: {
       newPosSelect: 1,
       minZoom: 9,
-      maxZoom: 18,
+      maxZoom: 19,
       startZoom: 8,
-      west: 13.04961,
-      south: 51.353,
-      east: 13.89345,
-      north: 51.90666,
+      west: 13.02,
+      south: 51.25,
+      east: 13.91,
+      north: 51.9,
       startCenterLat: 51.6128,
       startCenterLon: 13.4658,
     },
@@ -375,15 +375,19 @@ export const configurations = [
         type: "vectortile",
         //'https://api.mapbox.com/styles/v1/pkorduan/ckrg05q6c4x7n17nr0kjbe6j9.html?fresh=true&title=view&access_token=pk.eyJ1IjoicGtvcmR1YW4iLCJhIjoiY2lxbm54b2Q4MDAzaGkzbWFodWtka2NsaCJ9.SiUN3rvZ1pbyOyZ3xQh-Hg#{z}/{x}/{y}',
         url: "https://gdi-service.de/tileserver-gl/data/v3/{z}/{x}/{y}.pbf",
-        style: "teststyle.json",
+        style: "default",
         interactiv: false,
         params: {
           minZoom: 7,
-          maxZoom: 14,
-          west: 13.04961,
-          south: 51.353,
-          east: 13.89345,
-          north: 51.90666,
+          maxZoom: 18,
+          west: 13.02,
+          south: 51.35,
+          east: 13.91,
+          north: 51.9,
+          bounds: [
+            [51.35, 13.02],
+            [51.9, 13.91],
+          ],
           // rendererFactory: L.canvas.tile,
           // TODO
           rendererFactory: L.canvas,
@@ -463,6 +467,16 @@ export const configurations = [
           format: "image/png",
           transparent: true,
           attribution: "LGB WMS DOP20",
+          minZoom: 7,
+          maxZoom: 18,
+          west: 13.02,
+          south: 51.35,
+          east: 13.91,
+          north: 51.9,
+          bounds: [
+            [51.35, 13.02],
+            [51.9, 13.91],
+          ],
         },
       },
       /*      {
@@ -625,5 +639,145 @@ export const configurations = [
       },
     ],
   }, // GDI-Service
+  {
+    name: "Streuobst",
+    dbname: "kvmobile",
+    /*
+     * Beispiele für Pfade in denen Bilder gespeichert werden
+     * file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/
+     * file:///storage/BA82-4AA9/Android/data/de.gdiservice.kvmobile/cache/
+     * emulated/0 wird als default in den Einstellungen gesetzt
+     * der Nutzer kann die Angabe unter Einstellungen setzen
+     * wenn das erste Foto gespeichert wird mit dem Camera Plugin, wird
+     * der verwendete Pfad ermittelt und die Einstellung überschrieben.
+     */
+    //  localImgPath: 'file:///storage/' + 'BAB2-4AA9' + '/Android/data/de.gdiservice.kvmobile/cache/',
+    localImgPath: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/",
+    localTilePath: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/",
+    localBackupPath: "file:///storage/emulated/0/Documents/",
+    projZone: 33,
+    logLevel: 4,
+    debug: true,
+    minTrackDistance: 5,
+    kvwmapServerId: 1,
+    kvwmapServerName: "kvwmap",
+    markerStyles: {
+      "0": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#dd8181" },
+      "1": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#465dc0" },
+      "2": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#23a325" },
+      "3": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#26a7f1" },
+    },
+    mapSettings: {
+      newPosSelect: 1,
+      minZoom: 7,
+      maxZoom: 18,
+      startZoom: 8,
+      west: 13.04961,
+      south: 51.353,
+      east: 13.89345,
+      north: 51.90666,
+      startCenterLat: 51.6128,
+      startCenterLon: 13.4658,
+    },
+    kvwmapServerUrl: "https://mvbio.de/streuobst",
+    kvwmapServerLoginName: "",
+    kvwmapServerPasswort: "",
+    backgroundLayerSettings: [
+      /*    {
+                label: 'Luftbilder offline',
+                online: false,
+                type: 'tile',
+                url : 'https://isk.geobasis-bb.de/mapproxy/dop20c_wmts/service?service=WMTS&request=GetTile&version=1.0.0&layer=bebb_dop20c&style=default&format=image/png&TileMatrixSet=grid_25833&TileMatrix={z}&TileRow={x}&TileCol={y}',
+                params: {
+                  attribution: "LGB WMTS DOP20c"
+                }
+              },*/
+      {
+        label: "Luftbilder online",
+        online: true,
+        type: "wms",
+        url: "https://www.geodaten-mv.de/dienste/adv_dop",
+        params: {
+          layers: "mv_dop",
+          format: "image/png",
+          transparent: true,
+          attribution: "LAiV M-V WMS DOP20",
+        },
+      },
+      {
+        label: "Basemap offline",
+        online: true,
+        type: "vectortile",
+        url: "https://gdi-service.de/tileserver-gl-mv/data/v3/{z}/{x}/{y}.pbf",
+        style: "default",
+        interactiv: false,
+        params: {
+          minZoom: 7,
+          maxZoom: 14,
+          west: 10.59228,
+          south: 53.09319,
+          east: 14.41968,
+          north: 54.7106,
+          // rendererFactory: L.canvas.tile,
+          // TODO
+          rendererFactory: L.canvas,
+          getFeatureId: function (f) {
+            return f.properties.osm_id;
+          },
+          maxNativeZoom: 14,
+          attribution: "OSM TileServer GL GDI-Service",
+        },
+      },
+      /*    {
+        label: "Basemap",
+        online: true,
+        type: "vectortile",
+        url: "https://gdi-service.de/tileserver-gl-mv/data/v3/{z}/{x}/{y}.pbf",
+        style: "basic-preview",
+        interactiv: false,
+        params: {
+          minZoom: 7,
+          maxZoom: 14,
+          west: 10.59228,
+          south: 53.09319,
+          east: 14.41968,
+          north: 54.7106,
+          // rendererFactory: L.canvas.tile,
+          // TODO
+          rendererFactory: L.canvas,
+          getFeatureId: function (f) {
+            return f.properties.osm_id;
+          },
+          maxNativeZoom: 14,
+          attribution: "OSM TileServer GL GDI-Service",
+        },
+      },
+      {
+        label: "Basemap grau",
+        online: true,
+        type: "vectortile",
+        //'https://api.mapbox.com/styles/v1/pkorduan/ckrg05q6c4x7n17nr0kjbe6j9.html?fresh=true&title=view&access_token=pk.eyJ1IjoicGtvcmR1YW4iLCJhIjoiY2lxbm54b2Q4MDAzaGkzbWFodWtka2NsaCJ9.SiUN3rvZ1pbyOyZ3xQh-Hg#{z}/{x}/{y}',
+        url: "https://gdi-service.de/tileserver-gl-mv/data/v3/{z}/{x}/{y}.pbf",
+        style: "positron",
+        interactiv: false,
+        params: {
+          minZoom: 7,
+          maxZoom: 14,
+          west: 10.59228,
+          south: 53.09319,
+          east: 14.41968,
+          north: 54.7106,
+          // rendererFactory: L.canvas.tile,
+          // TODO
+          rendererFactory: L.canvas,
+          getFeatureId: function (f) {
+            return f.properties.osm_id;
+          },
+          maxNativeZoom: 14,
+          attribution: "OSM TileServer GL GDI-Service",
+        },
+      },*/
+    ],
+  },
 ];
 //# sourceMappingURL=config.js.map

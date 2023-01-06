@@ -14,24 +14,62 @@ Doku zu kvmobile: https://kvwmap.de/index.php/kvmobile
 Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.de/public/kvmobile/
 
 # Change log
+## 1.9.12
+  * Features
+    * Begrenzung des Karten zoom und pan auf maximale Ausdehnung der Konfigurationsdatei.
+    * Zoom nicht mehr auf das Feature wenn man eines in der Karte auswählt.
+    * Nicht mehr rein und rauszoomen wenn man ein Feature neu stylet.
+    * Anzeige der Bezeichnung der ausgewählten aktiven Stelle in den Settings unter Server.
+    * Anzeige des Button Stellen abfragen nachdem eine Stelle ausgewählt und deren Einstellungen gespeichert wurden.
+    * PanTo active feature erst wenn der Kartenview geöffnet wird.
+    * Beim Klick auf ein Feature aus einem Layer, der nicht aktiv geschaltet ist, wird nur das Popup geöffnet, nicht selektiert.
+    * Im aktiven Layer sind die Feature die ausgewählt wurden gehighlighted.
+    * Beim Laden der Layer werden gleich alle synchronisiert.
+    * Beim Start der Anwendung werden die Layer automatisch synchronisiert.
+    * Vor dem Neu Laden der Stellen muss der Nutzer bestätigen, dass er alle Layer synchronisiert hat.
+  * Maintainance
+    * Überarbeitung der Selektion bzw. aktiv Schaltung der Feature.
+  * Bugfixes
+    * Create correct text in Popup of featues of not active layers.
+    * Get the style from layer that belongs to the feature not from activeLayer.
+    * Set empty store in stead of null in kvm when clear the configuration.
+    * Select feature correctly in map.
+## 1.9.11
+  * Bugfix
+    * Sortierattribut Status nicht mit in Abfrage nehmen
+## 1.9.10
+  * Bugfixes
+    * Sortierattribute nicht aus dem Store laden bei Layer.setActive
+    * LayerFilter nicht aus dem Store laden bei Layer.setActive
+## 1.9.9
+  * ToDos
+    * Beim Laden der Layer Sperrbildschirm anzeigen und was gerade läuft
+    * Beim Laden von Auswahllistentabellen ohne Geometry treten Fehler auf
+    * Lupe fehlt wenn Suche eingeschaltet ist und Layer neu ausgewählt wird
+  * Features
+    * Es können verschiedene Styles verwendet werden für Vektorkachel Hintergrundlayer.
+    * Umstellung auf die neuen Vektorkacheldienst unter tileserver-gl-mv
+  * Bugfixes
+    * Einstellung des letzten Item ohne Fehler oder alternative Items zeigen
+    * Fehler bei der Anzeige von Options der Auswahlfelder die NULL sind behoben.
 ## 1.9.8
-  * Feature
+  * Features
     * Nicht Synchronisieren wenn kein Netz
 ## 1.9.7
   * Bugfixes
     * Korrektur beim Laden der Layer und Daten
 ## 1.9.6
-  * Feature
+  * Features
     * Die App merkt sich welcher View als letztes offen war und zeigt diesen wieder an wenn die App neu gestartet wird.
     * Die App merkt sich auch den zuletzt eingestellten Zoom und die Mitte vom Kartenview.
     * Die Reihenfolge der Legende ändert sich gleich wenn ein neu geladener Layer eine neue drawingorder vom Server bekommen hat.
   * Bugfix
     * Wenn die App gestartet wurde wird jetzt der richtige activeLayer in der Legende fett hervorgehoben.
 ## 1.9.5
-  * Feature
+  * Features
     * Die Reihenfolge der Layer unter Einstellungen und in der Legende richtet sich nach der drawingorder vom Server
 ## 1.9.4
-  * Feature
+  * Features
     * A click on the feature lists header deselect the currently active feature.
     * Set circle marker radius on class size param.
   * Bugfixes
