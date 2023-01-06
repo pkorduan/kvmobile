@@ -3385,6 +3385,10 @@ button#gpsControlButton.kvm-gps-track {
   font-size: 20px;
 }
 
+.leaflet-popup-content {
+  min-width: 150px;
+}
+
 /*a.hover {
 
 }*/

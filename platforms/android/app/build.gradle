@@ -347,11 +347,11 @@ dependencies {
 
     // SUB-PROJECT DEPENDENCIES START
     implementation(project(path: ":CordovaLib"))
+    implementation "com.android.support:support-v4:24.1.1+"
+    implementation "com.android.support:support-v4:+"
     implementation "com.google.android.gms:play-services-location:11+"
     implementation "com.android.support:support-v4:26+"
     implementation "com.android.support:appcompat-v7:26+"
-    implementation "com.android.support:support-v4:24.1.1+"
-    implementation "com.android.support:support-v4:+"
     // SUB-PROJECT DEPENDENCIES END
 }
 

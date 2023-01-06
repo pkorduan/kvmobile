@@ -2,6 +2,8 @@ import { Buffer } from "buffer";
 import * as wkx from "wkx";
 import * as L from "leaflet";
 import { kvm } from "./app";
+import { Layer } from "./Layer";
+import { Klasse } from "./Klasse";
 /*
  * Klasse zum Vorhalten der Datenobjekte zur Laufzeit der Anwendung
  * Ein Feature ist leer (außer die automatisch generierte uuid) wenn es neu angelegt werden soll
@@ -27,34 +29,48 @@ import { kvm } from "./app";
  * aLatLngs und aCoords können bei Polygon und Multi-Geometrien verschachtelt sein.
  * Wenn das Zentrale Format immer wkx ist, kann man mit fromXY und asXY alle Transformationen umsetzen
  */
-export function Feature(
-  data: any = {},
-  options: any = {
-    id_attribute: "uuid",
-    geometry_type: "Point",
-    geometry_attribute: "geom",
-    globalLayerId: 0,
-    new: true,
-  }
-) {
-  //console.log('Create Feature with data: %o and options: %o', data, options);
-  this.data = typeof data == "string" ? JSON.parse(data) : data;
-  this.options = options; // Optionen, die beim Erzeugen des Features mit übergeben wurden. Siehe Default-Argument in init-Klasse.
-  this.id = this.data[options.id_attribute];
-  this.layerId = ""; // Id des Layers (z.B. circleMarkers) in dem das Feature gezeichnet ist
-  this.globalLayerId = options.globalLayerId; // Id des Layers zu dem das Feature gehört
-  /*kvm
+export class Feature {
+  data: any = {};
+  options: any = {};
+  id: string;
+  layerId: number;
+  globalLayerId: string;
+  isEditable: boolean;
+  isActive: boolean;
+  editableLayer: any;
+  newGeom: any;
+  geom: any;
+
+  constructor(
+    data: any = {},
+    options: any = {
+      id_attribute: "uuid",
+      geometry_type: "Point",
+      geometry_attribute: "geom",
+      globalLayerId: 0,
+      new: true,
+    }
+  ) {
+    //console.log('Create Feature with data: %o and options: %o', data, options);
+    this.data = typeof data == "string" ? JSON.parse(data) : data;
+    this.options = options; // Optionen, die beim Erzeugen des Features mit übergeben wurden. Siehe Default-Argument in init-Klasse.
+    this.id = this.data[options.id_attribute];
+    this.layerId = null; // Leaflet Layer id des Layers (z.B. circleMarkers) in dem das Feature gezeichnet ist
+    this.globalLayerId = options.globalLayerId; // Id des Layers zu dem das Feature gehört
+    /*kvm
   console.log('Erzeuge eine editierbare Geometrie vom Feature');
   this.editableLayer = kvm.controller.mapper.createEditable(this); // In vorheriger Version wurde hier L.marker(kvm.map.getCenter()) verwendet. ToDo: muss das hier überhaupt gesetzt werden, wenn es denn dann doch beim setEditable erzeugt wird?
   */
-  //console.log('Setze Feature auf im Moment nicht editierbar.');
-  this.editable = false; // Feature ist gerade im Modus editierbar oder nicht
-
-  this.get = function (key) {
+    //console.log('Setze Feature auf im Moment nicht editierbar.');
+    this.isEditable = false; // Feature ist gerade im Modus editierbar oder nicht
+    this.isActive = false; // Feature is aktuell gerade ausgewählt, Style in Karte gändert und evtl. Popup offen oder nicht
+    this.setGeomFromData();
+  }
+  get(key) {
     return typeof this.data[key] == "undefined" ? "null" : this.data[key];
-  };
+  }
 
-  this.setEditable = function (editable) {
+  setEditable(editable) {
     if (editable) {
       console.log("Setze feature: %s editierbar.", this.id);
       this.editableLayer = kvm.controller.mapper.createEditable(this);
@@ -64,46 +80,46 @@ export function Feature(
       console.log("Entferne editierbare Geometrie von feature: %s.", this.id);
       this.editableLayer = kvm.controller.mapper.removeEditable(this);
     }
-    this.editable = editable;
-  };
+    this.isEditable = editable;
+  }
 
-  this.getWaypoint = function (end = "last") {
+  getWaypoint(end = "last") {
     var latlngs = this.editableLayer.getLatLngs();
     if (end == "last") {
       return latlngs[latlngs.length - 1];
     } else {
       return latlngs[0];
     }
-  };
+  }
 
-  this.getAsArray = function (key) {
+  getAsArray(key) {
     return this.data[key] ? this.data[key].slice(1, -1).split(",") : [];
-  };
+  }
 
-  this.getFeatureId = function () {
+  getFeatureId() {
     return this.get(this.options.id_attribute);
-  };
+  }
 
-  this.set = function (key, value) {
+  set(key, value) {
     this.data[key] = value;
     return this.data[key];
-  };
+  }
 
-  this.getData = function () {
+  getData() {
     return this.data;
-  };
+  }
 
-  this.setData = function (data) {
+  setData(data) {
     //console.log('Feature.setData %o', data);
     this.data = typeof data == "string" ? JSON.parse(data) : data;
     this.setGeomFromData();
-  };
+  }
 
   /*
    * Setzt die Geometrie neu an Hand der übergebenen wkx Geometrie wenn sie sich gegenüber der vorherigen geändert hat.
    * und lößt den Trigger aus, der angibt, dass sich die Geom des Features geändert hat.
    */
-  this.setGeom = function (wkx) {
+  setGeom(wkx) {
     console.log("setGeom mit wkx: %o", wkx);
     console.log("Überschreibe oldGeom: %o mit newGeom: %o", this.oldGeom, this.newGeom);
     var oldGeom = this.newGeom;
@@ -115,13 +131,16 @@ export function Feature(
       console.log("Neuer Wert wurde gesetzt. Löse Trigger geomChanged mit exclude wkx aus.");
       $(document).trigger("geomChanged", [{ geom: this.newGeom, exclude: "wkx" }]);
     }
-  };
+  }
+  oldGeom(arg0: string, oldGeom: any, newGeom: any) {
+    throw new Error("Method not implemented.");
+  }
 
   /*
    * Setzt die LatLngs des editableLayers auf die übergebene Geometrie
    * falls das Feature schon einen editableLayer zugewiesen bekommen hat.
    */
-  this.setLatLngs = function (geom) {
+  setLatLngs(geom) {
     console.log("setLatLngs in feature with geom: %o", geom);
     if (this.editableLayer) {
       var newLatLngs = this.wkxToLatLngs(geom),
@@ -139,24 +158,24 @@ export function Feature(
       }
       console.log("Neue latLngs für die Editable Geometry in der Karte: %o", newLatLngs);
     }
-  };
+  }
 
-  this.getLatLngs = function () {
+  getLatLngs() {
     console.log("Feature.getLatLngs()");
     if (this.options.geometry_type == "Point") {
       return this.editableLayer.getLatLng();
     } else {
       return this.editableLayer.getLatLngs();
     }
-  };
+  }
 
   /*
    * Gibt von einem WKX Geometry Objekt ein Array mit latlng Werten aus wie es für Leaflet Objekte gebraucht wird.
    */
-  this.wkxToLatLngs = function (geom = this.geom) {
+  wkxToLatLngs(geom = this.geom) {
     if (this.options.geometry_type == "Point") {
       // ToDo hier ggf. den Geometrietyp auch aus this.geometry_type auslesen und nicht aus der übergebenen geom
-      // Problem dann, dass man die Funktion nur benutzen kann für den Geometrietype des activeLayer
+      // Problem dann, dass man die Funktion nur benutzen kann für den Geometrietype des activen Layer
       var coordsLevelDeep = kvm.controller.mapper.coordsLevelsDeep[geom.toWkt().split("(")[0].toUpperCase()];
       return coordsLevelDeep == 0
         ? L.GeoJSON.coordsToLatLng(geom.toGeoJSON().coordinates)
@@ -213,14 +232,14 @@ export function Feature(
       }
       //      return [geom.exteriorRing.map(function(point) { return [point.y, point.x]; }).slice(0, -1)].concat(geom.interiorRings.map(function(interiorRing) { return interiorRing.map(function(point) { return [ point.x, point.y]; }).slice(0, -1); }));
     }
-  };
+  }
 
   /*
    * Erzeugt an Hand des übergebenen wkb Strings ein wkx-Geometry-Objekt mit eastnorth Werten
    */
-  this.wkbToWkx = function (wkb) {
+  wkbToWkx(wkb) {
     return wkx.Geometry.parse(<any>new Buffer(wkb, "hex"));
-  };
+  }
 
   /*
    * Konvertiert das Array von Lat,Lng Werten alatlngs in ein wkx.Geometry-Objekt
@@ -232,7 +251,7 @@ export function Feature(
    * -> LatLng für die Geometrie des circleMarkers oder/und editables: kvm.controller.mapper.toLatLngs(geom) => [[[54, 12], [54.1 12.1]],[[54 12], [...]],[...]]]
    * -> WKT für die Anzeige im Formular: geom.toWkt() => 'MULTIPOLYGON(((54, 12 ....)))'
    */
-  this.aLatLngsToWkx = function (alatlngs) {
+  aLatLngsToWkx(alatlngs) {
     var result;
 
     switch (this.options.geometry_type) {
@@ -334,17 +353,19 @@ export function Feature(
         result = wkx.Geometry.parse("SRID=4326;POINT(" + alatlngs.join(" ") + ")");
     }
     return result;
-  };
+  }
 
-  this.wkxToEwkb = function (wkx) {
+  wkxToEwkb(wkx) {
     //kvm.wkx.Geometry.parse('SRID=4326;POINT(' + alatlng.join(' ') + ')').toEwkb().inspect().replace(/<|Buffer| |>/g, '')
     return wkx.toEwkb().toString("hex");
-  };
+  }
 
-  this.reverseAxis = function (point) {
+  reverseAxis(point) {
     return point[1] + " " + point[0];
-  };
+  }
 
+  /**
+   * Diese Funktion wird ja wohl sicher nicht mehr verwendet, denn die Tabelle haltestellen dürfte es nicht immer geben.
   this.update = function () {
     const sql = "\
       SELECT\
@@ -359,17 +380,19 @@ export function Feature(
       sql,
       [],
       function (rs) {
+        const kvmLayer = kvm.layers[this.globalLayerId];
         console.log("Objekt aktualisiert.");
         //console.log("Feature.update result: " + JSON.stringify(rs.rows.item(0)));
         var data = rs.rows.item(0);
-        kvm.activeLayer.activeFeature.data = typeof data == "string" ? JSON.parse(data) : data;
+        kvmLayer.activeFeature.data = typeof data == "string" ? JSON.parse(data) : data;
 
-        if (typeof kvm.activeLayer.features[data.uuid] == "undefined") {
-          //console.log('insert new feature name in feature list: ' + kvm.activeLayer.activeFeature.get('name'));
-          $("#featurelistTable tr:first").before(kvm.activeLayer.activeFeature.listElement);
+        if (typeof kvmLayer.features[data.uuid] == "undefined") {
+          console.log("insert new feature name in feature list: " + kvmLayer.activeFeature.get("name"));
+          $("#featurelistTable tr:first").before(kvmLayer.activeFeature.listElement);
         } else {
-          //console.log('replace old with new name in feature list: ' + kvm.activeLayer.activeFeature.get('name'));
-          $("#" + kvm.activeLayer.activeFeature.get(this.options.id_attribute)).html(kvm.activeLayer.activeFeature.get("name"));
+          console.log("replace old with new name in feature list: " + kvmLayer.activeFeature.get("name"));
+          console.log("this in update of features %o", this);
+          $("#" + kvmLayer.activeFeature.get(this.options.id_attribute)).html(kvmLayer.activeFeature.get("name"));
         }
       },
       function (error) {
@@ -384,16 +407,34 @@ export function Feature(
       }
     );
   };
-
-  this.unselect = function () {
-    kvm.log("Deselektiere Feature " + this.layerId, 4);
+*/
+  /**
+   * Deactivate the feature in map and featurelist
+   * @returns null
+   */
+  deactivate() {
+    let mapLayer = (<any>kvm.map)._layers[this.layerId];
+    const kvmLayer = kvm.layers[this.globalLayerId];
+    console.log(
+      "Deselektiere Feature id: %s in Layer: %s, globalLayerId: %s in Leaflet layerId: %s",
+      this.id,
+      kvmLayer.get("title"),
+      this.globalLayerId,
+      this.layerId
+    );
     if (this.layerId) {
-      (<any>kvm.map)._layers[this.layerId].setStyle(this.getStyle(kvm.activeLayer));
+      mapLayer.setStyle(this.getStyle());
+      //kvm.map.zoomIn();
+      //kvm.map.zoomOut(); // To refresh layer style
     }
+    mapLayer.closePopup();
     $(".feature-item").removeClass("selected-feature-item");
-  };
+    this.isActive = false;
+    return null;
+  }
 
-  this.zoomTo = function (layer, zoom) {
+  zoomTo(zoom) {
+    let layer = this.isEditable ? this.editableLayer : (<any>kvm.map)._layers[this.layerId];
     if (this.options.geometry_type == "Point") {
       if (zoom) {
         kvm.map.setZoom(18);
@@ -403,34 +444,34 @@ export function Feature(
       kvm.map.flyToBounds(layer.getBounds());
       // kvm.map.fitBounds(layer.getBounds());
     }
-  };
+  }
 
-  this.select = function (zoom) {
-    //console.log("Markiere Feature " + this.id);
-    var layer = (<any>kvm.map)._layers[this.layerId];
-
+  /**
+   * select feature in map if newGeom exists
+   * select feature in list
+   * set feature isSelected to true
+   */
+  activate(zoom) {
+    var mapLayer = (<any>kvm.map)._layers[this.layerId];
+    let kvmLayer = kvm.layers[this.globalLayerId];
     if (this.newGeom) {
       //console.log("Feature has newGeom");
-      //console.log("Select feature in map " + this.layerId);
-      layer.setStyle(kvm.activeLayer.getSelectedStyle(this.getStyle(kvm.activeLayer)));
-
-      this.zoomTo(layer, zoom);
-      /*
+      console.log("Markiere Feature %s in Layer %s", this.id, kvmLayer.get("title"));
+      mapLayer.setStyle(kvmLayer.getSelectedStyle(this.getStyle()));
       if (zoom) {
-        kvm.map.setZoom(17);
+        this.zoomTo(zoom);
       }
-      kvm.map.panTo(kvm.map._layers[this.layerId].getLatLng());
-*/
     } else {
-      console.log("Feature hat noch eine newGeom und noch nicht in Karte");
+      console.log("Feature hat noch keine newGeom und ist noch nicht in Karte");
       kvm.msg("Das Feature hat noch keine Geometrie und ist deshalb nicht in der Karte zu sehen!", "Hinweis");
     }
     kvm.log("Select feature in list " + this.id, 4);
     $("#" + this.id).addClass("selected-feature-item");
+    this.isActive = true;
     return this;
-  };
+  }
 
-  this.listElement = function () {
+  listElement() {
     //console.log('Erzeuge Listenelement für Feature', this.get(this.options.id_attribute));
     var markerStyles = JSON.parse(kvm.store.getItem("markerStyles")),
       numStyles = Object.keys(markerStyles).length,
@@ -447,20 +488,20 @@ export function Feature(
       "</div>\
     "
     );
-  };
+  }
 
-  this.getLabelValue = function () {
-    const layer = kvm.activeLayer;
+  getLabelValue() {
+    const kvmLayer: Layer = kvm.layers[this.globalLayerId];
     let label_value = "";
-    const label_attribute = layer.get("name_attribute");
+    const label_attribute = kvmLayer.get("name_attribute");
 
-    if (layer.hasEditPrivilege) {
-      const formField = layer.attributes[layer.attribute_index[label_attribute]].formField;
+    if (kvmLayer.hasEditPrivilege) {
+      const formField = kvmLayer.attributes[kvmLayer.attribute_index[label_attribute]].formField;
       if (this.get(label_attribute)) {
         label_value = formField.getFormattedValue ? formField.getFormattedValue(this.get(label_attribute)) : this.get(label_attribute);
       }
     } else {
-      const viewField = layer.attributes[layer.attribute_index[label_attribute]].viewField;
+      const viewField = kvmLayer.attributes[kvmLayer.attribute_index[label_attribute]].viewField;
       if (this.get(label_attribute)) {
         label_value = viewField.element.html();
       }
@@ -469,12 +510,13 @@ export function Feature(
       label_value = "Datensatz " + this.get(this.options.id_attribute);
     }
     return label_value;
-  };
+  }
 
   /*
    * Add a single list element to the list of features in list view
    */
-  this.addListElement = function () {
+  addListElement() {
+    const kvmLayer: Layer = kvm.layers[this.globalLayerId];
     kvm.log("Feature.addListElement", 4);
     //console.log('Add listelement: %o', this.listElement());
 
@@ -484,46 +526,42 @@ export function Feature(
     $("#" + this.id).on("click", kvm.featureItemClickEventFunction);
     kvm.log("Click Event an Listenelement registriert", 4);
 
-    $("#numDatasetsText").html(Object.keys(kvm.activeLayer.features).length.toString());
-    //console.log('Neue Anzahl features: %s', Object.keys(kvm.activeLayer.features).length);
+    $("#numDatasetsText").html(Object.keys(kvmLayer.features).length.toString());
+    //console.log('Neue Anzahl features: %s', Object.keys(kvmLayer.features).length);
     kvm.log("Anzeige der Anzahl der Features aktualisiert.", 4);
-  };
+  }
 
-  this.updateListElement = function () {
+  updateListElement() {
     kvm.log("Feature.updateListElement", 4);
     var markerStyles = JSON.parse(kvm.store.getItem("markerStyles")),
       numStyles = Object.keys(markerStyles).length,
       markerStyleIndex = this.get("status") >= 0 && this.get("status") < numStyles ? this.get("status") : 0;
     $("#" + this.get(this.options.id_attribute)).html(this.getLabelValue());
     $("#" + this.get(this.options.id_attribute)).css("background-color", markerStyles[markerStyleIndex].fillColor);
-  };
+  }
 
   /**
    * This function return a style for this feature
    * If the classitem value matches a class its style will be returned.
    * If not the defaultStyle of the layer will be returned.
    * For all missing settings in class style, default values will be taken.
+   * @return leafletPathOptions
    */
-  this.getStyle = function (layer) {
-    let matchingClass: any = {};
+  getStyle() {
+    let matchingClass: Klasse;
     let style: any = {};
-    let defaultStyle = layer.getDefaultStyle();
-    if (typeof (matchingClass = layer.getClass(this.get(layer.settings.classitem))) == "undefined") {
-      style = defaultStyle;
-    } else {
-      console.log("%s: Use styles from matching class.", layer.title);
-      const classStyle = matchingClass.style;
-      style.color = kvm.rgbToHex(layer.get("geometry_type") == "Line" ? classStyle.fillColor : classStyle.color) || defaultStyle.color;
-      style.opacity = classStyle.opacity / 100 || defaultStyle.opacity;
-      style.fillColor = kvm.rgbToHex(layer.get("geometry_type") == "Line" ? classStyle.color : classStyle.fillColor) || defaultStyle.fillcolor;
-      style.fillOpacity = classStyle.fillOpacity / 100 || defaultStyle.fillOpacity;
-      style.weight = classStyle.weight || defaultStyle.weight;
-    }
-    style.fill = this.options.geometry_type != "Line";
-    return style;
-  };
+    let kvmLayer: Layer = kvm.layers[this.globalLayerId];
 
-  this.getNormalStyle = function () {
+    if (typeof (matchingClass = kvmLayer.getClass(this.get(kvmLayer.settings.classitem))) == "undefined") {
+      style = kvmLayer.getDefaultPathOptions();
+    } else {
+      //console.log("%s: Use styles from matching class.", layer.title);
+      style = matchingClass.getLeafletPathOptions();
+    }
+    return style;
+  }
+
+  getNormalStyle() {
     if (this.options.geometry_type == "Point") {
       return this.getNormalCircleMarkerStyle();
     } else if (this.options.geometry_type == "Line") {
@@ -531,9 +569,9 @@ export function Feature(
     } else if (this.options.geometry_type == "Polygon") {
       return this.getNormalPolygonStyle();
     }
-  };
+  }
 
-  this.getNormalPolylineStyle = function () {
+  getNormalPolylineStyle() {
     //console.log('getNormalPolylineStyle');
     var markerStyles = JSON.parse(kvm.store.getItem("markerStyles")),
       numStyles = Object.keys(markerStyles).length,
@@ -546,9 +584,9 @@ export function Feature(
     style.opacity = 0.8;
 
     return style;
-  };
+  }
 
-  this.getNormalPolygonStyle = function () {
+  getNormalPolygonStyle() {
     //console.log('getNormalPolygonStyle');
     var markerStyles = JSON.parse(kvm.store.getItem("markerStyles")),
       numStyles = Object.keys(markerStyles).length,
@@ -559,27 +597,27 @@ export function Feature(
     style.opacity = 0.8;
 
     return style;
-  };
+  }
 
-  this.getNormalCircleMarkerStyle = function () {
+  getNormalCircleMarkerStyle() {
     //console.log('getNormalCircleMarkerStyle');
     //kvm.log('getNormalCircleMarkerStyle for status: ' + this.get('status'), 4);
     var markerStyles = JSON.parse(kvm.store.getItem("markerStyles")),
       numStyles = Object.keys(markerStyles).length,
       markerStyleIndex = this.get("status") >= 0 && this.get("status") < numStyles ? this.get("status") : 0;
     return markerStyles[markerStyleIndex];
-  };
+  }
 
-  this.getEditModeStyle = function () {
+  getEditModeStyle() {
     //console.log('getEditModeStyle');
     if (this.options.geometry_type == "Point") {
       return this.getEditModeCircleMarkerStyle();
     } else if (this.options.geometry_type == "Line") {
       return this.getEditModePolylineStyle();
     }
-  };
+  }
 
-  this.getEditModeCircleMarkerStyle = function () {
+  getEditModeCircleMarkerStyle() {
     //console.log('getEditModeCircleMarkerStyle');
     return {
       color: "#666666",
@@ -588,9 +626,9 @@ export function Feature(
       fillOpacity: 0.8,
       fillColor: "#cccccc",
     };
-  };
+  }
 
-  this.getEditModePolylineStyle = function () {
+  getEditModePolylineStyle() {
     //console.log('getEditModePolylineStyle');
     var style = {
       stroke: true,
@@ -601,9 +639,9 @@ export function Feature(
     };
     console.log("style: %o", style);
     return style;
-  };
+  }
 
-  this.setGeomFromData = function () {
+  setGeomFromData() {
     //console.log('setGeomFromData');
     if (this.data[this.options.geometry_attribute]) {
       //console.log('Setze geom des neuen Features mit data: %o', this.data);
@@ -612,7 +650,5 @@ export function Feature(
     this.newGeom = this.geom; // Aktuelle WKX-Geometry beim Editieren. Entspricht this.geom wenn das Feature neu geladen wurde und Geometrie in Karte, durch GPS oder Formular noch nicht geändert wurde.
     //console.log('new feature newGeom: %o', this.newGeom);
     //console.log('new feature geom: %o', this.geom);
-  };
-
-  this.setGeomFromData();
+  }
 }

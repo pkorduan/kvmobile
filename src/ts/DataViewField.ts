@@ -32,13 +32,13 @@ export class DataViewField {
   setValue(val) {
     let images, localFile, remoteFile, i, img_div, src;
 
-    console.log("DataViewField.setValue %s with value: %s", this.settings.name, val);
+    //console.log("DataViewField.setValue %s with value: %s", this.settings.name, val);
     if (val && this.get("type") === "timestamp") {
       let datetime = new Date(val);
       val = datetime.toLocaleDateString() + " " + datetime.toLocaleTimeString();
       this.element.html(kvm.coalesce(val, ""));
     } else if (this.get("form_element_type") == "Dokument") {
-      kvm.log("DataViewField.setValue for Document Attribute with value: " + val, 4);
+      //kvm.log("DataViewField.setValue for Document Attribute with value: " + val, 4);
       val = kvm.coalesce(val, "");
       // let images;
       //   localFile,
@@ -52,12 +52,12 @@ export class DataViewField {
       if (val == "") {
         $("#imagePreviewDiv").hide();
       } else {
-        console.log("setValue add images to previews div: %s", val);
+        //console.log("setValue add images to previews div: %s", val);
         images = kvm.removeBrackes(val).split(",");
         for (i = 0; i < images.length; i++) {
           remoteFile = images[i];
           localFile = kvm.removeOriginalName(kvm.serverToLocalPath(remoteFile));
-          console.log("Add remoteFile: %s localFile: %s", remoteFile, localFile);
+          //console.log("Add remoteFile: %s localFile: %s", remoteFile, localFile);
           img_div = $(
             '<div class="img" src="' +
               localFile +
@@ -75,7 +75,7 @@ export class DataViewField {
             function (fileEntry) {
               console.log("Datei " + fileEntry.toURL() + " existiert.");
               src = fileEntry.toURL();
-              console.log("Set img src: %s", src);
+              //console.log("Set img src: %s", src);
               img_div.attr("src", src);
               img_div.on("click", function (evt) {
                 var target = $(evt.target),
@@ -93,9 +93,9 @@ export class DataViewField {
               });
             }.bind(this),
             function () {
-              console.log("Datei " + this.localFile + " existiert nicht!");
+              //console.log("Datei " + this.localFile + " existiert nicht!");
               if (navigator.onLine) {
-                console.log("Try to download file: %s", this.remoteFile);
+                //console.log("Try to download file: %s", this.remoteFile);
                 kvm.activeLayer.downloadImage(this.localFile, this.remoteFile);
               } else {
                 console.log("Kein Netz set src: img/no_image.png");
@@ -117,17 +117,30 @@ export class DataViewField {
       const subFormFK = options[1];
       const subFormPreviewAttribute = options[2];
       const subFormTable = JSON.parse(kvm.store.getItem("layerSettings_" + stelleId + "_" + subFormLayerId)).table_name;
-      let sql = "\
+      let sql =
+        "\
         SELECT\
         FROM\
-          " + subFormTable + "\
+          " +
+        subFormTable +
+        "\
       ";
-      console.log("SQL: %s", sql);
+      //console.log("SQL: %s", sql);
     } else if (this.get("form_element_type") == "Auswahlfeld") {
-      const output =
-        this.get("options") && Array.isArray(this.get("options")) && parseInt(val) >= 0 && parseInt(val) < Object.keys(this.get("options")).length
-          ? this.get("options")[val].output
-          : val.toString();
+      let output = "";
+      if (
+        this.get("options") &&
+        Array.isArray(this.get("options")) &&
+        this.get("options").find((option) => {
+          return option.value === String(val);
+        })
+      ) {
+        output = this.get("options").find((option) => {
+          return option.value === String(val);
+        }).output;
+      } else {
+        output = val ? String(val) : "";
+      }
       this.element.html(output);
       return output;
     } else if (this.get("form_element_type") == "Checkbox") {
@@ -207,7 +220,7 @@ export class DataViewField {
    * otherwise src is equal to name
    */
   addImage(src, name = "") {
-    console.log("DataViewField: Add Image with src: %s and name: %s", src, name);
+    //console.log("DataViewField: Add Image with src: %s and name: %s", src, name);
     name = name == "" ? src : name;
     const img_div = $(
       '<div class="img" src="' + src + '" style="background-image: url(' + src + ');" field_id="' + this.get("index") + '"name="' + name + '"></div>'

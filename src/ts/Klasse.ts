@@ -1,7 +1,9 @@
 import { kvm } from "./app";
+import { Layer } from "./Layer";
 
 export class Klasse {
   settings: any;
+  layer: Layer;
   constructor(settings = {}) {
     this.settings = typeof settings == "string" ? JSON.parse(settings) : settings;
   }
@@ -14,6 +16,33 @@ export class Klasse {
     return this.settings[key];
   }
 
+  /**
+   * This function translate mapserver class style options into
+   * leaflet path options
+   * @returns {}
+   */
+  getLeafletPathOptions() {
+    let defaultPathOptions = this.layer.getDefaultPathOptions();
+    let pathOptions: any = {
+      color: `rgb(${(this.layer.get("geometry_type") == "Line" ? this.get("style").fillColor : this.get("style").color) || defaultPathOptions.color})`,
+      opacity: (this.layer.get("geometry_type") == "Polygon" ? 1 : this.get("style").opacity / 100) || defaultPathOptions.opacity,
+      fill: this.layer.get("geometry_type") == "Line" ? false : this.get("style").fill === "" ? defaultPathOptions.fill : this.get("style").fill,
+      stroke: this.get("style").stroke === "" ? defaultPathOptions.stroke : this.get("style").stroke,
+      fillColor: `rgb(${(this.layer.get("geometry_type") == "Line" ? this.get("style").color : this.get("style").fillColor) || defaultPathOptions.fillColor})`,
+      fillOpacity: this.get("style").opacity / 100 || defaultPathOptions.fillOpacity,
+      weight: this.get("style").weight || defaultPathOptions.weight,
+      size: this.get("style").size || defaultPathOptions.size,
+    };
+    return pathOptions;
+  }
+
+  getSVGStyleOptions(leafletPathOptions) {
+    let svgStyleOptions: any = leafletPathOptions;
+    svgStyleOptions.fill = leafletPathOptions.fill === false ? "none" : leafletPathOptions.fillColor;
+    svgStyleOptions.stroke = leafletPathOptions.stroke === false ? "none" : leafletPathOptions.color;
+    return svgStyleOptions;
+  }
+
   getLegendItem(geometry_type) {
     return `${this.getLegendKeyImg(geometry_type)} ${this.get("name")}
     <i class="fa fa-pencil" aria-hidden="true" style="float: right; margin-right: 10px"></i>`;
@@ -21,44 +50,38 @@ export class Klasse {
 
   getLegendKeyImg(geometry_type) {
     let legendKeyImg: String;
-    let sizeFactor = 1;
+    let svgStyleOptions: any = this.getSVGStyleOptions(this.getLeafletPathOptions());
     if (geometry_type == "Point") {
-      legendKeyImg = this.getCircleMarkerLegendKeyImg(sizeFactor);
+      legendKeyImg = this.getCircleMarkerLegendKeyImg(svgStyleOptions);
     } else if (geometry_type == "Line") {
-      legendKeyImg = this.getPolylineLegendKeyImg(sizeFactor);
+      legendKeyImg = this.getPolylineLegendKeyImg(svgStyleOptions);
     } else if (geometry_type == "Polygon") {
-      legendKeyImg = this.getPolygonLegendKeyImg(sizeFactor);
+      legendKeyImg = this.getPolygonLegendKeyImg(svgStyleOptions);
     }
     console.log("getLegendKeyImg: %s", legendKeyImg);
     return legendKeyImg;
   }
 
-  getCircleMarkerLegendKeyImg(sizeFactor) {
+  getCircleMarkerLegendKeyImg(style) {
     return `\
       <svg height="20" width="20">\
-        <circle cx="10" cy="10" r="8" stroke="rgb(${this.get("style").color})" stroke-width="${this.get("style").weight || 2}" fill="rgb(${
-      this.get("style").fillColor
-    })"></circle>\
+        <circle cx="10" cy="10" r="8" fill="${style.fill}" stroke="${style.stroke}" stroke-width="${style.strokewidth}" fill-opacity="${style.fillOpacity}"></circle>\
       </svg>\
     `;
   }
 
-  getPolylineLegendKeyImg(sizeFactor) {
+  getPolylineLegendKeyImg(style) {
     return `\
       <svg height="20" width="40">\
-        <polyline points="2,18 12,2 28,18 38,2" style="fill:none;stroke:rgb(${this.get("style").fillColor});stroke-width:${
-      this.get("style").weight || 2
-    }"></polyline>\
+        <polyline points="2,18 12,2 28,18 38,2" fill="${style.fill}" stroke="${style.stroke}" stroke-width="${style.strokewidth}" fill-opacity="${style.fillOpacity}"></polyline>\
       </svg>\
     `;
   }
 
-  getPolygonLegendKeyImg(sizeFactor) {
+  getPolygonLegendKeyImg(style) {
     return `\
       <svg height="20" width="40">\
-        <polygon points="0,0 0,20 40,20 40,0" style="fill:rgb(${this.get("style").fillColor});stroke:rgb(${this.get("style").color});stroke-width:${
-      this.get("style").weight || 2
-    }"></polygon>\
+        <polygon points="0,0 0,20 40,20 40,0" fill="${style.fill}" stroke="${style.stroke}" stroke-width="${style.strokewidth}" fill-opacity="${style.fillOpacity}"></polygon>\
       </svg>\
     `;
   }

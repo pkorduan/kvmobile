@@ -13,9 +13,6 @@
     "cordova-plugin-android-fingerprint-auth": {
       "PACKAGE_NAME": "de.gdiservice.kvmobile"
     },
-    "cordova-plugin-background-geolocation": {
-      "PACKAGE_NAME": "de.gdiservice.kvmobile"
-    },
     "cordova-plugin-camera": {
       "PACKAGE_NAME": "de.gdiservice.kvmobile"
     },
@@ -50,6 +47,12 @@
       "PACKAGE_NAME": "de.gdiservice.kvmobile"
     },
     "cordova-sqlite-storage": {
+      "PACKAGE_NAME": "de.gdiservice.kvmobile"
+    },
+    "cordova-plugin-background-geolocation": {
+      "PACKAGE_NAME": "de.gdiservice.kvmobile"
+    },
+    "cordova-plugin-app-version": {
       "PACKAGE_NAME": "de.gdiservice.kvmobile"
     }
   },
