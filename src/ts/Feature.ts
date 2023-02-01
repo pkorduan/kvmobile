@@ -181,9 +181,17 @@ export class Feature {
         ? L.GeoJSON.coordsToLatLng(geom.toGeoJSON().coordinates)
         : L.GeoJSON.coordsToLatLngs(geom.toGeoJSON().coordinates, coordsLevelDeep);
     } else if (this.options.geometry_type == "Line") {
-      return geom.points.map(function (p) {
-        return [p.y, p.x];
-      });
+      if (geom.constructor.name === "LineString") {
+        return geom.points.map(function (p) {
+          return [p.y, p.x];
+        });
+      } else {
+        return geom.lineStrings.map(function (lineString) {
+          return lineString.map(function (point) {
+            return [point.y, point.x];
+          });
+        });
+      }
     } else if (this.options.geometry_type == "Polygon") {
       if (geom.constructor.name === "Polygon") {
         /* returns a latlngs array in the form
@@ -200,7 +208,7 @@ export class Feature {
         ].concat(
           geom.interiorRings.map(function (interiorRing) {
             return interiorRing.map(function (point) {
-              return [point.x, point.y];
+              return [point.y, point.x];
             });
           })
         );
@@ -224,7 +232,7 @@ export class Feature {
           ].concat(
             polygon.interiorRings.map(function (interiorRing) {
               return interiorRing.map(function (point) {
-                return [point.x, point.y];
+                return [point.y, point.x];
               });
             })
           );
@@ -427,22 +435,24 @@ export class Feature {
       //kvm.map.zoomIn();
       //kvm.map.zoomOut(); // To refresh layer style
     }
-    mapLayer.closePopup();
+    //mapLayer.closePopup();
     $(".feature-item").removeClass("selected-feature-item");
     this.isActive = false;
     return null;
   }
 
   zoomTo(zoom) {
-    let layer = this.isEditable ? this.editableLayer : (<any>kvm.map)._layers[this.layerId];
-    if (this.options.geometry_type == "Point") {
-      if (zoom) {
-        kvm.map.setZoom(18);
+    if (this.layerId) {
+      let layer = this.isEditable ? this.editableLayer : (<any>kvm.map)._layers[this.layerId];
+      if (this.options.geometry_type == "Point") {
+        if (zoom) {
+          kvm.map.setZoom(18);
+        }
+        kvm.map.panTo(layer.getLatLng());
+      } else {
+        kvm.map.flyToBounds(layer.getBounds());
+        // kvm.map.fitBounds(layer.getBounds());
       }
-      kvm.map.panTo(layer.getLatLng());
-    } else {
-      kvm.map.flyToBounds(layer.getBounds());
-      // kvm.map.fitBounds(layer.getBounds());
     }
   }
 

@@ -3490,9 +3490,9 @@ this.get("width") || "1"
     $("#layer_" + kvm.activeLayer.getGlobalId() + " > .layer-functions-button").removeClass("fa-ellipsis-v fa-window-close-o");
     $("#layer_" + kvm.activeLayer.getGlobalId() + " > .layer-functions-button").addClass("fa-ellipsis-v");
     if (this.hasEditPrivilege) {
-      $("#newFeatureButton, #editFeatureButton").show();
+      $("#newFeatureButton").show();
     } else {
-      $("#newFeatureButton, #editFeatureButton").hide();
+      $("#newFeatureButton").hide();
     }
 
     // ToDo: Die Kommentare überarbeiten.

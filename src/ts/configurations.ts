@@ -588,17 +588,105 @@ export const configurations = [
       minZoom: 8,
       maxZoom: 18,
       startZoom: 8,
-      west: 274300,
-      south: 5936055,
-      east: 360500,
-      north: 6023976,
-      startCenterLat: 53.095876,
-      startCenterLon: 12.20896,
+      west: 10.5,
+      south: 53.0,
+      east: 14.75,
+      north: 54.75,
+      startCenterLat: 54.1,
+      startCenterLon: 12.1,
     },
-    kvwmapServerUrl: "https://gdi-service.de/kvwmap_pet_dev",
+    kvwmapServerUrl: "https://dev.gdi-service.de/kvwmap_pet_dev",
     kvwmapServerLoginName: "korduan",
     kvwmapServerPasswort: "",
     backgroundLayerSettings: [
+      {
+        label: "Vektorkacheln offline",
+        online: true,
+        type: "vectortile",
+        //'https://api.mapbox.com/styles/v1/pkorduan/ckrg05q6c4x7n17nr0kjbe6j9.html?fresh=true&title=view&access_token=pk.eyJ1IjoicGtvcmR1YW4iLCJhIjoiY2lxbm54b2Q4MDAzaGkzbWFodWtka2NsaCJ9.SiUN3rvZ1pbyOyZ3xQh-Hg#{z}/{x}/{y}',
+        url: "https://gdi-service.de/tileserver-gl/data/v3/{z}/{x}/{y}.pbf",
+        style: "default",
+        interactiv: false,
+        params: {
+          minZoom: 7,
+          maxZoom: 18,
+          west: 10.5,
+          south: 53.0,
+          east: 14.75,
+          north: 54.75,
+          bounds: [
+            [53.0, 10.5],
+            [54.75, 14.75],
+          ],
+          // rendererFactory: L.canvas.tile,
+          // TODO
+          rendererFactory: L.canvas,
+          getFeatureId: function (f) {
+            return f.properties.osm_id;
+          },
+          vectorTileLayerStyles: {
+            // A plain set of L.Path options.
+            landuse: {
+              weight: 0,
+              fillColor: "#9bc2c4",
+              fillOpacity: 1,
+              fill: true,
+            },
+            // A function for styling features dynamically, depending on their
+            // properties and the map's zoom level
+            admin: function (properties, zoom) {
+              var level = properties.admin_level;
+              var weight = 1;
+              if (level == 2) {
+                weight = 2;
+              }
+              return {
+                weight: weight,
+                color: "#cf52d3",
+                dashArray: "2, 6",
+                fillOpacity: 0,
+              };
+            },
+            // A function for styling features dynamically, depending on their
+            // properties, the map's zoom level, and the layer's geometry
+            // dimension (point, line, polygon)
+            water: function (properties, zoom, geometryDimension) {
+              if (geometryDimension === 1) {
+                // point
+                return {
+                  radius: 5,
+                  color: "#cf52d3",
+                };
+              }
+              if (geometryDimension === 2) {
+                // line
+                return {
+                  weight: 1,
+                  color: "#cf52d3",
+                  dashArray: "2, 6",
+                  fillOpacity: 0,
+                };
+              }
+              if (geometryDimension === 3) {
+                // polygon
+                return {
+                  weight: 1,
+                  fillColor: "#9bc2c4",
+                  fillOpacity: 1,
+                  fill: true,
+                };
+              }
+            },
+            // An 'icon' option means that a L.Icon will be used
+            place: {
+              //icon: new L.Icon.Default()
+            },
+            road: [],
+          },
+          maxNativeZoom: 14,
+          attribution: "OSM TileServer GL GDI-Service",
+        },
+      },
       {
         label: "Hintergrundkarte offline",
         online: false,

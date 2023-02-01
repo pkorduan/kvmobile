@@ -14,6 +14,11 @@ Doku zu kvmobile: https://kvwmap.de/index.php/kvmobile
 Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.de/public/kvmobile/
 
 # Change log
+## 1.9.13
+  * Features
+    * Improve GPS-Status update
+  * Bugfixes
+    * Fix cancel edit error
 ## 1.9.12
   * Features
     * Begrenzung des Karten zoom und pan auf maximale Ausdehnung der Konfigurationsdatei.

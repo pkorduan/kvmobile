@@ -18,10 +18,12 @@ export const GpsStatus = {
             " " +
             timestamp.toLocaleTimeString()
         );
+        $("#zoomToCurrentLocation").show();
       });
     } else {
       $("#gpsStatusText").html("GPS wird vom Browser nicht unterstützt.");
       $("#gpsCurrentPosition").html("");
+      $("#zoomToCurrentLocation").hide();
     }
   },
 };

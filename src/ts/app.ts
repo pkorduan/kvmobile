@@ -630,7 +630,7 @@ bis hier */
     this.loadDeviceData();
     SyncStatus.load(this.store);
     this.setConnectionStatus();
-    // this.setGpsStatus();
+    this.setGpsStatus();
     this.initConfigOptions();
     this.initMap();
     this.initColorSelector();
@@ -789,6 +789,35 @@ bis hier */
     map.on("zoomend", (evt) => kvm.store.setItem("activeZoom", evt.target.getZoom()));
     map.on("moveend", (evt) => kvm.store.setItem("activeCenter", JSON.stringify(evt.target.getCenter())));
 
+    map.on("locationfound", function (evt) {
+      console.log("Found a new geolocation: %o", evt);
+      $("gpsStatusText").html("GPS vorhanden und funktioniert");
+      const timestamp = new Date(evt.timestamp);
+      $("gpsCurrentPosition").html(
+        "Position: " +
+          evt.latlng.toString() +
+          "<br>Genauigkeit: " +
+          evt.accuracy +
+          "<br>Zeit: " +
+          timestamp.toLocaleDateString() +
+          " " +
+          timestamp.toLocaleTimeString()
+      );
+      $("#zoomToCurrentLocation").show();
+    });
+
+    map.on("locationerror", function (evt) {
+      console.log("geolocation error occured: %o", evt);
+      kvm.msg(
+        "Fehler bei der Bestimmung der GPS-Position.\
+Die Wartezeit für eine neue Position ist überschritten.\nMeldung des GPS-Gerätes: " + evt.message,
+        "GPS Positionierung"
+      );
+      $("gpsStatusText").html("GPS Zeitüberschreitungsfehler");
+      $("gpsCurrentPosition").prepend("Zuletzt gemessene ");
+      $("#zoomToCurrentLocation").hide();
+    });
+
     /* ToDo Hier Klickevent einführen welches das gerade selectierte Feature deseletiert.
     map.on('click', function(evt) {
       console.log('Click in Map with evt: %o', evt);
@@ -820,6 +849,10 @@ bis hier */
         position: "topright",
         keepCurrentZoomLevel: true,
         flyTo: true,
+        locateOptions: {
+          enableHighAccuracy: true,
+        },
+        cacheLocation: true,
         strings: {
           title: "Zeig mir wo ich bin.",
           metersUnit: "Meter",
@@ -1379,6 +1412,12 @@ bis hier */
 
     $("#showLoggingsButton").on("click", function () {
       kvm.showItem("loggings");
+    });
+
+    $("#zoomToCurrentLocation").on("click", function () {
+      console.log("zoomToCurrentLocation");
+      kvm.showItem("map");
+      kvm.map.locate({ setView: true, maxZoom: 16 });
     });
 
     $("#clearLoggingsButton").on("click", function () {

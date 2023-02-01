@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
   <head>
-    <TITLE>kvmobile 1.9.2</TITLE>
+    <TITLE>kvmobile</TITLE>
     <META charset="UTF-8">
     <meta name="format-detection" content="telephone=no">
     <meta name="msapplication-tap-highlight" content="no">
@@ -163,12 +163,15 @@ child-src * 'self' blob: http:
 -->
     <div class="h2-div"><h2 id="h2_anzeigefilter" class="b-collapsed">Anzeigefilter</h2></div>
     <div id="anzeigeFilterDiv">
-      <select id="statusFilterSelect">
+      <!--select id="statusFilterSelect">
         <option value="" selected>kein Filter</option>
-      </select>
-      <div class="settings-label">Anzahl der Zeilen:</div><input type="number" id="limit" value="1000" size="5"/><br>
-      <div class="settings-label">Starten bei Zeile:</div><input type="number" id="offset" value="0" size="5"/><br>
-      Nur historische Datensätze: <input id="historyFilter" type="checkbox"><br>
+      </select//-->
+      <div class="settings-label">Anzahl der Zeilen:</div><input type="number" id="limit" value="1000" size="5"/>
+      <div style="clear:both"></div>
+      <div class="settings-label">Starten bei Zeile:</div><input type="number" id="offset" value="0" size="5"/>
+      <div style="clear:both"></div>
+      Nur historische Datensätze: <input id="historyFilter" type="checkbox">
+      <div style="clear:both"></div>
       <input id="runFilterButton" type="button" value="Anwenden" class="settings-button" style="margin-top: 5px"/>
       <input id="toggleFilterDivButton" type="button" value="mehr" class="settings-button"/>
       <div id="filterDiv" style="display: none">
@@ -315,9 +318,10 @@ child-src * 'self' blob: http:
       <input id="kvwmapServerUrlField" name="kvwmapServerUrl" type="text"><br>
       Nutzername<br>
       <input id="kvwmapServerLoginNameField" name="kvwmapServerLoginName" type="text" value=""><br>
-      Password <i class="fa fa-eye" aria-hidden="true" onclick="this.classList.toggle('fa-eye'); this.classList.toggle('fa-eye-slash'); document.getElementById('kvwmapServerPasswortField').type = (document.getElementById('kvwmapServerPasswortField').type === 'text' ? 'password' : 'text');"></i><br>
+      Passwort <i class="fa fa-eye" aria-hidden="true" onclick="this.classList.toggle('fa-eye'); this.classList.toggle('fa-eye-slash'); document.getElementById('kvwmapServerPasswortField').type = (document.getElementById('kvwmapServerPasswortField').type === 'text' ? 'password' : 'text');"></i><br>
       <input id="kvwmapServerPasswortField" name="kvwmapServerPasswort" type="password" value=""><br>
       Stelle<br>
+      <div id="activeStelleBezeichnungDiv"></div>
       <button id="requestStellenButton" class="settings-button">
         <i class="fa fa-key" aria-hidden="true"></i> Stellen abfragen
       </button>
@@ -373,11 +377,25 @@ child-src * 'self' blob: http:
     <div>
       <div id="gpsStatusText">...wird geladen</div>
       <div id="gpsCurrentPosition"></div>
+      <div id="zoomToCurrentLocation" style="display: none">
+        <button id="zoomToCurrentLocationButton" class="settings-button">
+          <i class="fa fa-location-arrow" aria-hidden="true"> Zoom zur aktuellen GPS-Position</i>
+        </button>
+      </div>
     </div>
     <hr>
 
     <div class="h2-div"><h2 id="h2_geraeteinformationen" class="b-collapsed">Geräteinformationen</h2></div>
-    <div id="deviceDataText">...wird geladen</div>
+    <div id="deviceDataText">
+      kvmobile Version: <span id="cordovaAppVersion"></span><br>
+      Cordova Version: <span id="deviceCordova"></span><br>
+      Modell: <span id="deviceModel"></span><br>
+      Platform: <span id="devicePlatform"></span><br>
+      Uuid: <span id="deviceUuid"></span><br>
+      Android Version: <span id="deviceVersion"></span><br>
+      Hersteller: <span id="deviceManufacturer"></span><br>
+      Seriennummer: <span id="deviceSerial"></span><br>
+    </div>
     <hr>
 
     <div class="h2-div"><h2 id="h2_datenbank" class="b-collapsed">Datenbank</h2></div>
@@ -466,10 +484,10 @@ child-src * 'self' blob: http:
       <h1 id="featurelistHeading" style="font-size: 24px"></h1>
     </div>
     <div style="float: right; margin-right: 5px">
-      <h1><i id="showSearch" class="fa fa-search" aria-hidden="true" onclick="document.getElementById('searchHaltestelle').toggle('hidden')"></i></h1>
+      <h1><i id="showSearch" class="fa fa-search" aria-hidden="true"></i></h1>
     </div>
     <div style="clear: both;"></div>
-    <input type="search" id="searchHaltestelle" placeholder="Datensatz suchen" aria-label"Liste der Datensätze durchsuchen" autocomplete="off" class="hidden" style="margin-left: 6px; margin-bottom: 4px; padding-left: 4px; padding-top: 2px; padding-bottom: 2px; font-size: 24px; width: 97%; border-radius: 5px;">
+    <input type="search" id="searchFeatureField" placeholder="Datensatz suchen" aria-label"Liste der Datensätze durchsuchen" autocomplete="off" class="hidden" style="margin-left: 6px; margin-bottom: 4px; padding-left: 4px; padding-top: 2px; padding-bottom: 2px; font-size: 24px; width: 97%; border-radius: 5px;">
     <!--div class="center">
       <div class="pagination">
         <a class="page_first_link" href="#" page="0" onclick="kvm.paginate(this)" style="display: none">&laquo;</a>
