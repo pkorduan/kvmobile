@@ -17,8 +17,11 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 ## 1.9.13
   * Features
     * Improve GPS-Status update
+    * Show num Features in Layer info and not in database settings
+    * Set default value if exists for attributs in sqlite database
   * Bugfixes
     * Fix cancel edit error
+    * Fix empty deltas lead to missing readData
 ## 1.9.12
   * Features
     * Begrenzung des Karten zoom und pan auf maximale Ausdehnung der Konfigurationsdatei.

@@ -1,24 +1,11 @@
 import "jquery";
+import { kvm } from "./app";
 export const GpsStatus = {
-  load: function () {
+  load: () => {
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(function (position) {
-        //console.log("Position: %o", position);
-        const timestamp = new Date(position.timestamp);
-        $("#gpsStatusText").html("GPS vorhanden und funktioniert.");
-        $("#gpsCurrentPosition").html(
-          "Position: " +
-            position.coords.latitude.toString() +
-            " " +
-            position.coords.longitude.toString() +
-            "<br>Genauigkeit: " +
-            position.coords.accuracy +
-            "<br>Zeit: " +
-            timestamp.toLocaleDateString() +
-            " " +
-            timestamp.toLocaleTimeString()
-        );
-        $("#zoomToCurrentLocation").show();
+      navigator.geolocation.getCurrentPosition(kvm.onlocationfound, kvm.onlocationerror, {
+        enableHighAccuracy: true,
+        timeout: 5000,
       });
     } else {
       $("#gpsStatusText").html("GPS wird vom Browser nicht unterstützt.");

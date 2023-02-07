@@ -485,7 +485,7 @@ export class Feature {
     //console.log('Erzeuge Listenelement für Feature', this.get(this.options.id_attribute));
     var markerStyles = JSON.parse(kvm.store.getItem("markerStyles")),
       numStyles = Object.keys(markerStyles).length,
-      markerStyleIndex = this.get("status") >= 0 && this.get("status") < numStyles ? this.get("status") : 0;
+      markerStyleIndex = this.get("status") && this.get("status") >= 0 && this.get("status") < numStyles ? this.get("status") : 0;
 
     return (
       '\
@@ -535,10 +535,6 @@ export class Feature {
 
     $("#" + this.id).on("click", kvm.featureItemClickEventFunction);
     kvm.log("Click Event an Listenelement registriert", 4);
-
-    $("#numDatasetsText").html(Object.keys(kvmLayer.features).length.toString());
-    //console.log('Neue Anzahl features: %s', Object.keys(kvmLayer.features).length);
-    kvm.log("Anzeige der Anzahl der Features aktualisiert.", 4);
   }
 
   updateListElement() {

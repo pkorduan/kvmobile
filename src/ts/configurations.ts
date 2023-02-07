@@ -796,7 +796,7 @@ export const configurations = [
         label: "Basemap offline",
         online: true,
         type: "vectortile",
-        url: "https://gdi-service.de/tileserver-gl-mv/data/v3/{z}/{x}/{y}.pbf",
+        url: "https://gdi-service.de/tileserver-gl/data/v3/{z}/{x}/{y}.pbf",
         style: "default",
         interactiv: false,
         params: {
@@ -820,7 +820,7 @@ export const configurations = [
         label: "Basemap",
         online: true,
         type: "vectortile",
-        url: "https://gdi-service.de/tileserver-gl-mv/data/v3/{z}/{x}/{y}.pbf",
+        url: "https://gdi-service.de/tileserver-gl/data/v3/{z}/{x}/{y}.pbf",
         style: "basic-preview",
         interactiv: false,
         params: {
@@ -845,7 +845,7 @@ export const configurations = [
         online: true,
         type: "vectortile",
         //'https://api.mapbox.com/styles/v1/pkorduan/ckrg05q6c4x7n17nr0kjbe6j9.html?fresh=true&title=view&access_token=pk.eyJ1IjoicGtvcmR1YW4iLCJhIjoiY2lxbm54b2Q4MDAzaGkzbWFodWtka2NsaCJ9.SiUN3rvZ1pbyOyZ3xQh-Hg#{z}/{x}/{y}',
-        url: "https://gdi-service.de/tileserver-gl-mv/data/v3/{z}/{x}/{y}.pbf",
+        url: "https://gdi-service.de/tileserver-gl/data/v3/{z}/{x}/{y}.pbf",
         style: "positron",
         interactiv: false,
         params: {

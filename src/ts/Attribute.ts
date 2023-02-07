@@ -147,7 +147,7 @@ export class Attribute {
       (["user_name", "updated_at_client", "created_at"].includes(this.get("name")) || ["User", "UserID", "Time"].includes(this.get("form_element_type"))) &&
       this.get("name") != "updated_at_server" &&
       (action == "" || this.get("options") == "" || action == this.get("options").toLowerCase());
-    kvm.log("Attribute " + this.get("name") + " is Autoattribute" + (action ? " for action " + action : "") + "? " + answer, 4);
+    //kvm.log("Attribute " + this.get("name") + " is Autoattribute" + (action ? " for action " + action : "") + "? " + answer, 4);
     return answer;
   }
 

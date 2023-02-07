@@ -30,7 +30,7 @@ export class Stelle {
   }
 
   viewSettings() {
-    kvm.log("ServerSettings.viewSettings", 4);
+    //kvm.log("ServerSettings.viewSettings", 4);
     $("#kvwmapServerIdField").val(this.get("id"));
     $("#kvwmapServerNameField").val(this.get("name"));
     $("#kvwmapServerUrlField").val(this.get("url"));
@@ -46,12 +46,12 @@ export class Stelle {
   }
 
   saveToStore() {
-    kvm.log("Speicher Stelleneinstellungen in lokalen Speicher: " + JSON.stringify(this.settings));
+    //kvm.log("Speicher Stelleneinstellungen in lokalen Speicher: " + JSON.stringify(this.settings));
     kvm.store.setItem("stelleSettings_" + this.get("id"), JSON.stringify(this.settings));
   }
 
   setActive() {
-    kvm.log("Stelle.js setActive", 4);
+    //kvm.log("Stelle.js setActive", 4);
     kvm.activeStelle = this;
     kvm.store.setItem("activeStelleId", this.get("id"));
     $("#activeStelleBezeichnungDiv").html(this.get("bezeichnung")).show();
@@ -61,13 +61,13 @@ export class Stelle {
    * Request all stellen from active serversetting
    */
   requestStellen() {
-    kvm.log('Stelle.requestStellen: "' + this.getStellenUrl() + '"');
+    //kvm.log('Stelle.requestStellen: "' + this.getStellenUrl() + '"');
     var fileTransfer = new FileTransfer(),
       filename = cordova.file.dataDirectory + "stellen.json",
       url = this.getStellenUrl();
 
     kvm.log("Download Stellen von Url: " + url);
-    kvm.log("Speicher die Datei auf dem Gerät in Datei: " + filename);
+    //kvm.log("Speicher die Datei auf dem Gerät in Datei: " + filename);
 
     fileTransfer.download(
       url,
@@ -87,7 +87,7 @@ export class Stelle {
                   if (resultObj.success) {
                     // TODO notused
                     const validResult = true;
-                    kvm.log("Download der Stellendaten erfolgreich.", 3);
+                    //kvm.log("Download der Stellendaten erfolgreich.", 3);
                     console.log("Download erfolgreich. Antwortobjekt: %o", resultObj);
 
                     $("#kvwmapServerStelleSelectField").find("option").remove();
@@ -147,7 +147,7 @@ export class Stelle {
   }
 
   getStellenUrl() {
-    kvm.log("Stellen.getStellenUrl", 4);
+    //kvm.log("Stellen.getStellenUrl", 4);
     var url = this.get("url"),
       file = this.getUrlFile(url);
 
@@ -215,7 +215,7 @@ export class Stelle {
       url = this.getLayerUrl();
 
     kvm.log("Download Layerdaten von Url: " + url);
-    kvm.log("Speicher die Datei auf dem Gerät in Datei: " + filename);
+    //kvm.log("Speicher die Datei auf dem Gerät in Datei: " + filename);
 
     fileTransfer.download(
       url,
@@ -226,7 +226,7 @@ export class Stelle {
             var reader = new FileReader();
 
             reader.onloadend = function () {
-              kvm.log("Reload der Layerdaten abgeschlossen.", 3);
+              //kvm.log("Reload der Layerdaten abgeschlossen.", 3);
               let items = [];
               let validationResult = "";
 
@@ -282,7 +282,7 @@ export class Stelle {
     if (index == -1) {
       index = layers.length;
     }
-    console.log("getLayerDrawingIndex für Layer %s: %s", layer.get("title"), index);
+    console.log("%s: Stelle.getLayerDrawingIndex return index: %s", layer.get("title"), index);
     return index;
   }
 
@@ -322,7 +322,7 @@ export class Stelle {
             var reader = new FileReader();
 
             reader.onloadend = (evt) => {
-              kvm.log("  requestLayers) Download der Layerdaten abgeschlossen.");
+              //kvm.log("  requestLayers) Download der Layerdaten abgeschlossen.");
               var items = [],
                 validationResult = "";
               console.log("  requestLayers) Download Result: %o", <string>evt.target.result);
@@ -348,7 +348,7 @@ export class Stelle {
                 }
                 kvm.store.removeItem("activeLayerId");
 
-                $("#featurelistHeading").html("Noch keine Layer synchronisiert");
+                $("#featurelistHeading").html("Noch kein Layer ausgewählt");
                 $("#featurelistBody").html(
                   'Wählen Sie unter Einstellungen in der Gruppe "Layer" einen Layer aus. Öffnen Sie dann das Optionen Menü und wählen die Funktion "Daten synchronisieren"!'
                 );
@@ -519,7 +519,7 @@ export class Stelle {
 */
 
   getLayerUrl(options = { hidePassword: false }) {
-    kvm.log("Stelle.getLayerUrl", 4);
+    //kvm.log("Stelle.getLayerUrl", 4);
     var url = this.get("url"),
       file = this.getUrlFile(url);
 

@@ -4,8 +4,8 @@ export const maplibreStyleObj = [
     name: "Basic preview",
     version: 8,
     metadata: { "openmaptiles:version": "3.x" },
-    sources: { openmaptiles: { type: "vector", url: "https://gdi-service.de/tileserver-gl-mv/data/v3.json" } },
-    glyphs: "https://gdi-service.de/tileserver-gl-mv/fonts/{fontstack}/{range}.pbf",
+    sources: { openmaptiles: { type: "vector", url: "https://gdi-service.de/tileserver-gl/data/v3.json" } },
+    glyphs: "https://gdi-service.de/tileserver-gl/fonts/{fontstack}/{range}.pbf",
     layers: [
       { id: "background", paint: { "background-color": "hsl(47, 26%, 88%)" }, type: "background" },
       {
@@ -807,9 +807,9 @@ export const maplibreStyleObj = [
       "openmaptiles:mapbox:source:url": "mapbox://openmaptiles.4qljc88t",
       "openmaptiles:version": "3.x",
     },
-    sources: { openmaptiles: { type: "vector", url: "https://gdi-service.de/tileserver-gl-mv/data/v3.json" } },
-    sprite: "https://gdi-service.de/tileserver-gl-mv/styles/positron/sprite",
-    glyphs: "https://gdi-service.de/tileserver-gl-mv/fonts/{fontstack}/{range}.pbf",
+    sources: { openmaptiles: { type: "vector", url: "https://gdi-service.de/tileserver-gl/data/v3.json" } },
+    sprite: "https://gdi-service.de/tileserver-gl/styles/positron/sprite",
+    glyphs: "https://gdi-service.de/tileserver-gl/fonts/{fontstack}/{range}.pbf",
     layers: [
       { id: "background", type: "background", paint: { "background-color": "rgb(242,243,240)" } },
       {
@@ -1834,7 +1834,7 @@ export const maplibreStyleObj = [
     sources: {
       openmaptiles: {
         type: "vector",
-        url: "custom://gdi-service.de/tileserver-gl-mv/data/v3.json",
+        url: "custom://gdi-service.de/tileserver-gl/data/v3.json",
       },
     },
     glyphs: "file:///android_asset/www/openmaptiles-fonts/{fontstack}/{range}.pbf",

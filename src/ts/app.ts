@@ -75,6 +75,7 @@ class Kvm {
   backgroundLayerSettings: any[];
   backgroundGeolocation: BackgroundGeolocation;
   isActive: boolean;
+  GpsIsOn: boolean = false;
 
   // showItem: <(p:any)=>void>undefined,
   // log: <(p:any)=>void>undefined,
@@ -529,8 +530,6 @@ bis hier */
         //kvm.log('Lokale Datenbank geöffnet.', 3);
         $("#dbnameText").html(kvm.config.dbname + ".db");
 
-        //kvm.startApplication();
-
         FingerprintAuth.isAvailable(
           function (result) {
             console.log("FingerprintAuth available: " + JSON.stringify(result));
@@ -610,7 +609,7 @@ bis hier */
     let activeView = ["settings", "map", "featurelist"].includes(kvm.store.getItem("activeView")) ? kvm.store.getItem("activeView") : "featurelist";
 
     kvm.store.getItem("activeView") || "featurelist";
-    console.log("onDeviceReady");
+    console.log("startApplication");
 
     const dbPromise = idb.openDB("keyval-store", 1, {
       upgrade(db) {
@@ -628,7 +627,7 @@ bis hier */
 
     this.loadLogLevel();
     this.loadDeviceData();
-    SyncStatus.load(this.store);
+    //    SyncStatus.load(this.store); ToDo: Wenn das nicht gebraucht wird auch in index.html löschen.
     this.setConnectionStatus();
     this.setGpsStatus();
     this.initConfigOptions();
@@ -701,10 +700,10 @@ bis hier */
     //GpsStatus.load();
     //kvm.log('GPS Position geladen');
 
-    kvm.log("Ereignisüberwachung eingerichtet.", 4);
+    //kvm.log("Ereignisüberwachung eingerichtet.", 4);
     this.bindEvents();
 
-    kvm.log("Liste der Datensätze angezeigt.", 4);
+    //kvm.log("Liste der Datensätze angezeigt.", 4);
     this.showItem(activeView);
   }
 
@@ -758,7 +757,7 @@ bis hier */
     //kvm.log("initialisiere Mapsettings", 3);
     this.initMapSettings();
 
-    kvm.log("initialisiere backgroundLayers", 3);
+    //kvm.log("initialisiere backgroundLayers", 3);
     this.initBackgroundLayers();
 
     var crs25833 = new L.Proj.CRS("EPSG:25833", "+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs", {
@@ -789,34 +788,8 @@ bis hier */
     map.on("zoomend", (evt) => kvm.store.setItem("activeZoom", evt.target.getZoom()));
     map.on("moveend", (evt) => kvm.store.setItem("activeCenter", JSON.stringify(evt.target.getCenter())));
 
-    map.on("locationfound", function (evt) {
-      console.log("Found a new geolocation: %o", evt);
-      $("gpsStatusText").html("GPS vorhanden und funktioniert");
-      const timestamp = new Date(evt.timestamp);
-      $("gpsCurrentPosition").html(
-        "Position: " +
-          evt.latlng.toString() +
-          "<br>Genauigkeit: " +
-          evt.accuracy +
-          "<br>Zeit: " +
-          timestamp.toLocaleDateString() +
-          " " +
-          timestamp.toLocaleTimeString()
-      );
-      $("#zoomToCurrentLocation").show();
-    });
-
-    map.on("locationerror", function (evt) {
-      console.log("geolocation error occured: %o", evt);
-      kvm.msg(
-        "Fehler bei der Bestimmung der GPS-Position.\
-Die Wartezeit für eine neue Position ist überschritten.\nMeldung des GPS-Gerätes: " + evt.message,
-        "GPS Positionierung"
-      );
-      $("gpsStatusText").html("GPS Zeitüberschreitungsfehler");
-      $("gpsCurrentPosition").prepend("Zuletzt gemessene ");
-      $("#zoomToCurrentLocation").hide();
-    });
+    map.on("locationfound", kvm.onlocationfound);
+    map.on("locationerror", kvm.onlocationerror);
 
     /* ToDo Hier Klickevent einführen welches das gerade selectierte Feature deseletiert.
     map.on('click', function(evt) {
@@ -973,11 +946,8 @@ Die Wartezeit für eine neue Position ist überschritten.\nMeldung des GPS-Gerä
   }
 
   initColorSelector() {
-    let markerStyles;
-    if (!(markerStyles = JSON.parse(kvm.store.getItem("markerStyles")))) {
-      markerStyles = kvm.config.markerStyles;
-      kvm.store.setItem("markerStyles", JSON.stringify(markerStyles));
-    }
+    const markerStyles = JSON.parse(kvm.store.getItem("markerStyles")) || kvm.config.markerStyles;
+    kvm.store.setItem("markerStyles", JSON.stringify(markerStyles));
     Object.values(markerStyles).forEach(this.addColorSelector);
   }
 
@@ -989,11 +959,8 @@ Die Wartezeit für eine neue Position ist überschritten.\nMeldung des GPS-Gerä
   }
 
   initLocalBackupPath() {
-    let localBackupPath;
-    if (!(localBackupPath = kvm.store.getItem("localBackupPath"))) {
-      localBackupPath = kvm.config.localBackupPath;
-      kvm.store.setItem("localBackupPath", localBackupPath);
-    }
+    let localBackupPath = kvm.store.getItem("localBackupPath") || kvm.config.localBackupPath;
+    kvm.store.setItem("localBackupPath", localBackupPath);
     $("#localBackupPath").val(localBackupPath);
   }
 
@@ -1074,6 +1041,40 @@ Die Wartezeit für eine neue Position ist überschritten.\nMeldung des GPS-Gerä
       //backgroundLayerSetting.type == 'wms'
       return L.tileLayer.wms(backgroundLayerSetting.url, backgroundLayerSetting.params);
     }
+  }
+
+  onlocationfound(evt) {
+    console.log("Found a new geolocation: %o", evt);
+    $("#gpsStatusText").html("GPS vorhanden und funktioniert");
+    const timestamp = new Date(evt.timestamp);
+    const coords = evt.coords ? evt.coords : evt;
+
+    $("#gpsCurrentPosition").html(
+      "Position: " +
+        coords.latitude.toString() +
+        " " +
+        evt.coords.longitude.toString() +
+        "<br>Genauigkeit: " +
+        coords.accuracy +
+        "<br>Zeit: " +
+        timestamp.toLocaleDateString() +
+        " " +
+        timestamp.toLocaleTimeString()
+    );
+    $("#zoomToCurrentLocation").show();
+    kvm.GpsIsOn = true;
+  }
+
+  onlocationerror(evt) {
+    console.log("geolocation error occured: %o", evt);
+    kvm.msg(
+      "Der Standort kann nicht bestimmt werden!\nSchalten Sie in Ihrem Gerät unter Einstellungen die Option 'Standort verwenden' ein.\nFehler bei der Bestimmung der GPS-Position.\nDie Wartezeit für eine neue Position ist überschritten.\nMeldung des GPS-Gerätes: " +
+        evt.message,
+      "GPS Positionierung"
+    );
+    $("#gpsStatusText").html("GPS Zeitüberschreitungsfehler");
+    $("#zoomToCurrentLocation").hide();
+    kvm.GpsIsOn = false;
   }
 
   addColorSelector(style, i) {
@@ -1194,7 +1195,7 @@ Die Wartezeit für eine neue Position ist überschritten.\nMeldung des GPS-Gerä
                   passwort: $("#kvwmapServerPasswortField").val(),
                 });
                 console.log("Stellenobjekt erzeugt um Stellen abfragen zu können: " + JSON.stringify(stelle));
-                kvm.log("Stellenobjekt erzeugt um Stellen abfragen zu können: " + JSON.stringify(stelle), 4);
+                //kvm.log("Stellenobjekt erzeugt um Stellen abfragen zu können: " + JSON.stringify(stelle), 4);
                 stelle.requestStellen();
               } else {
                 kvm.msg("Sie müssen erst die Server URL, Nutzername und Password angeben!");
@@ -1341,7 +1342,7 @@ Die Wartezeit für eine neue Position ist überschritten.\nMeldung des GPS-Gerä
     $("#saveDatabaseButton").on("click", function () {
       navigator.notification.prompt(
         "Geben Sie einen Namen für die Sicherungsdatei an. Die Datenbank wird im Internen Speicher im Verzeichnis " +
-          kvm.store.getItem("localBackupPath") +
+          (kvm.store.getItem("localBackupPath") || kvm.config.localBackupPath) +
           ' mit der Dateiendung .db gespeichert. Ohne Eingabe wird der Name "Sicherung_" + aktuellem Zeitstempel + ".db" vergeben.',
         function (arg) {
           if (arg.input1 == "") {
@@ -1350,7 +1351,7 @@ Die Wartezeit für eine neue Position ist überschritten.\nMeldung des GPS-Gerä
           kvm.controller.files.copyFile(
             cordova.file.applicationStorageDirectory + "databases/",
             "kvmobile.db",
-            kvm.store.getItem("localBackupPath"),
+            kvm.store.getItem("localBackupPath") || kvm.config.localBackupPath,
             arg.input1 + ".db"
           );
         },
@@ -1359,7 +1360,7 @@ Die Wartezeit für eine neue Position ist überschritten.\nMeldung des GPS-Gerä
     });
 
     $("#showDeltasButton").on("click", { context: this }, function (evt) {
-      kvm.log("Delta anzeigen.", 3);
+      //kvm.log("Delta anzeigen.", 3);
       var this_ = evt.data.context,
         sql =
           "\
@@ -1500,7 +1501,7 @@ Die Wartezeit für eine neue Position ist überschritten.\nMeldung des GPS-Gerä
     });
 
     $("#deleteFeatureButton").on("click", function (evt) {
-      kvm.log("Klick auf deleteFeatureButton.", 4);
+      //kvm.log("Klick auf deleteFeatureButton.", 4);
       if (kvm.activeLayer && kvm.activeLayer.hasDeletePrivilege) {
         navigator.notification.confirm(
           "Datensatz wirklich Löschen?",
@@ -1552,10 +1553,10 @@ Die Wartezeit für eine neue Position ist überschritten.\nMeldung des GPS-Gerä
                 activeFeature = kvm.activeLayer.activeFeature,
                 editableLayer = kvm.activeLayer.activeFeature.editableLayer;
 
-              kvm.log("Action: " + action, 4);
+              //kvm.log("Action: " + action, 4);
               if (buttonIndex == 1) {
                 // ja
-                kvm.log("Speichern", 3);
+                //kvm.log("Speichern", 3);
                 if (activeFeature.options.geometry_type == "Line") {
                   var speichern = true;
                   if (activeFeature.layerId) {
@@ -1711,6 +1712,7 @@ Die Wartezeit für eine neue Position ist überschritten.\nMeldung des GPS-Gerä
               kvm.layers.forEach(function (layer) {
                 console.log("Entferne Layer: %s", layer.get("title"));
                 layer.clearData();
+                // ToDo: auch Tabellen des Layers löschen siehe layer.dropTable
               });
             }
             kvm.layers = [];
@@ -1718,6 +1720,9 @@ Die Wartezeit für eine neue Position ist überschritten.\nMeldung des GPS-Gerä
             kvm.activeLayer = kvm.activeStelle = undefined;
             window.localStorage.clear();
             kvm.store = window.localStorage;
+            kvm.initLocalBackupPath();
+            kvm.initStatusFilter();
+            kvm.initColorSelector();
             kvm.msg(
               "Fertig!\nStarten Sie die Anwendung neu und fragen Sie die Stelle und Layer unter Einstellungen neu ab.",
               "Reset Datenbank und Einstellungen"
@@ -1840,7 +1845,7 @@ Die Wartezeit für eine neue Position ist überschritten.\nMeldung des GPS-Gerä
   }
 
   bindFeatureItemClickEvents() {
-    kvm.log("bindFeatureItemClickEvents", 4);
+    //kvm.log("bindFeatureItemClickEvents", 4);
     $(".feature-item").on("click", kvm.featureItemClickEventFunction);
   }
 
@@ -1851,19 +1856,19 @@ Die Wartezeit für eine neue Position ist überschritten.\nMeldung des GPS-Gerä
   }
 
   setConnectionStatus() {
-    kvm.log("setConnectionStatus");
+    //kvm.log("setConnectionStatus");
     NetworkStatus.load();
   }
 
   setGpsStatus() {
-    kvm.log("setGpsStatus");
+    //kvm.log("setGpsStatus");
     GpsStatus.load();
   }
 
   hideSperrDiv() {}
 
   loadLogLevel() {
-    kvm.log("Lade LogLevel", 4);
+    //kvm.log("Lade LogLevel", 4);
     var logLevel = kvm.store.getItem("logLevel");
     if (logLevel == null) {
       logLevel = kvm.config.logLevel;
@@ -1873,7 +1878,7 @@ Die Wartezeit für eine neue Position ist überschritten.\nMeldung des GPS-Gerä
   }
 
   loadDeviceData() {
-    kvm.log("loadDeviceData", 4);
+    //kvm.log("loadDeviceData", 4);
     (<any>cordova).getAppVersion.getVersionNumber((versionNumber) => {
       $("#cordovaAppVersion").html(versionNumber);
       document.title = "kvmobile " + versionNumber;
@@ -2008,7 +2013,7 @@ Die Wartezeit für eine neue Position ist überschritten.\nMeldung des GPS-Gerä
   }
 
   synchronize(context) {
-    kvm.log("function synchronize");
+    //kvm.log("function synchronize");
     var url = context.getSyncUrl();
   }
 
@@ -2195,20 +2200,20 @@ Die Wartezeit für eine neue Position ist überschritten.\nMeldung des GPS-Gerä
   }
 
   parseLayerResult(layerResult) {
-    kvm.log("Starte parseLayerResult", 4);
+    //kvm.log("Starte parseLayerResult", 4);
     var resultObj = {
       success: false,
       errMsg: undefined,
     };
 
     if (layerResult.indexOf('form name="login"') > -1) {
-      kvm.log('form name="login" gefunden!', 4);
+      // kvm.log('form name="login" gefunden!', 4);
       resultObj.errMsg = "Zugang zum Server verweigert! Prüfen Sie Ihre Zugangsdaten unter Einstellungen.";
       return resultObj;
     }
 
     if (!kvm.isValidJsonString(layerResult)) {
-      kvm.log("Das Ergebnis der Layerdatenanfrage ist kein JSON!", 4);
+      // kvm.log("Das Ergebnis der Layerdatenanfrage ist kein JSON!", 4);
       resultObj.errMsg =
         "Fehler beim Abfragen der Layerdaten. Abfrage liefert keine korrekten Daten vom Server. Entweder sind keine auf dem Server vorhanden, die URL der Anfrage ist nicht korrekt oder der es wird eine Fehlermeldung vom Server geliefert statt der Daten.\nURL der Anfrage:\n" +
         kvm.activeStelle.getLayerUrl({ hidePassword: true }) +
@@ -2267,7 +2272,7 @@ Die Wartezeit für eine neue Position ist überschritten.\nMeldung des GPS-Gerä
    * Return the first part before & delimiter
    */
   removeOriginalName(val) {
-    kvm.log("kvm.removeOriginalName: " + val, 4);
+    //kvm.log("kvm.removeOriginalName: " + val, 4);
     return val.split("&").shift();
   }
 
@@ -2276,7 +2281,7 @@ Die Wartezeit für eine neue Position ist überschritten.\nMeldung des GPS-Gerä
    */
   serverToLocalPath(src) {
     var result = kvm.config.localImgPath + src.substring(src.lastIndexOf("/") + 1);
-    kvm.log("kvm.serverToLocalPath convert: " + src + " to: " + result, 4);
+    //kvm.log("kvm.serverToLocalPath convert: " + src + " to: " + result, 4);
     return result;
   }
 
@@ -2284,9 +2289,9 @@ Die Wartezeit für eine neue Position ist überschritten.\nMeldung des GPS-Gerä
    * Replace local image path by servers image path
    */
   localToServerPath(src) {
-    kvm.log("kvm.localToServerPath src: " + src, 4);
+    //kvm.log("kvm.localToServerPath src: " + src, 4);
     var result = kvm.activeLayer.get("document_path") + src.substring(src.lastIndexOf("/") + 1);
-    kvm.log("Result: " + result, 4);
+    //kvm.log("Result: " + result, 4);
     return result;
   }
 
