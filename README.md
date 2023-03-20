@@ -14,6 +14,16 @@ Doku zu kvmobile: https://kvwmap.de/index.php/kvmobile
 Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.de/public/kvmobile/
 
 # Change log
+## 1.10.0
+  * Maintainance
+    * Update to leaflet Version 1.9.3
+    * Fix 10 vulnerabilities of packages
+    * Log layer sync Fehler
+  * Bugfix
+    * Add end coordinate in polygon rings
+## 1.9.14
+  * Bugfixes
+    * Behebung des Fehlers zur Anzeige der GPS-Position in der Karte
 ## 1.9.13
   * Features
     * Improve GPS-Status update

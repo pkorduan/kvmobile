@@ -758,6 +758,7 @@ export class Layer {
         }
       } else {
         kvm.msg(response.err_msg, "Daten Synchronisieren");
+        kvm.log(`Sync-Fehler Layer ${this.title}: ${response.err_msg}`);
       }
       if ($("#syncLayerIcon_" + this.getGlobalId()).hasClass("fa-spinner")) {
         $("#syncLayerIcon_" + this.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
@@ -1739,8 +1740,8 @@ export class Layer {
    */
   saveGeometry(feature) {
     //console.log('saveGeometry mit feature: %o', feature);
-    var latlng;
-    var latlngs;
+    let latlng;
+    let latlngs = [];
     if (feature.options.geometry_type == "Point") {
       latlng = feature.editableLayer.getLatLng();
       //      console.log('latlng: %o', latlng);
@@ -1748,7 +1749,12 @@ export class Layer {
       latlngs = feature.editableLayer.getLatLngs();
       //      console.log('latlngs: %o', latlngs);
     } else if (feature.options.geometry_type == "Polygon") {
-      latlngs = feature.editableLayer.getLatLngs();
+      latlngs = feature.editableLayer.getLatLngs().map(function (ring) {
+        if (ring[0] != ring[ring.length - 1]) {
+          ring.push(ring[0]);
+        }
+        return ring;
+      });
       //      console.log('latlngs: %o', latlngs);
     }
 
@@ -2207,7 +2213,7 @@ export class Layer {
     $(".popup-aendern-link").show();
     $("#saveFeatureButton").toggleClass("active-button inactive-button");
     kvm.controller.mapper.clearWatch();
-    $("#numDatasetsText_" + this.getGlobalId()).html(`${Object.keys(this.features).length}`);
+    $("#numDatasetsText_" + layer.getGlobalId()).html(`${Object.keys(layer.features).length}`);
     $("#sperr_div").hide();
   }
 
@@ -2303,7 +2309,7 @@ export class Layer {
   writeDelta(rs) {
     //console.log('writeDelta');
     //console.log('layer: %o', this.context);
-    //console.log('delta: %o', this.delta);
+    console.log("writeDelta: %o", this.delta);
     //console.log('changes: %o', this.changes);
     var layer = this.context,
       delta = this.delta,

@@ -184,7 +184,7 @@ class Kvm {
         .readTile(key)
         .then((d) => {
           if (d) {
-            //console.info("Tile %s found in DB", key);
+            console.info("Tile %s found in DB", key);
             callback(null, d, null, null);
           } else {
             const url = params.url.replace("custom", "https");
@@ -764,8 +764,8 @@ bis hier */
       origin: [-464849.38, 6310160.14],
       resolutions: [16384, 8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1],
     });
-    this.myRenderer = new L.Canvas({ padding: 0.5, tolerance: 0 });
-    //this.myRenderer = new L.SVG();
+    //this.myRenderer = new L.Canvas({ padding: 0.5, tolerance: 0 });
+    this.myRenderer = new L.SVG();
 
     const map = new L.Map("map", <any>{
       // crs: crs25833,
@@ -779,7 +779,7 @@ bis hier */
         [this.mapSettings.north, this.mapSettings.east],
       ],
       layers: this.backgroundLayers[1],
-      //renderer: this.myRenderer,
+      renderer: this.myRenderer,
     });
     const baseMaps = {};
     map.on("popupopen", function (evt) {
@@ -1044,7 +1044,7 @@ bis hier */
   }
 
   onlocationfound(evt) {
-    console.log("Found a new geolocation: %o", evt);
+    //console.log("Found a new geolocation: %o", evt);
     $("#gpsStatusText").html("GPS vorhanden und funktioniert");
     const timestamp = new Date(evt.timestamp);
     const coords = evt.coords ? evt.coords : evt;
@@ -1053,7 +1053,7 @@ bis hier */
       "Position: " +
         coords.latitude.toString() +
         " " +
-        evt.coords.longitude.toString() +
+        coords.longitude.toString() +
         "<br>Genauigkeit: " +
         coords.accuracy +
         "<br>Zeit: " +
@@ -1066,7 +1066,7 @@ bis hier */
   }
 
   onlocationerror(evt) {
-    console.log("geolocation error occured: %o", evt);
+    //console.log("geolocation error occured: %o", evt);
     kvm.msg(
       "Der Standort kann nicht bestimmt werden!\nSchalten Sie in Ihrem Gerät unter Einstellungen die Option 'Standort verwenden' ein.\nFehler bei der Bestimmung der GPS-Position.\nDie Wartezeit für eine neue Position ist überschritten.\nMeldung des GPS-Gerätes: " +
         evt.message,
@@ -2124,7 +2124,11 @@ bis hier */
     }
   }
 
+  /**
+   *
+   */
   alog(msg, arg: any = "", level = 3, show_in_sperr_div = false) {
+    console.log("alog: ", msg);
     if (level <= kvm.config.logLevel) {
       msg = this.replacePassword(msg);
       if (kvm.config.debug) {
@@ -2331,6 +2335,7 @@ bis hier */
 
   now() {
     const now = new Date();
+
     // TODO falsch implementiert
     return (
       now.getFullYear() +
