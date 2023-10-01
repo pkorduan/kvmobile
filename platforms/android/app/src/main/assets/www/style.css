@@ -4009,3 +4009,7 @@ button#gpsControlButton.kvm-gps-track {
 .no-popup-functions {
   display: none;
 }
+
+.leaflet-control-reloadlayers-icon {
+  font-size: 24px;
+}

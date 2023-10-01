@@ -23,16 +23,18 @@ export class Klasse {
    */
   getLeafletPathOptions() {
     let defaultPathOptions = this.layer.getDefaultPathOptions();
-    let pathOptions: any = {
+    let pathOptions: { [k: string]: any } = {
       color: `rgb(${(this.layer.get("geometry_type") == "Line" ? this.get("style").fillColor : this.get("style").color) || defaultPathOptions.color})`,
       opacity: (this.layer.get("geometry_type") == "Polygon" ? 1 : this.get("style").opacity / 100) || defaultPathOptions.opacity,
       fill: this.layer.get("geometry_type") == "Line" ? false : this.get("style").fill === "" ? defaultPathOptions.fill : this.get("style").fill,
       stroke: this.get("style").stroke === "" ? defaultPathOptions.stroke : this.get("style").stroke,
       fillColor: `rgb(${(this.layer.get("geometry_type") == "Line" ? this.get("style").color : this.get("style").fillColor) || defaultPathOptions.fillColor})`,
       fillOpacity: this.get("style").opacity / 100 || defaultPathOptions.fillOpacity,
-      weight: this.get("style").weight || defaultPathOptions.weight,
-      size: this.get("style").size || defaultPathOptions.size,
+      weight: parseInt(this.get("style").weight) || defaultPathOptions.weight,
     };
+    if (this.layer.get("geometry_type") == "Point") {
+      pathOptions.size = this.get("style").size || defaultPathOptions.size;
+    }
     return pathOptions;
   }
 

@@ -14,13 +14,40 @@ Doku zu kvmobile: https://kvwmap.de/index.php/kvmobile
 Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.de/public/kvmobile/
 
 # Change log
+## 1.10.5
+	* Bugfix
+  	* Add layerGroup to map when saveGeometry of first object in layer.
+	* Maintainance
+  	* Catch Error for incorrect formField type.
+## 1.10.4
+	* Bugfix
+		*	Asynchron loading images and previews.
+		* Different image elements for data and form view.
+		* ReadData only from layer when sorting.
+## 1.10.3
+	* Maintainance
+  	* Add many try and catch blocks to catch errors
+## 1.10.2
+  * Bugfix
+    * Fix query LK-EE Backgroundlayer if not initialized configuration
+## 1.10.1
+  * Features
+    * Show numeric type attributs as numeric input fields 
+  * Bugfix
+    * Check for activeStelleId before usage
 ## 1.10.0
+  * Features
+    * Function to reload all layers in map to restore correct drawed geometries. Its a work around for wrong or not drawn features after zoom or pan actions in LK-EE layers.
+    * Function to load pm vector tiles via MapLibreGL and maplibre-gl-leaflet binding and query tile features
+    * Show error message if image upload fails
   * Maintainance
     * Update to leaflet Version 1.9.3
     * Fix 10 vulnerabilities of packages
     * Log layer sync Fehler
+    * Remove unused code
   * Bugfix
     * Add end coordinate in polygon rings
+    * Set style.weight as integer to prevent the feature snipped drawing
 ## 1.9.14
   * Bugfixes
     * Behebung des Fehlers zur Anzeige der GPS-Position in der Karte

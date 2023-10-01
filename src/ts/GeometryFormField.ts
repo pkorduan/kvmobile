@@ -155,8 +155,9 @@ export class GeometrieFormField {
 
       // Das kann eigentlich auch gemacht werden beim Speichern.
       if (exclude != "wkb") {
-        var oldGeom: any = $("#featureFormular input[name=" + kvm.activeLayer.get("geometry_attribute") + "]").val(),
-          newGeom = geom.toEwkb().toString("hex");
+        let oldGeom: any = $("#featureFormular input[name=" + kvm.activeLayer.get("geometry_attribute") + "]").val();
+
+        let newGeom = geom.toEwkb().toString("hex");
 
         //console.log("Trigger Funktion geomChanged: newGeom: " + newGeom);
         //console.log("Trigger Funktion geomChanged: oldGeom: " + oldGeom);

@@ -599,7 +599,7 @@ export const configurations = [
     kvwmapServerLoginName: "korduan",
     kvwmapServerPasswort: "",
     backgroundLayerSettings: [
-      {
+      /*      {
         label: "Vektorkacheln mit Cache",
         online: true,
         type: "vectortile",
@@ -687,6 +687,8 @@ export const configurations = [
           attribution: "OSM TileServer GL GDI-Service",
         },
       },
+*/
+      /*
       {
         label: "Hintergrundkarte offline",
         online: false,
@@ -696,6 +698,7 @@ export const configurations = [
           attribution: "Kartenbild &copy; Hanse- und Universitätsstadt Rostock (CC BY 4.0) | Kartendaten &copy; OpenStreetMap (ODbL) und LkKfS-MV.",
         },
       },
+*/
       {
         label: "Hintergrundkarte online",
         online: true,
@@ -716,6 +719,7 @@ export const configurations = [
           attribution: "Geoportal-MV DOP WMS",
         },
       },
+      /*
       {
         label: "Luftbildkacheln online",
         online: true,
@@ -725,6 +729,7 @@ export const configurations = [
           attribution: "Geoportal-MV DOP WMST",
         },
       },
+*/
     ],
   }, // GDI-Service
   {
