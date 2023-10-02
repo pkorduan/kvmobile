@@ -38,6 +38,7 @@ export class Layer {
 	isActive: boolean;
 
 	constructor(stelle: Stelle, settings = {}) {
+		console.log("Erzeuge neuen Layer " + (<any>settings).title + " mit settings: " + JSON.stringify(settings));
 		var layer_ = this;
 		this.stelle = stelle;
 		this.settings = typeof settings == "string" ? JSON.parse(settings) : settings;
@@ -466,6 +467,7 @@ export class Layer {
 					sql = "DROP TABLE IF EXISTS " + tableName;
 
 				//kvm.log("Lösche Tabelle mit sql: " + sql, 3);
+				console.log("Lösche Tabelle " + tableName);
 				tx.executeSql(
 					sql,
 					[],

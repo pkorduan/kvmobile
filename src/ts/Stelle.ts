@@ -178,7 +178,7 @@ export class Stelle {
 	 * This function set the layer with activeLayerId in store active
 	 */
 	setActiveLayer() {
-		const layer = kvm.layers[kvm.store.getItem("activeLayerId")];
+		const layer = kvm.layers[kvm.activeStelle.get("id") + "_" + kvm.store.getItem("activeLayerId")];
 		layer.setActive();
 		layer.selectActiveLayerInControl();
 	}
@@ -232,16 +232,15 @@ export class Stelle {
 							let items = [];
 							let validationResult = "";
 
-							console.log("Download Result: " + this, 4);
+							//console.log("Download Result: " + this.result, 4);
 							const resultObj = <any>kvm.parseLayerResult(this.result);
 
 							if (resultObj.success) {
 								//console.log('resultObj: %o', resultObj);
-
-								var layerSettings = resultObj.layers.filter(function (layer) {
-										return layer.id == layerId;
-									})[0],
-									layer;
+								let layerSettings = resultObj.layers.filter(function (layer) {
+									return layer.id == layerId;
+								})[0];
+								let layer;
 
 								kvm.activeLayer.removeFromApp(); // includes removeFromStore()
 								//console.log("Erzeuge neuen Layer");

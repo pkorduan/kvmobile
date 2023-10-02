@@ -17,6 +17,7 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 ## 1.10.5
 	* Bugfix
   	* Add layerGroup to map when saveGeometry of first object in layer.
+  	* Fix set active layer in stelle
 	* Maintainance
   	* Catch Error for incorrect formField type.
 ## 1.10.4
