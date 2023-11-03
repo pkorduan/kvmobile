@@ -14,6 +14,12 @@ Doku zu kvmobile: https://kvwmap.de/index.php/kvmobile
 Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.de/public/kvmobile/
 
 # Change log
+## 1.11.1
+	* Features
+  	* Jump from Parent to Client form and vise versa.
+## 1.11.0
+	* Maintainance
+  	* Konfiguration from Server not from configurations file in apk.
 ## 1.10.5
 	* Bugfix
   	* Add layerGroup to map when saveGeometry of first object in layer.

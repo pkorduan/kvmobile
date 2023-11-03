@@ -12,6 +12,8 @@ import { TextFormField } from "./TextFormField";
 import { UserFormField } from "./UserFormField";
 import { UserIDFormField } from "./UserIDFormField";
 import { ZahlFormField } from "./ZahlFormField";
+import { SubFormEmbeddedPKFormField } from "./SubFormEmbeddedPKFormField";
+import { SubFormFKFormField } from "./SubFormFKFormField";
 import { Field } from "./Field";
 
 export class Attribute {
@@ -24,6 +26,8 @@ export class Attribute {
 		//console.log('Erzeuge Attributeobjekt with settings %o', settings);
 		this.layer = layer;
 		this.settings = settings;
+		this.settings.stelleId = layer.stelle.get('id');
+		this.settings.layerId = layer.get('id');
 		this.formField = this.getFormField();
 		this.viewField = this.getViewField();
 
@@ -39,8 +43,65 @@ export class Attribute {
 		return this.settings[key];
 	}
 
+	/**
+	 * Returns the id of sub layer from SubFormEmbeddedPK attribute option
+	 * It extracts 832 from this attribute options string:
+	 * 832,uuid:baumuuid,datum bearbeiter K kontrolluuid;no_new_window
+   * @return string: ID of sublayer
+   */
+  getGlobalSubLayerId() {
+    return this.settings.stelleId + '_' + this.settings.options.split(';')[0].split(',')[0];
+  }
+
+	/**
+	 * Returns the id of parent layer from SubFormFK attribute option
+	 * Its only an alias from getGlobalSubLayerID, because its the same as to get
+	 * subLayerId from SubFormEmbeddedPK attribute option. Simply the first from
+	 * comma separated string before ;
+	 * @returns String Id of parent layer
+	 */
+	getGlobalParentLayerId() {
+		return this.getGlobalSubLayerId();
+	}
+
+  getGlobalLayerId() {
+    return this.settings.stelleId + '_' + this.settings.layerId;
+  }
+
+  /**
+   * Return the name of the attribute in sub-layer that is the foreign key to the table of the layer of this form element.
+   * It extracts uuid from this attribute options string.
+   * 832,uuid:baumuuid,datum bearbeiter K kontrolluuid;no_new_window
+   * @return string
+   */
+  getPKAttribute() {
+    return this.settings.options.split(';')[0].split(',')[1].split(':')[0];
+  }
+
+  /**
+   * Return the primary key name of layers table
+   * Return baumuuid from this sample attribute options string
+   * 832,uuid:baumuuid,datum bearbeiter K kontrolluuid;no_new_window or
+   * 832,baumuuid,datum bearbeiter K kontrolluuid;no_new_window
+  * @return string
+   */
+  getFKAttribute() {
+    let fk = this.settings.options.split(';')[0].split(',')[1].split(':');
+    return (fk.length == 1 ? fk[0] : fk[1]);
+  }
+
+	/**
+	 * Return the option for Vorschau
+	 * Return "datum bearbeiter K kontrolluuid" from this sample attribute options string
+	 * 832,baumuuid,datum bearbeiter K kontrolluuid;no_new_window
+	 * @returns string
+	 */
+	getVorschauOption() {
+		return this.settings.options.split(';')[0].split(',')[2];
+	}
+
 	getViewField() {
-		return new DataViewField("dataViewDiv", this.settings);
+		return new DataViewField("dataViewDiv", this);
 	}
 
 	getFormField(): Field {
@@ -86,6 +147,12 @@ export class Attribute {
 			case "UserID":
 				field = new UserIDFormField("featureFormular", this.settings);
 				break;
+			case "SubFormEmbeddedPK":
+				field = new SubFormEmbeddedPKFormField("featureFormular", this);
+				break;
+			case "SubFormFK":
+				field = new SubFormFKFormField("featureFormular", this);
+				break;
 			default:
 				field = new TextFormField("featureFormular", this.settings);
 		}
@@ -128,9 +195,11 @@ export class Attribute {
 	/**
 	 * Function return true if the Attribute shall get a value automatically per Definition
 	 * Check
-	 *      // Wenn es ein Auto attribut ist und
-	 *      // nicht updated_at_server heißt und
-	 *      // keine options angegeben wurde oder die option zur action passt
+	 *      Wenn es ein SubFormFK ist oder (
+	 *        Wenn es ein Auto attribut ist und
+	 *        nicht updated_at_server heißt und
+	 *        keine options angegeben wurde oder die option zur action passt
+	 *      )
 	 * @param array changes The array of changes made in formular
 	 * @param string action insert or update used to determine if auto value shall be created pending on option of the attribute
 	 * @return boolean true if auto else false
@@ -145,9 +214,19 @@ export class Attribute {
     kvm.log('action == options? ' + (action == this.get('options').toLowerCase()), 4);
     */
 		var answer =
-			(["user_name", "updated_at_client", "created_at"].includes(this.get("name")) || ["User", "UserID", "Time"].includes(this.get("form_element_type"))) &&
-			this.get("name") != "updated_at_server" &&
-			(action == "" || this.get("options") == "" || action == this.get("options").toLowerCase());
+			['SubFormFK'].includes(this.get('form_element_type')) ||
+			(
+				(
+					["user_name", "updated_at_client", "created_at"].includes(this.get("name")) ||
+					["User", "UserID", "Time"].includes(this.get("form_element_type"))
+				) &&
+				this.get("name") != "updated_at_server" &&
+				(
+					action == "" ||
+					this.get("options") == "" ||
+					action == this.get("options").toLowerCase()
+				)
+			);
 		//kvm.log("Attribute " + this.get("name") + " is Autoattribute" + (action ? " for action " + action : "") + "? " + answer, 4);
 		return answer;
 	}
@@ -265,7 +344,7 @@ export class Attribute {
 				slValue = "'" + this.formField.toISO(pgValue) + "'";
 				break;
 			case pgType == "date":
-				slValue = "'" + this.formField.toDate(pgValue) + "'";
+				slValue = "'" + this.formField.toISO(pgValue) + "'";
 			default:
 				slValue = "'" + pgValue + "'";
 		}
@@ -274,14 +353,13 @@ export class Attribute {
 	}
 
 	withLabel() {
-		var label = $('<div class="form-label">')
-				.append('<label for="' + this.formField.get("name") + '"/>')
-				.append(this.formField.get("alias") ? this.formField.get("alias") : this.formField.get("name")),
-			value = $('<div class="form-value">');
+		let labelDiv = $('<label for="' + this.formField.get("name") + '">')
+				.append(this.formField.get("alias") ? this.formField.get("alias") : this.formField.get("name"));
+		let valueDiv = $('<div class="form-value">');
 
 		if (this.get("form_element_type") == "Geometrie") {
 			if (this.layer.settings.geometry_type == "Point") {
-				value.append(
+				valueDiv.append(
 					'<i id="saveGpsPositionButton" class="fa fa-map-marker fa-2x" aria-hidden="true" style="margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>\
         <svg onclick="kvm.msg(\'Die GPS-Genauigkeit beträgt ca. \' + Math.round(kvm.controller.mapper.getGPSAccuracy()) + \' Meter.\')" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="28" height="28" version="1.1">\
           <g id="gps-signal-icon" class="gps-signal-level-0" transform="scale(1 -1) translate(0 -28)">\
@@ -296,11 +374,11 @@ export class Attribute {
         <!--input type="text" id="geom_wkt" value=""//-->'
 				);
 			}
-			value.append('<textarea cols="40" rows="5" id="geom_wkt"></textarea>');
+			valueDiv.append('<textarea cols="40" rows="5" id="geom_wkt"></textarea>');
 		}
 
 		if (this.get("form_element_type") == "Dokument") {
-			value.append(
+			valueDiv.append(
 				'\
           <i id="takePictureButton_' +
 					this.get("index") +
@@ -316,9 +394,28 @@ export class Attribute {
 		}
 
 		if (this.formField.get("tooltip")) {
-			label.append('&nbsp;<i class="fa fa-exclamation-circle" style="color: #f57802" onclick="kvm.msg(\'' + this.formField.get("tooltip") + "');\"></i>");
+			labelDiv.append('&nbsp;<i class="fa fa-exclamation-circle" style="color: #f57802" onclick="kvm.msg(\'' + this.formField.get("tooltip") + "');\"></i>");
 		}
 
-		return $('<div class="form-field">').append(label).append(value.append(this.formField.element));
+		if (this.get("form_element_type") == "SubFormEmbeddedPK" && this.get('privilege') > '0') {
+			return $('<div class="form-field-rows">')
+				.append(
+					$('<div class="form-label">').append(labelDiv).append(`
+						<input
+							id="new_sub_data_set"
+							type="button"
+							value="Neu"
+							onclick="kvm.newSubDataSet('${this.getGlobalSubLayerId()}', '${this.getFKAttribute()}')"
+							style="float: right; padding: 2px; margin-right: 5px"
+						/>
+					`)
+				)
+				.append(valueDiv.append(this.formField.element));
+		}
+		else {
+			return $('<div class="form-field-rows">')
+				.append($('<div class="form-label">').append(labelDiv))
+				.append(valueDiv.append(this.formField.element));
+		}
 	}
 }

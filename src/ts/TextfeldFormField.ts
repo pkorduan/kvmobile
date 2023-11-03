@@ -31,22 +31,22 @@ export class TextfeldFormField {
     }
 
     setValue(val) {
-        //console.log('TextFormField.setValue with value: ' + val);
-        if (kvm.coalesce(val, "") == "" && this.get("default")) {
-            val = this.get("default");
-        }
+      //console.log('TextFormField.setValue with value: ' + val);
+      if (kvm.coalesce(val, "") == "" && this.get("default")) {
+          val = this.get("default");
+      }
 
-        this.element.val(val == null || val == "null" ? "" : val);
+      this.element.val(val == null || val == "null" ? "" : val);
     }
 
     getValue(action = "") {
-        var val = this.element.val();
+      var val = this.element.val();
 
-        if (typeof val === "undefined" || val == "") {
-            val = null;
-        }
+      if (typeof val === "undefined" || val == "") {
+          val = null;
+      }
 
-        return val;
+      return val;
     }
 
     bindEvents() {

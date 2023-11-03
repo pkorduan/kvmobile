@@ -506,16 +506,17 @@ export class Feature {
 		const kvmLayer: Layer = kvm.layers[this.globalLayerId];
 		let label_value = "";
 		const label_attribute = kvmLayer.get("name_attribute");
-
+		let formField ;
 		if (kvmLayer.hasEditPrivilege) {
-			const formField = kvmLayer.attributes[kvmLayer.attribute_index[label_attribute]].formField;
-			if (this.get(label_attribute)) {
-				label_value = formField.getFormattedValue ? formField.getFormattedValue(this.get(label_attribute)) : this.get(label_attribute);
+			formField = kvmLayer.attributes[kvmLayer.attribute_index[label_attribute]].formField;
+		}
+
+		if (this.get(label_attribute)) {
+			if (formField && formField.getFormattedValue) {
+				label_value = formField.getFormattedValue(this.get(label_attribute));
 			}
-		} else {
-			const viewField = kvmLayer.attributes[kvmLayer.attribute_index[label_attribute]].viewField;
-			if (this.get(label_attribute)) {
-				label_value = viewField.element.html();
+			else {
+				label_value = this.get(label_attribute);
 			}
 		}
 		if (label_value == "") {

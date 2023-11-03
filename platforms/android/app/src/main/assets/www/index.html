@@ -91,7 +91,8 @@ child-src * 'self' blob: http:
   <body">
 
     <div id="sperr_div" class="modal">
-      <i class="fa fa-spinner fa-pulse fa-2x"></i><p id="sperr_div_content" style="margin-top: 20px">Lade Daten ...</p>
+      <i class="fa fa-spinner fa-pulse fa-2x"></i>
+      <div id="sperr_div_content" class="sperr-div-content"></div>
     </div>
 
     <div id="login" class="login">
@@ -366,7 +367,10 @@ child-src * 'self' blob: http:
       <button id="changeBackgroundLayerSettingsButton" class="settings-button">
         <i class="fa fa-floppy-o" aria-hidden="true"> Speichern</i>
       </button>
-    </div>
+      <button id="loadBackgroundLayerButton" class="settings-button">
+        <i class="fa fa-download" aria-hidden="true"> Download</i>
+      </button>
+		</div>
     <hr>
 
     <div class="h2-div"><h2 id="h2_netzwerkstatus" class="b-collapsed">Netzwerkstatus</h2></div>
@@ -435,7 +439,7 @@ child-src * 'self' blob: http:
     </div>
     <hr>
 
-    <div class="h2-div"><h2 class="b-collapsed">Protokol</h2></div>
+    <div class="h2-div"><h2 class="b-collapsed">Protokoll</h2></div>
     <div>
       <div class="settings-label">Protokollierungsstufe:</div>
       <select id="logLevel" name="logLevel" class="mapSetting">
@@ -454,7 +458,10 @@ child-src * 'self' blob: http:
       <button id="clearLoggingsButton" class="settings-button">
         <i class="fa fa-list" aria-hidden="true"> Leere Protokoll</i>
       </button><br>
-    </div>
+      <button id="showSperrDivButton" class="settings-button">
+        <i class="fa fa-list" aria-hidden="true"> Zeige Lademeldungen</i>
+      </button>
+		</div>
     <hr>
 
     <div class="h2-div"><h2 id="h2_konfiguration" class="b-collapsed">Konfiguration</h2></div>

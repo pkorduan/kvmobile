@@ -3260,8 +3260,8 @@ label {
 }
 
 .layer-functions-button {
-  width: 38px;
-  height: 38px;
+  /*  width: 38px; */
+  /*  height: 38px; */
   margin-top: -7px;
   float: right;
   color: gray;
@@ -3279,6 +3279,10 @@ label {
 .layer-function-button {
   margin: 5px;
   width: 37px;
+}
+
+.layer-list-div {
+  margin-right: 12px;
 }
 
 .classes-div {
@@ -3426,6 +3430,19 @@ button#gpsControlButton.kvm-gps-track {
   display: table-row;
 }
 
+.form-field-rows {
+  /* display: table-row; */
+  /* border: 2px dotted gray; */
+  margin-left: 3px;
+  margin-right: 3px;
+  /* margin: 3px; */
+  margin-top: 5px;
+  /* background-color: #e6f5cd; */
+  border-radius: 5px;
+  padding: 2px;
+}
+
+/*
 .form-label {
   width: 30%;
   display: table-cell;
@@ -3437,7 +3454,32 @@ button#gpsControlButton.kvm-gps-track {
   border-top: 2px solid white;
   padding-right: 4px;
 }
+*/
+/*
+.form-label-rows {
+  width: 30%;
+  display: table-cell;
+  padding-left: 4px;
+  padding-top: 5px;
+  border-bottom: 0px solid white;
+  padding-bottom: 5px;
+  background-color: lightgray;
+  border-top: 2px solid white;
+  padding-right: 4px;
+  font-size: smaller;
+  color: gray;
+  margin-top: 0px;
+}
+*/
+.form-label {
+  padding-left: 5px;
+  padding-top: 5px;
+  padding-bottom: 2px;
+  background-color: #dfdfdf;
+  padding-right: 2px;
+}
 
+/*
 .form-value {
   display: table-cell;
   border-bottom: 1px solid lightgray;
@@ -3447,6 +3489,33 @@ button#gpsControlButton.kvm-gps-track {
   padding-right: 4px;
   width: 70%;
   border-top: 0px solid lightgray;
+}
+*/
+/*
+.form-value-rows {
+  // display: table-cell;
+  // border-bottom: 1px solid lightgray;
+  padding-top: 0px;
+  padding-bottom: 2px;
+  padding-left: 5px;
+  padding-right: 4px;
+  //* width: 70%;
+  //* border-top: 0px solid lightgray;
+  //* background-color: lightgray;
+}
+*/
+.form-value {
+  padding-top: 2px;
+  padding-bottom: 2px;
+  padding-left: 5px;
+  padding-right: 5px;
+  min-height: 0px;
+}
+
+ul.subformlist {
+  margin-block-start: 2px;
+  margin-block-end: 2px;
+  padding-inline-start: 16px;
 }
 
 #filterViewDiv {
@@ -3501,9 +3570,10 @@ button#gpsControlButton.kvm-gps-track {
 }
 
 .data-view-field {
-  display: table-row;
+  /*  display: table-row; */
 }
 
+/*
 .data-view-label {
   width: 30%;
   display: table-cell;
@@ -3515,7 +3585,16 @@ button#gpsControlButton.kvm-gps-track {
   border-top: 2px solid white;
   padding-right: 12px;
 }
+*/
+.data-view-label {
+  padding-left: 5px;
+  padding-top: 5px;
+  padding-bottom: 2px;
+  background-color: #dfdfdf;
+  padding-right: 2px;
+}
 
+/*
 .data-view-value {
   display: table-cell;
   border-bottom: 1px solid lightgray;
@@ -3524,6 +3603,14 @@ button#gpsControlButton.kvm-gps-track {
   padding-left: 16px;
   width: 70%;
   border-top: 0px solid lightgray;
+}
+*/
+.data-view-value {
+  padding-top: 2px;
+  padding-bottom: 2px;
+  padding-left: 5px;
+  padding-right: 5px;
+  min-height: 0px;
 }
 
 .feature-item {
@@ -3695,17 +3782,31 @@ button#gpsControlButton.kvm-gps-track {
   /* Full width */
   height: 100%;
   /* Full height */
-  overflow: auto;
+  /*overflow: auto;*/
   /* Enable scroll if needed */
-  background-color: rgb(0, 0, 0);
+  /*background-color: rgb(0, 0, 0);*/
   /* Fallback color */
   background-color: rgba(0, 0, 0, 0.5);
   /* Black w/ opacity */
-  color: lightgray;
+  color: white;
   text-align: center;
   vertical-align: middle;
   font-size: 30px;
-  padding-top: 200px;
+  padding-top: 55px;
+}
+
+.sperr-div-content {
+  font-size: 18px;
+  margin-left: 18px;
+  text-align: left;
+  overflow: auto;
+  height: 90%;
+}
+
+.auto-sync-div {
+  float: right;
+  margin-top: 13px;
+  margin-right: 5px;
 }
 
 .login {
@@ -4012,4 +4113,16 @@ button#gpsControlButton.kvm-gps-track {
 
 .leaflet-control-reloadlayers-icon {
   font-size: 24px;
+}
+
+.subFormEmbeddedPKFormField-list {
+  padding-left: revert;
+}
+
+li.pointer {
+  cursor: pointer;
+}
+
+li.pointer:hover {
+  background-color: #ccc;
 }

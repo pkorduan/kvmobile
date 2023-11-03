@@ -1,43 +1,45 @@
-/// <reference types="cordova-plugin-dialogs" />
-/// <reference types="jquery" />
-/*
- * create a field in data view in the form
- *   <div class="data-view-field">
- *     <div class="data-view-label">
- *       label
- *     </div>
- *     <div class="data-view-value">
- *       value
- *    </div>
- *  </div>
- */
 import { kvm } from "./app";
+import { Attribute } from "./Attribute";
 
 export class DataViewField {
 	settings: any;
 	element: JQuery<HTMLElement>;
 	images_div_id: string;
+	attribute: Attribute;
 
-	constructor(divId, settings) {
-		this.settings = settings;
+	/**
+	 * create a field in data view in the form
+	 *   <div class="data-view-field">
+	 *     <div class="data-view-label">
+	 *       label
+	 *     </div>
+	 *     <div class="data-view-value">
+	 *       value
+	 *    </div>
+	 *  </div>
+	 */
+	constructor(divId, attribute) {
+		this.attribute = attribute;
+		this.settings = attribute.settings;
 		// this.selector = "#" + divId + " > #" + this.get("index");
-		this.images_div_id = "images_" + settings["index"];
+		this.images_div_id = "images_" + this.attribute.settings["index"];
 		this.element = $('<div id="dataViewFieldValue_' + this.get("index") + '" class="data-view-value">');
 	}
 
 	get(key) {
-		return this.settings[key];
+		return this.attribute.settings[key];
 	}
 
 	setValue(val) {
 		let images, localFile, remoteFile, i, imgDiv;
 
-		console.log("DataViewField.setValue %s with value: %s", this.settings.name, val);
+		console.log("DataViewField.setValue %s with value: %s", this.attribute.settings.name, val);
 		if (val && this.get("type") === "timestamp") {
 			let datetime = new Date(val);
 			val = datetime.toLocaleDateString() + " " + datetime.toLocaleTimeString();
 			this.element.html(kvm.coalesce(val, ""));
-		} else if (this.get("form_element_type") == "Dokument") {
+		}
+		else if (this.get("form_element_type") == "Dokument") {
 			//kvm.log("DataViewField.setValue for Document Attribute with value: " + val, 4);
 			val = kvm.coalesce(val, "");
 			// let images;
@@ -135,23 +137,14 @@ export class DataViewField {
 				}
 			}
 		} // end of document
+		else if (this.get("form_element_type") == "SubFormFK") {
+			this.element.html(`<div onclick="kvm.activateFeature('${this.attribute.getGlobalParentLayerId()}', '${val}')"><i class="fa fa-hand-o-left" aria-hidden="true" style="margin-right: 10px"></i>${val}</div>`);
+		}
 		else if (this.get("form_element_type") == "SubFormEmbeddedPK") {
-			const options = this.get("options").split(";")[0].split(",");
-			const stelleId = kvm.activeStelle.get("id");
-			const subFormLayerId = options[0];
-			const subFormFK = options[1];
-			const subFormPreviewAttribute = options[2];
-			const subFormTable = JSON.parse(kvm.store.getItem("layerSettings_" + stelleId + "_" + subFormLayerId)).table_name;
-			let sql =
-				"\
-        SELECT\
-        FROM\
-          " +
-				subFormTable +
-				"\
-      ";
-			//console.log("SQL: %s", sql);
-		} else if (this.get("form_element_type") == "Auswahlfeld") {
+			let feature = this.attribute.layer.activeFeature;
+			this.attribute.layer.readVorschauAttributes(this.attribute, feature.get(this.attribute.getPKAttribute()), this.element);
+		}
+		else if (this.get("form_element_type") == "Auswahlfeld") {
 			let output = "";
 			if (
 				this.get("options") &&

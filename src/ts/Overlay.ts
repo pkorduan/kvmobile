@@ -276,7 +276,6 @@ export class Overlay {
               if ($("#syncOverlayIcon_" + this_.globalId).hasClass("fa-spinner")) {
                 $("#syncOverlayIcon_" + this_.globalId).toggleClass("fa-refresh fa-spinner fa-spin");
               }
-              $("#sperr_div").hide();
             };
             reader.readAsText(file);
           },
@@ -326,7 +325,6 @@ export class Overlay {
         kvm.msg("Keine Internetverbindung! Kann Overlay jetzt nicht synchronisieren.");
       } else {
         $("#syncOverlayIcon_" + globalId).toggleClass("fa-refresh fa-spinner fa-spin");
-        $("#sperr_div").show();
         navigator.notification.confirm(
           "Overlay vom Server holen und Daten in der App aktualisieren?",
           function (buttonIndex) {
@@ -339,7 +337,6 @@ export class Overlay {
               overlay.reloadData();
             } else {
               $("#syncOverlayIcon_" + globalId).toggleClass("fa-refresh fa-spinner fa-spin");
-              $("#sperr_div").hide();
             }
           },
           "Aktualisierung Overlay",

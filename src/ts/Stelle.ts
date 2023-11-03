@@ -2,6 +2,20 @@ import { Layer } from "./Layer";
 import { kvm } from "./app";
 import { Overlay } from "./Overlay";
 
+/**
+ * Es gibt zwei Varianten wie Layer geladen werden
+ * requestLayers - Läd alle Layer neu.
+ * 	Löscht dazu vorher alles und legt die Layer neu an
+ * 	Ausführung sequenziell
+ * reloadLayer - Läd nur den aktiven Layer neu.
+ * 	Updated nur die Datentabelle sowie löscht und legt den Layer neu an.
+ * 	Ausführung asynchron über callback
+ * 	Führt updateTable asynchronaus und darin als Callback
+ * 		DROP and CREATE TABLE (nur Datentabelle)
+ * 		appendToApp
+ * 		saveToStore
+ * 		requestData
+ */
 export class Stelle {
 	settings: any;
 	numOverlays: any;
@@ -119,7 +133,7 @@ export class Stelle {
 								kvm.msg(errMsg);
 								kvm.log(errMsg, 1);
 							}
-							$("#sperr_div").hide();
+							kvm.closeSperrDiv();
 						};
 
 						reader.readAsText(file);
@@ -127,7 +141,7 @@ export class Stelle {
 					function (error) {
 						kvm.msg("Fehler beim Einlesen der heruntergeladenen Datei. Prüfen Sie die URL und Parameter, die für den Download verwendet werden.");
 						kvm.log("Fehler beim lesen der Datei: " + error.code);
-						$("#sperr_div").hide();
+						kvm.closeSperrDiv();
 					}
 				);
 			},
@@ -140,7 +154,7 @@ export class Stelle {
 					" Prüfen Sie ob der Nutzer vom dem Gerät aus mit seiner IP auf die Stelle zugreifen darf und die Domain in config.xml eingetragen ist.";
 				console.error(err);
 				kvm.msg(errMsg);
-				$("#sperr_div").hide();
+				kvm.closeSperrDiv();
 			},
 			true
 		);
@@ -158,29 +172,25 @@ export class Stelle {
 	finishLayerLoading(layer) {
 		console.log("finishLayerLoading: loadAllLayers=%s, numLayersLoaded=%s, numLayers=%s", this.loadAllLayers, this.numLayersLoaded, this.numLayers);
 		if (this.loadAllLayers) {
-			if (this.numLayersLoaded < this.numLayers) {
+			if (this.numLayersLoaded < this.numLayers - 1) {
 				this.numLayersLoaded += 1;
+				kvm.tick(`${layer.title}:<br>&nbsp;&nbsp;${this.numLayersLoaded} Layer geladen. Noch ${this.numLayers - this.numLayersLoaded} Layer zu laden.`);
 			} else {
+				kvm.tick(`${layer.title}:<br>&nbsp;&nbsp;Laden beeendet.`);
 				this.numLayersLoaded = 0;
 				this.loadAllLayers = false;
-				this.setActiveLayer();
+				layer.setActive();
 				kvm.showActiveItem();
+				kvm.closeSperrDiv('Laden der Layer beendet. Schließe Sperr-Bildschirm.');
 			}
-		} else {
+		}
+		else {
+			kvm.tick(layer.title + ": Laden beeendet.");
 			this.sortOverlays();
 			layer.setActive();
 			kvm.showActiveItem();
 		}
 		console.log("activeLayer after finishLayerLoading: ", kvm.activeLayer ? kvm.activeLayer.get("id") : "keiner aktiv");
-	}
-
-	/**
-	 * This function set the layer with activeLayerId in store active
-	 */
-	setActiveLayer() {
-		const layer = kvm.layers[kvm.activeStelle.get("id") + "_" + kvm.store.getItem("activeLayerId")];
-		layer.setActive();
-		layer.selectActiveLayerInControl();
 	}
 
 	/*
@@ -197,15 +207,14 @@ export class Stelle {
 		return file;
 	}
 
-	/*
-	 * For current activeLayer do:
-	 *   Delete all local data and deltas
-	 *   Delete table and delta table
-	 *   load layer definition with attributes new from server therewith
-	 *   save settings in store and set layer active
-	 *   create table and delta table new
-	 *   load data from server and store in local database
-	 *   load the data from local database and create features, map markers, form and featurelist
+	/**
+	 * Load layer definitions with attributes for stelle
+	 * Remove activeLayer from App and than call updateTable
+	 * updateTable calls these functions asynchronaus with callbacks
+	 * 	DROP and CREATE TABLE (nur Datentabelle)
+	 * 	appendToApp
+	 * 	saveToStore
+	 * 	requestData
 	 */
 	// ToDo: Diese Funktion ggf. Klasse Layer zuordnen wenn es möglich ist die Layersettings eines einzelnen Layers herunterzuladen. Dort dann keine layerId mehr übergeben sondern updateLayerSettings on LayerObjekt
 	// also ToDo mobile_get_layers erweitern mit der Option das für eine bestimmte LayerID zu filtern.
@@ -216,7 +225,8 @@ export class Stelle {
 			//filename = 'temp_file.json',
 			url = this.getLayerUrl();
 
-		kvm.log("Download Layerdaten von Url: " + url);
+		kvm.tick(`Download Layerdaten der Stelle.`);
+		kvm.log('Download Layerdaten von Stelle mit url: %s', kvm.replacePassword(url));
 		//kvm.log("Speicher die Datei auf dem Gerät in Datei: " + filename);
 
 		fileTransfer.download(
@@ -228,7 +238,7 @@ export class Stelle {
 						var reader = new FileReader();
 
 						reader.onloadend = function () {
-							//kvm.log("Reload der Layerdaten abgeschlossen.", 3);
+							kvm.tick('Download abgeschlossen.');
 							let items = [];
 							let validationResult = "";
 
@@ -236,21 +246,23 @@ export class Stelle {
 							const resultObj = <any>kvm.parseLayerResult(this.result);
 
 							if (resultObj.success) {
+								kvm.tick(`${kvm.activeLayer.title}:<br>&nbsp;&nbsp;Download erfolgreich.`);
 								//console.log('resultObj: %o', resultObj);
 								let layerSettings = resultObj.layers.filter(function (layer) {
 									return layer.id == layerId;
 								})[0];
 								let layer;
-
+								kvm.tick(`${kvm.activeLayer.title}:<br>&nbsp;&nbsp;Entferne Layer von App.`);
 								kvm.activeLayer.removeFromApp(); // includes removeFromStore()
 								//console.log("Erzeuge neuen Layer");
 								layer = new Layer(kvm.activeStelle, layerSettings);
-								layer.updateTable(); // includes appendToApp(), setActive(), this.sortOverlays(), saveToStore(), readData()
+								kvm.tick(`${layer.title}:<br>&nbsp;&nbsp;Lege Layer an.`);
+								layer.updateTable(); // includes DROP TABLE IF EXISTS, appendToApp(), setActive(), this.sortOverlays(), saveToStore(), readData()
 							} else {
 								kvm.log("Fehlerausgabe von parseLayerResult!", 4);
 								kvm.msg(resultObj.errMsg, "2");
 							}
-							$("#sperr_div").hide();
+							// hier nicht schließen, sonden am Ende von updateTable kvm.closeSperrDiv();
 						};
 
 						reader.readAsText(file);
@@ -258,7 +270,7 @@ export class Stelle {
 					function (error) {
 						alert("Fehler beim Einlesen der heruntergeladenen Datei. Prüfen Sie die URL und Parameter, die für den Download verwendet werden.");
 						kvm.log("Fehler beim lesen der Datei: " + error.code);
-						$("#sperr_div").hide();
+						kvm.closeSperrDiv();
 					}
 				);
 			},
@@ -300,10 +312,15 @@ export class Stelle {
 	}
 
 	/*
-	 * Request all layers from stelle,
-	 * write to store,
-	 * create tables in database and
-	 * append layer to list
+	 * Remove existing layer of stelle with sequential function calls
+	 * 	dropDataTable
+ 	 * 	dropDeltasTable
+	 * 	removeFromApp
+	 * Request Layer from Stelle and create the layer new with sequential function calls
+	 * 	createTable
+	 * 	appendToApp
+	 * 	saveToStore
+	 * 	requestData
 	 */
 	requestLayers() {
 		//console.log('Layer.requestLayers for stelle: %o', this);
@@ -312,7 +329,8 @@ export class Stelle {
 			//filename = 'temp_file.json',
 			url = this.getLayerUrl();
 
-		kvm.log("requestLayers) Download Layerdaten von Url: " + kvm.replacePassword(url));
+		kvm.tick('Starte Download der Layerdaten der Stelle');
+		console.log('Download Layerdaten der Stelle mit url: ', kvm.replacePassword(url));
 
 		fileTransfer.download(
 			url,
@@ -323,26 +341,35 @@ export class Stelle {
 						var reader = new FileReader();
 
 						reader.onloadend = (evt) => {
-							//kvm.log("  requestLayers) Download der Layerdaten abgeschlossen.");
+							kvm.tick("Download der Layerdaten abgeschlossen.");
 							var items = [],
 								validationResult = "";
 							console.log("  requestLayers) Download Result: %o", <string>evt.target.result);
 							const resultObj = <any>kvm.parseLayerResult(<string>evt.target.result);
 
 							if (resultObj.success) {
-								var layers = [],
-									overlay_layers = [];
-								//console.log("  requestLayers) Download der Layer der Stelle erfolgreich.");
+								kvm.tick("Downloadergebnis ist fehlerfrei.");
 								//console.log('resultObj: %o', resultObj);
 
 								// remove existing layers
-								//console.log("  requestLayers) Entferne existierende Layer aus der Anwendung.");
+								// ToDo Hier prüfen was genau gelöscht werden soll, auch die Tabellen?
+								kvm.tick("Entferne existierende Layer aus der Anwendung.");
+								
 								document.getElementById("layer_list").innerHTML = "";
 								if ("layerIds_" + kvm.activeStelle.get("id") in kvm.store) {
-									JSON.parse(kvm.store["layerIds_" + kvm.activeStelle.get("id")]).map(function (id) {
+									let layerIds = JSON.parse(kvm.store["layerIds_" + kvm.activeStelle.get("id")]);
+									kvm.tick('Lösche folgende Layer:');
+									layerIds.map(function (id) {
 										let globalId = kvm.activeStelle.get("id") + "_" + id;
 										if (kvm.layers[globalId]) {
-											//console.log("  requestLayers) Remove Layer " + globalId + " from app.");
+											kvm.tick(`&nbsp;&nbsp;-&nbsp;${kvm.layers[globalId].title}`);
+										}
+									});
+									layerIds.map(function (id) {
+										let globalId = kvm.activeStelle.get("id") + "_" + id;
+										if (kvm.layers[globalId]) {
+											kvm.layers[globalId].dropDataTable();
+											kvm.layers[globalId].dropDeltasTable();
 											kvm.layers[globalId].removeFromApp();
 										}
 									});
@@ -357,6 +384,7 @@ export class Stelle {
 								this.loadAllLayers = true;
 								this.numLayers = resultObj.layers.length;
 								if (this.numLayers > 0) {
+									kvm.tick('Lege Layer neu an.');
 									// Sortiere Layer settings nach drawing order
 									resultObj.layers.sort((a, b) => (parseInt(a.drawingorder) > parseInt(b.drawingorder) ? 1 : -1));
 
@@ -375,19 +403,18 @@ export class Stelle {
 								kvm.setConnectionStatus();
 								//console.log('Store after save layer: %o', kvm.store);
 								$("#requestLayersButton").hide();
-								$("#sperr_div").hide();
+							  // hier nicht schließen, sonden am Ende von requestData kvm.closeSperrDiv();
 							} else {
 								kvm.log("Fehlerausgabe von parseLayerResult!", 4);
 								kvm.msg(resultObj.errMsg, "Downloadfehler");
 							}
-							$("#sperr_div").hide();
 						};
 						reader.readAsText(file);
 					},
 					(error) => {
 						alert("Fehler beim Einlesen der heruntergeladenen Datei. Prüfen Sie die URL und Parameter, die für den Download verwendet werden.");
 						kvm.log("Fehler beim lesen der Datei: " + error.code);
-						$("#sperr_div").hide();
+						kvm.closeSperrDiv();
 					}
 				);
 			},
@@ -405,119 +432,6 @@ export class Stelle {
 				kvm.controls.layers.addOverlay(overlay.layer, overlay.name);
 			});
 	}
-	/*
-  function sortLabels() {
-    var controlLayers = {}
-    layerControl._layers.forEach(function(x) {
-        if (x.overlay) {
-            controlLayers[x.name] = x.layer
-        }
-    });
-    names = Object.keys(controlLayers).sort()
-    //remove and add sorted layernames
-    names.forEach(x => layerControl.removeLayer(controlLayers[x]))
-    names.forEach(x => layerControl.addOverlay(controlLayers[x], x))
-}
-*/
-	/**
-	 * This function is depricated, overlays now are layers with sync = 0
-	 *
-	 * Request all layers from stelle,
-	 * remove existing overlays from app
-	 * write overlays to store,
-	 * append overlays to list
-	 * ToDo: extend getLayerUrl to get only overlays or
-	 * change to function getOverlayUrl() and Methode mobile_get_layers to mobile_get_overlays
-	 */
-	/*
-  requestOverlays() {
-    //console.log('Layer.requestOverlays for stelle: %o', this);
-    var fileTransfer = new FileTransfer(),
-      filename = cordova.file.dataDirectory + "layers_stelle_" + this.get("id") + ".json",
-      //filename = 'temp_file.json',
-      url = this.getLayerUrl();
-
-    kvm.log("requestOverlays) Download Layerdaten von Url: " + url);
-    fileTransfer.download(
-      url,
-      filename,
-      function (fileEntry) {
-        fileEntry.file(
-          function (file) {
-            var reader = new FileReader();
-
-            reader.onloadend = function () {
-              kvm.log("  requestOverlays) - Download der Layerdaten abgeschlossen.");
-              var items = [],
-                validationResult = "";
-              if (typeof this.result === "string") {
-                kvm.log("  requestOverlays) - Download Result: " + this.result.substring(1, 1000), 4);
-              }
-              const resultObj = <any>kvm.parseLayerResult(this.result);
-
-              if (resultObj.success) {
-                var layers = [],
-                  overlay_layers = [];
-                kvm.alog("  requestOverlays) Download der Layer der Stelle erfolgreich.", "", 3);
-                //console.log('resultObj: %o', resultObj);
-
-                // remove existing overlays
-                console.log("  requestOverlays) Entferne existierende Overlays aus der Anwendung.");
-                // Entferne Overlays aus der App, dem Layer control und der Karte
-                if ("overlayIds_" + kvm.activeStelle.get("id") in kvm.store) {
-                  console.log("  requestOverlays) parse overlayIds setting from store");
-                  JSON.parse(kvm.store["overlayIds_" + kvm.activeStelle.get("id")]).map(function (globalId) {
-                    if (kvm.overlays[globalId]) {
-                      console.log("  requestOverlays) overlay exists, remove From App");
-                      kvm.overlays[globalId].removeFromApp();
-                    }
-                  });
-                }
-
-                kvm.activeStelle.numOverlays = resultObj.layers.filter(function (l) {
-                  return l.sync == 1;
-                }).length;
-                console.log("  requestOverlays) Füge neu %s runtergeladene Overlays zur Anwendung hinzu.", kvm.activeStelle.numOverlays);
-                $.each(resultObj.layers, function (index, layerSetting) {
-                  let overlay;
-                  if (layerSetting.sync != 1) {
-                    console.log("  requestOverlays) Zeige Overlay %s an.", layerSetting.title);
-                    overlay = new Overlay(kvm.activeStelle, layerSetting);
-                    overlay.reloadData(); // read features from remote server, draw it on the map and add overlay to layer control
-                    overlay.appendToApp(); // append overlay in overlay list and bind events
-                    //overlay.saveSettingsToStore(); // do not save layersettings to local storage any more
-                  }
-                });
-                kvm.setConnectionStatus();
-                $("#sperr_div").hide();
-              } else {
-                console.log("err_msg in resultObj: %s", resultObj.err_msg);
-                kvm.msg(resultObj.errMsg + (resultObj.err_msg ? resultObj.err_msg : ""), "Downloadfehler");
-              }
-              $("#sperr_div").hide();
-            };
-            reader.readAsText(file);
-          },
-          function (error) {
-            alert("Fehler beim Einlesen der heruntergeladenen Datei. Prüfen Sie die URL und Parameter, die für den Download verwendet werden.");
-            kvm.log("Fehler beim lesen der Datei: " + error.code);
-            $("#sperr_div").hide();
-          }
-        );
-      },
-      this.downloadError,
-      true
-    );
-  }
-*/
-
-	/*
-  removeLayers() {
-    Object.keys(kvm.layers).map(function (layerId) {
-      kvm.layers[layerId].removeFromApp();
-    });
-  }
-*/
 
 	getLayerUrl(options = { hidePassword: false }) {
 		//kvm.log("Stelle.getLayerUrl", 4);

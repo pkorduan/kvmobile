@@ -18,6 +18,7 @@ import { GpsStatus } from "./gpsStatus";
 import { SyncStatus } from "./syncStatus";
 import { Stelle } from "./Stelle";
 import { Layer } from "./Layer";
+import { BackgroundLayer } from "./BackgroundLayer";
 import { Feature } from "./Feature";
 import { Klasse } from "./Klasse";
 import { Overlay } from "./Overlay";
@@ -72,7 +73,7 @@ class Kvm {
 	debug: any;
 	config: any;
 
-	backgroundLayers: Layer[];
+	backgroundLayers: BackgroundLayer[];
 	backgroundLayerSettings: any[];
 	backgroundGeolocation: BackgroundGeolocation;
 	isActive: boolean;
@@ -666,6 +667,7 @@ bis hier */
 				var layerIds = JSON.parse(this.store.getItem("layerIds_" + activeStelleId));
 				stelle.loadAllLayers = true;
 				stelle.numLayers = layerIds.length;
+				kvm.openSperrDiv('Lade Layerdaten.');
 				for (let layerId of layerIds) {
 					//console.log('Lade Layersettings for layerId: %s', layerId);
 					const layerSettings = this.store.getItem("layerSettings_" + activeStelleId + "_" + layerId);
@@ -673,19 +675,19 @@ bis hier */
 						const layer = new Layer(stelle, layerSettings);
 						layer.appendToApp();
 						if (layer.get("id") == kvm.store.getItem("activeLayerId")) {
-							layer.setActive();
+							layer.isActive = true;
+							kvm.layers[layer.getGlobalId()] = kvm.activeLayer = layer;
 						}
-						//console.log("Update layer: %s", layer.get("title"));
-						if (navigator.onLine && layer.hasSyncPrivilege) {
+						if (navigator.onLine && layer.hasSyncPrivilege && layer.get('autoSync')) {
 							if (layer.hasEditPrivilege) {
 								try {
-									console.log("SyncData with local deltas if exists.");
+									console.log("Layer " + layer.title + ": SyncData with local deltas if exists.");
 									layer.syncData();
 								} catch ({ name, message }) {
 									kvm.msg("Fehler beim synchronisieren des Layers id: " + layer.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
 								}
 								try {
-									console.log("SyncImages with local images if exists.");
+									console.log("Layer " + layer.title + ": SyncImages with local images if exists.");
 									layer.syncImages();
 								} catch ({ name, message }) {
 									kvm.msg(
@@ -693,7 +695,7 @@ bis hier */
 									);
 								}
 							} else {
-								console.log("Only get deltas from server.");
+								console.log("Layer " + layer.title + ": Only get deltas from server.");
 								try {
 									layer.sendDeltas({ rows: [] });
 								} catch ({ name, message }) {
@@ -701,7 +703,7 @@ bis hier */
 								}
 							}
 						} else {
-							//console.log("Only read data from local database.");
+							console.log("Layer " + layer.title + ": Only read data from local database.");
 							layer.readData(); // include drawFeatures
 						}
 					}
@@ -792,10 +794,10 @@ bis hier */
 
 	initMap() {
 		//kvm.log("Karte initialisieren.", 3);
-		//kvm.log("initialisiere Mapsettings", 3);
+		kvm.log("initialisiere Mapsettings", 3);
 		this.initMapSettings();
 
-		//kvm.log("initialisiere backgroundLayers", 3);
+		kvm.log("initialisiere backgroundLayers", 3);
 		this.initBackgroundLayers();
 
 		var crs25833 = new L.Proj.CRS("EPSG:25833", "+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs", {
@@ -816,7 +818,8 @@ bis hier */
 				[this.mapSettings.south, this.mapSettings.west],
 				[this.mapSettings.north, this.mapSettings.east],
 			],
-			layers: this.backgroundLayers[1],
+			layers: this.backgroundLayers.map((bl) => { return bl.leafletLayer; }),
+
 			renderer: this.myRenderer,
 		});
 		const baseMaps = {};
@@ -842,7 +845,7 @@ bis hier */
     ]);
 */
 		for (var i = 0; i < this.backgroundLayers.length; i++) {
-			baseMaps[this.backgroundLayerSettings[i].label] = this.backgroundLayers[i];
+			baseMaps[this.backgroundLayerSettings[i].label] = this.backgroundLayers[i].leafletLayer;
 		}
 
 		if (this.store.getItem("activeStelleId") && this.store.getItem(`stelleSettings_${this.store.getItem("activeStelleId")}`) != null) {
@@ -853,6 +856,7 @@ bis hier */
 			);
 		}
 
+		// ToDo: Anpassen so dass die Infos aus der Config kommen und für alle gelten können.
 		if (
 			this.config.name == "LK-EE" &&
 			this.store.getItem("activeStelleId") &&
@@ -1062,61 +1066,44 @@ bis hier */
 	}
 
 	initBackgroundLayers() {
-		this.saveBackgroundLayerSettings(
-			kvm.store.backgroundLayerSettings ? JSON.parse(kvm.store.getItem("backgroundLayerSettings")) : kvm.config.backgroundLayerSettings
-		);
-		//this.saveBackgroundLayerSettings(kvm.config.backgroundLayerSettings);
-		kvm.backgroundLayerSettings.forEach((l, i) => {
-			$("#backgroundLayerSettingsDiv").append(
-				'<div id="backgroundLayerDiv_' +
-					i +
-					'"><b>' +
-					l.label +
-					'</b><br>URL:<br><input id="backgroundLayerURL_' +
-					i +
-					'" type="text" value="' +
-					l.url +
-					'"></input></div>'
+		try {
+			this.saveBackgroundLayerSettings(
+				kvm.store.backgroundLayerSettings ? JSON.parse(kvm.store.getItem("backgroundLayerSettings")) : kvm.config.backgroundLayerSettings
 			);
-			if (l.params.layers) {
-				$("#backgroundLayerDiv_" + i).append(
-					'<br>Layer:<br><input id="backgroundLayerLayer_' + i + '" type="text" value="' + l.params.layers + '" style="font-size: 20px;"></input>'
+			//this.saveBackgroundLayerSettings(kvm.config.backgroundLayerSettings);
+			kvm.backgroundLayerSettings.forEach((l, i) => {
+				$("#backgroundLayerSettingsDiv").append(
+					'<div id="backgroundLayerDiv_' +
+						i +
+						'"><b>' +
+						l.label +
+						'</b><br>URL:<br><input id="backgroundLayerURL_' +
+						i +
+						'" type="text" value="' +
+						l.url +
+						'"></input></div>'
 				);
+				if (l.params.layers) {
+					$("#backgroundLayerDiv_" + i).append(
+						'<br>Layer:<br><input id="backgroundLayerLayer_' + i + '" type="text" value="' + l.params.layers + '" style="font-size: 20px;"></input>'
+					);
+				}
+			});
+			$("#backgroundLayersTextarea").val(kvm.store.getItem("backgroundLayerSettings"));
+			this.backgroundLayers = [];
+			for (var i = 0; i < this.backgroundLayerSettings.length; ++i) {
+				this.backgroundLayers.push(new BackgroundLayer(this.backgroundLayerSettings[i]));
 			}
-		});
-		$("#backgroundLayersTextarea").val(kvm.store.getItem("backgroundLayerSettings"));
-		this.backgroundLayers = [];
-		for (var i = 0; i < this.backgroundLayerSettings.length; ++i) {
-			this.backgroundLayers.push(this.createBackgroundLayer(this.backgroundLayerSettings[i]));
+		}
+		catch (error) {
+			kvm.msg('Fehler beim Einrichten der Hintergrundlayer: ' + error);
+			return false;
 		}
 	}
 
 	saveBackgroundLayerSettings(backgroundLayerSettings) {
 		this.backgroundLayerSettings = backgroundLayerSettings;
 		kvm.store.setItem("backgroundLayerSettings", JSON.stringify(backgroundLayerSettings));
-	}
-
-	createBackgroundLayer(backgroundLayerSetting) {
-		console.log("createBackgroundLayer " + backgroundLayerSetting.type);
-		if (backgroundLayerSetting.type == "tile") {
-			return L.tileLayer(backgroundLayerSetting.url, backgroundLayerSetting.params);
-		} else if (backgroundLayerSetting.type == "vectortile") {
-			//      return L.vectorGrid.protobuf(backgroundLayerSetting.url, backgroundLayerSetting.params);
-
-			return (<any>L).maplibreGL({
-				style:
-					maplibreStyleObj.find((style) => {
-						return style.id == this.config.style;
-					}) ||
-					maplibreStyleObj.find((style) => {
-						return style.id == "default";
-					}),
-				interactive: backgroundLayerSetting.interactiv,
-			});
-		} else {
-			//backgroundLayerSetting.type == 'wms'
-			return L.tileLayer.wms(backgroundLayerSetting.url, backgroundLayerSetting.params);
-		}
 	}
 
 	onlocationfound(evt) {
@@ -1217,7 +1204,7 @@ bis hier */
 			"dataLoaded",
 			function () {
 				if (kvm.featureListLoaded && kvm.layerDataLoaded) {
-					$("#sperr_div").hide();
+					kvm.closeSperrDiv('Event dataLoaded ausgelößt.');
 				}
 			},
 			false
@@ -1263,7 +1250,7 @@ bis hier */
 						// ja
 						if (navigator.onLine) {
 							if ($("#kvwmapServerUrlField").val() != "" && $("#kvwmapServerLoginNameField").val() != "" && $("#kvwmapServerPasswortField").val() != "") {
-								$("#sperr_div").show();
+								kvm.openSperrDiv('Frage Stellen ab');
 								$("#activeStelleBezeichnungDiv").hide();
 								var stelle = new Stelle({
 									url: $("#kvwmapServerUrlField").val(),
@@ -1298,8 +1285,8 @@ bis hier */
 		});
 
 		$("#requestLayersButton").on("click", function () {
-			$("#sperr_div").show();
 			if (navigator.onLine) {
+				kvm.openSperrDiv('Lade Layerdaten.');
 				kvm.activeStelle.requestLayers();
 			} else {
 				NetworkStatus.noNetMsg("Netzverbindung");
@@ -1409,6 +1396,23 @@ bis hier */
 			kvm.msg("Einstellung zu Hintergrundlayern übernommen. Diese werden erst nach einem Neustart der Anwendung wirksam!");
 		});
 
+		$("#loadBackgroundLayerButton").on("click", function (evt) {
+			navigator.notification.confirm(
+				'Wollen Sie die Daten des Hintergrundlayers für den aktuellen Kartenausschnitt runterladen und lokal speichern?',
+				function (buttonIndex) {
+					if (buttonIndex == 1) {
+						console.log('download backgroundlayer on event', evt.target);
+						// ja
+//						kvm.backgroundLayers[i].downloadData();
+					} else {
+						console.log('Background layer nicht runterladen.');
+					}
+				},
+				"Kacheln für Hintergrundlayer runterladen",
+				["ja", "nein"]
+			);
+		});
+
 		$("#localBackupPath").on("change", function () {
 			// TODO Bug??
 			// kvm.store.setItem("localBackupPath", this.val());
@@ -1500,6 +1504,10 @@ bis hier */
 		$("#clearLoggingsButton").on("click", function () {
 			$("#logText").html("Log geleert: " + new Date().toUTCString());
 			kvm.showItem("loggings");
+		});
+
+		$("#showSperrDivButton").on("click", function () {
+			$('#sperr_div').show();
 		});
 
 		/*
@@ -1728,10 +1736,10 @@ bis hier */
 						kvm.activeLayer.runRestoreStrategy();
 						$("#sperr_div").show();
 						setTimeout(function () {
-							$("#sperr_div").hide();
+							kvm.closeSperrDiv();
 						}, 3000);
 					} else {
-						$("#sperr_div").hide();
+						kvm.closeSperrDiv();
 					}
 				},
 				"Datensatz wiederherstellen",
@@ -1788,8 +1796,9 @@ bis hier */
 						} else {
 							kvm.layers.forEach(function (layer) {
 								console.log("Entferne Layer: %s", layer.get("title"));
-								layer.clearData();
-								// ToDo: auch Tabellen des Layers löschen siehe layer.dropTable
+								layer.dropDataTable();
+								layer.dropDeltasTable();
+								layer.removeFromApp();
 							});
 						}
 						kvm.layers = [];
@@ -1901,6 +1910,7 @@ bis hier */
 			}
 		});
 
+		// siehe auch function closeSperrDiv()
 		$("#sperr_div").on("dblclick", function (evt) {
 			navigator.notification.confirm(
 				"Sperrbildschirm aufheben?",
@@ -1932,6 +1942,13 @@ bis hier */
 		kvm.showItem("dataView");
 	}
 
+	activateFeature(layerId, featureId) {
+		let layer = kvm.layers[layerId];
+		let feature = layer.features[featureId];
+		layer.setActive();
+		layer.activateFeature(feature, false);
+	}
+
 	setConnectionStatus() {
 		//kvm.log("setConnectionStatus");
 		NetworkStatus.load();
@@ -1941,8 +1958,6 @@ bis hier */
 		//kvm.log("setGpsStatus");
 		GpsStatus.load();
 	}
-
-	hideSperrDiv() {}
 
 	loadLogLevel() {
 		//kvm.log("Lade LogLevel", 4);
@@ -2047,6 +2062,19 @@ bis hier */
 				$("#settings").show();
 		}
 		kvm.store.setItem("activeView", item);
+	}
+
+	newSubDataSet(subLayerId, subLayerFKAttribute) {
+		kvm.openSperrDiv('Neuer Sublayer-Datensatz');
+		const layer = kvm.activeLayer;
+		layer.cancelEditGeometry();
+		const parentFeature = layer.activeFeature;
+		const subLayer = kvm.layers[subLayerId];
+		subLayer.setActive();
+		subLayer.newFeature();
+		subLayer.activeFeature.set(subLayerFKAttribute, parentFeature.id);
+		subLayer.editFeature();
+		kvm.closeSperrDiv(`Neues Formular für Layer ${subLayer.title} geladen.`);
 	}
 
 	collapseAllSettingsDiv() {
@@ -2195,7 +2223,42 @@ bis hier */
 		});
 	}
 
-	log(msg: any, level = 3, show_in_sperr_div: boolean = false) {
+	openSperrDiv(msg = '') {
+		$('#sperr_div').show();
+		if (msg) {
+			this.tick(`<b>${msg}</b>`, false);
+		}
+	}
+
+	tick(msg, append = true) {
+		msg = this.replacePassword(msg);
+		if (append) {
+			$("#sperr_div_content").append('<br>' + msg);
+		}
+		else {
+			$("#sperr_div_content").html(msg);
+		}
+	}
+
+	closeSperrDiv(msg = '') {
+		if (msg) {
+			navigator.notification.confirm(
+				msg,
+				function (buttonIndex) {
+					if (buttonIndex == 1) {
+						$("#sperr_div").hide();
+					}
+				},
+				"Laden",
+				["OK", "Meldungen lesen"]
+			);
+		}
+		else {
+			$("#sperr_div").hide();
+		}
+	}
+
+	log(msg: any, level = 3, show_in_sperr_div: boolean = false, append: boolean = false) {
 		if (
 			level <= (typeof kvm.store == "undefined" ? kvm.config.logLevel : kvm.store.getItem("logLevel")) &&
 			(typeof msg === "string" || msg instanceof String)
@@ -2207,7 +2270,13 @@ bis hier */
 			setTimeout(function () {
 				$("#logText").append("<br>" + msg);
 				if (show_in_sperr_div) {
-					$("#sperr_div_content").html(msg);
+					$("#sperr_div").show();
+					if (append) {
+						$("#sperr_div_content").append('<br>' + msg);
+					}
+					else {
+						$("#sperr_div_content").html(msg);
+					}
 				}
 			});
 		}
