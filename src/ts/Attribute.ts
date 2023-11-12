@@ -15,10 +15,11 @@ import { ZahlFormField } from "./ZahlFormField";
 import { SubFormEmbeddedPKFormField } from "./SubFormEmbeddedPKFormField";
 import { SubFormFKFormField } from "./SubFormFKFormField";
 import { Field } from "./Field";
+import { Layer } from "./Layer";
 
 export class Attribute {
 	settings: any;
-	layer: any;
+	layer: Layer;
 	formField: any;
 	viewField: DataViewField;
 
@@ -30,7 +31,6 @@ export class Attribute {
 		this.settings.layerId = layer.get('id');
 		this.formField = this.getFormField();
 		this.viewField = this.getViewField();
-
 		return this;
 	}
 
@@ -41,6 +41,31 @@ export class Attribute {
 	set(key, value) {
 		this.settings[key] = value;
 		return this.settings[key];
+	}
+
+	/**
+	 * Function returns the attribute with the index after this attribute
+	 * derived from attribute index or null if attribute is the last
+	 * @returns Attribute or null
+	 */
+	getSuccessor() {
+		let index = parseInt(this.layer.attribute_index[this.get('name')]); 
+		return (index < Object.keys(this.layer.attribute_index).length ? this.layer.attributes[index + 1] : null);
+	}
+
+	/**
+	 * Function return style with float: left if the attribute or its successor attribute
+	 * has setting arrangement = 1
+	 * @returns string The float left style or empty string
+	 */
+	getArrangementStyle() {
+		let succesor = this.getSuccessor();
+		if ((succesor && succesor.get('arrangement') == '1') || this.get('arrangement') == '1') {
+			return 'style="float: left"';
+		}
+		else {
+			return '';
+		}
 	}
 
 	/**
@@ -183,6 +208,15 @@ export class Attribute {
 		return slType;
 	}
 
+	/**
+	 * Find if the attribute attribute_name has a visibility dependency with
+	 * an other attributes of the layer.
+	 * @return boolean
+	 */
+		hasVisibilityDependency() {
+			return this.layer.attributes.some((attr) => { return attr.get('vcheck_attribute') == this.get('name'); });
+		}
+
 	/*
 	 * Return true if the Postgres attribute type is an array
 	 * Postgres Array Types starting with underline
@@ -229,6 +263,19 @@ export class Attribute {
 			);
 		//kvm.log("Attribute " + this.get("name") + " is Autoattribute" + (action ? " for action " + action : "") + "? " + answer, 4);
 		return answer;
+	}
+
+	isEditable() {
+		return parseInt(this.get('privilege')) > 0;
+	}
+
+	/**
+	 * Function return true if the Attribute is a pseudoAttribute
+	 * having no column in Database
+	 * @returns Boolean
+	 */
+	isPseudoAttribute() {
+		return ['SubFormEmbeddedPK'].includes(this.get('form_element_type'));
 	}
 
 	toSqliteValue(pgType, pgValue) {
@@ -398,7 +445,7 @@ export class Attribute {
 		}
 
 		if (this.get("form_element_type") == "SubFormEmbeddedPK" && this.get('privilege') > '0') {
-			return $('<div class="form-field-rows">')
+			return $(`<div id="formFieldDiv_${this.get('index')}" class="form-field-rows">`)
 				.append(
 					$('<div class="form-label">').append(labelDiv).append(`
 						<input
@@ -413,7 +460,7 @@ export class Attribute {
 				.append(valueDiv.append(this.formField.element));
 		}
 		else {
-			return $('<div class="form-field-rows">')
+			return $(`<div id="formFieldDiv_${this.get('index')}" class="form-field-rows" ${this.getArrangementStyle()}>`)
 				.append($('<div class="form-label">').append(labelDiv))
 				.append(valueDiv.append(this.formField.element));
 		}

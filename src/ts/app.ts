@@ -818,8 +818,7 @@ bis hier */
 				[this.mapSettings.south, this.mapSettings.west],
 				[this.mapSettings.north, this.mapSettings.east],
 			],
-			layers: this.backgroundLayers.map((bl) => { return bl.leafletLayer; }),
-
+			layers: (this.backgroundLayers[(this.config.activeBackgroundLayerId ? this.config.activeBackgroundLayerId : 0)]).leafletLayer,
 			renderer: this.myRenderer,
 		});
 		const baseMaps = {};
@@ -845,7 +844,7 @@ bis hier */
     ]);
 */
 		for (var i = 0; i < this.backgroundLayers.length; i++) {
-			baseMaps[this.backgroundLayerSettings[i].label] = this.backgroundLayers[i].leafletLayer;
+			baseMaps[`<span id="backgroundLayerSpan_${i}">${this.backgroundLayerSettings[i].label}</span>`] = this.backgroundLayers[i].leafletLayer;
 		}
 
 		if (this.store.getItem("activeStelleId") && this.store.getItem(`stelleSettings_${this.store.getItem("activeStelleId")}`) != null) {
@@ -1322,6 +1321,17 @@ bis hier */
 			}
 		});
 
+		$('.leaflet-control-layers-selector').on('change', (evt) => {
+			console.log('leaflet-control-layers-selector change evt');
+			let target = $(evt.target);
+			if (target.is(':checked')) {
+				let bgdLayerId = $(target.next().children()[0]).attr('id').split('_')[1];
+				kvm.config.activeBackgroundLayerId = bgdLayerId;
+				kvm.store.setItem('activeBackgroundLayerId', bgdLayerId);
+				console.log('BackgroundLayer %s is checked', $(target.next().children()[0]).html());
+			}
+		});
+
 		$(".mapSetting").on("change", function () {
 			kvm.mapSettings[(<HTMLInputElement>this).name] = (<HTMLInputElement>this).value;
 			kvm.saveMapSettings(kvm.mapSettings);
@@ -1700,7 +1710,6 @@ bis hier */
 		});
 
 		$("#newFeatureButton").on("click", function () {
-			console.log("Event newFeatureButton click");
 			kvm.activeLayer.newFeature();
 			kvm.activeLayer.editFeature();
 			//kvm.showGeomStatus();
@@ -1929,6 +1938,8 @@ bis hier */
 				["ja", "nein"]
 			);
 		});
+
+		$('.toggle-settings-div').on('click', () => kvm.toggleSwitchableSettings());
 	}
 
 	bindFeatureItemClickEvents() {
@@ -1947,6 +1958,7 @@ bis hier */
 		let feature = layer.features[featureId];
 		layer.setActive();
 		layer.activateFeature(feature, false);
+		kvm.showItem("dataView");
 	}
 
 	setConnectionStatus() {
@@ -2045,6 +2057,8 @@ bis hier */
 				} else {
 					if (kvm.activeLayer.hasEditPrivilege) {
 						$("#editFeatureButton, #tplFeatureButton").show();
+					} else {
+						$("#newFeatureButton").hide();
 					}
 				}
 				$("#dataView").show().scrollTop(0);
@@ -2085,6 +2099,7 @@ bis hier */
 	expandAllSettingsDiv() {
 		$(".h2-div > h2").removeClass("b-collapsed").addClass("b-expanded"), $(".h2-div + div").show();
 	}
+
 	hideSettingsDiv(name) {
 		var target = $(".h2_" + name);
 		this.collapseAllSettingsDiv();
@@ -2100,12 +2115,19 @@ bis hier */
 		$("#settings").scrollTop(target.offset().top);
 	}
 
+	toggleSwitchableSettings() {
+		$('#switchable_settings_div, .toggle-settings-div').toggle();
+	}
+
 	showDefaultMenu() {
 		$(".menu-button").hide();
 		//  $("#backArrow, #saveFeatureButton, #deleteFeatureButton, #backToFormButton").hide();
 		$("#showSettings, #showFeatureList, #showMap").show();
 		if (kvm.activeLayer && kvm.activeLayer.hasEditPrivilege) {
 			$("#newFeatureButton").show();
+		}
+		else {
+			$("#newFeatureButton").hide();
 		}
 	}
 

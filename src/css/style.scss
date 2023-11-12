@@ -22,6 +22,15 @@ label {
   color: #263286;
 }
 
+.toggle-settings-div {
+  text-align: center;
+  color: #263283;
+  margin-top: 10px;
+  font-weight: bold;
+  padding: 10px;
+  background-color: #e8e8e8;
+}
+
 .h2-div+div {
   display: none;
 }
@@ -69,8 +78,8 @@ label {
 }
 
 .layer-functions-button {
-/*  width: 38px; */
-/*  height: 38px; */
+  /*  width: 38px; */
+  /*  height: 38px; */
   margin-top: -7px;
   float: right;
   color: gray;
@@ -89,8 +98,9 @@ label {
   margin: 5px;
   width: 37px;
 }
+
 .layer-list-div {
-	margin-right: 12px;
+  margin-right: 12px;
 }
 
 .classes-div {
@@ -153,6 +163,7 @@ textarea {
   border-radius: 4px;
   box-sizing: border-box;
   font-size: 20px;
+  padding: 5px;
 }
 
 input[type="date"] {
@@ -180,6 +191,7 @@ input[type="number"] {
   border-radius: 4px;
   box-sizing: border-box;
   font-size: 20px;
+  padding: 5px;
 }
 
 button#gpsControlButton.kvm-gps-off {
@@ -212,9 +224,11 @@ button#gpsControlButton.kvm-gps-track {
 .leaflet-popup {
   font-size: 20px;
 }
+
 .leaflet-popup-content {
   min-width: 150px;
 }
+
 /*a.hover {
 
 }*/
@@ -237,7 +251,7 @@ button#gpsControlButton.kvm-gps-track {
 }
 
 .form-field-rows {
-    /* display: table-row; */
+  /* display: table-row; */
   /* border: 2px dotted gray; */
   margin-left: 3px;
   margin-right: 3px;
@@ -247,6 +261,7 @@ button#gpsControlButton.kvm-gps-track {
   border-radius: 5px;
   padding: 2px;
 }
+
 /*
 .form-label {
   width: 30%;
@@ -278,11 +293,13 @@ button#gpsControlButton.kvm-gps-track {
 */
 
 .form-label {
-	padding-left: 5px;
-	padding-top: 5px;
-	padding-bottom: 2px;
-	background-color: #dfdfdf;
-	padding-right: 2px;
+  padding-left: 5px;
+  padding-top: 5px;
+  padding-bottom: 2px;
+  /*background-color: #dfdfdf;*/
+  padding-right: 2px;
+  color: gray;
+  font-size: smaller;
 }
 
 /*
@@ -312,11 +329,11 @@ button#gpsControlButton.kvm-gps-track {
 */
 
 .form-value {
-	padding-top: 2px;
-	padding-bottom: 2px;
-	padding-left: 5px;
-	padding-right: 5px;
-	min-height: 0px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  padding-left: 5px;
+  padding-right: 5px;
+  min-height: 0px;
 }
 
 ul.subformlist {
@@ -333,6 +350,21 @@ ul.subformlist {
 
 #attributeFilterFieldDiv {
   word-break: break-word;
+}
+
+.attribute-group {
+  margin: 0px
+}
+
+.attribute-group-header {
+  border-top: 1px solid gray;
+  border-bottom: 1px solid gray;
+  background-color: #eeeeee;
+  padding: 4px;
+}
+
+.attribute-group-body {
+  margin: 0px
 }
 
 .filter-view-field {
@@ -377,7 +409,7 @@ ul.subformlist {
 }
 
 .data-view-field {
-/*  display: table-row; */
+  /*  display: table-row; */
 }
 
 /*
@@ -394,12 +426,15 @@ ul.subformlist {
 }
 */
 .data-view-label {
-	padding-left: 5px;
-	padding-top: 5px;
-	padding-bottom: 2px;
-	background-color: #dfdfdf;
-	padding-right: 2px;
+  padding-left: 5px;
+  padding-top: 5px;
+  padding-bottom: 2px;
+  /*background-color: #dfdfdf;*/
+  padding-right: 2px;
+  color: gray;
+  font-size: smaller;
 }
+
 /*
 .data-view-value {
   display: table-cell;
@@ -412,11 +447,12 @@ ul.subformlist {
 }
 */
 .data-view-value {
-	padding-top: 2px;
-	padding-bottom: 2px;
-	padding-left: 5px;
-	padding-right: 5px;
-	min-height: 0px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  padding-left: 5px;
+  padding-right: 5px;
+  min-height: 0px;
+  color: #263286;
 }
 
 .feature-item {
@@ -603,17 +639,17 @@ ul.subformlist {
 }
 
 .sperr-div-content {
-	font-size: 18px;
-	margin-left: 18px;
-	text-align: left;
-	overflow: auto;
-	height: 90%;
+  font-size: 18px;
+  margin-left: 18px;
+  text-align: left;
+  overflow: auto;
+  height: 90%;
 }
 
 .auto-sync-div {
-	float: right;
-	margin-top: 13px;
-	margin-right: 5px;
+  float: right;
+  margin-top: 13px;
+  margin-right: 5px;
 }
 
 .login {
@@ -927,13 +963,13 @@ ul.subformlist {
 }
 
 .subFormEmbeddedPKFormField-list {
-	padding-left: revert;
+  padding-left: revert;
 }
 
 li.pointer {
-	cursor: pointer;
+  cursor: pointer;
 }
 
 li.pointer:hover {
-	background-color: #ccc;
+  background-color: #ccc;
 }

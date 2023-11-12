@@ -15,8 +15,19 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 
 # Change log
 ## 1.11.1
+	* Bugfix
+  	* Correct amount of vertex in wkt object
+  	* Correct var for Datensatzbezeichnung in Layerinfo
+  * Layout
+    * Clear both bevor form-field-rows
+    * Gray attribute names
+    * 5px Padding input form fields
 	* Features
   	* Jump from Parent to Client form and vise versa.
+  	* Save and show last active background layer
+  	* Enable Abhängige Auswahlfelder
+  	* Consider visibility dependencies
+  	* Show and hide layer groups in data view
 ## 1.11.0
 	* Maintainance
   	* Konfiguration from Server not from configurations file in apk.

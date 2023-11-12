@@ -943,7 +943,7 @@ export const configurations = [
           attribution: "Basemap DE dl-de/by-2-0"
         }
       }
-    ]
+		]
   },
   {
     name: "Streuobst MV",

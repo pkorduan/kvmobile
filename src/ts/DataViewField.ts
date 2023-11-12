@@ -22,8 +22,8 @@ export class DataViewField {
 		this.attribute = attribute;
 		this.settings = attribute.settings;
 		// this.selector = "#" + divId + " > #" + this.get("index");
-		this.images_div_id = "images_" + this.attribute.settings["index"];
-		this.element = $('<div id="dataViewFieldValue_' + this.get("index") + '" class="data-view-value">');
+		this.images_div_id = `images_${this.get("index")}`;
+		this.element = $(`<div id="dataViewFieldValue_${this.get("index")}" class="data-view-value">`);
 	}
 
 	get(key) {
@@ -313,6 +313,6 @@ export class DataViewField {
 			label.append('&nbsp;<i class="fa fa-exclamation-circle" style="color: #f57802" onclick="kvm.msg(\'' + this.get("tooltip") + "');\"></i>");
 		}
 
-		return $('<div class="data-view-field">').append(label).append(this.element);
+		return $(`<div id="dataViewFieldDiv_${this.get("index")}" class="data-view-field" ${this.attribute.getArrangementStyle()}>`).append(label).append(this.element);
 	}
 }

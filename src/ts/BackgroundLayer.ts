@@ -53,4 +53,5 @@ export class BackgroundLayer {
 		this.settings[key] = value;
 		return this.settings[key];
 	}
+
 }

@@ -189,6 +189,7 @@ export class Stelle {
 			this.sortOverlays();
 			layer.setActive();
 			kvm.showActiveItem();
+			kvm.closeSperrDiv('Fertig.');
 		}
 		console.log("activeLayer after finishLayerLoading: ", kvm.activeLayer ? kvm.activeLayer.get("id") : "keiner aktiv");
 	}
@@ -226,7 +227,7 @@ export class Stelle {
 			url = this.getLayerUrl();
 
 		kvm.tick(`Download Layerdaten der Stelle.`);
-		kvm.log('Download Layerdaten von Stelle mit url: %s', kvm.replacePassword(url));
+		console.log('Download Layerdaten von Stelle mit url: %s', kvm.replacePassword(url));
 		//kvm.log("Speicher die Datei auf dem Gerät in Datei: " + filename);
 
 		fileTransfer.download(

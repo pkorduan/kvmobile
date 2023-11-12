@@ -322,6 +322,7 @@ export class Feature {
 												return point.lng + " " + point.lat;
 											})
 											.join(", ") +
+											`, ${polyline[0].lng} ${polyline[0].lat}` +
 										")"
 									);
 								})
@@ -343,9 +344,10 @@ export class Feature {
 												"(" +
 												polyline
 													.map(function (point) {
-														return point[1] + " " + point[0];
+														return point.lng + " " + point.lat;
 													})
 													.join(", ") +
+													`, ${polyline[0].lng} ${polyline[0].lat}` +
 												")"
 											);
 										})
@@ -542,9 +544,9 @@ export class Feature {
 
 	updateListElement() {
 		kvm.log("Feature.updateListElement", 4);
-		var markerStyles = JSON.parse(kvm.store.getItem("markerStyles")),
-			numStyles = Object.keys(markerStyles).length,
-			markerStyleIndex = this.get("status") >= 0 && this.get("status") < numStyles ? this.get("status") : 0;
+		let markerStyles = JSON.parse(kvm.store.getItem("markerStyles"));
+		let	numStyles = Object.keys(markerStyles).length;
+		let markerStyleIndex = this.get('status') && this.get("status") >= 0 && this.get("status") < numStyles ? this.get("status") : 0;
 		$("#" + this.get(this.options.id_attribute)).html(this.getLabelValue());
 		$("#" + this.get(this.options.id_attribute)).css("background-color", markerStyles[markerStyleIndex].fillColor);
 	}
@@ -652,9 +654,9 @@ export class Feature {
 
 	setGeomFromData() {
 		//console.log('setGeomFromData');
-		if (this.data[this.options.geometry_attribute]) {
+		if (this.options.geometry_attribute in this.data) {
 			//console.log('Setze geom des neuen Features mit data: %o', this.data);
-			this.geom = this.wkbToWkx(this.data[this.options.geometry_attribute]);
+			this.geom = this.wkbToWkx(this.get(this.options.geometry_attribute));
 		}
 		this.newGeom = this.geom; // Aktuelle WKX-Geometry beim Editieren. Entspricht this.geom wenn das Feature neu geladen wurde und Geometrie in Karte, durch GPS oder Formular noch nicht geändert wurde.
 		//console.log('new feature newGeom: %o', this.newGeom);

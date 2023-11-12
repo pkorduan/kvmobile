@@ -139,9 +139,9 @@ export class GeometrieFormField {
      *   exclude: Die Variante zum setzen der Geometrie nicht verwenden
      */
     $(document).on("geomChanged", function (event, options) {
-      var feature = kvm.activeLayer.activeFeature,
-        geom = options.geom,
-        exclude = options.exclude;
+      let feature = kvm.activeLayer.activeFeature;
+      let geom = options.geom;
+      let exclude = options.exclude;
 
       //console.log("Trigger Funktion geomChanged: geom: %o und exclude: %s", geom, exclude);
       if (exclude != "wkx") {

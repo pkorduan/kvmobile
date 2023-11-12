@@ -113,13 +113,13 @@ export const Mapper = {
       (<any>kvm.map)._layers[feature.editableLayer._leaflet_id]
         .on("editable:dragend", function (evt) {
           console.log("Polygon wurde verschoben");
-          var latlngs = feature.editableLayer.getLatLngs();
+          let latlngs = feature.editableLayer.getLatLngs();
           $(document).trigger("geomChanged", [{ geom: feature.aLatLngsToWkx(latlngs), exclude: "latlngs" }]);
         })
         .on("editable:vertex:dragend", function (evt) {
           console.log("Stützpunkt von Polygon wurde verschoben");
-          var latlngs = feature.editableLayer.getLatLngs();
-          $(document).trigger("geomChanged", [{ geom: feature.aLatLngsToWkx(latlngs), exclude: "latlngs" }]);
+          let latlngs = feature.editableLayer.getLatLngs();
+					$(document).trigger("geomChanged", [{ geom: feature.aLatLngsToWkx(latlngs), exclude: "latlngs" }]);
         });
     }
   },

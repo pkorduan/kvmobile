@@ -17,7 +17,7 @@ export class TextfeldFormField {
 
     constructor(formId, settings) {
         this.settings = settings;
-        this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
+        this.selector = "#" + formId + " textarea[id=" + this.get("index") + "]";
         this.element = $('\
         <textarea\
           id="' + this.get("index") + '"\
