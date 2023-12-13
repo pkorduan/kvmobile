@@ -1,4 +1,5 @@
-import * as L from "leaflet";
+//import * as L from "leaflet";
+const L = require("leaflet");
 import { maplibreStyleObj } from "./mapLibreStyles";
 import { kvm } from "./app";
 //import { Attribute } from "./Attribute";
@@ -25,15 +26,16 @@ export class BackgroundLayer {
 			this.leafletLayer = L.tileLayer(this.get('url'), this.get('params'));
 		}
 		else if (this.get('type') == "vectortile") {
+			// console.error('create vectortile');
 			//return L.vectorGrid.protobuf(backgroundLayerSetting.url, backgroundLayerSetting.params);
 			this.leafletLayer = (<any>L).maplibreGL({
-				style:
-					maplibreStyleObj.find((style) => {
-						return style.id == kvm.config.style;
-					}) ||
-					maplibreStyleObj.find((style) => {
-						return style.id == "default";
-					}),
+				style: maplibreStyleObj[1],
+					// maplibreStyleObj.find((style) => {
+					// 	return style.id == kvm.config.backgroundLayerSettings[2].style;
+					// }) ||
+					// maplibreStyleObj.find((style) => {
+					// 	return style.id == "default";
+					// }),
 				interactive: this.get('interactiv'),
 			});
 		}

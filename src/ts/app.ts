@@ -73,7 +73,7 @@ class Kvm {
 	debug: any;
 	config: any;
 
-	backgroundLayers: BackgroundLayer[];
+	backgroundLayers: BackgroundLayer[] = [];
 	backgroundLayerSettings: any[];
 	backgroundGeolocation: BackgroundGeolocation;
 	isActive: boolean;
@@ -175,22 +175,22 @@ class Kvm {
 	 * callback(err: ?Error, data: ?Object)
 	 */
 	customProtocolHandler(params, callback) {
-		//    console.info('start customProtocolHandler with params: ', params);
+		// console.info('start customProtocolHandler with params: ', params);
 		const urlPattern = /.*\d+\/\d+\/\d+\..*/;
 		// check if url is a tile url if not assume it is a tile description url
 		if (params.url.match(urlPattern)) {
 			// matched tile url
 			const key = kvm.getTileKey(params.url);
-			//      console.info("Searching for tile %s", key);
+			// console.info("Searching for tile %s", key);
 			kvm
 				.readTile(key)
 				.then((d) => {
 					if (d) {
-						console.info("Tile %s found in DB", key);
+						// console.info("Tile %s found in DB", key);
 						callback(null, d, null, null);
 					} else {
 						const url = params.url.replace("custom", "https");
-						console.info("Tile %s not in DB. Fetching from url: %s", key, url);
+						// console.info("Tile %s not in DB. Fetching from url: %s", key, url);
 						if (navigator.onLine) {
 							fetch(url).then((t) => {
 								t.arrayBuffer().then((arr) => {
@@ -200,7 +200,7 @@ class Kvm {
 								});
 							});
 						} else {
-							//   console.log('Kachel % nicht in DB gefunden und nicht online', url);
+							console.log('Kachel % nicht in DB gefunden und nicht online', url);
 						}
 					}
 				})
@@ -639,6 +639,7 @@ bis hier */
 			this.setGpsStatus();
 			this.initConfigOptions();
 			this.initMap();
+			this.initLoadOfflineMapsDiv();
 			this.initColorSelector();
 			this.initStatusFilter();
 			this.initLocalBackupPath();
@@ -864,6 +865,14 @@ bis hier */
 		) {
 			baseMaps["PmVectorTile"] = new MapLibreLayer("https://geoportal.lkee.de/html/pmtiles/style-schlaege.json", true);
 		}
+		// else if(
+		// 	this.config.name == "Biospährenreservat Südost-Rügen" &&
+		// 	this.store.getItem("activeStelleId") &&
+		// 	this.store.getItem(`stelleSettings_${this.store.getItem("activeStelleId")}`) &&
+		// 	JSON.parse(this.store.getItem(`stelleSettings_${this.store.getItem("activeStelleId")}`)).Stelle_ID == "51100266"
+		// ) {
+		// 	// baseMaps["Topographie offline"] = new MapLibreLayer("https://gdi-service.de/tileserver-gl-mv/data/v3.json", true);
+		// }
 
 		//    L.PM.initialize({ optIn: true });
 		// ToDo sortFunction hinzufügen die nach drawingorder sortieren kann
@@ -1024,6 +1033,26 @@ bis hier */
 		this.map = map;
 	}
 
+	/**
+	 * Initialisiere die Optionen zum Download der Offlinekarten im loadOfflineMapsDiv
+	 */
+	initLoadOfflineMapsDiv() {
+		console.log('initLoadOfflineMapsDiv');
+		const offlineLayers = kvm.config.backgroundLayerSettings.filter((setting) => {
+			return setting.online === false;
+		})
+		offlineLayers.forEach((offlineLayer) => {
+			$('#loadOfflineMapsDiv').append(`
+				<div>
+					${offlineLayer.label}
+					<button id="downloadBackgroundLayerButton" class="settings-button" value="${offlineLayer.layer_id}">
+						<i class="fa fa-download" arial-hidden="true"> herunterladen</i>
+					</button>
+				</div>
+			`);
+		});
+	}
+
 	initColorSelector() {
 		const markerStyles = JSON.parse(kvm.store.getItem("markerStyles")) || kvm.config.markerStyles;
 		kvm.store.setItem("markerStyles", JSON.stringify(markerStyles));
@@ -1065,6 +1094,7 @@ bis hier */
 	}
 
 	initBackgroundLayers() {
+		// console.error('initBackgroundLayers');
 		try {
 			this.saveBackgroundLayerSettings(
 				kvm.store.backgroundLayerSettings ? JSON.parse(kvm.store.getItem("backgroundLayerSettings")) : kvm.config.backgroundLayerSettings
@@ -1090,11 +1120,14 @@ bis hier */
 			});
 			$("#backgroundLayersTextarea").val(kvm.store.getItem("backgroundLayerSettings"));
 			this.backgroundLayers = [];
+			// for (var i = 0; i < 2; ++i) {
 			for (var i = 0; i < this.backgroundLayerSettings.length; ++i) {
+				console.log(this.backgroundLayerSettings[i]);
 				this.backgroundLayers.push(new BackgroundLayer(this.backgroundLayerSettings[i]));
 			}
 		}
 		catch (error) {
+			console.error(error);
 			kvm.msg('Fehler beim Einrichten der Hintergrundlayer: ' + error);
 			return false;
 		}
@@ -1833,9 +1866,10 @@ bis hier */
 			);
 		});
 
-		$("#downloadBackgroundLayerButton").on("click", function (evt) {
+		document.getElementById("downloadBackgroundLayerButton").addEventListener('click',(evt) => {
+			const offlineLayerId = (<HTMLElement>evt.currentTarget).getAttribute('value');
 			navigator.notification.confirm(
-				"Alle Vektorkacheln vom Gebiet LK-EE herunterladen? Vergewissern Sie sich, dass Sie in einem Netz mit guter Anbindung sind.",
+				"Alle Vektorkacheln vom Projektgebiet herunterladen? Vergewissern Sie sich, dass Sie in einem Netz mit guter Anbindung sind.",
 				function (buttonIndex) {
 					if (buttonIndex === 1) {
 						if (navigator.onLine) {
@@ -1851,22 +1885,22 @@ bis hier */
 							// download the files in background and update the progress div
 							// confirm the finish
 							// hide the progress div and show the delete and update button
-							var bl = kvm.backgroundLayerSettings.filter(function (l) {
-									return l.type == "vectortile" && l.label == "Vektorkacheln offline";
-								})[0],
-								params = bl.params,
-								key;
+							const bl = kvm.backgroundLayerSettings.filter(function (l) {
+									return l.layer_id == offlineLayerId;
+							})[0];
+							const	params = bl.params;
+							let key = '';
 
 							//console.log('Fetch vector tiles for p1: %s,%s p2: %s,%s', params.south, params.west, params.north, params.east);
 							const tileLinks = [];
 
-							for (var z = params.minZoom; z <= params.maxZoom; z++) {
+							for (var z = params.minZoom; z <= params.maxNativeZoom; z++) {
 								//console.log('Zoom level: %s', z);
 								kvm.getTilesUrls(L.latLng(params.south, params.west), L.latLng(params.north, params.east), z, bl.url).forEach((url) => tileLinks.push(url));
 							}
 							let i = 0;
 							const iSoll = tileLinks.length;
-							console.log("soll:" + iSoll);
+							console.log("Anzahl der herunter zu ladenden Kacheln:" + iSoll);
 
 							function download() {
 								if (tileLinks.length > 0) {
@@ -1879,7 +1913,7 @@ bis hier */
 												.then((arr) => {
 													kvm.saveTile(key, arr.slice(0));
 													i++;
-													sperrDivProgressDiv.innerHTML = i + " von " + iSoll + " runtergeladen";
+													sperrDivProgressDiv.innerHTML = `<span class="highlighted">${i} von ${iSoll} runtergeladen</span>`;
 													download();
 												})
 												.catch((reason) => {
@@ -2013,7 +2047,7 @@ bis hier */
 	}
 
 	showItem(item): void {
-		console.log("showItem: %o", item);
+		// console.log("showItem: %o", item);
 		// erstmal alle panels ausblenden
 		$(".panel").hide();
 

@@ -12,7 +12,7 @@ import { kvm } from "./app";
  *	</select>
  * </div>
  */
-export class SelectFormField {
+export class SelectAutoFormField {
   settings: any;
   selector: string;
   element: JQuery<HTMLElement>;
@@ -21,24 +21,11 @@ export class SelectFormField {
     this.settings = settings;
     this.selector = "#" + formId + " select[id=" + this.get("index") + "]";
     this.element = $(`
-			<select
+			<input
 				id="${this.get("index")}"
 				name="${this.get("name")}"
 				${(this.get("privilege") == "0" ? ' disabled' : '')}
-				${(kvm.coalesce(this.get("required_by"), "") != "" ? ' required_by="' + this.get("required_by") + '"' : "")}
-				${(kvm.coalesce(this.get("requires"), "") != "" ? ' requires="' + this.get("requires") + '"' : "")}
-			>
-				<option value="">Bitte wählen</option>
-				${$.map(this.get("options"), function (option) {
-      //          option = option.replace(/(^')|('$)/g, '')
-      return `
-							<option
-								value="${option.value}"
-								${(kvm.coalesce(option.requires_value, "") != "" ? 'requires="' + option.requires_value + '"' : '')}
-							>${option.output}</option>
-						`;
-    }).join("\n")}
-			</select>
+			/>
     `);
   }
 
@@ -83,8 +70,8 @@ export class SelectFormField {
   };
 
   bindEvents() {
-    console.log('SelectFormField.bindEvents');
-    $("#featureFormular select[id=" + this.get("index") + "]").on("change", function (evt) {
+    console.log('SelectAutoFormField.bindEvents');
+    $("#featureFormular input[id=" + this.get("index") + "]").on("change", function (evt) {
       if (!$("#saveFeatureButton").hasClass("active-button")) {
         $("#saveFeatureButton").toggleClass("active-button inactive-button");
       }
@@ -97,5 +84,61 @@ export class SelectFormField {
         // apply the filter on the options, call filter_by_required
       }
     });
-  };
+    $("#featureFormular input[id=" + this.get("index") + "]").on("keyup", function (evt) {
+      let elm = $(evt.target);
+			let val: string = String(elm.val());
+			let selectField = $(`#featureFormular select[id="${elm.attr('id')}]`);
+			if ((val.length  > 2)) {
+
+				selectField.show();
+				console.log('Key up event on select auto field value: %s', elm.val());
+			}
+    });
+/**
+ * Beispiel unter https://stackoverflow.com/questions/1447728/how-to-dynamic-filter-options-of-select-with-jquery
+ jQuery.fn.filterByText = function(textbox) {
+  return this.each(function() {
+    var select = this;
+    var options = [];
+    $(select).find('option').each(function() {
+      options.push({
+        value: $(this).val(),
+        text: $(this).text()
+      });
+    });
+    $(select).data('options', options);
+
+    $(textbox).on('change keyup', function(evt) {
+      var options = $(select).empty().data('options');
+      var search = $.trim($(this).val());
+      var regex = new RegExp(search, "gi");
+
+      $.each(options, function(i) {
+        var option = options[i];
+        if (option.text.match(regex) !== null) {
+          $(select).append(
+            $('<option>').text(option.text).val(option.value)
+          );
+        }
+      });
+    });
+  });
+};
+
+$(function() {
+  $('select').filterByText($('input'));
+});
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<select>
+  <option value="hello">hello</option>
+  <option value="world">world</option>
+  <option value="lorem">lorem</option>
+  <option value="ipsum">ipsum</option>
+  <option value="lorem ipsum">lorem ipsum</option>
+</select>
+<input type="text">
+*/
+
+	};
 }

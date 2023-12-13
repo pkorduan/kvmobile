@@ -44,7 +44,8 @@ export const configurations = [
     kvwmapServerLoginName: "korduan",
     kvwmapServerPasswort: "",
     backgroundLayerSettings: [
-      {
+      {  
+        layer_id: 1,
         label: "BaseMap DE",
         online: true,
         type: "wms",
@@ -199,6 +200,7 @@ export const configurations = [
     kvwmapServerPasswort: "",
     backgroundLayerSettings: [
       {
+        layer_id: 1,
         label: "Hintergrundkarte offline",
         online: false,
         type: "tile",
@@ -208,6 +210,7 @@ export const configurations = [
         },
       },
       {
+        layer_id: 2,
         label: "Hintergrundkarte online",
         online: true,
         type: "tile",
@@ -217,6 +220,7 @@ export const configurations = [
         },
       },
       {
+        layer_id: 3,
         label: "Luftbild online",
         online: true,
         type: "wms",
@@ -228,6 +232,7 @@ export const configurations = [
         },
       },
       {
+        layer_id: 4,
         label: "Luftbildkacheln online",
         online: true,
         type: "tile",
@@ -273,6 +278,7 @@ export const configurations = [
     kvwmapServerPasswort: "",
     backgroundLayerSettings: [
       {
+        layer_id: 1,
         label: "Regionalkarte offline",
         online: false,
         type: "tile",
@@ -282,6 +288,7 @@ export const configurations = [
         },
       },
       {
+        layer_id: 2,
         label: "Regionalkarte online",
         online: true,
         type: "tile",
@@ -291,6 +298,7 @@ export const configurations = [
         },
       },
       {
+        layer_id: 3,
         label: "Luftbild online",
         online: true,
         type: "wms",
@@ -382,7 +390,8 @@ export const configurations = [
     kvwmapServerLoginName: "",
     kvwmapServerPasswort: "",
     backgroundLayerSettings: [
-			{
+      {
+        layer_id: 50304552,
         label: "Hintergrundkarte online",
         online: true,
         type: "tile",
@@ -392,6 +401,7 @@ export const configurations = [
         },
       },
       {
+        layer_id: 50304407,
         label: "Luftbild online",
         online: true,
         type: "wms",
@@ -402,16 +412,18 @@ export const configurations = [
           attribution: "Geoportal-MV DOP WMS",
         },
       },
-      /*{
-        label: "Vektorkacheln offline",
-        online: true,
+      {
+        layer_id: 503045521,
+        label: "OpenStreetMap offline",
+        online: false,
         type: "vectortile",
         url: "https://gdi-service.de/tileserver-gl-mv/data/v3/{z}/{x}/{y}.pbf",
-        style: "default",
+        style: "basic-MV",
         interactiv: false,
         params: {
 					minZoom: 9,
           maxZoom: 18,
+          maxNativeZoom: 14,
 					west: 13.41325,
 					south: 54.26467,
 					east: 13.77459,
@@ -485,11 +497,10 @@ export const configurations = [
             },
             road: [],
           },
-          maxNativeZoom: 14,
           attribution: "OSM TileServer GL GDI-Service",
         },
-      },*/
-		],
+      },
+    ],
   },
 	{
     name: "LK-EE",
@@ -526,8 +537,9 @@ export const configurations = [
     kvwmapServerPasswort: "",
     backgroundLayerSettings: [
       {
+        layer_id: 1,
         label: "Vektorkacheln offline",
-        online: true,
+        online: false,
         type: "vectortile",
         //'https://api.mapbox.com/styles/v1/pkorduan/ckrg05q6c4x7n17nr0kjbe6j9.html?fresh=true&title=view&access_token=pk.eyJ1IjoicGtvcmR1YW4iLCJhIjoiY2lxbm54b2Q4MDAzaGkzbWFodWtka2NsaCJ9.SiUN3rvZ1pbyOyZ3xQh-Hg#{z}/{x}/{y}',
         url: "https://gdi-service.de/tileserver-gl/data/v3/{z}/{x}/{y}.pbf",
@@ -614,6 +626,7 @@ export const configurations = [
         },
       },
       {
+        layer_id: 2,
         label: "Luftbilder online",
         online: true,
         type: "wms",
@@ -682,6 +695,7 @@ export const configurations = [
     kvwmapServerPasswort: "",
     backgroundLayerSettings: [
       {
+        layer_id: 1,
         label: "Hintergrundkarte offline",
         online: false,
         type: "tile",
@@ -691,6 +705,7 @@ export const configurations = [
         },
       },
       {
+        layer_id: 2,
         label: "Hintergrundkarte online",
         online: true,
         type: "tile",
@@ -700,6 +715,7 @@ export const configurations = [
         },
       },
       {
+        layer_id: 3,
         label: "Luftbild online",
         online: true,
         type: "wms",
@@ -711,6 +727,7 @@ export const configurations = [
         },
       },
       {
+        layer_id: 4,
         label: "Luftbildkacheln online",
         online: true,
         type: "tile",
@@ -856,6 +873,7 @@ export const configurations = [
       },
 */
       {
+        layer_id: 1,
         label: "Hintergrundkarte online",
         online: true,
         type: "tile",
@@ -865,6 +883,7 @@ export const configurations = [
         },
       },
       {
+        layer_id: 1,
         label: "Luftbild online",
         online: true,
         type: "wms",
@@ -933,6 +952,7 @@ export const configurations = [
     kvwmapServerPasswort: "",
     backgroundLayerSettings: [
       {
+        layer_id: 1,
         label: "BaseMap DE",
         online: true,
         type: "wms",
@@ -990,6 +1010,7 @@ export const configurations = [
     kvwmapServerPasswort: "",
     backgroundLayerSettings: [
       {
+        layer_id: 1,
         label: "BaseMap DE",
         online: true,
         type: "wms",
@@ -1001,6 +1022,7 @@ export const configurations = [
         }
       },
 			{
+        layer_id: 2,
         label: "ORKA",
         online: true,
         type: "tile",
@@ -1010,6 +1032,7 @@ export const configurations = [
         },
       },
       {
+        layer_id: 3,
         label: "Luftbild",
         online: true,
         type: "wms",

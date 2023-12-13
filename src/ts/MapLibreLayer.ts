@@ -58,6 +58,7 @@ export class MapLibreLayer extends LLayer {
     if (!MapLibreLayer.maplibreGLMap) {
       const pane = (this.pane = map.createPane("pmtiles"));
       pane.style.zIndex = "300";
+			console.error('L', L);
       const gl = L.maplibreGL({ style: style, pane: "pmtiles", interactive: true });
       gl.addTo(map);
       const glMap: maplibreMap = (MapLibreLayer.maplibreGLMap = gl.getMaplibreMap());

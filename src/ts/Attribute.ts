@@ -7,6 +7,7 @@ import { DateFormField } from "./DateFormField";
 import { DateTimeFormField } from "./DateTimeFormField";
 import { GeometrieFormField } from "./GeometryFormField";
 import { SelectFormField } from "./SelectFormField";
+import { SelectAutoFormField } from "./SelectAutoFormField";
 import { TextfeldFormField } from "./TextfeldFormField";
 import { TextFormField } from "./TextFormField";
 import { UserFormField } from "./UserFormField";
@@ -130,12 +131,15 @@ export class Attribute {
 	}
 
 	getFormField(): Field {
-		console.log("Attribute.getFormField attr: " + this.get("name") + " type: " + this.get("type") + " form_element_type: " + this.get("form_element_type"));
+		// console.log("Attribute.getFormField attr: " + this.get("name") + " type: " + this.get("type") + " form_element_type: " + this.get("form_element_type"));
 		let field: Field;
 
 		switch (this.get("form_element_type")) {
 			case "Auswahlfeld":
 				field = new SelectFormField("featureFormular", this.settings);
+				break;
+			case "Autovervollständigungsfeld":
+				field = new SelectAutoFormField("featureFormular", this.settings);
 				break;
 			case "Text":
 				if (this.get("type") == "timestamp") {

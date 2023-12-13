@@ -3958,7 +3958,7 @@ ul.subformlist {
 
 .v-scroll-div {
   clear: both;
-  height: 845px;
+  height: 96vh;
   overflow: auto;
   display: none;
 }
@@ -4156,4 +4156,12 @@ li.pointer {
 
 li.pointer:hover {
   background-color: #ccc;
+}
+
+.highlighted {
+  font-size: 25px;
+  font-weight: bold;
+  color: #263286;
+  background-color: white;
+  padding: 6px;
 }
