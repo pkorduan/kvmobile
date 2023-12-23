@@ -673,39 +673,47 @@ bis hier */
 					//console.log('Lade Layersettings for layerId: %s', layerId);
 					const layerSettings = this.store.getItem("layerSettings_" + activeStelleId + "_" + layerId);
 					if (layerSettings != null) {
-						const layer = new Layer(stelle, layerSettings);
-						layer.appendToApp();
-						if (layer.get("id") == kvm.store.getItem("activeLayerId")) {
-							layer.isActive = true;
-							kvm.layers[layer.getGlobalId()] = kvm.activeLayer = layer;
-						}
-						if (navigator.onLine && layer.hasSyncPrivilege && layer.get('autoSync')) {
-							if (layer.hasEditPrivilege) {
-								try {
-									console.log("Layer " + layer.title + ": SyncData with local deltas if exists.");
-									layer.syncData();
-								} catch ({ name, message }) {
-									kvm.msg("Fehler beim synchronisieren des Layers id: " + layer.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
-								}
-								try {
-									console.log("Layer " + layer.title + ": SyncImages with local images if exists.");
-									layer.syncImages();
-								} catch ({ name, message }) {
-									kvm.msg(
-										"Fehler beim synchronisieren der Bilder des Layers id: " + layer.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message
-									);
+						const settings = JSON.parse(layerSettings);
+						if (settings.vector_tile_url == '') {
+							const layer = new Layer(stelle, settings);
+							layer.appendToApp();
+							if (layer.get("id") == kvm.store.getItem("activeLayerId")) {
+								layer.isActive = true;
+								kvm.layers[layer.getGlobalId()] = kvm.activeLayer = layer;
+							}
+							if (navigator.onLine && layer.hasSyncPrivilege && layer.get('autoSync')) {
+								if (layer.hasEditPrivilege) {
+									try {
+										console.log("Layer " + layer.title + ": SyncData with local deltas if exists.");
+										layer.syncData();
+									} catch ({ name, message }) {
+										kvm.msg("Fehler beim synchronisieren des Layers id: " + layer.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
+									}
+									try {
+										console.log("Layer " + layer.title + ": SyncImages with local images if exists.");
+										layer.syncImages();
+									} catch ({ name, message }) {
+										kvm.msg(
+											"Fehler beim synchronisieren der Bilder des Layers id: " + layer.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message
+										);
+									}
+								} else {
+									console.log("Layer " + layer.title + ": Only get deltas from server.");
+									try {
+										layer.sendDeltas({ rows: [] });
+									} catch ({ name, message }) {
+										kvm.msg("Fehler beim senden der Deltas des Layers id: " + layer.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
+									}
 								}
 							} else {
-								console.log("Layer " + layer.title + ": Only get deltas from server.");
-								try {
-									layer.sendDeltas({ rows: [] });
-								} catch ({ name, message }) {
-									kvm.msg("Fehler beim senden der Deltas des Layers id: " + layer.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
-								}
+								console.log("Layer " + layer.title + ": Only read data from local database.");
+								layer.readData(); // include drawFeatures
 							}
-						} else {
-							console.log("Layer " + layer.title + ": Only read data from local database.");
-							layer.readData(); // include drawFeatures
+						}
+						else {
+							const layer = new MapLibreLayer(settings, true, stelle);
+							layer.appendToApp();
+							stelle.finishLayerLoading(layer);
 						}
 					}
 				}
@@ -863,16 +871,8 @@ bis hier */
 			this.store.getItem(`stelleSettings_${this.store.getItem("activeStelleId")}`) &&
 			JSON.parse(this.store.getItem(`stelleSettings_${this.store.getItem("activeStelleId")}`)).Stelle_ID == "103"
 		) {
-			baseMaps["PmVectorTile"] = new MapLibreLayer("https://geoportal.lkee.de/html/pmtiles/style-schlaege.json", true);
+			baseMaps["PmVectorTile"] = new MapLibreLayer("https://geoportal.lkee.de/html/pmtiles/style-schlaege.json", true, kvm.activeStelle);
 		}
-		// else if(
-		// 	this.config.name == "Biospährenreservat Südost-Rügen" &&
-		// 	this.store.getItem("activeStelleId") &&
-		// 	this.store.getItem(`stelleSettings_${this.store.getItem("activeStelleId")}`) &&
-		// 	JSON.parse(this.store.getItem(`stelleSettings_${this.store.getItem("activeStelleId")}`)).Stelle_ID == "51100266"
-		// ) {
-		// 	// baseMaps["Topographie offline"] = new MapLibreLayer("https://gdi-service.de/tileserver-gl-mv/data/v3.json", true);
-		// }
 
 		//    L.PM.initialize({ optIn: true });
 		// ToDo sortFunction hinzufügen die nach drawingorder sortieren kann
@@ -884,7 +884,8 @@ bis hier */
 					parseInt(layerA.getAttribution()) > parseInt(layerB.getAttribution()) ? parseInt(layerA.getAttribution()) : parseInt(layerB.getAttribution()),
 			})
 			.addTo(map);
-		kvm.controls.locate = L.control
+
+			kvm.controls.locate = L.control
 			.locate({
 				position: "topright",
 				keepCurrentZoomLevel: true,

@@ -1739,7 +1739,7 @@ export class Layer {
       color: "#000000",
       opacity: 1.0,
       fillColor: "#333333",
-      fillOpacity: 1.0,
+      fillOpacity: 0.8,
       weight: 2,
       stroke: true,
       fill: this.settings.geometry_type != "Line",
@@ -3281,18 +3281,10 @@ export class Layer {
         target = target.parent();
       }
 
-      if (!layer.isEmpty()) {
-        if (target.hasClass("inactive-button")) {
-          kvm.msg("Keine Internetverbindung! Kann Layer jetzt nicht neu laden.");
-        } else {
-          navigator.notification.confirm(
-            "Layer ist noch nicht geleert. Die Daten des Layers auf dem Endgerät müssen erst gelöscht werden.",
-            function (buttonIndex) { },
-            "Datenbank",
-            ["OK"]
-          );
-        }
-      } else {
+			if (target.hasClass("inactive-button")) {
+				kvm.msg("Keine Internetverbindung! Kann Layer jetzt nicht neu laden.");
+			}
+			else {
         navigator.notification.confirm(
           "Die Einstellungen des Layers neu laden und die Tabelle neu anlegen.",
           function (buttonIndex) {
@@ -3311,7 +3303,7 @@ export class Layer {
           "",
           ["ja", "nein"]
         );
-      }
+    	}
     });
     console.log("Register event for styleLayerButton with layerId: ", layerGlobalId);
     /*
@@ -3453,7 +3445,8 @@ export class Layer {
       </div>`;
     return html;
   }
-  getLayerinfoItems() {
+
+	getLayerinfoItems() {
     let layerinfoItems: String[] = [];
     layerinfoItems.push(`Layer-ID: ${this.get("id")}`);
     layerinfoItems.push(`Geometrietyp: ${this.get("geometry_type")}`);

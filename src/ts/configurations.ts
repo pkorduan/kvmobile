@@ -376,9 +376,9 @@ export const configurations = [
     },
     mapSettings: {
       newPosSelect: 2,
-      minZoom: 9,
+      minZoom: 11,
       maxZoom: 18,
-      startZoom: 8,
+      startZoom: 11,
       west: 13.41325,
       south: 54.26467,
       east: 13.77459,
@@ -392,7 +392,7 @@ export const configurations = [
     backgroundLayerSettings: [
       {
         layer_id: 50304552,
-        label: "Hintergrundkarte online",
+        label: "ORKA online",
         online: true,
         type: "tile",
         url: "https://www.orka-mv.de/geodienste/orkamv/tiles/1.0.0/orkamv/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png",
@@ -401,20 +401,8 @@ export const configurations = [
         },
       },
       {
-        layer_id: 50304407,
-        label: "Luftbild online",
-        online: true,
-        type: "wms",
-        url: "https://www.geodaten-mv.de/dienste/adv_dop",
-        params: {
-          layers: "mv_dop",
-          format: "image/png",
-          attribution: "Geoportal-MV DOP WMS",
-        },
-      },
-      {
         layer_id: 503045521,
-        label: "OpenStreetMap offline",
+        label: "OSM offline",
         online: false,
         type: "vectortile",
         url: "https://gdi-service.de/tileserver-gl-mv/data/v3/{z}/{x}/{y}.pbf",
@@ -498,6 +486,28 @@ export const configurations = [
             road: [],
           },
           attribution: "OSM TileServer GL GDI-Service",
+        },
+      },
+      {
+        layer_id: 50304407,
+        label: "Luftbilder online",
+        online: true,
+        type: "wms",
+        url: "https://www.geodaten-mv.de/dienste/adv_dop",
+        params: {
+          layers: "mv_dop",
+          format: "image/png",
+          attribution: "Geoportal-MV DOP WMS",
+        },
+      },
+      {
+        layer_id: 503044071,
+        label: "Luftbilder offline",
+        online: true,
+        type: "tile",
+        url: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/bing_satellite/{z}/{x}/{y}.jpeg",
+        params: {
+          attribution: "Bing Satellite",
         },
       },
     ],

@@ -25,7 +25,7 @@ export class Klasse {
     let defaultPathOptions = this.layer.getDefaultPathOptions();
     let pathOptions: { [k: string]: any } = {
       color: `rgb(${(this.layer.get("geometry_type") == "Line" ? this.get("style").fillColor : this.get("style").color) || defaultPathOptions.color})`,
-      opacity: (this.layer.get("geometry_type") == "Polygon" ? 1 : this.get("style").opacity / 100) || defaultPathOptions.opacity,
+      opacity: (this.get("style").opacity / 100) || defaultPathOptions.opacity,
       fill: this.layer.get("geometry_type") == "Line" ? false : this.get("style").fill === "" ? defaultPathOptions.fill : this.get("style").fill,
       stroke: this.get("style").stroke === "" ? defaultPathOptions.stroke : this.get("style").stroke,
       fillColor: `rgb(${(this.layer.get("geometry_type") == "Line" ? this.get("style").color : this.get("style").fillColor) || defaultPathOptions.fillColor})`,

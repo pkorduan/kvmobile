@@ -14,6 +14,10 @@ Doku zu kvmobile: https://kvwmap.de/index.php/kvmobile
 Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.de/public/kvmobile/
 
 # Change log
+## 1.11.2
+	* Features
+  	* Support pmtiles from layersettings
+  	* Hide unimportant configuration parameters 
 ## 1.11.1
 	* Bugfix
   	* Correct amount of vertex in wkt object

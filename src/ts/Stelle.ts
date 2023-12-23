@@ -1,6 +1,7 @@
 import { Layer } from "./Layer";
 import { kvm } from "./app";
 import { Overlay } from "./Overlay";
+import { MapLibreLayer } from "./MapLibreLayer";
 
 /**
  * Es gibt zwei Varianten wie Layer geladen werden
@@ -369,8 +370,10 @@ export class Stelle {
 									layerIds.map(function (id) {
 										let globalId = kvm.activeStelle.get("id") + "_" + id;
 										if (kvm.layers[globalId]) {
-											kvm.layers[globalId].dropDataTable();
-											kvm.layers[globalId].dropDeltasTable();
+											if (kvm.layers[globalId].get('vector_tile_url') == '') {
+												kvm.layers[globalId].dropDataTable();
+												kvm.layers[globalId].dropDeltasTable();
+											}
 											kvm.layers[globalId].removeFromApp();
 										}
 									});
@@ -393,11 +396,21 @@ export class Stelle {
 									console.log("  requestLayers) Füge neu runtergeladene Layer zur Anwendung hinzu.");
 									resultObj.layers.forEach((layerSetting) => {
 										console.log("  requestLayers) Layer.requestLayers create layer with settings: %o", layerSetting);
-										const layer = new Layer(this, layerSetting);
-										layer.createTable();
-										layer.appendToApp();
-										layer.saveToStore();
-										layer.requestData(); // Das ist neu: Daten werden gleich geladen nach dem Anlegen in der Stelle
+										if (layerSetting.vector_tile_url != '') {
+											console.log('Erzeuge einen VectorTile Layer-Objekt');
+											const layer = new MapLibreLayer(layerSetting, true, this);
+											layer.appendToApp();
+											layer.saveToStore();
+											this.finishLayerLoading(layer);
+										}
+										else {
+											console.log('Erzeuge einen normales Layer-Objekt');
+											const layer = new Layer(this, layerSetting);
+											layer.createTable();
+											layer.appendToApp();
+											layer.saveToStore();
+											layer.requestData(); // Das ist neu: Daten werden gleich geladen nach dem Anlegen in der Stelle	
+										}
 									});
 								}
 
