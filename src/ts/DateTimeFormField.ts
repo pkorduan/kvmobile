@@ -34,9 +34,11 @@ export class DateTimeFormField {
   }
 
   setValue(val) {
-    //kvm.log("val: " + val, 4);
+		console.log('DateTimeFormField setVal val: -%s-', val);
     var val = kvm.coalesce(val, "");
-    if (val != "") val = this.toISO(val);
+    if (val != "") {
+			val = this.toISO(val);
+		}
     kvm.log("DateTimeFormField " + this.get("name") + " setValue with value: " + JSON.stringify(val), 4);
     this.element.val(val);
   }

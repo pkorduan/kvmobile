@@ -13,12 +13,12 @@ label {
 }
 
 .b-collapsed:before {
-  content: "\25BA\0020";
+  content: "+ ";
   color: #263286;
 }
 
 .b-expanded:before {
-  content: "\25F8\0020";
+  content: "- ";
   color: #263286;
 }
 
@@ -453,6 +453,16 @@ ul.subformlist {
   padding-right: 5px;
   min-height: 0px;
   color: #263286;
+}
+
+.data-view-value > div {
+	color: firebrick;
+	font-weight: bold;
+}
+
+.data-view-value > ul > li {
+	color: firebrick;
+	font-weight: bold;
 }
 
 .feature-item {
@@ -980,4 +990,28 @@ li.pointer:hover {
 	color: #263286;
 	background-color: white;
 	padding: 6px;
+}
+
+#geolocation_div {
+	position: absolute;
+	z-index: 999;
+	bottom: 0;
+	font-size: 14px;
+	padding: 3px;
+	background-color: #ffffff80;
+}
+
+#map_hint_div {
+	display: none;
+	z-index: 1001;
+	position: absolute;
+	/* bottom: 50%; */
+	left: 53px;
+	/*background-color: #00ff0050;*/
+	background-color: white;
+	padding: 5px;
+	border-radius: 5px;
+	border: 2px solid #b1a8a1;
+	top: 61px;
+	margin-right: 52px;
 }

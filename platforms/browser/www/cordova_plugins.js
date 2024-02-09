@@ -370,6 +370,14 @@ module.exports = [
         "id": "cordova-plugin-app-version.AppVersionProxy",
         "pluginId": "cordova-plugin-app-version",
         "runs": true
+    },
+    {
+        "file": "plugins/cordova-spatialite-storage/www/SQLitePlugin.js",
+        "id": "cordova-spatialite-storage.SQLitePlugin",
+        "pluginId": "cordova-spatialite-storage",
+        "clobbers": [
+            "SQLitePlugin"
+        ]
     }
 ];
 module.exports.metadata = 
@@ -391,7 +399,8 @@ module.exports.metadata =
     "cordova-sqlite-evplus-legacy-attach-detach-free": "0.8.3-pre5",
     "cordova-sqlite-storage": "5.1.0",
     "cordova-plugin-background-geolocation": "3.1.0",
-    "cordova-plugin-app-version": "0.1.14"
+    "cordova-plugin-app-version": "0.1.14",
+    "cordova-spatialite-storage": "2.0.0"
 }
 // BOTTOM OF METADATA
 });

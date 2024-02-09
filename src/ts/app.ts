@@ -1,7 +1,13 @@
 /// <reference types="cordova-plugin-dialogs"/>
 /// <reference types="cordova-plugin-device"/>
 /// <reference types="cordova-plugin-android-fingerprint-auth"/>
-window.open = (<any>cordova).InAppBrowser.open; // oder casten mit window.open = cordova['InAppBrowser'].open;
+try {
+	window.open = (<any>cordova).InAppBrowser.open; // oder casten mit window.open = cordova['InAppBrowser'].open;
+}
+catch ({ name, message}) {
+	console.error(`TypeError: ${name} Message: ${message}`);
+	alert(`Die App muss ein mal geschlossen und neu gestartet werden!`);
+}
 
 // import "cordova-plugin-dialogs";
 // import "cordova-plugin-device";
@@ -300,228 +306,6 @@ class Kvm {
 			kvm.config = foundConfiguration[0];
 		}
 
-		// Write log to cordova.file.externalDataDirectory
-		// which is at file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/
-		/*
-    window.resolveLocalFileSystemURL(cordova.file.externalDataDirectory, function (dir) {
-      console.log("got main dir", dir);
-      dir.getFile("log.txt", { create: true }, function (file) {
-        console.log("got the file", file);
-        //logOb = file;
-        kvm.writeLog("App started");
-      });
-    });
-    */
-		/*
-    kvm.backgroundGeolocation = new BackgroundGeolocation();
-    const bgConfig: BackgroundGeolocationConfig = {
-      desiredAccuracy: 10,
-      stationaryRadius: 20,
-      distanceFilter: 30,
-      debug: true, //  enable this hear sounds for background-geolocation life-cycle.
-      stopOnTerminate: false, // enable this to clear background location settings when the app terminates
-    };
-
-    kvm.backgroundGeolocation.configure(bgConfig).then(() => {
-      kvm.backgroundGeolocation.on(BackgroundGeolocationEvents.location).subscribe((location: BackgroundGeolocationResponse) => {
-        console.log(location);
-        kvm.msg(location, "Location");
-        // IMPORTANT:  You must execute the finish method here to inform the native plugin that you're finished,
-        // and the background-task may be completed.  You must do this regardless if your operations are successful or not.
-        // IF YOU DON'T, ios will CRASH YOUR APP for spending too much time in the background.
-        var xhr = new XMLHttpRequest();
-        xhr.open("POST", "https://gdi-service.de/kvwmap_pet_dev/custom/layouts/snippets/track_location.php");
-        xhr.setRequestHeader("Content-Type", "application/json");
-        xhr.onreadystatechange = () => {
-          // In local files, status is 0 upon success in Mozilla Firefox
-          if (xhr.readyState === XMLHttpRequest.DONE) {
-            const status = xhr.status;
-            if (status === 0 || (status >= 200 && status < 400)) {
-              // The request has been completed successfully
-              console.log(xhr.responseText);
-            } else {
-              // Oh no! There has been an error with the request!
-            }
-          }
-        };
-        xhr.send(JSON.stringify(location));
-        //kvm.backgroundGeolocation.finish(); // FOR IOS ONLY
-      });
-    });
-
-    kvm.backgroundGeolocation.start();
-*/
-		/*
-    BackgroundGeolocation.on("location", function (location) {
-      // handle your locations here
-      console.log("loc: %o", location);
-      kvm.writeLog("event location: " + location.time + " " + location.latitude + " " + location.longitude);
-
-      // to perform long running operation on iOS
-      // you need to create background task
-
-      BackgroundGeolocation.startTask(function(taskKey) {
-        console.log('BackgroundGeolocation startTask with taskKey: ', taskKey);
-        // execute long running task
-        // eg. ajax post location
-
-        BackgroundGeolocation.headlessTask(function(event) {
-          console.log('event in headlessTask %o', event);
-          kvm.writeLog('run headlessTask with event params: ' + JSON.stringify(event.params));
-          if (event.name === 'location' || event.name === 'stationary') {
-            console.log('event.name: %s', event.name);
-
-            kvm.writeLog('event.name: ' + event.name);
-//            var xhr = new XMLHttpRequest();
-//            xhr.open('POST', 'https://gdi-service.de/kvwmap_pet_dev/custom/layouts/snippets/track_location.php');
-//            xhr.setRequestHeader('Content-Type', 'application/json');
-//            xhr.send(JSON.stringify(event.params));
-          }
-          else {
-            kvm.writeLog('location but stationary: ' + event.params.time + ' ' + event.params.latitude + ' ' + event.params.longitude);
-          }
-            kvm.writeLog('location but stationary: ' + event.params.time + ' ' + event.params.latitude + ' ' + event.params.longitude);
-          return 'Processing event: ' + event.name + ' params: ' + JSON.stringify(event.params); // will be logged
-        });
-
-        // IMPORTANT: task has to be ended by endTask
-        BackgroundGeolocation.endTask(taskKey);
-      });
-
-    });
-*/
-		/* Das hier bis Ende Kommentar einfügen nach start.
-BackgroundGeolocation.configure({
-  startForeground: true,
-  locationProvider: BackgroundGeolocation.ACTIVITY_PROVIDER,
-  locationProvider: BackgroundGeolocation.DISTANCE_FILTER_PROVIDER,
-  desiredAccuracy: BackgroundGeolocation.HIGH_ACCURACY,
-  stationaryRadius: 1,
-  distanceFilter: 1,
-  notificationTitle: "Background tracking",
-  notificationText: "enabled",
-  debug: true,
-  interval: 10000,
-  fastestInterval: 5000,
-  activitiesInterval: 10000,
-  url: "https://gdi-service.de/kvwmap_pet_dev/custom/layouts/snippets/track_location.php",
-  httpHeaders: {
-    "X-FOO": "bar",
-  },
-  // customize post properties
-  postTemplate: {
-    lat: "@latitude",
-    lon: "@longitude",
-    time: "@time",
-    accuracy: "@accuracy",
-    provider: "@provider"
-  },
-  maxLocations: 1000,
-});
-
-BackgroundGeolocation.on("location", function (location) {
-  // handle your locations here
-  console.log("loc: %o", location);
-  kvm.writeLog("event location: " + location.time + " " + location.latitude + " " + location.longitude);
-});
-
-BackgroundGeolocation.on("stationary", function (stationaryLocation) {
-  // handle stationary locations here
-  console.log(new Date() + "stationary: %o", stationaryLocation);
-  kvm.writeLog(new Date() + "stationary: " + stationaryLocation.time + " " + stationaryLocation.latitude + " " + stationaryLocation.longitude);
-});
-
-BackgroundGeolocation.on("error", function (error) {
-  console.log(new Date() + " [ERROR] BackgroundGeolocation error:", error.code, error.message);
-});
-
-BackgroundGeolocation.on("start", function () {
-  console.log(new Date() + "[INFO] BackgroundGeolocation service has been started");
-});
-
-BackgroundGeolocation.on("stop", function () {
-  console.log(new Date() + "[INFO] BackgroundGeolocation service has been stopped");
-});
-
-BackgroundGeolocation.on("authorization", function (status) {
-  console.log(new Date() + "[INFO] BackgroundGeolocation authorization status: " + status);
-  if (status !== BackgroundGeolocation.AUTHORIZED) {
-    // we need to set delay or otherwise alert may not be shown
-    setTimeout(function () {
-      var showSettings = confirm("App requires location tracking permission. Would you like to open app settings?");
-      if (showSetting) {
-        return BackgroundGeolocation.showAppSettings();
-      }
-    }, 1000);
-  }
-});
-
-BackgroundGeolocation.on("background", function () {
-  console.log(new Date() + "[INFO] App is in background");
-  // you can also reconfigure service (changes will be applied immediately)
-  BackgroundGeolocation.configure({ debug: true });
-  kvm.writeLog("go to background: ");
-});
-
-BackgroundGeolocation.on("foreground", function () {
-  console.log(new Date() + "[INFO] App is in foreground");
-  BackgroundGeolocation.configure({ debug: false });
-  kvm.writeLog("go to foreground: ");
-});
-
-BackgroundGeolocation.on("abort_requested", function () {
-  console.log(new Date() + "[INFO] Server responded with 285 Updates Not Required");
-
-  // Here we can decide whether we want stop the updates or not.
-  // If you've configured the server to return 285, then it means the server does not require further update.
-  // So the normal thing to do here would be to `BackgroundGeolocation.stop()`.
-  // But you might be counting on it to receive location updates in the UI, so you could just reconfigure and set `url` to null.
-});
-
-BackgroundGeolocation.on("http_authorization", () => {
-  console.log(new Date() + "[INFO] App needs to authorize the http requests");
-});
-
-BackgroundGeolocation.checkStatus(function (status) {
-  console.log(new Date() + "[INFO] BackgroundGeolocation service is running", status.isRunning);
-  console.log(new Date() + "[INFO] BackgroundGeolocation services enabled", status.locationServicesEnabled);
-  console.log(new Date() + "[INFO] BackgroundGeolocation auth status: " + status.authorization);
-
-  // you don't need to check status before start (this is just the example)
-  if (!status.isRunning) {
-    //        BackgroundGeolocation.start(); //triggers start on start event
-  }
-});
-
-BackgroundGeolocation.getCurrentLocation(
-  function (location) {
-    console.log("loc: %o", location);
-  },
-  function (fail) {
-    console.log("fail: %o", fail);
-  },
-  {}
-);
-
-BackgroundGeolocation.start();
-
-bis hier */
-
-		/*
-    //  BackgroundGeolocation.getLocations(
-    //    function (locations) {
-    //      console.log(locations);
-    //    }
-    //  );
-    //BackgroundGeolocation.getLogEntries(1000, 0, 'TRACE', function(entry) { console.log('log: %o', entry); }, function(fail) { console.log('log fail: %o', fail); })
-    /*
-    try {
-      BackgroundGeolocation.start();
-    }
-    catch (e) {
-      console.log('gestartet Fehler: %o', e);
-    }
-*/
 		this.db = window.sqlitePlugin.openDatabase(
 			{
 				name: kvm.config.dbname + ".db",
@@ -658,7 +442,7 @@ bis hier */
 
 			try {
 				stelle.viewSettings();
-				stelle.setActive();
+				stelle.activate();
 			} catch ({ name, message }) {
 				kvm.msg("Fehler beim setzen der aktiven Stelle id: " + activeStelleId + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
 			}
@@ -674,7 +458,12 @@ bis hier */
 					const layerSettings = this.store.getItem("layerSettings_" + activeStelleId + "_" + layerId);
 					if (layerSettings != null) {
 						const settings = JSON.parse(layerSettings);
-						if (settings.vector_tile_url == '') {
+						if (settings.vector_tile_url) {
+							const layer = new MapLibreLayer(settings, true, stelle);
+							layer.appendToApp();
+							stelle.finishLayerLoading(layer);
+						}
+						else {
 							const layer = new Layer(stelle, settings);
 							layer.appendToApp();
 							if (layer.get("id") == kvm.store.getItem("activeLayerId")) {
@@ -685,6 +474,7 @@ bis hier */
 								if (layer.hasEditPrivilege) {
 									try {
 										console.log("Layer " + layer.title + ": SyncData with local deltas if exists.");
+										kvm.backupDatabase();
 										layer.syncData();
 									} catch ({ name, message }) {
 										kvm.msg("Fehler beim synchronisieren des Layers id: " + layer.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
@@ -709,11 +499,6 @@ bis hier */
 								console.log("Layer " + layer.title + ": Only read data from local database.");
 								layer.readData(); // include drawFeatures
 							}
-						}
-						else {
-							const layer = new MapLibreLayer(settings, true, stelle);
-							layer.appendToApp();
-							stelle.finishLayerLoading(layer);
 						}
 					}
 				}
@@ -835,10 +620,27 @@ bis hier */
 			kvm.controls.layers.collapse();
 		});
 		map.on("zoomend", (evt) => kvm.store.setItem("activeZoom", evt.target.getZoom()));
-		map.on("moveend", (evt) => kvm.store.setItem("activeCenter", JSON.stringify(evt.target.getCenter())));
+		map.on("moveend", (evt) => {
+			kvm.store.setItem("activeCenter", JSON.stringify(evt.target.getCenter()));
+			if ($('#geolocation_div').is(':visible')) {
+				$('#geolocation_div').html(`${evt.target.getCenter().lat} ${evt.target.getCenter().lng}`);
+			}
+		});
 
 		map.on("locationfound", kvm.onlocationfound);
 		map.on("locationerror", kvm.onlocationerror);
+
+		map.on('locateactivate', (evt) => {
+			$('#geolocation_div').html('Koordinaten');
+			$('#geolocation_div').show();
+			kvm.mapHint('GPS-Tracking eingeschaltet!');
+		});
+
+		map.on('locatedeactivate', (evt) => {
+			$('#geolocation_div').hide();
+			$('#geolocation_div').html('');
+			kvm.mapHint('GPS-Tracking ausgeschaltet!')
+		});
 
 		/* ToDo Hier Klickevent einführen welches das gerade selectierte Feature deseletiert.
     map.on('click', function(evt) {
@@ -887,11 +689,24 @@ bis hier */
 
 			kvm.controls.locate = L.control
 			.locate({
-				position: "topright",
-				keepCurrentZoomLevel: true,
+				position: 'topright',
+				setView : 'untilPanOrZoom',
+				keepCurrentZoomLevel: false,
 				flyTo: true,
+				clickBehavior: {
+					inView: 'stop',
+					outOfView: 'setView',
+					inViewNotFollowing: 'inView'
+				},
 				locateOptions: {
-					enableHighAccuracy: true,
+					enableHighAccuracy: true
+				},
+				followMarkerStyle: {
+					color: "#ffffff",
+					weight: 4,
+					fill: true,
+					fillOpacity: 0.8,
+					fillColor: "#fc8428"
 				},
 				cacheLocation: true,
 				strings: {
@@ -1041,7 +856,8 @@ bis hier */
 		console.log('initLoadOfflineMapsDiv');
 		const offlineLayers = kvm.config.backgroundLayerSettings.filter((setting) => {
 			return setting.online === false;
-		})
+		});
+		console.log('offlineLayers in initLoadOfflineMapsDiv: %o', offlineLayers);
 		offlineLayers.forEach((offlineLayer) => {
 			$('#loadOfflineMapsDiv').append(`
 				<div>
@@ -1341,7 +1157,7 @@ bis hier */
 			if (kvm.activeLayer) {
 				kvm.activeLayer["stelle"] = stelle;
 			}
-			stelle.setActive();
+			stelle.activate();
 			if ($("#saveServerSettingsButton").hasClass("settings-button-active")) {
 				$("#saveServerSettingsButton").toggleClass("settings-button settings-button-active");
 			}
@@ -1469,15 +1285,7 @@ bis hier */
 					(kvm.store.getItem("localBackupPath") || kvm.config.localBackupPath) +
 					' mit der Dateiendung .db gespeichert. Ohne Eingabe wird der Name "Sicherung_" + aktuellem Zeitstempel + ".db" vergeben.',
 				function (arg) {
-					if (arg.input1 == "") {
-						arg.input1 = "Sicherung_" + kvm.now().toString().replace("T", "_").replace(/:/g, "-").replace("Z", "");
-					}
-					kvm.controller.files.copyFile(
-						cordova.file.applicationStorageDirectory + "databases/",
-						"kvmobile.db",
-						kvm.store.getItem("localBackupPath") || kvm.config.localBackupPath,
-						arg.input1 + ".db"
-					);
+					kvm.backupDatabase(arg.input1);
 				},
 				"Datenbanksicherung"
 			);
@@ -1568,34 +1376,52 @@ bis hier */
 				"Änderungen verwerfen?",
 				function (buttonIndex) {
 					//console.log("Änderungen verwerfen.");
-					var activeFeature = this_.activeLayer.activeFeature,
-						featureId = activeFeature.id;
+					let activeLayer = this_.activeLayer;
+					let activeFeature = activeLayer.activeFeature;
+					let featureId = activeFeature.id;
 
 					if (buttonIndex == 1) {
-						// ja
-						//console.log("Feature ist neu? %s", activeFeature.options.new);
-						if (activeFeature.options.new) {
-							//console.log("Änderungen am neuen Feature verwerfen.");
-							this_.activeLayer.cancelEditGeometry();
-							if (this_.controller.mapper.isMapVisible()) {
-								this_.showItem("map");
+							// ja
+						if (this_.activeLayer.get('geometry_attribute')) {
+							//console.log("Feature ist neu? %s", activeFeature.options.new);
+							if (activeFeature.options.new) {
+								//console.log("Änderungen am neuen Feature verwerfen.");
+								if (this_.activeLayer.get('geometry_attribute')) {
+									this_.activeLayer.cancelEditGeometry();
+									if (this_.controller.mapper.isMapVisible()) {
+										this_.showItem("map");
+									} else {
+										this_.showItem("featurelist");
+									}
+								}
+								else {
+									this_.showItem("featurelist");
+								}
 							} else {
-								this_.showItem("featurelist");
-							}
-						} else {
-							//console.log("Änderungen am vorhandenen Feature verwerfen.");
-							this_.activeLayer.cancelEditGeometry(featureId); // Editierung der Geometrie abbrechen
-							this_.activeLayer.loadFeatureToForm(activeFeature, { editable: false }); // Formular mit ursprünglichen Daten laden
+								//console.log("Änderungen am vorhandenen Feature verwerfen.");
+								this_.activeLayer.cancelEditGeometry(featureId); // Editierung der Geometrie abbrechen
+								this_.activeLayer.loadFeatureToForm(activeFeature, { editable: false }); // Formular mit ursprünglichen Daten laden
 
-							if (this_.controller.mapper.isMapVisible()) {
-								// ToDo editableLayer existier im Moment nur, wenn man den Änderungsmodus im Popup in der Karte ausgelößt hat.
-								// auch noch für neue Features einbauen.
-								this_.showItem("map");
-							} else {
-								this_.showItem("dataView");
+								if (this_.controller.mapper.isMapVisible()) {
+									// ToDo editableLayer existier im Moment nur, wenn man den Änderungsmodus im Popup in der Karte ausgelößt hat.
+									// auch noch für neue Features einbauen.
+									this_.showItem("map");
+								} else {
+									this_.showItem("dataView");
+								}
 							}
 						}
-
+						else {
+							// Wenn aktuelles Feature neu ist und zu einem übergeordneten Feature gehört dieses laden und darstellen.
+							if (activeFeature.options.new) {
+								let parentFeature = activeFeature.findParentFeature();
+								if (parentFeature) {
+									let parentLayer = this_.layers[parentFeature.globalLayerId];
+									parentLayer.activateFeature(parentFeature, true);
+								}
+							}
+							this_.showItem("dataView");
+						}
 						this_.controller.mapper.clearWatch(); // GPS-Tracking ausschalten
 					}
 					if (buttonIndex == 2) {
@@ -1667,60 +1493,54 @@ bis hier */
 		});
 
 		$("#saveFeatureButton").on("click", function (evt) {
-			var saveButton = $(evt.target),
-				changes = {},
-				delta = "",
-				errMsg = "";
+			let notNullErrMsg = kvm.activeLayer.notNullValid();
 
-			if ($("#featureFormular input[name=" + kvm.activeLayer.get("geometry_attribute") + "]").val()) {
-				var notNullErrMsg = kvm.activeLayer.notNullValid();
-				if (notNullErrMsg == "") {
-					navigator.notification.confirm(
-						"Datensatz Speichern?",
-						function (buttonIndex) {
-							var action = kvm.activeLayer.activeFeature.options.new ? "insert" : "update",
-								activeFeature = kvm.activeLayer.activeFeature,
-								editableLayer = kvm.activeLayer.activeFeature.editableLayer;
-
-							//kvm.log("Action: " + action, 4);
-							if (buttonIndex == 1) {
-								// ja
-								//kvm.log("Speichern", 3);
-								if (activeFeature.options.geometry_type == "Line") {
-									var speichern = true;
-									if (activeFeature.layerId) {
-										speichern = (<any>kvm.map)._layers[activeFeature.layerId].getLatLngs() != editableLayer.getLatLngs();
-									}
-									if (speichern) {
-										editableLayer.fireEvent("isChanged", editableLayer.getLatLngs());
-									}
-								}
-								if (action == "insert") {
-									kvm.activeLayer.runInsertStrategy();
-								} else {
-									kvm.activeLayer.runUpdateStrategy();
-								}
-								//kvm.showGeomStatus();
-							}
-
-							if (buttonIndex == 2) {
-								// nein
-								// Do nothing
-							}
-						},
-						"Datenbank",
-						["ja", "nein"]
-					);
-				} else {
-					errMsg = notNullErrMsg;
-				}
-			} else {
-				errMsg = "Sie haben noch keine Koordinaten erfasst!";
+			if (notNullErrMsg != '') {
+				kvm.msg(notNullErrMsg, 'Formular');
+				return false;
 			}
 
-			if (errMsg != "") {
-				kvm.msg(errMsg, "Formular");
+			if (kvm.activeLayer.get('geometry_attribute') && !$("#featureFormular input[name=" + kvm.activeLayer.get("geometry_attribute") + "]").val()) {
+				kvm.msg('Sie haben noch keine Koordinaten erfasst!', "Formular");
+				return false;
 			}
+
+			navigator.notification.confirm(
+				"Datensatz Speichern?",
+				function (buttonIndex) {
+					var action = kvm.activeLayer.activeFeature.options.new ? "insert" : "update",
+						activeFeature = kvm.activeLayer.activeFeature,
+						editableLayer = kvm.activeLayer.activeFeature.editableLayer;
+
+					//kvm.log("Action: " + action, 4);
+					if (buttonIndex == 1) {
+						// ja
+						//kvm.log("Speichern", 3);
+						if (activeFeature.options.geometry_type == "Line") {
+							var speichern = true;
+							if (activeFeature.layerId) {
+								speichern = (<any>kvm.map)._layers[activeFeature.layerId].getLatLngs() != editableLayer.getLatLngs();
+							}
+							if (speichern) {
+								editableLayer.fireEvent("isChanged", editableLayer.getLatLngs());
+							}
+						}
+						if (action == "insert") {
+							kvm.activeLayer.runInsertStrategy();
+						} else {
+							kvm.activeLayer.runUpdateStrategy();
+						}
+						//kvm.showGeomStatus();
+					}
+
+					if (buttonIndex == 2) {
+						// nein
+						// Do nothing
+					}
+				},
+				"Datenbank",
+				["ja", "nein"]
+			);
 		});
 
 		$("#kvwmapServerDataForm > input").on("keyup", function () {
@@ -1745,6 +1565,7 @@ bis hier */
 
 		$("#newFeatureButton").on("click", function () {
 			kvm.activeLayer.newFeature();
+			// console.log('activeFeature after newFeature: %o', kvm.activeLayer.activeFeature);
 			kvm.activeLayer.editFeature();
 			//kvm.showGeomStatus();
 		});
@@ -1831,16 +1652,26 @@ bis hier */
 			navigator.notification.confirm(
 				"Alle lokalen Daten, Änderungen und Einstellungen wirklich Löschen?",
 				function (buttonIndex) {
-					console.log("click on button: %s", buttonIndex);
 					if (buttonIndex == 1) {
-						// ja
+						kvm.deleteDatabase(kvm.db);
+						kvm.db = window.sqlitePlugin.openDatabase({
+								name: kvm.config.dbname + ".db",
+								location: "default",
+								androidDatabaseImplementation: 2,
+							},
+							(db) => {
+								kvm.msg(`Neue leere Datenbank anglegt!`);
+							},
+							(error) => {
+								kvm.msg(`Fehler beim anlegen der neuen leeren Datenbank: ${error}`);
+							}
+						);
+
 						if (kvm.layers.length == 0) {
-							kvm.msg("Keine Daten und Layer zum löschen vorhanden.");
+							kvm.msg("Keine Layer zum löschen vorhanden.");
 						} else {
 							kvm.layers.forEach(function (layer) {
 								console.log("Entferne Layer: %s", layer.get("title"));
-								layer.dropDataTable();
-								layer.dropDeltasTable();
 								layer.removeFromApp();
 							});
 						}
@@ -1867,86 +1698,89 @@ bis hier */
 			);
 		});
 
-		document.getElementById("downloadBackgroundLayerButton").addEventListener('click',(evt) => {
-			const offlineLayerId = (<HTMLElement>evt.currentTarget).getAttribute('value');
-			navigator.notification.confirm(
-				"Alle Vektorkacheln vom Projektgebiet herunterladen? Vergewissern Sie sich, dass Sie in einem Netz mit guter Anbindung sind.",
-				function (buttonIndex) {
-					if (buttonIndex === 1) {
-						if (navigator.onLine) {
-							// ja
-							//kvm.msg("Ich beginne mit dem Download der Kacheln.", "Kartenverwaltung");
-							document.getElementById("sperr_div").style.display = "block";
-							let sperrDivContent = document.getElementById("sperr_div_content");
-							sperrDivContent.innerHTML = '<b>Kartenverwaltung</b><br><br>Download der Kacheln:<br><br><div id="sperr_div_progress_div"></div>';
-							let sperrDivProgressDiv = document.getElementById("sperr_div_progress_div");
-							// hide the button and show a progress div
-							// find p1, p2 and zoom levels to fetch data in layer configuration
-							// get urls for vector tiles to download
-							// download the files in background and update the progress div
-							// confirm the finish
-							// hide the progress div and show the delete and update button
-							const bl = kvm.backgroundLayerSettings.filter(function (l) {
-									return l.layer_id == offlineLayerId;
-							})[0];
-							const	params = bl.params;
-							let key = '';
+		if (document.getElementById("downloadBackgroundLayerButton")) {
+			document.getElementById("downloadBackgroundLayerButton").addEventListener('click',(evt) => {
+				const offlineLayerId = (<HTMLElement>evt.currentTarget).getAttribute('value');
+				navigator.notification.confirm(
+					"Alle Vektorkacheln vom Projektgebiet herunterladen? Vergewissern Sie sich, dass Sie in einem Netz mit guter Anbindung sind.",
+					function (buttonIndex) {
+						if (buttonIndex === 1) {
+							if (navigator.onLine) {
+								// ja
+								//kvm.msg("Ich beginne mit dem Download der Kacheln.", "Kartenverwaltung");
+								document.getElementById("sperr_div").style.display = "block";
+								let sperrDivContent = document.getElementById("sperr_div_content");
+								sperrDivContent.innerHTML = '<b>Kartenverwaltung</b><br><br>Download der Kacheln:<br><br><div id="sperr_div_progress_div"></div>';
+								let sperrDivProgressDiv = document.getElementById("sperr_div_progress_div");
+								// hide the button and show a progress div
+								// find p1, p2 and zoom levels to fetch data in layer configuration
+								// get urls for vector tiles to download
+								// download the files in background and update the progress div
+								// confirm the finish
+								// hide the progress div and show the delete and update button
+								const bl = kvm.backgroundLayerSettings.filter(function (l) {
+										return l.layer_id == offlineLayerId;
+								})[0];
+								const	params = bl.params;
+								let key = '';
 
-							//console.log('Fetch vector tiles for p1: %s,%s p2: %s,%s', params.south, params.west, params.north, params.east);
-							const tileLinks = [];
+								//console.log('Fetch vector tiles for p1: %s,%s p2: %s,%s', params.south, params.west, params.north, params.east);
+								const tileLinks = [];
 
-							for (var z = params.minZoom; z <= params.maxNativeZoom; z++) {
-								//console.log('Zoom level: %s', z);
-								kvm.getTilesUrls(L.latLng(params.south, params.west), L.latLng(params.north, params.east), z, bl.url).forEach((url) => tileLinks.push(url));
-							}
-							let i = 0;
-							const iSoll = tileLinks.length;
-							console.log("Anzahl der herunter zu ladenden Kacheln:" + iSoll);
-
-							function download() {
-								if (tileLinks.length > 0) {
-									const url = tileLinks.pop();
-									const key = kvm.getTileKey(url);
-									fetch(url)
-										.then((t) => {
-											// console.info("result ", t);
-											t.arrayBuffer()
-												.then((arr) => {
-													kvm.saveTile(key, arr.slice(0));
-													i++;
-													sperrDivProgressDiv.innerHTML = `<span class="highlighted">${i} von ${iSoll} runtergeladen</span>`;
-													download();
-												})
-												.catch((reason) => {
-													console.info("Fehler by arraybuffer", reason);
-													download();
-												});
-										})
-										.catch((reason) => {
-											console.info("Fehler by fetch", reason);
-											download();
-										});
-								} else {
-									console.info("downloaded " + i + " von " + iSoll);
-									document.getElementById("sperr_div_content").innerHTML = "";
-									document.getElementById("sperr_div").style.display = "none";
-									kvm.msg("Download abgeschlossen!", "Kartenverwaltung");
+								for (var z = params.minZoom; z <= params.maxNativeZoom; z++) {
+									//console.log('Zoom level: %s', z);
+									kvm.getTilesUrls(L.latLng(params.south, params.west), L.latLng(params.north, params.east), z, bl.url).forEach((url) => tileLinks.push(url));
 								}
+								let i = 0;
+								const iSoll = tileLinks.length;
+								console.log("Anzahl der herunter zu ladenden Kacheln:" + iSoll);
+
+								function download() {
+									if (tileLinks.length > 0) {
+										const url = tileLinks.pop();
+										const key = kvm.getTileKey(url);
+										fetch(url)
+											.then((t) => {
+												// console.info("result ", t);
+												t.arrayBuffer()
+													.then((arr) => {
+														kvm.saveTile(key, arr.slice(0));
+														i++;
+														sperrDivProgressDiv.innerHTML = `<span class="highlighted">${i} von ${iSoll} runtergeladen</span>`;
+														download();
+													})
+													.catch((reason) => {
+														console.info("Fehler by arraybuffer", reason);
+														download();
+													});
+											})
+											.catch((reason) => {
+												console.info("Fehler by fetch", reason);
+												download();
+											});
+									} else {
+										console.info("downloaded " + i + " von " + iSoll);
+										document.getElementById("sperr_div_content").innerHTML = "";
+										document.getElementById("sperr_div").style.display = "none";
+										kvm.msg("Download abgeschlossen!", "Kartenverwaltung");
+									}
+								}
+								download();
+							} else {
+								kvm.msg("Kein Internet! Stellen Sie eine Internetverbindung her.", "Kartenverwaltung");
 							}
-							download();
-						} else {
-							kvm.msg("Kein Internet! Stellen Sie eine Internetverbindung her.", "Kartenverwaltung");
 						}
-					}
-					if (buttonIndex == 2) {
-						// nein
-						kvm.msg("OK, Abbruch.", "Kartenverwaltung");
-					}
-				},
-				"Kartenverwaltung",
-				["ja", "nein"]
-			);
-		});
+						if (buttonIndex == 2) {
+							// nein
+							kvm.msg("OK, Abbruch.", "Kartenverwaltung");
+						}
+					},
+					"Kartenverwaltung",
+					["ja", "nein"]
+				);
+			});
+		}
+
 
 		$("#featurelistHeading").on("click", (evt) => {
 			if (kvm.activeLayer.hasActiveFeature()) {
@@ -1974,7 +1808,11 @@ bis hier */
 			);
 		});
 
-		$('.toggle-settings-div').on('click', () => kvm.toggleSwitchableSettings());
+		console.log('Register click event on .toggle-settings-div');
+		$('.toggle-settings-div').on('click', () => {
+			console.log('clicked on toggle-settings-div');
+			kvm.toggleSwitchableSettings();
+		});
 	}
 
 	bindFeatureItemClickEvents() {
@@ -1988,12 +1826,47 @@ bis hier */
 		kvm.showItem("dataView");
 	}
 
+	backupDatabase(filename = '') {
+		filename = filename || "Sicherung_" + kvm.now().toString().replace("T", "_").replace(/:/g, "-").replace("Z", "");
+		kvm.controller.files.copyFile(
+			cordova.file.applicationStorageDirectory + "databases/",
+			"kvmobile.db",
+			kvm.store.getItem("localBackupPath") || kvm.config.localBackupPath,
+			filename + ".db"
+		);
+	}
+
+	deleteDatabase(db) {
+		window.sqlitePlugin.deleteDatabase(
+			{
+				name: kvm.config.dbname + ".db",
+				location: "default"
+			},
+			() => {
+				$("#dbnameText").html('gelöscht');
+				kvm.msg(`Datenbank: gelöscht!`);
+			},
+			(error) => {
+				kvm.msg("Fehler beim Löschen der Datenbank: " + JSON.stringify(error), "Fehler");
+			}
+		);
+	}
+
+	/**
+	 * Function activate the feature with featureId in layer with layerId.
+	 * @param layerId 
+	 * @param featureId 
+	 */
 	activateFeature(layerId, featureId) {
 		let layer = kvm.layers[layerId];
 		let feature = layer.features[featureId];
-		layer.setActive();
-		layer.activateFeature(feature, false);
-		kvm.showItem("dataView");
+		if (feature) {
+			layer.activateFeature(feature, false);
+			kvm.showItem("dataView");
+		}
+		else {
+			kvm.msg(`Objekt mit der ID: ${featureId} im Layer ${layer.title} nicht gefunden. Das Objekt ist möglicherweise durch einen Filter ausgeschaltet.`, 'Sachdatenanzeige');
+		}
 	}
 
 	setConnectionStatus() {
@@ -2051,6 +1924,9 @@ bis hier */
 		// console.log("showItem: %o", item);
 		// erstmal alle panels ausblenden
 		$(".panel").hide();
+		if (['map', 'mapEdit'].indexOf(item) === -1) {
+			$('#geolocation_div').hide();
+		}
 
 		switch (item) {
 			case "settings":
@@ -2070,6 +1946,9 @@ bis hier */
 				$("#map").show();
 				if (kvm.activeLayer && kvm.activeLayer.activeFeature) {
 					kvm.activeLayer.activeFeature.zoomTo(false);
+				}
+				if ($('#geolocation_div').html() != '' && $('#geolocation_div').is(':visible') === false) {
+					$('#geolocation_div').show();
 				}
 				kvm.map.invalidateSize();
 				break;
@@ -2100,7 +1979,13 @@ bis hier */
 				break;
 			case "formular":
 				$(".menu-button").hide();
-				$("#showMapEdit, #saveFeatureButton, #saveFeatureButton, #cancelFeatureButton").show();
+				$("#saveFeatureButton, #cancelFeatureButton").show();
+				if (kvm.activeLayer && kvm.activeLayer.get('geometry_attribute')) {
+					$('#showMapEdit').show();
+				}
+				else {
+					$('#showMapEdit').hide();
+				}
 				if (kvm.activeLayer && kvm.activeLayer.hasDeletePrivilege && !kvm.activeLayer.activeFeature.options.new) {
 					$("#deleteFeatureButton").show();
 				}
@@ -2116,10 +2001,12 @@ bis hier */
 	newSubDataSet(subLayerId, subLayerFKAttribute) {
 		kvm.openSperrDiv('Neuer Sublayer-Datensatz');
 		const layer = kvm.activeLayer;
-		layer.cancelEditGeometry();
+		if (layer.get('geometry_attribute')) {
+			layer.cancelEditGeometry();
+		}
 		const parentFeature = layer.activeFeature;
 		const subLayer = kvm.layers[subLayerId];
-		subLayer.setActive();
+		subLayer.activate();
 		subLayer.newFeature();
 		subLayer.activeFeature.set(subLayerFKAttribute, parentFeature.id);
 		subLayer.editFeature();
@@ -2186,57 +2073,6 @@ bis hier */
 		alert("Fehler: " + error.code + " " + error.message);
 	}
 
-	synchronize(context) {
-		//kvm.log("function synchronize");
-		var url = context.getSyncUrl();
-	}
-
-	/*
-  downloadData: function(context) {
-    kvm.log('download data');
-    var fileTransfer = new FileTransfer(),
-        filename = 'download_data.json',
-        url = context.getSyncUrl();
-
-    kvm.log('download data from url: ' + url.substr(0, url.indexOf('passwort=') + 9) + '****');
-    kvm.log('store the file in: ' + cordova.file.dataDirectory + filename);
-    fileTransfer.download(
-      url,
-      cordova.file.dataDirectory + filename,
-      function (fileEntry) {
-        kvm.log("download complete: " + fileEntry.toURL());
-        fileEntry.file(
-          function (file) {
-            var reader = new FileReader();
-
-            reader.onloadend = function() {
-              kvm.log('downloadData onloadend');
-              var items = [];
-              kvm.log('downloadData result: ' + this.result)
-              items = JSON.parse(this.result);
-              if (items.length > 0) {
-                kvm.log('Mindestens 1 Datensatz empfangen.');
-                // Warum kvm.writeData writeData ist eine Methode von Layer
-                kvm.writeData(items);
-              }
-              else {
-                alert('Abfrage liefert keine Daten vom Server. Entweder sind noch keine auf dem Server vorhanden oder die URL der Anfrage ist nicht korrekt. Prüfen Sie die Parameter unter Einstellungen.');
-              }
-            };
-
-            reader.readAsText(file);
-          },
-          function(error) {
-            alert('Fehler beim Einlesen der heruntergeladenen Datei. Prüfen Sie die URL und Parameter, die für die Synchronisation verwendet werden.');
-            kvm.log('Fehler beim lesen der Datei: ' + error.code);
-          }
-        );
-      },
-      kvm.downloadError,
-      true
-    );
-  },
-*/
 	paginate(evt) {
 		var limit = 25,
 			target = $(evt),
@@ -2377,8 +2213,34 @@ bis hier */
 		}
 	}
 
+	nextval(schema_name, table_name, column_name) {
+		const sql = `
+			SELECT
+				max(${column_name}) + 1 AS next_val
+			FROM
+				${schema_name}_${table_name}
+		`;
+		return sql;
+	}
+
+	gdi_conditional_next_val(schema_name, table_name, column_name, condition) {
+		const sql = `
+			SELECT
+				max(${column_name}) + 1 AS next_val
+			FROM
+				${schema_name}_${table_name}
+			WHERE
+				${condition}
+		`;
+		return sql;
+	}
+
 	msg(msg, title = "") {
 		navigator.notification.confirm(msg, function (buttonIndex) {}, title, ["ok"]);
+	}
+
+	mapHint(msg, delay = 3000, duration = 1000) {
+		$('#map_hint_div').html(msg).show().delay(delay).fadeOut(duration);
 	}
 
 	deb(msg) {

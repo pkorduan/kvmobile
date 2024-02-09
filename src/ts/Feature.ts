@@ -100,6 +100,20 @@ export class Feature {
 		return this.get(this.options.id_attribute);
 	}
 
+	findParentFeature() {
+		let layer = kvm.layers[this.globalLayerId];
+		let subFormFKAttribute = layer.attributes.find((attr) => attr.get('form_element_type') == 'SubFormFK');
+		if (subFormFKAttribute === undefined) {
+			return false;
+		}
+		else {
+			let fkAttributeIndex = layer.attribute_index[subFormFKAttribute.getFKAttribute()];
+			let parentFeatureId = layer.attributes[fkAttributeIndex].formField.getValue();
+			let parentLayer = kvm.layers[subFormFKAttribute.getGlobalParentLayerId()];
+			return parentLayer.features[parentFeatureId];
+		}
+	}
+
 	set(key, value) {
 		this.data[key] = value;
 		return this.data[key];
@@ -123,12 +137,12 @@ export class Feature {
 		console.log("setGeom mit wkx: %o", wkx);
 		console.log("Überschreibe oldGeom: %o mit newGeom: %o", this.oldGeom, this.newGeom);
 		var oldGeom = this.newGeom;
-		console.log("Überschreibe newGeom mit wkx: %o", wkx);
+		// console.log("Überschreibe newGeom mit wkx: %o", wkx);
 		this.newGeom = wkx;
-		console.log("vergleiche oldGeom: %o mit newGeom: %o", oldGeom, this.newGeom);
+		// console.log("vergleiche oldGeom: %o mit newGeom: %o", oldGeom, this.newGeom);
 
 		if (oldGeom != this.newGeom) {
-			console.log("Neuer Wert wurde gesetzt. Löse Trigger geomChanged mit exclude wkx aus.");
+			// console.log("Neuer Wert wurde gesetzt. Löse Trigger geomChanged mit exclude wkx aus.");
 			$(document).trigger("geomChanged", [{ geom: this.newGeom, exclude: "wkx" }]);
 		}
 	}
@@ -141,14 +155,14 @@ export class Feature {
 	 * falls das Feature schon einen editableLayer zugewiesen bekommen hat.
 	 */
 	setLatLngs(geom) {
-		console.log("setLatLngs in feature with geom: %o", geom);
+		// console.log("setLatLngs in feature with geom: %o", geom);
 		if (this.editableLayer) {
 			var newLatLngs = this.wkxToLatLngs(geom),
 				oldLatLngs = this.getLatLngs();
 
-			console.log("vergleiche alte mit neuer coord");
+			// console.log("vergleiche alte mit neuer coord");
 			if (oldLatLngs != newLatLngs) {
-				console.log("Ändere alte latlngs: %o auf neue: %o", oldLatLngs, newLatLngs);
+				// console.log("Ändere alte latlngs: %o auf neue: %o", oldLatLngs, newLatLngs);
 				if (this.options.geometry_type == "Point") {
 					this.editableLayer.setLatLng(newLatLngs);
 				} else {
@@ -156,12 +170,12 @@ export class Feature {
 				}
 				$(document).trigger("geomChanged", [{ geom: geom, exclude: "latlngs" }]);
 			}
-			console.log("Neue latLngs für die Editable Geometry in der Karte: %o", newLatLngs);
+			// console.log("Neue latLngs für die Editable Geometry in der Karte: %o", newLatLngs);
 		}
 	}
 
 	getLatLngs() {
-		console.log("Feature.getLatLngs()");
+		// console.log("Feature.getLatLngs()");
 		if (this.options.geometry_type == "Point") {
 			return this.editableLayer.getLatLng();
 		} else {
@@ -417,9 +431,66 @@ export class Feature {
       }
     );
   };
-*/
+  */
+
+	zoomTo(zoom) {
+		if (this.layerId) {
+			let layer = this.isEditable ? this.editableLayer : (<any>kvm.map)._layers[this.layerId];
+			if (this.options.geometry_type == "Point") {
+				if (zoom) {
+					kvm.map.setZoom(18);
+				}
+				kvm.map.panTo(layer.getLatLng());
+			} else {
+				kvm.map.flyToBounds(layer.getBounds());
+				// kvm.map.fitBounds(layer.getBounds());
+			}
+		}
+	}
+
+	/**
+	 * Set this feature as activat.
+	 * Activate the layer of the feature if it is not activated already and
+	 * deactivate a feature if one is active already.
+	 * Set feature list style as selected
+	 * If the feature has a geometry
+	 * 	- Set map style as selected
+	 *  - Open the popup
+	 *  - Zoom to the map if param zoom is true
+	 * @param boolean zoom Wenn Feature eine Geometrie hat und zoom=true wird auch auf das Feature gezoomt. 
+	 */
+	activate(zoom) {
+		let kvmLayer = kvm.layers[this.globalLayerId];
+		if (!kvmLayer.isActive) {
+			kvmLayer.activate();
+		}
+		if (kvmLayer.activeFeature) {
+			kvmLayer.activeFeature.deactivate();
+		}
+		if (kvmLayer.get('geometry_attribute')) {
+			let mapLayer = (<any>kvm.map)._layers[this.layerId];
+			if (this.newGeom) {
+				//console.log("Feature has newGeom");
+				console.log("Markiere Feature %s in Layer %s", this.id, kvmLayer.get("title"));
+				mapLayer.setStyle(kvmLayer.getSelectedStyle(this.getStyle()));
+				mapLayer.bindPopup(kvmLayer.getPopup(this)).openPopup();
+				if (zoom) {
+					this.zoomTo(zoom);
+				}
+			} else {
+				// console.log("Feature hat noch keine newGeom und ist noch nicht in Karte");
+				// kvm.msg("Das Feature hat noch keine Geometrie und ist deshalb nicht in der Karte zu sehen!", "Hinweis");
+			}
+		}
+		kvm.log("Select feature in list " + this.id, 4);
+		$("#" + this.id).addClass("selected-feature-item");
+		this.isActive = true;
+		return this;
+	}
+
 	/**
 	 * Deactivate the feature in map and featurelist
+	 * Set the map and feature list style to the normal not selected
 	 * @returns null
 	 */
 	deactivate() {
@@ -438,51 +509,11 @@ export class Feature {
 				//kvm.map.zoomIn();
 				//kvm.map.zoomOut(); // To refresh layer style
 			}
-			//mapLayer.closePopup();
+			mapLayer.closePopup();
 			$(".feature-item").removeClass("selected-feature-item");
 		}
 		this.isActive = false;
 		return null;
-	}
-
-	zoomTo(zoom) {
-		if (this.layerId) {
-			let layer = this.isEditable ? this.editableLayer : (<any>kvm.map)._layers[this.layerId];
-			if (this.options.geometry_type == "Point") {
-				if (zoom) {
-					kvm.map.setZoom(18);
-				}
-				kvm.map.panTo(layer.getLatLng());
-			} else {
-				kvm.map.flyToBounds(layer.getBounds());
-				// kvm.map.fitBounds(layer.getBounds());
-			}
-		}
-	}
-
-	/**
-	 * select feature in map if newGeom exists
-	 * select feature in list
-	 * set feature isSelected to true
-	 */
-	activate(zoom) {
-		var mapLayer = (<any>kvm.map)._layers[this.layerId];
-		let kvmLayer = kvm.layers[this.globalLayerId];
-		if (this.newGeom) {
-			//console.log("Feature has newGeom");
-			console.log("Markiere Feature %s in Layer %s", this.id, kvmLayer.get("title"));
-			mapLayer.setStyle(kvmLayer.getSelectedStyle(this.getStyle()));
-			if (zoom) {
-				this.zoomTo(zoom);
-			}
-		} else {
-			console.log("Feature hat noch keine newGeom und ist noch nicht in Karte");
-			kvm.msg("Das Feature hat noch keine Geometrie und ist deshalb nicht in der Karte zu sehen!", "Hinweis");
-		}
-		kvm.log("Select feature in list " + this.id, 4);
-		$("#" + this.id).addClass("selected-feature-item");
-		this.isActive = true;
-		return this;
 	}
 
 	listElement() {
@@ -521,25 +552,25 @@ export class Feature {
 				label_value = this.get(label_attribute);
 			}
 		}
-		if (label_value == "") {
+		if (label_value == "" || label_value == 'null') {
 			label_value = "Datensatz " + this.get(this.options.id_attribute);
 		}
 		return label_value;
 	}
 
-	/*
+	/**
 	 * Add a single list element to the list of features in list view
 	 */
 	addListElement() {
 		const kvmLayer: Layer = kvm.layers[this.globalLayerId];
-		kvm.log("Feature.addListElement", 4);
+		//kvm.log("Feature.addListElement", 4);
 		//console.log('Add listelement: %o', this.listElement());
 
 		$("#featurelistBody").prepend(this.listElement());
-		kvm.log(this.id + " zur Liste hinzugefügt.", 4);
+		//kvm.log(this.id + " zur Liste hinzugefügt.", 4);
 
 		$("#" + this.id).on("click", kvm.featureItemClickEventFunction);
-		kvm.log("Click Event an Listenelement registriert", 4);
+		//kvm.log("Click Event an Listenelement registriert", 4);
 	}
 
 	updateListElement() {
@@ -654,7 +685,8 @@ export class Feature {
 
 	setGeomFromData() {
 		//console.log('setGeomFromData');
-		if (this.options.geometry_attribute in this.data) {
+		const geom_attribute = this.options.geometry_attribute;
+		if (geom_attribute in this.data && this.get(geom_attribute) !== 'null') {
 			//console.log('Setze geom des neuen Features mit data: %o', this.data);
 			this.geom = this.wkbToWkx(this.get(this.options.geometry_attribute));
 		}

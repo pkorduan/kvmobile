@@ -1,6 +1,12 @@
 import { kvm } from "./app";
 import { Attribute } from "./Attribute";
 
+/**
+ * SubFormFK Attribute sind keine Autoattribute
+ * Der Wert wird zwar wenn er leer ist setValue über within gesucht,
+ * kann aber ggf. später auch mal über eine Auswahlliste im Formular gesetzt werden
+ * und das ist dann kein Autoattribute
+ */
 export class SubFormFKFormField {
   settings: any;
   selector: string;
@@ -42,11 +48,51 @@ export class SubFormFKFormField {
   }
 
   setValue(val) {
-		console.log("SubFormFKFormField " + this.get("name") + " setValue with value: %o", val);
+		console.log('Attribute: %s, SubFormFKFormField.setValue options: %o, value: %s', this.get("name"), this.get('options'), val);
+
 		if (kvm.coalesce(val, "") == "" && this.get("default")) {
 			val = this.get("default");
 		}
-		this.element.val(val == null || val == "null" ? "" : val);
+
+		if (kvm.coalesce(val, "") == "" && kvm.activeLayer.activeFeature.options.new) {
+			// Abfragen des übergeordneten Layers
+			const pkLayer = kvm.layers[`${this.get('stelleId')}_${this.get('options').split(',')[0]}`];
+			console.log('Übergeordneter Layer %s', pkLayer.title);
+			// Abfragen der uuid des Features in das das aktive Feature fällt
+			// aktuelle mit Within umgesetzt. Bei Polygonen könnte auch ein Intersects notwendig werden.
+			const sql = `
+				SELECT
+					${pkLayer.get('id_attribute')} AS id
+				FROM
+					${pkLayer.getSqliteTableName()}
+				WHERE
+					ST_Within(
+						ST_GeomFromText('${this.attribute.layer.activeFeature.geom.toWkt()}', 4326),
+						GeomFromEWKB(${pkLayer.get('geometry_attribute')})
+					)
+			`;
+			kvm.db.executeSql(
+				sql,
+				[],
+				(rs) => {
+					if (rs.rows.length == 0) {
+						kvm.mapHint(`Der Marker liegt nicht im räumlichen Bereich eines Objektes vom Layers ${pkLayer.title}.`, 5000);
+						this.element.val(this.get('default'));
+					}
+					else {
+						const id = rs.rows.item(0).id;
+						kvm.mapHint(`Übergeordnetes Objekt ${pkLayer.features[id].get(pkLayer.get('name_attribute'))} aus Layer ${pkLayer.title} über Markerposition ermittelt.`, 5000);
+						this.element.val(id);
+					}
+				},
+				(err) => {
+					kvm.msg(`Fehler bei der räumlichen Suche eines Objektes in Layer ${pkLayer.title} zu dem dieses Objekt räumlich gehören könnte. Fehler: ${err}`, 'Editiervorgabe');
+				}
+			);
+		}
+		else {
+			this.element.val(val == null || val == "null" ? "" : val);
+		}
   }
 
   getValue(action = "") {
@@ -61,8 +107,9 @@ export class SubFormFKFormField {
   }
 
 	getAutoValue() {
-		const attributeName = this.attribute.get('name');
-		return this.attribute.layer.activeFeature.get(attributeName);
+		return this.element.val();
+		// const attributeName = this.attribute.get('name');
+		// return this.attribute.layer.activeFeature.get(attributeName);
 	}
 
   /**

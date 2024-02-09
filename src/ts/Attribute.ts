@@ -76,7 +76,7 @@ export class Attribute {
    * @return string: ID of sublayer
    */
   getGlobalSubLayerId() {
-    return this.settings.stelleId + '_' + this.settings.options.split(';')[0].split(',')[0];
+    return `${this.settings.stelleId}_${this.settings.options.split(';')[0].split(',')[0]}`;
   }
 
 	/**
@@ -101,7 +101,13 @@ export class Attribute {
    * @return string
    */
   getPKAttribute() {
-    return this.settings.options.split(';')[0].split(',')[1].split(':')[0];
+		let key_names = this.settings.options.split(';')[0].split(',')[1].split(':');
+		if (this.get('form_element_type') == 'SubFormFK') {
+			return (key_names.length == 1 ? key_names[0] : key_names[1]);
+		}
+		else {
+			return key_names[0];
+		}
   }
 
   /**
@@ -112,9 +118,14 @@ export class Attribute {
   * @return string
    */
   getFKAttribute() {
-    let fk = this.settings.options.split(';')[0].split(',')[1].split(':');
-    return (fk.length == 1 ? fk[0] : fk[1]);
-  }
+		let key_names = this.settings.options.split(';')[0].split(',')[1].split(':');
+		if (this.get('form_element_type') == 'SubFormFK') {
+			return key_names[0];
+		}
+		else {
+	    return (key_names.length == 1 ? key_names[0] : key_names[1]);
+		}
+	}
 
 	/**
 	 * Return the option for Vorschau

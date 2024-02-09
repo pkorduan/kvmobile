@@ -286,7 +286,7 @@ export class MapLibreLayer extends LLayer {
     return html;
   }
 
-	setActive() {
+	activate() {
 		(<any>$("input[value=" + this.getGlobalId() + "]")[0]).checked = true;
 		$(".layer-functions-button, .layer-functions-div").hide();
 		$("#layer_" + this.getGlobalId() + " > .layer-functions-button").show();
@@ -318,7 +318,7 @@ export class MapLibreLayer extends LLayer {
         kvm.activeLayer.deactivate();
       }
       kvm.tick(`${layer.title}:<br>&nbsp;&nbsp;Setze Layer aktiv.`);
-      layer.setActive(); // include loading filter, sort, data view, form and readData
+      layer.activate(); // include loading filter, sort, data view, form and readData
     });
 
     $("#layer-functions-button_" + layerGlobalId).on("click", function (evt) {

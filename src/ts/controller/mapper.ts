@@ -24,20 +24,20 @@ $.getJSON("script_dass_geojson_liefert.php?id=xy", function(data) {
 });
 */
 
-/*
-* Es gibt 3 Zustände des GPS Trackings, die aber in dieser Anwendung so nicht umgesetzt sind.
-* Statt dessen wird das L.control.locate Control in app.js verwendet.
-* kvm-gps-off GPS-Position wird nicht angezeigt
-*   showGpsPositionButton Style Hintergrund weiß Icon grau
-*   Click auf showGpsPositionButton wechselt in Mode 2
-* kvm-gps-on GPS-Position wird angezeigt
-    showGpsPositionButton Style Hintergrund weiß Icon Blau
-*   Click auf showGpsPositionButton wechselt in Mode 2
-* kvm-gps-track GPS-Position wird angezeigt und die Karte nachgeführt
-*   showGpsPositionButton Style Hinergrund blau Icon weiß
-*   Click auf showGpsPositionButton wechselt in Mode 0
-*   On mapMove oder mapZoom wechselt nach Mode 1
-*/
+/**
+ * Es gibt 3 Zustände des GPS Trackings, die aber in dieser Anwendung so nicht umgesetzt sind.
+ * Statt dessen wird das L.control.locate Control in app.js verwendet.
+ * kvm-gps-off GPS-Position wird nicht angezeigt
+ *   showGpsPositionButton Style Hintergrund weiß Icon grau
+ *   Click auf showGpsPositionButton wechselt in Mode 2
+ * kvm-gps-on GPS-Position wird angezeigt
+ *   showGpsPositionButton Style Hintergrund weiß Icon Blau
+ *   Click auf showGpsPositionButton wechselt in Mode 2
+ * kvm-gps-track GPS-Position wird angezeigt und die Karte nachgeführt
+ *   showGpsPositionButton Style Hinergrund blau Icon weiß
+ *   Click auf showGpsPositionButton wechselt in Mode 0
+ *   On mapMove oder mapZoom wechselt nach Mode 1
+ */
 
 // kvm.controller.mapper = {
 export const Mapper = {
@@ -98,26 +98,26 @@ export const Mapper = {
         console.log("draged");
         kvm.controller.mapper.clearWatch();
         var latlng = feature.editableLayer.getLatLng();
-        console.log("trigger geomChanged mit latlng: %o", latlng);
+        // console.log("trigger geomChanged mit latlng: %o", latlng);
         $(document).trigger("geomChanged", [{ geom: feature.aLatLngsToWkx([latlng]), exclude: "latlngs" }]);
       });
     } else if (feature.options.geometry_type == "Line") {
       (<any>kvm.map)._layers[feature.editableLayer._leaflet_id].on("isChanged", function (evt) {
         console.log("isChanged");
         var latlngs = feature.editableLayer.getLatLngs();
-        console.log("trigger geomChange mit latlngs: %o", latlngs);
+        // console.log("trigger geomChange mit latlngs: %o", latlngs);
         $(document).trigger("geomChanged", [{ geom: feature.aLatLngsToWkx(latlngs), exclude: "latlngs" }]);
       });
     } else if (feature.options.geometry_type == "Polygon") {
-      console.log("Handler to act on Geometry is changed.");
+      // console.log("Handler to act on Geometry is changed.");
       (<any>kvm.map)._layers[feature.editableLayer._leaflet_id]
         .on("editable:dragend", function (evt) {
-          console.log("Polygon wurde verschoben");
+          // console.log("Polygon wurde verschoben");
           let latlngs = feature.editableLayer.getLatLngs();
           $(document).trigger("geomChanged", [{ geom: feature.aLatLngsToWkx(latlngs), exclude: "latlngs" }]);
         })
         .on("editable:vertex:dragend", function (evt) {
-          console.log("Stützpunkt von Polygon wurde verschoben");
+          // console.log("Stützpunkt von Polygon wurde verschoben");
           let latlngs = feature.editableLayer.getLatLngs();
 					$(document).trigger("geomChanged", [{ geom: feature.aLatLngsToWkx(latlngs), exclude: "latlngs" }]);
         });
@@ -180,7 +180,7 @@ export const Mapper = {
     this.watchId = navigator.geolocation.watchPosition(
       function (location) {
         var latlng = L.latLng(location.coords.latitude, location.coords.longitude);
-        console.log("trigger geomChanged mit latlng: %o", latlng);
+        // console.log("trigger geomChanged mit latlng: %o", latlng);
         $(document).trigger("geomChanged", [{ geom: kvm.activeLayer.activeFeature.aLatLngsToWkx([latlng]) }]);
       }.bind(this)
     );

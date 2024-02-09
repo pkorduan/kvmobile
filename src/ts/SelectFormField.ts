@@ -24,11 +24,12 @@ export class SelectFormField {
 			<select
 				id="${this.get("index")}"
 				name="${this.get("name")}"
+        ${(this.isArrayType() ? 'multiple' : '')}
 				${(this.get("privilege") == "0" ? ' disabled' : '')}
 				${(kvm.coalesce(this.get("required_by"), "") != "" ? ' required_by="' + this.get("required_by") + '"' : "")}
 				${(kvm.coalesce(this.get("requires"), "") != "" ? ' requires="' + this.get("requires") + '"' : "")}
 			>
-				<option value="">Bitte wählen</option>
+        ${(this.isArrayType() ? '' : '<option value="">Bitte wählen</option>')}
 				${$.map(this.get("options"), function (option) {
       //          option = option.replace(/(^')|('$)/g, '')
       return `
@@ -40,18 +41,26 @@ export class SelectFormField {
     }).join("\n")}
 			</select>
     `);
-  }
+  };
 
   get(key) {
     return this.settings[key];
-  }
+  };
 
   setValue(val) {
     //console.log('SelectFormField.setValue with value: ' + val);
     if (kvm.coalesce(val, "") == "" && this.get("default")) {
       val = this.get("default");
     }
-    this.element.val(val == "null" ? "" : val);
+
+    val = (val == "null" ? "" : val);
+
+    if (val && this.isArrayType()) {
+      // erstmal nur der erste. Mehrere werden noch nicht unterstützt.
+      val = val.replace(/[{}]+/g,'').split(',');
+		}
+
+    this.element.val(val);
   };
 
   getValue(action = "") {
@@ -61,7 +70,16 @@ export class SelectFormField {
     if (typeof val === "undefined" || val == "") {
       val = null;
     }
-    return val;
+
+    if (val && this.isArrayType()) {
+      val = `{${val.toString()}}`;
+    }
+
+		return val;
+  };
+
+  isArrayType() {
+    return this.get('type').substring(0, 1) == '_'
   };
 
   filter_by_required (attribute, value) {

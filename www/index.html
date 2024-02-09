@@ -89,7 +89,6 @@ child-src * 'self' blob: http:
     <script type="module" src="app.js"></script>
   </head>
   <body">
-
     <div id="sperr_div" class="modal">
       <i class="fa fa-spinner fa-pulse fa-2x"></i>
       <div id="sperr_div_content" class="sperr-div-content"></div>
@@ -220,7 +219,8 @@ child-src * 'self' blob: http:
         <div class="settings-label">Starten bei Zeile:</div><input type="number" id="offset" value="0" size="5"/>
         <div style="clear:both"></div>
         Nur historische Datensätze: <input id="historyFilter" type="checkbox">
-        <div style="clear:both"></div>
+        Nur eigene Datensätze: <input id="userIdFilter" type="checkbox">
+				<div style="clear:both"></div>
         <input id="runFilterButton" type="button" value="Anwenden" class="settings-button" style="margin-top: 5px"/>
         <input id="toggleFilterDivButton" type="button" value="mehr" class="settings-button"/>
         <div id="filterDiv" style="display: none">
@@ -263,8 +263,8 @@ child-src * 'self' blob: http:
         Startposition neuer Objekte<br>
         <div id="newPosDiv">
           <select id="newPosSelect" name="newPosSelect" class="mapSetting">
-            <option value="1" selected>An GPS-Position falls Signal vorhanden</option>
-            <option value="2">Immer am aktuellen Kartenmittelpunkt</option>
+            <option value="1">An GPS-Position falls Signal vorhanden</option>
+            <option value="2" selected>Immer am aktuellen Kartenmittelpunkt</option>
           </select>
         </div>
         Mindestdistanz beim Tracking: <span id="minTrackDistance">5</span> m <input id="minTrackDistanceSlider" type="range" min="1" max="100" value="5" class="min-track-distance-slider"><i class="fa fa-info" aria-hidden="true" onclick="kvm.msg('Stellt die Mindestentfernung zum nächsten aufgezeichneten Wegpunkt beim Linientracking ein. Punkte in kleinerem Abstand werden bei der Aufzeichnung ignoriert.')" style="margin-left: 5px"></i><br>
@@ -565,7 +565,9 @@ child-src * 'self' blob: http:
     <div id="debText" style="clear: both; height: 300px; overflow: auto;"></div>
     <div style="text-align: center; padding: 2px;"><input type="button" value="Schließen" onclick="document.getElementById('debugs').classList.toggle('hidden')"></div>
   </div>
-  <div class="clear"></div>
+  	<div class="clear"></div>
 
+    <div id="map_hint_div"></div>
+    <div id="geolocation_div"></div>
   </body>
 </html>

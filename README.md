@@ -14,41 +14,58 @@ Doku zu kvmobile: https://kvwmap.de/index.php/kvmobile
 Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.de/public/kvmobile/
 
 # Change log
+## 1.12.2
+  *	Features
+    * Nach der Eingabe eines neuen Sub-Datensatz "Weiter"-Button der Zeigt auf das übergeordnete Objekt und "Nächsten anlegen" öffnet Form für nächsten neuen Datensatz.
+## 1.12.1
+  * Bugfix
+    * Unknown Fehler durch Ersetzung von LIKE mit % in INSERT SELECT-Kombination durch INSTR Funktion behoben. 
+    * Auswahllistenwerte mit integer Values im DataView korrekt anzeigen.
+  * Maintainance
+    * Hinzufügen des plugin cordova-spatialite-storage
+  * Features
+    * Automatisches hochzählen von Attributen die im default nextval stehen haben.
+    * Automatisches hochzählen pro abhängigem Attribut die im default gdi_conditional_nextval stehen haben.
+    * Setzen der id des Features des übergeordneten Layers in dessen Geometrie das neue Feature fällt in subFromFKFormFields.
+    * Automatisches Sichern der Datenbank auf dem Client vor syncData
+## 1.12.0
+  * Features
+    * Map follow location when location control is active until pan or zoom.
 ## 1.11.2
-	* Features
-  	* Support pmtiles from layersettings
-  	* Hide unimportant configuration parameters 
+  * Features
+    * Support pmtiles from layersettings
+    * Hide unimportant configuration parameters 
 ## 1.11.1
-	* Bugfix
-  	* Correct amount of vertex in wkt object
-  	* Correct var for Datensatzbezeichnung in Layerinfo
+  * Bugfix
+    * Correct amount of vertex in wkt object
+    * Correct var for Datensatzbezeichnung in Layerinfo
   * Layout
     * Clear both bevor form-field-rows
     * Gray attribute names
     * 5px Padding input form fields
 	* Features
-  	* Jump from Parent to Client form and vise versa.
-  	* Save and show last active background layer
-  	* Enable Abhängige Auswahlfelder
-  	* Consider visibility dependencies
-  	* Show and hide layer groups in data view
+    * Jump from Parent to Client form and vise versa.
+    * Save and show last active background layer
+    * Enable Abhängige Auswahlfelder
+    * Consider visibility dependencies
+    * Show and hide layer groups in data view
 ## 1.11.0
-	* Maintainance
-  	* Konfiguration from Server not from configurations file in apk.
+  * Maintainance
+    * Konfiguration from Server not from configurations file in apk.
 ## 1.10.5
-	* Bugfix
-  	* Add layerGroup to map when saveGeometry of first object in layer.
-  	* Fix set active layer in stelle
-	* Maintainance
-  	* Catch Error for incorrect formField type.
+  * Bugfix
+    * Add layerGroup to map when saveGeometry of first object in layer.
+    * Fix set active layer in stelle
+  * Maintainance
+    * Catch Error for incorrect formField type.
 ## 1.10.4
-	* Bugfix
-		*	Asynchron loading images and previews.
-		* Different image elements for data and form view.
-		* ReadData only from layer when sorting.
+  * Bugfix
+    *	Asynchron loading images and previews.
+    * Different image elements for data and form view.
+    * ReadData only from layer when sorting.
 ## 1.10.3
-	* Maintainance
-  	* Add many try and catch blocks to catch errors
+  * Maintainance
+    * Add many try and catch blocks to catch errors
 ## 1.10.2
   * Bugfix
     * Fix query LK-EE Backgroundlayer if not initialized configuration

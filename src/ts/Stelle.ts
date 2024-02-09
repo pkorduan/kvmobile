@@ -65,8 +65,8 @@ export class Stelle {
 		kvm.store.setItem("stelleSettings_" + this.get("id"), JSON.stringify(this.settings));
 	}
 
-	setActive() {
-		kvm.log("Stelle.js setActive", 4);
+	activate() {
+		kvm.log("Stelle.js activate", 4);
 		kvm.activeStelle = this;
 		kvm.store.setItem("activeStelleId", this.get("id"));
 		$("#activeStelleBezeichnungDiv").html(this.get("bezeichnung")).show();
@@ -180,7 +180,13 @@ export class Stelle {
 				kvm.tick(`${layer.title}:<br>&nbsp;&nbsp;Laden beeendet.`);
 				this.numLayersLoaded = 0;
 				this.loadAllLayers = false;
-				layer.setActive();
+				const globalLayerId = `${kvm.store.getItem('activeStelleId')}_${kvm.store.getItem('activeLayerId')}`;
+				if (Object.keys(kvm.layers).includes(globalLayerId)) {
+					kvm.layers[globalLayerId].activate(); // activate latest active
+				}
+				else {
+					layer.activate(); // activate latest loaded
+				}
 				kvm.showActiveItem();
 				kvm.closeSperrDiv('Laden der Layer beendet. Schließe Sperr-Bildschirm.');
 			}
@@ -188,7 +194,7 @@ export class Stelle {
 		else {
 			kvm.tick(layer.title + ": Laden beeendet.");
 			this.sortOverlays();
-			layer.setActive();
+			layer.activate();
 			kvm.showActiveItem();
 			kvm.closeSperrDiv('Fertig.');
 		}
@@ -259,7 +265,7 @@ export class Stelle {
 								//console.log("Erzeuge neuen Layer");
 								layer = new Layer(kvm.activeStelle, layerSettings);
 								kvm.tick(`${layer.title}:<br>&nbsp;&nbsp;Lege Layer an.`);
-								layer.updateTable(); // includes DROP TABLE IF EXISTS, appendToApp(), setActive(), this.sortOverlays(), saveToStore(), readData()
+								layer.updateTable(); // includes DROP TABLE IF EXISTS, appendToApp(), activate(), this.sortOverlays(), saveToStore(), readData()
 							} else {
 								kvm.log("Fehlerausgabe von parseLayerResult!", 4);
 								kvm.msg(resultObj.errMsg, "2");
@@ -396,7 +402,7 @@ export class Stelle {
 									console.log("  requestLayers) Füge neu runtergeladene Layer zur Anwendung hinzu.");
 									resultObj.layers.forEach((layerSetting) => {
 										console.log("  requestLayers) Layer.requestLayers create layer with settings: %o", layerSetting);
-										if (layerSetting.vector_tile_url != '') {
+										if (layerSetting.vector_tile_url) {
 											console.log('Erzeuge einen VectorTile Layer-Objekt');
 											const layer = new MapLibreLayer(layerSetting, true, this);
 											layer.appendToApp();

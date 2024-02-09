@@ -44,9 +44,11 @@ export class SubFormEmbeddedPKFormField {
     console.log('setValue of SubFormEmbeddedPK FormField');
 		this.element.empty();
     if (feature.options.new) {
+			$('#new_sub_data_set').hide();
       this.element.append('<span>Können erst angelegt werden wenn der neue Datensatz gespeichert ist.</span>');
     }
     else {
+			$('#new_sub_data_set').show();
       this.attribute.layer.readVorschauAttributes(this.attribute, feature.get(this.attribute.getPKAttribute()), this.element);
     }
   }

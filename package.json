@@ -1,7 +1,7 @@
 {
   "name": "de.gdi-service.kvmobile",
   "displayName": "kvmobile",
-  "version": "1.11.2",
+  "version": "1.12.2",
   "description": "Anwendung zur Erfassung von Geodaten und zum synchronisieren mit dem Web-GIS kvwmap.",
   "main": "index.js",
   "scripts": {
@@ -62,7 +62,8 @@
       "cordova-sqlite-storage": {},
       "cordova-plugin-inappbrowser": {},
       "@mauron85/cordova-plugin-background-geolocation": {},
-      "cordova-plugin-app-version": {}
+      "cordova-plugin-app-version": {},
+      "cordova-spatialite-storage": {}
     },
     "platforms": [
       "browser"
@@ -81,6 +82,7 @@
     "copy-webpack-plugin": "^8.1.1",
     "cordova-android": "^9.1.0",
     "cordova-browser": "^6.0.0",
+    "cordova-spatialite-storage": "github:DisyInformationssysteme/Cordova-spatialite-storage",
     "css-loader": "^5.2.6",
     "css-minimizer-webpack-plugin": "^3.3.1",
     "file-loader": "^6.2.0",

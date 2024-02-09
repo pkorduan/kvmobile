@@ -29,16 +29,16 @@ export class TextFormField {
     }
 
     get(key) {
-        return this.settings[key];
+      return this.settings[key];
     }
 
     setValue(val) {
-        console.log("TextFormField " + this.get("name") + " setValue with value: %o", val);
-        if (kvm.coalesce(val, "") == "" && this.get("default")) {
-            val = this.get("default");
-        }
-        this.element.val(val == null || val == "null" ? "" : val);
-    }
+			//console.log("TextFormField " + this.get("name") + " setValue with value: %o", val);
+			if (kvm.coalesce(val, "") == "" && this.get("default")) {
+					val = this.get("default");
+			}
+			this.element.val(val == null || val == "null" ? "" : val);
+		}
 
     /*
      * get the value from form field expect

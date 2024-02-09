@@ -174,10 +174,10 @@ export class GeometrieFormField {
         var oldGeom: any = $("#geom_wkt").val(),
           newGeom = geom.toWkt();
 
-        console.log("Trigger Funktion geomChanged: Vergleiche alt: %s mit neu: %s", oldGeom, newGeom);
+        // console.log("Trigger Funktion geomChanged: Vergleiche alt: %s mit neu: %s", oldGeom, newGeom);
         if (newGeom != oldGeom) {
           $("#geom_wkt").val(newGeom);
-          console.log("Trigger Funktion geomChanged: Neue WKT Geometrie für die Anzeige als Text im Formular: %s", newGeom);
+          // console.log("Trigger Funktion geomChanged: Neue WKT Geometrie für die Anzeige als Text im Formular: %s", newGeom);
         }
       }
 
@@ -186,7 +186,7 @@ export class GeometrieFormField {
       }
       //        kvm.activeLayer.features[feature.id] = feature;
       //        kvm.activeLayer.activeFeature = feature;
-      console.log("Trigger Funktion geomChanged: fertig");
+      // console.log("Trigger Funktion geomChanged: fertig");
     });
   }
 }

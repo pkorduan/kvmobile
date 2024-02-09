@@ -59,6 +59,9 @@
     },
     "cordova-plugin-app-version": {
       "PACKAGE_NAME": "de.gdiservice.kvmobile"
+    },
+    "cordova-spatialite-storage": {
+      "PACKAGE_NAME": "de.gdiservice.kvmobile"
     }
   },
   "dependent_plugins": {

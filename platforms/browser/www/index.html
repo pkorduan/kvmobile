@@ -89,9 +89,9 @@ child-src * 'self' blob: http:
     <script type="module" src="app.js"></script>
   </head>
   <body">
-
     <div id="sperr_div" class="modal">
-      <i class="fa fa-spinner fa-pulse fa-2x"></i><p id="sperr_div_content" style="margin-top: 20px">Lade Daten ...</p>
+      <i class="fa fa-spinner fa-pulse fa-2x"></i>
+      <div id="sperr_div_content" class="sperr-div-content"></div>
     </div>
 
     <div id="login" class="login">
@@ -156,156 +156,8 @@ child-src * 'self' blob: http:
   <!-- Einstellungen -->
   <div id="settings" class="panel v-scroll-div">
     <h1>Einstellungen</h1>
-<!--
-    <input type="checkbox" style="vertical-align: top;" />
-    Automatisches Öffnen von Formular, wenn in der Nähe von Haltestellen
-    <hr>
--->
-    <div class="h2-div"><h2 id="h2_anzeigefilter" class="b-collapsed">Anzeigefilter</h2></div>
-    <div id="anzeigeFilterDiv">
-      <!--select id="statusFilterSelect">
-        <option value="" selected>kein Filter</option>
-      </select//-->
-      <div class="settings-label">Anzahl der Zeilen:</div><input type="number" id="limit" value="1000" size="5"/>
-      <div style="clear:both"></div>
-      <div class="settings-label">Starten bei Zeile:</div><input type="number" id="offset" value="0" size="5"/>
-      <div style="clear:both"></div>
-      Nur historische Datensätze: <input id="historyFilter" type="checkbox">
-      <div style="clear:both"></div>
-      <input id="runFilterButton" type="button" value="Anwenden" class="settings-button" style="margin-top: 5px"/>
-      <input id="toggleFilterDivButton" type="button" value="mehr" class="settings-button"/>
-      <div id="filterDiv" style="display: none">
-        <div id="attributeFilterFieldDiv"></div>
-      </div>
-    </div>
-    <hr>
-
-    <div class="h2-div"><h2 id="h2_sortierung" class="b-collapsed">Sortierung</h2></div>
-    <div id="anzeigeSortDiv">
-      <select id="anzeigeSortSelect">
-        <option value="">keine Sortierung</option>
-      </select>
-    </div>
-    <hr>
-
-    <div class="h2-div"><h2 id="h2_farben" class="b-collapsed">Farben</h2></div>
-    <div id="colorSelectorDiv">
-    </div>
-    <hr>
-
-    <div class="h2-div"><h2 id="h2_symbole" class="b-collapsed">Symbole</h2></div>
-    <div id="transfarencySelectorDiv">
-      Symboltransparenz : <span id="fillOpacitySpan">0.8</span><br>
-      <input type="range" class="camera-options-slider" id="fillOpacitySlider" name="fillOpacity" min="0" max="10" value="8"><i class="fa fa-info" aria-hidden="true" onclick="kvm.msg('0 ist ganz durchsichtig, 1 ohne Transparenz. Wirkt sich erst nach dem neu Laden der Datensätze z.B. durch Filterung aus. Dazu einmal bei Filter auf Anwenden klicken.')" style="margin-left: 5px"></i>
-    </div>
-    <hr>
-
-    <div class="h2-div"><h2 id="h2_bildaufnahme" class="b-collapsed">Bildaufnahme</h2></div>
-    <div id="cameraOptionsDiv">
-      Bildqualität: <span id="cameraOptionsQuality">25</span> % <input id="cameraOptionsQualitySlider" type="range" min="10" max="100" value="25" class="camera-options-slider"><i class="fa fa-info" aria-hidden="true" onclick="kvm.msg('Verringert die Größe der aufgenommenen Bilddateien auf die angegebenen % der in der Kamera eingestellten Größe.')" style="margin-left: 5px"></i><br>
-      <!--input id="cameraOptionsAllowEdit" type="checkbox"> Editieren erlauben<br>
-      <input id="cameraOptionsCorrectOrientation" type="checkbox" checked> Bildrichtung anpassen<br//-->
-      <input id="cameraOptionsSaveToPhotoAlbum" type="checkbox" checked> Auch im Fotoalbum speichern
-    </div>
-    <hr>
-
-    <div class="h2-div"><h2 id="h2_karteneinstellungen" class="b-collapsed">Karteneinstellungen</h2></div>
-    <div id="mapSettingsDiv">
-      Startposition neuer Objekte<br>
-      <div id="newPosDiv">
-        <select id="newPosSelect" name="newPosSelect" class="mapSetting">
-          <option value="1" selected>An GPS-Position falls Signal vorhanden</option>
-          <option value="2">Immer am aktuellen Kartenmittelpunkt</option>
-        </select>
-      </div>
-      Mindestdistanz beim Tracking: <span id="minTrackDistance">5</span> m <input id="minTrackDistanceSlider" type="range" min="1" max="100" value="5" class="min-track-distance-slider"><i class="fa fa-info" aria-hidden="true" onclick="kvm.msg('Stellt die Mindestentfernung zum nächsten aufgezeichneten Wegpunkt beim Linientracking ein. Punkte in kleinerem Abstand werden bei der Aufzeichnung ignoriert.')" style="margin-left: 5px"></i><br>
-      maximale Kartenausdehnung:
-      <div class="settings-label">West:</div><input id="mapSettings_west" name="west" class="mapSetting" type="number" size="7"/>
-      <div style="clear: both"></div>
-      <div class="settings-label">Süd:</div> <input id="mapSettings_south" name="south" class="mapSetting" type="number" size="7"/>
-      <div style="clear: both"></div>
-      <div class="settings-label">Ost:</div><input id="mapSettings_east" name="east" class="mapSetting" type="number" size="7"/>
-      <div style="clear: both"></div>
-      <div class="settings-label">Nord:</div><input id="mapSettings_north" name="north" class="mapSetting" type="number" size="7"/>
-      <div style="clear: both"></div>
-      <div class="settings-label">Start Center Lat:</div><input id="mapSettings_startCenterLat" name="startCenterLat" class="mapSetting" type="number" size="7"/>
-      <div style="clear: both"></div>
-      <div class="settings-label">Start Center Lon:</div><input id="mapSettings_startCenterLon" name="startCenterLon" class="mapSetting" type="number" size="7"/>
-      <div style="clear: both"></div>
-      <div class="settings-label">kleinste Zoomstufe:</div>
-      <select id="mapSettings_minZoom" name="minZoom" class="mapSetting">
-        <option value="5">5</option>
-        <option value="6">6</option>
-        <option value="7">7</option>
-        <option value="8">8</option>
-        <option value="9">9</option>
-        <option value="10">10</option>
-        <option value="11">11</option>
-        <option value="12">12</option>
-        <option value="13">13</option>
-        <option value="14">14</option>
-        <option value="15">15</option>
-        <option value="16">16</option>
-        <option value="17">17</option>
-        <option value="18">18</option>
-        <option value="19">19</option>
-        <option value="20">20</option>
-        <option value="21">21</option>
-        <option value="22">22</option>
-      </select>
-      <div style="clear: both"></div>
-      <div class="settings-label">größte Zoomstufe:</div>
-      <select id="mapSettings_maxZoom" name="maxZoom" class="mapSetting">
-        <option value="5">5</option>
-        <option value="6">6</option>
-        <option value="7">7</option>
-        <option value="8">8</option>
-        <option value="9">9</option>
-        <option value="10">10</option>
-        <option value="11">11</option>
-        <option value="12">12</option>
-        <option value="13">13</option>
-        <option value="14">14</option>
-        <option value="15">15</option>
-        <option value="16">16</option>
-        <option value="17">17</option>
-        <option value="18">18</option>
-        <option value="19">19</option>
-      </select>
-      <div style="clear: both"></div>
-      <div class="settings-label">Start Zoomstufe:</div>
-      <select id="mapSettings_startZoom" name="startZoom" class="mapSetting">
-        <option value="5">5</option>
-        <option value="6">6</option>
-        <option value="7">7</option>
-        <option value="8">8</option>
-        <option value="9">9</option>
-        <option value="10">10</option>
-        <option value="11">11</option>
-        <option value="12">12</option>
-        <option value="13">13</option>
-        <option value="14">14</option>
-        <option value="15">15</option>
-        <option value="16">16</option>
-        <option value="17">17</option>
-        <option value="18">18</option>
-        <option value="19">19</option>
-      </select>
-      <div style="clear: both"></div>
-    </div>
-    <hr>
-
-    <div class="h2-div"><h2 id="h2_kartenverwaltung" class="b-collapsed">Kartenverwaltung</h2></div>
-    <div id="mapManagementDiv">
-      Verfügbare Offlinekarten<br>
-      <ul>
-        <li>
-          LK-EE
-          <button id="downloadBackgroundLayerButton" class="settings-button">
-            <i class="fa fa-download" arial-hidden="true"> herunterladen</i>
-          </button>
-        </li>
-      </ul>
+    <div class="h2-div"><h2 id="h2_konfiguration" class="b-collapsed">Konfiguration</h2></div>
+    <div id="configFileDiv">
     </div>
     <hr>
 
@@ -347,127 +199,294 @@ child-src * 'self' blob: http:
     </div>
     <hr>
 
-    <!--div class="h2-div"><h2 id="h2_overlay" class="b-collapsed">Overlays</h2></div>
-    <div>
-      <div id="overlay_list">
+		<div
+      class="toggle-settings-div"
+		>mehr <i class="fa fa-expand"></i></div>
+
+    <div
+      id="switchable_settings_div"
+      style="display:none"
+			>
+      <div class="h2-div">
+        <h2 id="h2_anzeigefilter" class="b-collapsed switchable-setting">Anzeigefilter</h2>
       </div>
-    </div>
-    <hr//-->
-
-    <div class="h2-div"><h2 id="h2_hintergrundlayer" class="b-collapsed">Hintergrundlayer</h2></div>
-    <div id="backgroundLayersDiv">
-      <textarea id="backgroundLayersTextarea" style="height: 200px; display: none">
-      </textarea>
-      <div id="backgroundLayerSettingsDiv">
+      <div id="anzeigeFilterDiv" class="switchable-setting">
+        <!--select id="statusFilterSelect">
+          <option value="" selected>kein Filter</option>
+        </select//-->
+        <div class="settings-label">Anzahl der Zeilen:</div><input type="number" id="limit" value="1000" size="5"/>
+        <div style="clear:both"></div>
+        <div class="settings-label">Starten bei Zeile:</div><input type="number" id="offset" value="0" size="5"/>
+        <div style="clear:both"></div>
+        Nur historische Datensätze: <input id="historyFilter" type="checkbox">
+        <div style="clear:both"></div>
+        <input id="runFilterButton" type="button" value="Anwenden" class="settings-button" style="margin-top: 5px"/>
+        <input id="toggleFilterDivButton" type="button" value="mehr" class="settings-button"/>
+        <div id="filterDiv" style="display: none">
+          <div id="attributeFilterFieldDiv"></div>
+        </div>
       </div>
-      <button id="resetBackgroundLayerSettingsButton" class="settings-button">
-        <i class="fa fa-refresh" aria-hidden="true"> Zurücksetzen</i>
-      </button>
-      <button id="changeBackgroundLayerSettingsButton" class="settings-button">
-        <i class="fa fa-floppy-o" aria-hidden="true"> Speichern</i>
-      </button>
-    </div>
-    <hr>
+      <hr>
 
-    <div class="h2-div"><h2 id="h2_netzwerkstatus" class="b-collapsed">Netzwerkstatus</h2></div>
-    <div id="networkStatusText">...wird geladen</div>
-    <hr>
+      <div class="h2-div"><h2 id="h2_sortierung" class="b-collapsed">Sortierung</h2></div>
+      <div id="anzeigeSortDiv">
+        <select id="anzeigeSortSelect">
+          <option value="">keine Sortierung</option>
+        </select>
+      </div>
+      <hr>
 
-    <div class="h2-div"><h2 id="h2_gps_status" class="b-collapsed">GPS-Status</h2></div>
-    <div>
-      <div id="gpsStatusText">...wird geladen</div>
-      <div id="gpsCurrentPosition"></div>
-      <div id="zoomToCurrentLocation" style="display: none">
-        <button id="zoomToCurrentLocationButton" class="settings-button">
-          <i class="fa fa-location-arrow" aria-hidden="true"> Zoom zur aktuellen GPS-Position</i>
+      <div class="h2-div"><h2 id="h2_farben" class="b-collapsed">Farben</h2></div>
+      <div id="colorSelectorDiv">
+      </div>
+      <hr>
+
+      <div class="h2-div"><h2 id="h2_symbole" class="b-collapsed">Symbole</h2></div>
+      <div id="transfarencySelectorDiv">
+        Symboltransparenz : <span id="fillOpacitySpan">0.8</span><br>
+        <input type="range" class="camera-options-slider" id="fillOpacitySlider" name="fillOpacity" min="0" max="10" value="8"><i class="fa fa-info" aria-hidden="true" onclick="kvm.msg('0 ist ganz durchsichtig, 1 ohne Transparenz. Wirkt sich erst nach dem neu Laden der Datensätze z.B. durch Filterung aus. Dazu einmal bei Filter auf Anwenden klicken.')" style="margin-left: 5px"></i>
+      </div>
+      <hr>
+
+      <div class="h2-div"><h2 id="h2_bildaufnahme" class="b-collapsed">Bildaufnahme</h2></div>
+      <div id="cameraOptionsDiv">
+        Bildqualität: <span id="cameraOptionsQuality">25</span> % <input id="cameraOptionsQualitySlider" type="range" min="10" max="100" value="25" class="camera-options-slider"><i class="fa fa-info" aria-hidden="true" onclick="kvm.msg('Verringert die Größe der aufgenommenen Bilddateien auf die angegebenen % der in der Kamera eingestellten Größe.')" style="margin-left: 5px"></i><br>
+        <!--input id="cameraOptionsAllowEdit" type="checkbox"> Editieren erlauben<br>
+        <input id="cameraOptionsCorrectOrientation" type="checkbox" checked> Bildrichtung anpassen<br//-->
+        <input id="cameraOptionsSaveToPhotoAlbum" type="checkbox" checked> Auch im Fotoalbum speichern
+      </div>
+      <hr>
+
+      <div class="h2-div"><h2 id="h2_karteneinstellungen" class="b-collapsed">Karteneinstellungen</h2></div>
+      <div id="mapSettingsDiv">
+        Startposition neuer Objekte<br>
+        <div id="newPosDiv">
+          <select id="newPosSelect" name="newPosSelect" class="mapSetting">
+            <option value="1" selected>An GPS-Position falls Signal vorhanden</option>
+            <option value="2">Immer am aktuellen Kartenmittelpunkt</option>
+          </select>
+        </div>
+        Mindestdistanz beim Tracking: <span id="minTrackDistance">5</span> m <input id="minTrackDistanceSlider" type="range" min="1" max="100" value="5" class="min-track-distance-slider"><i class="fa fa-info" aria-hidden="true" onclick="kvm.msg('Stellt die Mindestentfernung zum nächsten aufgezeichneten Wegpunkt beim Linientracking ein. Punkte in kleinerem Abstand werden bei der Aufzeichnung ignoriert.')" style="margin-left: 5px"></i><br>
+        maximale Kartenausdehnung:
+        <div class="settings-label">West:</div><input id="mapSettings_west" name="west" class="mapSetting" type="number" size="7"/>
+        <div style="clear: both"></div>
+        <div class="settings-label">Süd:</div> <input id="mapSettings_south" name="south" class="mapSetting" type="number" size="7"/>
+        <div style="clear: both"></div>
+        <div class="settings-label">Ost:</div><input id="mapSettings_east" name="east" class="mapSetting" type="number" size="7"/>
+        <div style="clear: both"></div>
+        <div class="settings-label">Nord:</div><input id="mapSettings_north" name="north" class="mapSetting" type="number" size="7"/>
+        <div style="clear: both"></div>
+        <div class="settings-label">Start Center Lat:</div><input id="mapSettings_startCenterLat" name="startCenterLat" class="mapSetting" type="number" size="7"/>
+        <div style="clear: both"></div>
+        <div class="settings-label">Start Center Lon:</div><input id="mapSettings_startCenterLon" name="startCenterLon" class="mapSetting" type="number" size="7"/>
+        <div style="clear: both"></div>
+        <div class="settings-label">kleinste Zoomstufe:</div>
+        <select id="mapSettings_minZoom" name="minZoom" class="mapSetting">
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10</option>
+          <option value="11">11</option>
+          <option value="12">12</option>
+          <option value="13">13</option>
+          <option value="14">14</option>
+          <option value="15">15</option>
+          <option value="16">16</option>
+          <option value="17">17</option>
+          <option value="18">18</option>
+          <option value="19">19</option>
+          <option value="20">20</option>
+          <option value="21">21</option>
+          <option value="22">22</option>
+        </select>
+        <div style="clear: both"></div>
+        <div class="settings-label">größte Zoomstufe:</div>
+        <select id="mapSettings_maxZoom" name="maxZoom" class="mapSetting">
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10</option>
+          <option value="11">11</option>
+          <option value="12">12</option>
+          <option value="13">13</option>
+          <option value="14">14</option>
+          <option value="15">15</option>
+          <option value="16">16</option>
+          <option value="17">17</option>
+          <option value="18">18</option>
+          <option value="19">19</option>
+        </select>
+        <div style="clear: both"></div>
+        <div class="settings-label">Start Zoomstufe:</div>
+        <select id="mapSettings_startZoom" name="startZoom" class="mapSetting">
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10</option>
+          <option value="11">11</option>
+          <option value="12">12</option>
+          <option value="13">13</option>
+          <option value="14">14</option>
+          <option value="15">15</option>
+          <option value="16">16</option>
+          <option value="17">17</option>
+          <option value="18">18</option>
+          <option value="19">19</option>
+        </select>
+        <div style="clear: both"></div>
+      </div>
+      <hr>
+
+      <div class="h2-div"><h2 id="h2_kartenverwaltung" class="b-collapsed">Offline-Karten</h2></div>
+      <div id="loadOfflineMapsDiv">
+			</div>
+      <hr>
+
+      <!--div class="h2-div"><h2 id="h2_overlay" class="b-collapsed">Overlays</h2></div>
+      <div>
+        <div id="overlay_list">
+        </div>
+      </div>
+      <hr//-->
+
+      <div class="h2-div"><h2 id="h2_hintergrundlayer" class="b-collapsed">Hintergrundlayer</h2></div>
+      <div id="backgroundLayersDiv">
+        <textarea id="backgroundLayersTextarea" style="height: 200px; display: none">
+        </textarea>
+        <div id="backgroundLayerSettingsDiv">
+        </div>
+        <button id="resetBackgroundLayerSettingsButton" class="settings-button">
+          <i class="fa fa-refresh" aria-hidden="true"> Zurücksetzen</i>
+        </button>
+        <button id="changeBackgroundLayerSettingsButton" class="settings-button">
+          <i class="fa fa-floppy-o" aria-hidden="true"> Speichern</i>
+        </button>
+        <button id="loadBackgroundLayerButton" class="settings-button">
+          <i class="fa fa-download" aria-hidden="true"> Download</i>
         </button>
       </div>
-    </div>
-    <hr>
+      <hr>
 
-    <div class="h2-div"><h2 id="h2_geraeteinformationen" class="b-collapsed">Geräteinformationen</h2></div>
-    <div id="deviceDataText">
-      kvmobile Version: <span id="cordovaAppVersion"></span><br>
-      Cordova Version: <span id="deviceCordova"></span><br>
-      Modell: <span id="deviceModel"></span><br>
-      Platform: <span id="devicePlatform"></span><br>
-      Uuid: <span id="deviceUuid"></span><br>
-      Android Version: <span id="deviceVersion"></span><br>
-      Hersteller: <span id="deviceManufacturer"></span><br>
-      Seriennummer: <span id="deviceSerial"></span><br>
-    </div>
-    <hr>
+      <div class="h2-div"><h2 id="h2_netzwerkstatus" class="b-collapsed">Netzwerkstatus</h2></div>
+      <div id="networkStatusText">...wird geladen</div>
+      <hr>
 
-    <div class="h2-div"><h2 id="h2_datenbank" class="b-collapsed">Datenbank</h2></div>
-    <div>
-      Datenbankname: <span id="dbnameText">...wird geladen</span><br>
-      Anzahl Datensätze: <span id="numDatasetsText" style="display: none">... wird geladen</span><br>
-      <button id="showDeltasButton" class="settings-button">
-        <i class="fa fa-pencil-square-o" aria-hidden="true"> Zeige Änderungen</i>
-      </button>
-      <i id="showDeltasWaiting" class="fa fa-spinner fa-pulse fa-3x fa-fw" style="display: none;"></i>
-      <button id="hideDeltasButton" class="settings-button" style="display: none;">
-        <i class="fa fa-window-close-o" aria-hidden="true"> Blende Änderungen aus</i>
-      </button>
-      <div id="showDeltasDiv" style="display: none;">
-      </div><br>
-      Backup-Speicherpfad:<br>
-      <input id="localBackupPath" type="text"><br>
-      <button id="saveDatabaseButton" class="settings-button">
-        <i class="fa fa-database" aria-hidden="true"></i>
-        <i class="fa fa-check" aria-hidden="true"></i> Sichere Datenbank
-      </button>
-      <br>
-      <button id="resetSettingsButton" class="settings-button">
-        <i class="fa fa-refresh" aria-hidden="true"></i> Reset Datenbank und Einstellungen
-      </button>
-    </div>
-    <hr>
+      <div class="h2-div"><h2 id="h2_gps_status" class="b-collapsed">GPS-Status</h2></div>
+      <div>
+        <div id="gpsStatusText">...wird geladen</div>
+        <div id="gpsCurrentPosition"></div>
+        <div id="zoomToCurrentLocation" style="display: none">
+          <button id="zoomToCurrentLocationButton" class="settings-button">
+            <i class="fa fa-location-arrow" aria-hidden="true"> Zoom zur aktuellen GPS-Position</i>
+          </button>
+        </div>
+      </div>
+      <hr>
 
-    <div class="h2-div"><h2 class="b-collapsed">Protokol</h2></div>
-    <div>
-      <div class="settings-label">Protokollierungsstufe:</div>
-      <select id="logLevel" name="logLevel" class="mapSetting">
-        <option value="0">0 - ausgeschaltet</option>
-        <option value="1">1 - error</option>
-        <option value="2">2 - waring</option>
-        <option value="3">3 - info</option>
-        <option value="4">4 - debug</option>
-        <option value="5">5 - alles</option>
-      </select>
-      <div style="clear: both"></div>
-      <input type="checkbox" id="show_allways_debug_messages" value="1"> Debug-Meldung immer einblenden<br>
-      <button id="showLoggingsButton" class="settings-button">
-        <i class="fa fa-list" aria-hidden="true"> Zeige Protokoll an</i>
-      </button>
-      <button id="clearLoggingsButton" class="settings-button">
-        <i class="fa fa-list" aria-hidden="true"> Leere Protokoll</i>
-      </button><br>
-    </div>
-    <hr>
+      <div class="h2-div"><h2 id="h2_geraeteinformationen" class="b-collapsed">Geräteinformationen</h2></div>
+      <div id="deviceDataText">
+        kvmobile Version: <span id="cordovaAppVersion"></span><br>
+        Cordova Version: <span id="deviceCordova"></span><br>
+        Modell: <span id="deviceModel"></span><br>
+        Platform: <span id="devicePlatform"></span><br>
+        Uuid: <span id="deviceUuid"></span><br>
+        Android Version: <span id="deviceVersion"></span><br>
+        Hersteller: <span id="deviceManufacturer"></span><br>
+        Seriennummer: <span id="deviceSerial"></span><br>
+        applicationDirectory: <span id="applicationDirectory"></span><br>
+        applicationStorageDirectory: <span id="applicationStorageDirectory"></span><br>
+        dataDirectory: <span id="dataDirectory"></span><br>
+        cacheDirectory: <span id="cacheDirectory"></span><br>
+        externalApplicationStorageDirectory: <span id="externalApplicationStorageDirectory"></span><br>
+        externalDataDirectory: <span id="externalDataDirectory"></span><br>
+        externalCacheDirectory: <span id="externalCacheDirectory"></span><br>
+        externalRootDirectory: <span id="externalRootDirectory"></span><br>
+        tempDirectory: <span id="tempDirectory"></span><br>
+        syncedDataDirectory: <span id="syncedDataDirectory"></span><br>
+        documentsDirectory: <span id="documentsDirectory"></span><br>
+        sharedDirectory: <span id="sharedDirectory"></span>
+      </div>
+      <hr>
 
-    <div class="h2-div"><h2 id="h2_konfiguration" class="b-collapsed">Konfiguration</h2></div>
-    <div id="configFileDiv">
-    </div>
-    <hr>
+      <div class="h2-div"><h2 id="h2_datenbank" class="b-collapsed">Datenbank</h2></div>
+      <div>
+        Datenbankname: <span id="dbnameText">...wird geladen</span><br>
+        <button id="showDeltasButton" class="settings-button">
+          <i class="fa fa-pencil-square-o" aria-hidden="true"> Zeige Änderungen</i>
+        </button>
+        <i id="showDeltasWaiting" class="fa fa-spinner fa-pulse fa-3x fa-fw" style="display: none;"></i>
+        <button id="hideDeltasButton" class="settings-button" style="display: none;">
+          <i class="fa fa-window-close-o" aria-hidden="true"> Blende Änderungen aus</i>
+        </button>
+        <div id="showDeltasDiv" style="display: none;">
+        </div><br>
+        Backup-Speicherpfad:<br>
+        <input id="localBackupPath" type="text"><br>
+        <button id="saveDatabaseButton" class="settings-button">
+          <i class="fa fa-database" aria-hidden="true"></i>
+          <i class="fa fa-check" aria-hidden="true"></i> Sichere Datenbank
+        </button>
+        <br>
+        <button id="resetSettingsButton" class="settings-button">
+          <i class="fa fa-refresh" aria-hidden="true"></i> Reset Datenbank und Einstellungen
+        </button>
+			</div>
+      <hr>
 
-    <div class="h2-div"><h2 id="h2_update" class="b-collapsed">Update</h2></div>
-    <div>
-    Nach neuen Updates suchen.<p>
-      Der nachstehende Link öffnet eine Web-Seite im Standardbrowser Ihres Gerätes mit den letzten Versionen von kvwmobile.<br>
-      Zum aktualisieren der App laden Sie die apk-Datei mit der höchsten Versionsnummer herunter.<br>
-      Bestätigen Sie mit "OK" dass Sie die Datei behalten möchten wenn Sie gefragt werden.<br>
-      Klicken Sie dann auf "Öffnen" und stellen Sie wenn Sie gefragt werden ein, dass Sie der Quelle vertrauen.<br>
-      Danach klicken Sie auf "Installieren". Nach dem Installationsvorgang werden Sie gefragt ob Sie die App öffnen wollen. Bestätigen Sie das und die neue Version wird gestartet.<br>
-      Danach können Sie den Browser wieder schließen und in kvmobile prüfen ob die neue Version läuft. Die Versionsnummer wird unter Einstellungen > Geräteinformationen angezeigt.<p>
-        <a
-          href="https://gdi-service.de/public/kvmobile"
-          onclick="window.open('https://gdi-service.de/public/kvmobile', '_system');"
-        >Download-Bereich</a>
-    </div>
-    <hr>
+      <div class="h2-div"><h2 class="b-collapsed">Protokoll</h2></div>
+      <div>
+        <div class="settings-label">Protokollierungsstufe:</div>
+        <select id="logLevel" name="logLevel" class="mapSetting">
+          <option value="0">0 - ausgeschaltet</option>
+          <option value="1">1 - error</option>
+          <option value="2">2 - waring</option>
+          <option value="3">3 - info</option>
+          <option value="4">4 - debug</option>
+          <option value="5">5 - alles</option>
+        </select>
+        <div style="clear: both"></div>
+        <input type="checkbox" id="show_allways_debug_messages" value="1"> Debug-Meldung immer einblenden<br>
+        <button id="showLoggingsButton" class="settings-button">
+          <i class="fa fa-list" aria-hidden="true"> Zeige Protokoll an</i>
+        </button>
+        <button id="clearLoggingsButton" class="settings-button">
+          <i class="fa fa-list" aria-hidden="true"> Leere Protokoll</i>
+        </button><br>
+        <button id="showSperrDivButton" class="settings-button">
+          <i class="fa fa-list" aria-hidden="true"> Zeige Lademeldungen</i>
+        </button>
+      </div>
+      <hr>
 
-    <div style="margin-bottom: 20px">
+      <div class="h2-div"><h2 id="h2_update" class="b-collapsed">Update</h2></div>
+      <div>
+      Nach neuen Updates suchen.<p>
+        Der nachstehende Link öffnet eine Web-Seite im Standardbrowser Ihres Gerätes mit den letzten Versionen von kvwmobile.<br>
+        Zum aktualisieren der App laden Sie die apk-Datei mit der höchsten Versionsnummer herunter.<br>
+        Bestätigen Sie mit "OK" dass Sie die Datei behalten möchten wenn Sie gefragt werden.<br>
+        Klicken Sie dann auf "Öffnen" und stellen Sie wenn Sie gefragt werden ein, dass Sie der Quelle vertrauen.<br>
+        Danach klicken Sie auf "Installieren". Nach dem Installationsvorgang werden Sie gefragt ob Sie die App öffnen wollen. Bestätigen Sie das und die neue Version wird gestartet.<br>
+        Danach können Sie den Browser wieder schließen und in kvmobile prüfen ob die neue Version läuft. Die Versionsnummer wird unter Einstellungen > Geräteinformationen angezeigt.<p>
+          <a
+            href="https://gdi-service.de/public/kvmobile"
+            onclick="window.open('https://gdi-service.de/public/kvmobile', '_system');"
+          >Download-Bereich</a>
+      </div>
+      <hr>
+    </div>
+
+    <div
+    class="toggle-settings-div"
+		style="display:none;"
+  ><i class="fa fa-compress"></i> weniger</div>
+
+  <div style="margin-bottom: 20px">
     </div>
   </div>
 
@@ -545,7 +564,9 @@ child-src * 'self' blob: http:
     <div id="debText" style="clear: both; height: 300px; overflow: auto;"></div>
     <div style="text-align: center; padding: 2px;"><input type="button" value="Schließen" onclick="document.getElementById('debugs').classList.toggle('hidden')"></div>
   </div>
-  <div class="clear"></div>
+  	<div class="clear"></div>
 
+    <div id="map_hint_div"></div>
+    <div id="geolocation_div"></div>
   </body>
 </html>

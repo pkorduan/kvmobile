@@ -32,6 +32,9 @@ export class DataViewField {
 
 	setValue(val) {
 		let images, localFile, remoteFile, i, imgDiv;
+		if (val == 'null') {
+			val = null;
+		}
 
 		console.log("DataViewField.setValue %s with value: %s", this.attribute.settings.name, val);
 		if (val && this.get("type") === "timestamp") {
@@ -138,7 +141,10 @@ export class DataViewField {
 			}
 		} // end of document
 		else if (this.get("form_element_type") == "SubFormFK") {
-			this.element.html(`<div onclick="kvm.activateFeature('${this.attribute.getGlobalParentLayerId()}', '${val}')"><i class="fa fa-hand-o-left" aria-hidden="true" style="margin-right: 10px"></i>${val}</div>`);
+			let globalParentLayerId = this.attribute.getGlobalParentLayerId();
+			let parentLayer = kvm.layers[globalParentLayerId];
+			let vorschauOption = this.attribute.getVorschauOption();
+			this.element.html(`<div onclick="kvm.activateFeature('${globalParentLayerId}', '${val}')"><i class="fa fa-arrow-left" aria-hidden="true" style="margin-right: 10px"></i> ${vorschauOption}</div>`);
 		}
 		else if (this.get("form_element_type") == "SubFormEmbeddedPK") {
 			let feature = this.attribute.layer.activeFeature;
@@ -150,11 +156,11 @@ export class DataViewField {
 				this.get("options") &&
 				Array.isArray(this.get("options")) &&
 				this.get("options").find((option) => {
-					return option.value === String(val);
+					return option.value == val;
 				})
 			) {
 				output = this.get("options").find((option) => {
-					return option.value === String(val);
+					return option.value == val;
 				}).output;
 			} else {
 				output = val ? String(val) : "";
