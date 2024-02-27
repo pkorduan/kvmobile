@@ -467,7 +467,7 @@ export class Attribute {
 							id="new_sub_data_set"
 							type="button"
 							value="Neu"
-							onclick="kvm.newSubDataSet('${this.getGlobalSubLayerId()}', '${this.getFKAttribute()}')"
+							onclick="kvm.activeLayer.newSubDataSet({ parentLayerId: '${this.getGlobalLayerId()}', subLayerId: '${this.getGlobalSubLayerId()}', fkAttribute: '${this.getFKAttribute()}'})"
 							style="float: right; padding: 2px; margin-right: 5px"
 						/>
 					`)
@@ -476,6 +476,7 @@ export class Attribute {
 		}
 		else {
 			return $(`<div id="formFieldDiv_${this.get('index')}" class="form-field-rows" ${this.getArrangementStyle()}>`)
+				.append('linkElement' in this.formField ? this.formField.linkElement : '')
 				.append($('<div class="form-label">').append(labelDiv))
 				.append(valueDiv.append(this.formField.element));
 		}

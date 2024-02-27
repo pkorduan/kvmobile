@@ -3,6 +3,11 @@ export const configurations = [
   {
     name: "Standard",
     dbname: "kvmobile",
+    fingerprintAuth: false,
+    confirmSaveNew: false,
+    viewAfterCreate: 'last',
+    viewAfterUpdate: 'last',
+    newAfterCreate: false,
     /*
      * Beispiele für Pfade in denen Bilder gespeichert werden
      * file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/
@@ -44,7 +49,7 @@ export const configurations = [
     kvwmapServerLoginName: "korduan",
     kvwmapServerPasswort: "",
     backgroundLayerSettings: [
-      {  
+      {
         layer_id: 1,
         label: "BaseMap DE",
         online: true,
@@ -56,7 +61,7 @@ export const configurations = [
           attribution: "Basemap DE dl-de/by-2-0"
         }
       },
-			/*    {
+      /*    {
                 label: 'Luftbilder offline',
                 online: false,
                 type: 'tile',
@@ -77,97 +82,102 @@ export const configurations = [
           attribution: "LGB WMS DOP20",
         },
       },*/
-/*
-			{
-        label: "Vektorkacheln offline",
-        online: true,
-        type: "vectortile",
-        //'https://api.mapbox.com/styles/v1/pkorduan/ckrg05q6c4x7n17nr0kjbe6j9.html?fresh=true&title=view&access_token=pk.eyJ1IjoicGtvcmR1YW4iLCJhIjoiY2lxbm54b2Q4MDAzaGkzbWFodWtka2NsaCJ9.SiUN3rvZ1pbyOyZ3xQh-Hg#{z}/{x}/{y}',
-        url: "https://gdi-service.de/tileserver-gl/data/v3/{z}/{x}/{y}.pbf",
-        style: "default",
-        interactiv: false,
-        params: {
-          minZoom: 7,
-          maxZoom: 14,
-          west: 13.04961,
-          south: 51.353,
-          east: 13.89345,
-          north: 51.90666,
-          // rendererFactory: L.canvas.tile,
-          // TODO
-          rendererFactory: L.canvas,
-          getFeatureId: function (f) {
-            return f.properties.osm_id;
-          },
-          vectorTileLayerStyles: {
-            // A plain set of L.Path options.
-            landuse: {
-              weight: 0,
-              fillColor: "#9bc2c4",
-              fillOpacity: 1,
-              fill: true,
+      /*
+            {
+              label: "Vektorkacheln offline",
+              online: true,
+              type: "vectortile",
+              //'https://api.mapbox.com/styles/v1/pkorduan/ckrg05q6c4x7n17nr0kjbe6j9.html?fresh=true&title=view&access_token=pk.eyJ1IjoicGtvcmR1YW4iLCJhIjoiY2lxbm54b2Q4MDAzaGkzbWFodWtka2NsaCJ9.SiUN3rvZ1pbyOyZ3xQh-Hg#{z}/{x}/{y}',
+              url: "https://gdi-service.de/tileserver-gl/data/v3/{z}/{x}/{y}.pbf",
+              style: "default",
+              interactiv: false,
+              params: {
+                minZoom: 7,
+                maxZoom: 14,
+                west: 13.04961,
+                south: 51.353,
+                east: 13.89345,
+                north: 51.90666,
+                // rendererFactory: L.canvas.tile,
+                // TODO
+                rendererFactory: L.canvas,
+                getFeatureId: function (f) {
+                  return f.properties.osm_id;
+                },
+                vectorTileLayerStyles: {
+                  // A plain set of L.Path options.
+                  landuse: {
+                    weight: 0,
+                    fillColor: "#9bc2c4",
+                    fillOpacity: 1,
+                    fill: true,
+                  },
+                  // A function for styling features dynamically, depending on their
+                  // properties and the map's zoom level
+                  admin: function (properties, zoom) {
+                    var level = properties.admin_level;
+                    var weight = 1;
+                    if (level == 2) {
+                      weight = 2;
+                    }
+                    return {
+                      weight: weight,
+                      color: "#cf52d3",
+                      dashArray: "2, 6",
+                      fillOpacity: 0,
+                    };
+                  },
+                  // A function for styling features dynamically, depending on their
+                  // properties, the map's zoom level, and the layer's geometry
+                  // dimension (point, line, polygon)
+                  water: function (properties, zoom, geometryDimension) {
+                    if (geometryDimension === 1) {
+                      // point
+                      return {
+                        radius: 5,
+                        color: "#cf52d3",
+                      };
+                    }
+                    if (geometryDimension === 2) {
+                      // line
+                      return {
+                        weight: 1,
+                        color: "#cf52d3",
+                        dashArray: "2, 6",
+                        fillOpacity: 0,
+                      };
+                    }
+                    if (geometryDimension === 3) {
+                      // polygon
+                      return {
+                        weight: 1,
+                        fillColor: "#9bc2c4",
+                        fillOpacity: 1,
+                        fill: true,
+                      };
+                    }
+                  },
+                  // An 'icon' option means that a L.Icon will be used
+                  place: {
+                    //icon: new L.Icon.Default()
+                  },
+                  road: [],
+                },
+                maxNativeZoom: 14,
+                attribution: "OSM TileServer GL GDI-Service",
+              },
             },
-            // A function for styling features dynamically, depending on their
-            // properties and the map's zoom level
-            admin: function (properties, zoom) {
-              var level = properties.admin_level;
-              var weight = 1;
-              if (level == 2) {
-                weight = 2;
-              }
-              return {
-                weight: weight,
-                color: "#cf52d3",
-                dashArray: "2, 6",
-                fillOpacity: 0,
-              };
-            },
-            // A function for styling features dynamically, depending on their
-            // properties, the map's zoom level, and the layer's geometry
-            // dimension (point, line, polygon)
-            water: function (properties, zoom, geometryDimension) {
-              if (geometryDimension === 1) {
-                // point
-                return {
-                  radius: 5,
-                  color: "#cf52d3",
-                };
-              }
-              if (geometryDimension === 2) {
-                // line
-                return {
-                  weight: 1,
-                  color: "#cf52d3",
-                  dashArray: "2, 6",
-                  fillOpacity: 0,
-                };
-              }
-              if (geometryDimension === 3) {
-                // polygon
-                return {
-                  weight: 1,
-                  fillColor: "#9bc2c4",
-                  fillOpacity: 1,
-                  fill: true,
-                };
-              }
-            },
-            // An 'icon' option means that a L.Icon will be used
-            place: {
-              //icon: new L.Icon.Default()
-            },
-            road: [],
-          },
-          maxNativeZoom: 14,
-          attribution: "OSM TileServer GL GDI-Service",
-        },
-      },
-*/
-		],
+      */
+    ],
   },
   {
     name: "LK-ROS",
     dbname: "kvmobile",
+    fingerprintAuth: false,
+    confirmSaveNew: false,
+    viewAfterCreate: 'last',
+    viewAfterUpdate: 'last',
+    newAfterCreate: false,
     localImgPath: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/",
     localTilePath: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/",
     localBackupPath: "file:///storage/emulated/0/Documents/",
@@ -246,6 +256,11 @@ export const configurations = [
   {
     name: "LK-VR",
     dbname: "kvmobile",
+    fingerprintAuth: false,
+    confirmSaveNew: false,
+    viewAfterCreate: 'last',
+    viewAfterUpdate: 'last',
+    newAfterCreate: false,
     localImgPath: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/",
     localTilePath: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/",
     localBackupPath: "file:///storage/emulated/0/Documents/",
@@ -314,6 +329,11 @@ export const configurations = [
   {
     name: "LK-VG",
     dbname: "kvmobile",
+    fingerprintAuth: false,
+    confirmSaveNew: false,
+    viewAfterCreate: 'last',
+    viewAfterUpdate: 'last',
+		newAfterCreate: false,
     localImgPath: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/",
     localTilePath: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/",
     localBackupPath: "file:///storage/emulated/0/Documents/",
@@ -359,6 +379,11 @@ export const configurations = [
   {
     name: "Biospährenreservat Südost-Rügen",
     dbname: "kvmobile",
+    fingerprintAuth: false,
+    confirmSaveNew: false,
+    viewAfterCreate: 'last',
+    viewAfterUpdate: 'last',
+    newAfterCreate: false,
     localImgPath: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/",
     localTilePath: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/",
     localBackupPath: "file:///storage/emulated/0/Documents/",
@@ -383,7 +408,7 @@ export const configurations = [
       south: 54.26467,
       east: 13.77459,
       north: 54.40732,
-			startCenterLat: 54.35742,
+      startCenterLat: 54.35742,
       startCenterLon: 13.62101
     },
     kvwmapServerUrl: "https://geoport.lk-vr.de/kvwmap",
@@ -409,13 +434,13 @@ export const configurations = [
         style: "basic-MV",
         interactiv: false,
         params: {
-					minZoom: 9,
+          minZoom: 9,
           maxZoom: 18,
           maxNativeZoom: 14,
-					west: 13.41325,
-					south: 54.26467,
-					east: 13.77459,
-					north: 54.40732,
+          west: 13.41325,
+          south: 54.26467,
+          east: 13.77459,
+          north: 54.40732,
           bounds: [
             [54.26467, 13.41325],
             [54.40732, 13.77459],
@@ -512,9 +537,14 @@ export const configurations = [
       },
     ],
   },
-	{
+  {
     name: "LK-EE",
     dbname: "kvmobile",
+    fingerprintAuth: false,
+    confirmSaveNew: false,
+    viewAfterCreate: 'last',
+    viewAfterUpdate: 'last',
+    newAfterCreate: false,
     localImgPath: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/",
     localTilePath: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/",
     localBackupPath: "file:///storage/emulated/0/Documents/",
@@ -673,6 +703,11 @@ export const configurations = [
   {
     name: "LK-MSE",
     dbname: "kvmobile",
+    fingerprintAuth: false,
+    confirmSaveNew: false,
+    viewAfterCreate: 'last',
+    viewAfterUpdate: 'last',
+    newAfterCreate: false,
     localImgPath: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/",
     localTilePath: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/",
     localBackupPath: "file:///storage/emulated/0/Documents/",
@@ -751,6 +786,11 @@ export const configurations = [
   {
     name: "GDI-Service",
     dbname: "kvmobile",
+    fingerprintAuth: false,
+    confirmSaveNew: false,
+    viewAfterCreate: 'last',
+    viewAfterUpdate: 'last',
+    newAfterCreate: false,
     localImgPath: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/",
     localTilePath: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/",
     localBackupPath: "file:///storage/emulated/0/Documents/",
@@ -914,12 +954,17 @@ export const configurations = [
           attribution: "Geoportal-MV DOP WMST",
         },
       },
-*/
+      */
     ],
   }, // GDI-Service
   {
     name: "Streuobst KOB",
     dbname: "kvmobile",
+    fingerprintAuth: false,
+    confirmSaveNew: false,
+    viewAfterCreate: 'formular',
+    viewAfterUpdate: 'dataView',
+    newAfterCreate: false,
     /*
      * Beispiele für Pfade in denen Bilder gespeichert werden
      * file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/
@@ -973,11 +1018,16 @@ export const configurations = [
           attribution: "Basemap DE dl-de/by-2-0"
         }
       }
-		]
+    ]
   },
   {
     name: "Streuobst MV",
     dbname: "kvmobile",
+    fingerprintAuth: false,
+    confirmSaveNew: false,
+    viewAfterCreate: 'last',
+    viewAfterUpdate: 'last',
+    newAfterCreate: false,
     /*
      * Beispiele für Pfade in denen Bilder gespeichert werden
      * file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/
@@ -1031,7 +1081,7 @@ export const configurations = [
           attribution: "Basemap DE dl-de/by-2-0"
         }
       },
-			{
+      {
         layer_id: 2,
         label: "ORKA",
         online: true,
@@ -1052,8 +1102,8 @@ export const configurations = [
           format: "image/png",
           attribution: "Geoportal-MV DOP WMS",
         },
-			}
-		]
+      }
+    ]
   }
 ];
 //# sourceMappingURL=config.js.map

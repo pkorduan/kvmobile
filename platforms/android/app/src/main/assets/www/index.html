@@ -259,15 +259,15 @@ child-src * 'self' blob: http:
       <hr>
 
       <div class="h2-div"><h2 id="h2_karteneinstellungen" class="b-collapsed">Karteneinstellungen</h2></div>
-      <div id="mapSettingsDiv">
+      <div id="mapSettingsDiv" style="padding-left: 10px">
         Startposition neuer Objekte<br>
         <div id="newPosDiv">
           <select id="newPosSelect" name="newPosSelect" class="mapSetting">
             <option value="1">An GPS-Position falls Signal vorhanden</option>
             <option value="2" selected>Immer am aktuellen Kartenmittelpunkt</option>
           </select>
-        </div>
-        Mindestdistanz beim Tracking: <span id="minTrackDistance">5</span> m <input id="minTrackDistanceSlider" type="range" min="1" max="100" value="5" class="min-track-distance-slider"><i class="fa fa-info" aria-hidden="true" onclick="kvm.msg('Stellt die Mindestentfernung zum nächsten aufgezeichneten Wegpunkt beim Linientracking ein. Punkte in kleinerem Abstand werden bei der Aufzeichnung ignoriert.')" style="margin-left: 5px"></i><br>
+        </div><br>
+        Mindestdistanz beim Tracking: <span id="minTrackDistance">5</span> m <input id="minTrackDistanceSlider" type="range" min="1" max="100" value="5" class="min-track-distance-slider"><i class="fa fa-info" aria-hidden="true" onclick="kvm.msg('Stellt die Mindestentfernung zum nächsten aufgezeichneten Wegpunkt beim Linientracking ein. Punkte in kleinerem Abstand werden bei der Aufzeichnung ignoriert.')" style="margin-left: 5px"></i><p>
         maximale Kartenausdehnung:
         <div class="settings-label">West:</div><input id="mapSettings_west" name="west" class="mapSetting" type="number" size="7"/>
         <div style="clear: both"></div>
@@ -343,6 +343,32 @@ child-src * 'self' blob: http:
         <div style="clear: both"></div>
       </div>
       <hr>
+			
+			<div class="h2-div"><h2 id="h2_sachdateneinstellungen" class="b-collapsed">Sachdateneinstellungen</h2></div>
+      <div id="viewSettingsDiv" style="padding-left: 10px">
+				Was soll nach dem Speichern eines neuen Datensatzes angezeigt werden? <i
+					class="fa fa-exclamation-circle"
+					style="color: #f57802"
+					onclick="kvm.msg(`<b>Hinweis</b><br>Wirkt sich nicht aus wenn die Option 'und neuen Datensatz erzeugen' unten im Eingabeformular ausgewählt ist.`);"
+				></i><br>
+				<select id="viewAfterCreate" name="viewAfterCreate">
+          <option value="featurelist">Liste der Datensätze</option>
+          <option value="map">Kartenansicht</option>
+          <option value="last">zuletzt verwendete Ansicht</option>
+					<option value="dataView">Erzeugter Datensatz zum Lesen</option>
+          <option value="formular">Erzeugter Datensatz im Formular</option>
+        </select>
+				<div style="margin-top: 20px">Was soll nach dem Aktualisieren eines neuen vorhandenen Datensatzes angezeigt werden?</div>
+				<select id="viewAfterUpdate" name="viewAfterUpdate">
+          <option value="featurelist">Liste der Datensätze</option>
+          <option value="map">Kartenansicht</option>
+          <option value="last">zuletzt verwendete Ansicht</option>
+					<option value="dataView">Geänderter Datensatz zum Lesen</option>
+          <option value="formular">Geänderter Datensatz im Formular</option>
+        </select>
+				<input id="confirmSave" type="checkbox" style="margin-top: 20px;"> Vor dem Speichern Bestätigung abfragen
+			</div>
+      <hr>
 
       <div class="h2-div"><h2 id="h2_kartenverwaltung" class="b-collapsed">Offline-Karten</h2></div>
       <div id="loadOfflineMapsDiv">
@@ -389,6 +415,12 @@ child-src * 'self' blob: http:
         </div>
       </div>
       <hr>
+
+      <div class="h2-div"><h2 id="h2_security" class="b-collapsed">Sicherheit</h2></div>
+      <div id="secirotyOptionsDiv" style="padding-left: 10px">
+        <input id="fingerprintAuth" type="checkbox"> Beim Start Muster oder PIN anfordern
+      </div>
+			<hr>
 
       <div class="h2-div"><h2 id="h2_geraeteinformationen" class="b-collapsed">Geräteinformationen</h2></div>
       <div id="deviceDataText">

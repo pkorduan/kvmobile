@@ -188,13 +188,13 @@ export const Mapper = {
 
   getDraggableIcon: function () {
     return L.icon({
-      iconUrl: "img/draggableIcon.svg",
-      iconSize: [38, 95],
-      iconAnchor: [19, 81],
-      popupAnchor: [-3, -76],
-      shadowUrl: "img/draggableIconShadow.svg",
-      shadowSize: [68, 95],
-      shadowAnchor: [19, 81],
+      iconUrl: "img/draggableIcon_bottom_right.svg",
+      iconSize: [95, 95],
+      iconAnchor: [15, 15],
+      popupAnchor: [15, 15],
+      // shadowUrl: "img/draggableIconShadow_bottom_right.svg",
+      // shadowSize: [95, 95],
+      // shadowAnchor: [10, 10],
     });
   },
 

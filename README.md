@@ -14,8 +14,19 @@ Doku zu kvmobile: https://kvwmap.de/index.php/kvmobile
 Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.de/public/kvmobile/
 
 # Change log
+## 1.12.3
+  * Features
+    * Links zu Parent und Child Feature
+      * Sprung zum Ändern eines anderen Features erst nach Bestätigung.
+    * New configurable options
+      * Require FingerprintAuth and PIN on start yes / no
+      * Confirm before save a dataset yes / no
+      * Create a new dataset after create yes / no
+      * Next view after create
+      * Next view after update 
 ## 1.12.2
   *	Features
+    * Anzeige von Rücksprunglinks zu Parentobjekt mit Vorschau aus drittem Element von Attribute-Option.
     * Nach der Eingabe eines neuen Sub-Datensatz "Weiter"-Button der Zeigt auf das übergeordnete Objekt und "Nächsten anlegen" öffnet Form für nächsten neuen Datensatz.
 ## 1.12.1
   * Bugfix

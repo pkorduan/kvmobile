@@ -56,9 +56,8 @@ export class SelectFormField {
     val = (val == "null" ? "" : val);
 
     if (val && this.isArrayType()) {
-      // erstmal nur der erste. Mehrere werden noch nicht unterstützt.
       val = val.replace(/[{}]+/g,'').split(',');
-		}
+    }
 
     this.element.val(val);
   };

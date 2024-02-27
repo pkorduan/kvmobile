@@ -49,7 +49,7 @@ export class SubFormEmbeddedPKFormField {
     }
     else {
 			$('#new_sub_data_set').show();
-      this.attribute.layer.readVorschauAttributes(this.attribute, feature.get(this.attribute.getPKAttribute()), this.element);
+      this.attribute.layer.readVorschauAttributes(this.attribute, feature.get(this.attribute.getPKAttribute()), this.element, 'editFeature');
     }
   }
 

@@ -11,6 +11,7 @@ export class SubFormFKFormField {
   settings: any;
   selector: string;
   element: JQuery<HTMLElement>;
+  linkElement: JQuery<HTMLElement>;
 	attribute: Attribute;
 
 	/**
@@ -33,14 +34,28 @@ export class SubFormFKFormField {
   constructor(formId, attribute) {
     this.attribute = attribute;
 		this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
+		let globalParentLayerId = this.attribute.getGlobalParentLayerId();
+		let vorschauOption = this.attribute.getVorschauOption();
 		this.element =  $(`
-			<input
+      <input
 				type="text"
 				id="${this.get("index")}"
 				name="${this.get("name")}"
 				value=""
 				disabled
+        style="width:80%"
 			/>`);
+
+    this.linkElement = $(`
+      <div onclick="kvm.editFeature('${globalParentLayerId}', document.getElementById('${this.get("index")}').value)" class="link-element">
+        <i class="fa fa-arrow-left" aria-hidden="true" style="margin-right: 10px"></i> ${vorschauOption}
+      </div>
+    `);
+		// $(`
+    //   <div onclick="kvm.editFeature('${globalParentLayerId}', document.getElementById('${this.get("index")}').value)" class="link-element">
+    //     <i class="fa fa-arrow-left" aria-hidden="true" style="margin-right: 10px"></i> ${vorschauOption}
+    //   </div>
+    // `);
   }
 
 	get(key) {

@@ -440,8 +440,10 @@ export class Feature {
 				if (zoom) {
 					kvm.map.setZoom(18);
 				}
+				console.log('panTo %s %o', (this.isEditable ? 'editableLayer: ' : 'feature latlng: '), layer.getLatLng());
 				kvm.map.panTo(layer.getLatLng());
 			} else {
+				console.log('flyToBounds %s %o', (this.isEditable ? 'editableLayer: ' : 'feature bounds: '), layer.getBounds().getCenter());
 				kvm.map.flyToBounds(layer.getBounds());
 				// kvm.map.fitBounds(layer.getBounds());
 			}
@@ -449,7 +451,7 @@ export class Feature {
 	}
 
 	/**
-	 * Set this feature as activat.
+	 * Set this feature active.
 	 * Activate the layer of the feature if it is not activated already and
 	 * deactivate a feature if one is active already.
 	 * Set feature list style as selected
@@ -490,28 +492,33 @@ export class Feature {
 
 	/**
 	 * Deactivate the feature in map and featurelist
-	 * Set the map and feature list style to the normal not selected
+	 * Remove an editableLayer of that feature if exists before.
+	 * Set the map and feature list style to the normal not selected.
 	 * @returns null
 	 */
 	deactivate() {
+    // Beende das Anlegen eines neuen Features
+		if (this.editableLayer) {
+	    kvm.map.removeLayer(this.editableLayer);
+		}
 		let mapLayer = (<any>kvm.map)._layers[this.layerId];
 		if (mapLayer) {
 			const kvmLayer = kvm.layers[this.globalLayerId];
-			console.log(
-				"Deselektiere Feature id: %s in Layer: %s, globalLayerId: %s in Leaflet layerId: %s",
-				this.id,
-				kvmLayer.get("title"),
-				this.globalLayerId,
-				this.layerId
-			);
+			// console.log(
+			// 	"Deselektiere Feature id: %s in Layer: %s, globalLayerId: %s in Leaflet layerId: %s",
+			// 	this.id,
+			// 	kvmLayer.get("title"),
+			// 	this.globalLayerId,
+			// 	this.layerId
+			// );
 			if (this.layerId) {
 				mapLayer.setStyle(this.getStyle());
 				//kvm.map.zoomIn();
 				//kvm.map.zoomOut(); // To refresh layer style
 			}
 			mapLayer.closePopup();
-			$(".feature-item").removeClass("selected-feature-item");
 		}
+		$(".feature-item").removeClass("selected-feature-item");
 		this.isActive = false;
 		return null;
 	}
@@ -562,7 +569,6 @@ export class Feature {
 	 * Add a single list element to the list of features in list view
 	 */
 	addListElement() {
-		const kvmLayer: Layer = kvm.layers[this.globalLayerId];
 		//kvm.log("Feature.addListElement", 4);
 		//console.log('Add listelement: %o', this.listElement());
 

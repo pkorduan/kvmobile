@@ -34,17 +34,17 @@ export class DateTimeFormField {
   }
 
   setValue(val) {
-		console.log('DateTimeFormField setVal val: -%s-', val);
+		// console.log('DateTimeFormField setVal val: -%s-', val);
     var val = kvm.coalesce(val, "");
     if (val != "") {
 			val = this.toISO(val);
 		}
-    kvm.log("DateTimeFormField " + this.get("name") + " setValue with value: " + JSON.stringify(val), 4);
+    // kvm.log("DateTimeFormField " + this.get("name") + " setValue with value: " + JSON.stringify(val), 4);
     this.element.val(val);
   }
 
   getValue(action = "") {
-    kvm.log("DateTimeFormField.getValue", 4);
+    // kvm.log("DateTimeFormField.getValue", 4);
     let val = this.element.val();
     if (typeof val === "undefined" || val == "") {
       val = null;
@@ -58,7 +58,7 @@ export class DateTimeFormField {
   }
 
   getAutoValue() {
-    kvm.log("DateTimeFormField.getAutoValue", 4);
+    // kvm.log("DateTimeFormField.getAutoValue", 4);
     return kvm.now_local();
   }
 
@@ -76,7 +76,7 @@ export class DateTimeFormField {
   }
 
   fromISO(datetime) {
-    kvm.log("konvert " + this.get("name") + " datetime: " + datetime, 4);
+    // kvm.log("konvert " + this.get("name") + " datetime: " + datetime, 4);
     return typeof datetime == "string" ? datetime.replace(/-/g, "/").replace("T", " ").replace("Z", "") : null;
   }
 }

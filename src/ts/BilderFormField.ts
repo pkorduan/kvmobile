@@ -40,7 +40,7 @@ export class BilderFormField {
 	 * @params any set to '' if val is undefined, null, 'null' or NAN
 	 */
 	setValue(val) {
-		console.log("BilderFormField.setValue with value: " + val);
+		// console.log("BilderFormField.setValue with value: " + val);
 		var val = kvm.coalesce(val, ""),
 			images,
 			localFile,

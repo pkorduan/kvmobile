@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   inkscape:export-ydpi="90"
+   inkscape:export-xdpi="90"
+   inkscape:export-filename="/Users/pkorduan/owncloud7/GDI-Service/Projekte/LK-VG/2019-12-03_kvmobile_für_Breibandausbau/4. Umsetzung/draggableMarker.png"
+   inkscape:version="1.0beta1 (32d4812, 2019-09-19)"
+   height="30"
+   width="30"
+   sodipodi:docname="draggableIconShadow_bottom_right.svg"
+   id="svg847"
+   y="0px"
+   x="0px"
+   version="1.1"
+   viewBox="0 0 29.999999 30">
+  <style
+     id="style855"></style>
+  <metadata
+     id="metadata853">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title>Marker</dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs851" />
+  <sodipodi:namedview
+     inkscape:current-layer="svg847"
+     inkscape:window-maximized="0"
+     inkscape:window-y="23"
+     inkscape:window-x="65"
+     inkscape:cy="21.248894"
+     inkscape:cx="9.4215229"
+     inkscape:zoom="8.2554634"
+     showgrid="false"
+     id="namedview849"
+     inkscape:window-height="1209"
+     inkscape:window-width="1600"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0"
+     guidetolerance="10"
+     gridtolerance="10"
+     objecttolerance="10"
+     borderopacity="1"
+     inkscape:document-rotation="0"
+     bordercolor="#666666"
+     pagecolor="#ffffff" />
+  <title
+     id="title835">Marker</title>
+  <desc
+     id="desc837">Created with Sketch.</desc>
+  <path
+     d="M 7.2173392,10.014152 C 11.356691,8.5983861 20.117241,7.2605792 25.127229,9.7310373 28.870551,11.576895 30.597702,16.357743 28.519554,20.239945 26.441406,24.122147 21.465024,25.438596 17.60159,23.789737 11.547702,20.891233 8.8400264,13.89557 7.2173392,10.014152 Z m 11.0657038,5.257185 c -0.891583,1.665571 -0.239978,3.684145 1.455399,4.50861 1.695378,0.824464 3.792524,0.142613 4.684106,-1.522959 0.891582,-1.66557 0.239977,-3.684143 -1.4554,-4.508608 -1.695378,-0.824465 -3.792524,-0.142613 -4.684105,1.522957 z"
+     fill="#000000"
+     fill-rule="nonzero"
+     id="path839"
+     inkscape:connector-curvature="0"
+     style="opacity:1;fill:#cccccc;fill-opacity:1;stroke:none;stroke-width:1.138;stroke-opacity:1;stop-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
+     sodipodi:nodetypes="cssccsssss" />
+</svg>

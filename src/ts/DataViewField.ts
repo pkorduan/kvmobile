@@ -36,7 +36,7 @@ export class DataViewField {
 			val = null;
 		}
 
-		console.log("DataViewField.setValue %s with value: %s", this.attribute.settings.name, val);
+		// console.log("DataViewField.setValue %s with value: %s", this.attribute.settings.name, val);
 		if (val && this.get("type") === "timestamp") {
 			let datetime = new Date(val);
 			val = datetime.toLocaleDateString() + " " + datetime.toLocaleTimeString();
@@ -148,7 +148,7 @@ export class DataViewField {
 		}
 		else if (this.get("form_element_type") == "SubFormEmbeddedPK") {
 			let feature = this.attribute.layer.activeFeature;
-			this.attribute.layer.readVorschauAttributes(this.attribute, feature.get(this.attribute.getPKAttribute()), this.element);
+			this.attribute.layer.readVorschauAttributes(this.attribute, feature.get(this.attribute.getPKAttribute()), this.element, 'activateFeature');
 		}
 		else if (this.get("form_element_type") == "Auswahlfeld") {
 			let output = "";

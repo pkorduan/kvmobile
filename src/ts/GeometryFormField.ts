@@ -41,7 +41,7 @@ export class GeometrieFormField {
   }
 
   setValue(val) {
-    kvm.log("GeometrieFormField.setValue with value:" + val);
+    // kvm.log("GeometrieFormField.setValue with value:" + val);
     var geom = wkx.Geometry.parse(<any>new Buffer(val, "hex"));
     this.element.val(geom.toEwkb().toString("hex"));
     /*
