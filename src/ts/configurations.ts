@@ -281,10 +281,10 @@ export const configurations = [
       minZoom: 8,
       maxZoom: 18,
       startZoom: 8,
-      west: 314000,
-      south: 5975000,
-      east: 430000,
-      north: 6065000,
+      west: 12.16,
+      south: 53.88,
+      east: 13.858,
+      north: 54.737,
       startCenterLat: 54.294,
       startCenterLon: 12.981,
     },
@@ -993,7 +993,7 @@ export const configurations = [
     mapSettings: {
       newPosSelect: 1,
       minZoom: 8,
-      maxZoom: 18,
+      maxZoom: 19,
       startZoom: 8,
       west: 5.81839,
       south: 47.53976,
@@ -1017,8 +1017,17 @@ export const configurations = [
           format: "image/png",
           attribution: "Basemap DE dl-de/by-2-0"
         }
+      }, {
+        layer_id: 2,
+        label: "Luftbilder",
+        online: true,
+        type: "bing",
+        params: {
+					BING_KEY: "AqPPMA0XK54KqnsEpK_wSbcg4laDT0eqrS3c-XrMKhW10FJODMwETRJp5nbYPb-u",
+          attribution: "© 2024 Microsoft Corporation"
+        }
       }
-    ]
+		]
   },
   {
     name: "Streuobst MV",

@@ -60,7 +60,7 @@ export class Klasse {
     } else if (geometry_type == "Polygon") {
       legendKeyImg = this.getPolygonLegendKeyImg(svgStyleOptions);
     }
-    console.log("getLegendKeyImg: %s", legendKeyImg);
+    // console.log("getLegendKeyImg: %s", legendKeyImg);
     return legendKeyImg;
   }
 

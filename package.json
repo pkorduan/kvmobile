@@ -1,7 +1,7 @@
 {
   "name": "de.gdi-service.kvmobile",
   "displayName": "kvmobile",
-  "version": "1.12.3",
+  "version": "1.13.0",
   "description": "Anwendung zur Erfassung von Geodaten und zum synchronisieren mit dem Web-GIS kvwmap.",
   "main": "index.js",
   "scripts": {
@@ -35,6 +35,7 @@
     "jquery": "^3.6.0",
     "leaflet": "^1.9.3",
     "leaflet-betterscale": "^1.0.0",
+    "leaflet-bing-layer": "^3.3.1",
     "leaflet-easybutton": "^2.4.0",
     "leaflet-editable": "^1.2.0",
     "leaflet.locatecontrol": "^0.76.0",

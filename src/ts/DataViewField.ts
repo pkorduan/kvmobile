@@ -35,6 +35,7 @@ export class DataViewField {
 		if (val == 'null') {
 			val = null;
 		}
+		const options = this.get('enums');
 
 		// console.log("DataViewField.setValue %s with value: %s", this.attribute.settings.name, val);
 		if (val && this.get("type") === "timestamp") {
@@ -153,17 +154,40 @@ export class DataViewField {
 		else if (this.get("form_element_type") == "Auswahlfeld") {
 			let output = "";
 			if (
-				this.get("options") &&
-				Array.isArray(this.get("options")) &&
-				this.get("options").find((option) => {
-					return option.value == val;
-				})
+				val &&
+				options &&
+				Array.isArray(options)
 			) {
-				output = this.get("options").find((option) => {
-					return option.value == val;
-				}).output;
+				// output options instead of values
+				let values = [];
+				let outputs = [];
+				if (this.attribute.isArrayType()) {
+					values = kvm.removeBrackes(val).split(",");
+				}
+				else {
+					values.push(String(val));
+				}
+				outputs = options.filter((option) => {
+					return values.includes(String(option.value));
+				});
+				if (outputs.length > 1) {
+					output = `
+						<ul class="multiple-options-list">
+							<li>${outputs.map((option) => { return option.output; }).join('</li><li>')}</li>
+						</ul>
+					`;
+				}
+				else if (outputs.length == 1) {
+					output = String(outputs[0].output);
+				}
+				else {
+					output = '';
+				}
 			} else {
 				output = val ? String(val) : "";
+			}
+			if (this.attribute.get('name') == 'alternanz_id') {
+				console.log(output);
 			}
 			this.element.html(output);
 			return output;

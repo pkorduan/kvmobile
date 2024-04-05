@@ -223,6 +223,10 @@ export class Attribute {
 		return slType;
 	}
 
+	hasEnumValue(value) {
+		return this.get('enums').find((enum_element) => { return enum_element.value == value; }) !== undefined;
+	}
+
 	/**
 	 * Find if the attribute attribute_name has a visibility dependency with
 	 * an other attributes of the layer.
@@ -450,7 +454,7 @@ export class Attribute {
 					'" class="fa fa-trash fa-2x" style="color: rgb(238, 50, 50); float: right; display: none;"/></i>\
           <div id="' +
 					this.formField.images_div_id +
-					'"></div>\
+					'" class="images-div"></div>\
       '
 			);
 		}
@@ -467,7 +471,7 @@ export class Attribute {
 							id="new_sub_data_set"
 							type="button"
 							value="Neu"
-							onclick="kvm.activeLayer.newSubDataSet({ parentLayerId: '${this.getGlobalLayerId()}', subLayerId: '${this.getGlobalSubLayerId()}', fkAttribute: '${this.getFKAttribute()}'})"
+							onclick="kvm.newSubFeature({ parentLayerId: '${this.getGlobalLayerId()}', subLayerId: '${this.getGlobalSubLayerId()}', fkAttribute: '${this.getFKAttribute()}'})"
 							style="float: right; padding: 2px; margin-right: 5px"
 						/>
 					`)
@@ -481,4 +485,14 @@ export class Attribute {
 				.append(valueDiv.append(this.formField.element));
 		}
 	}
+
+	isEmpty(value): boolean {
+    return (
+      typeof value == 'undefined' ||
+      value == null ||
+      value == "" ||
+      value == 0
+    );
+  }
+
 }

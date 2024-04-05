@@ -42,6 +42,9 @@ export class BackgroundLayer {
 		else if (this.get('type') == 'wms') {
 			this.leafletLayer = L.tileLayer.wms(this.get('url'), this.get('params'));
 		}
+		else if (this.get('type') == 'bing') {
+			this.leafletLayer = L.tileLayer.bing(this.settings.params.BING_KEY);
+		}
 		else {
 			this.leafletLayer = L.tileLayer.wms(this.get('url'), this.get('params'));
 		}

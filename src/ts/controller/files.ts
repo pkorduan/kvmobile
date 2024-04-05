@@ -86,14 +86,14 @@ export const FileUtils = {
     window.resolveLocalFileSystemURL(
       srcFilePath,
       function (file) {
-        console.log("copy file: %o", file);
+        // console.log("copy file: %o", file);
         var documentsPath = fs.root;
         console.log(documentsPath);
         file.copyTo(
           srcFilePath,
           dstFile,
           function (res) {
-            console.log("copying was successful to: " + res.nativeURL);
+            // console.log("copying was successful to: " + res.nativeURL);
           },
           function () {
             console.log("unsuccessful copying");
@@ -115,13 +115,13 @@ export const FileUtils = {
    *  "sicherung.db"
    * )
    */
-  copyFile: function (srcDir, srcFile, dstDir, dstFile) {
+  copyFile: function (srcDir, srcFile, dstDir, dstFile, msg = '') {
     console.log("Copy File: %s from Dir: %s to File: %s Dir: %s", srcFile, srcDir, dstFile, dstDir);
     var dstEntry;
     //resolve url for source
     window.resolveLocalFileSystemURL(dstDir, function (dstDirEntry) {
       dstEntry = dstDirEntry;
-      console.log("dstDirEntry: %o", dstDirEntry);
+      // console.log("dstDirEntry: %o", dstDirEntry);
       window.resolveLocalFileSystemURL(
         srcDir + srcFile,
         function (srcFileEntry) {
@@ -130,8 +130,10 @@ export const FileUtils = {
             dstEntry,
             dstFile,
             function (dstFileEntry) {
-              console.log("dstFileEntry: %o", dstFileEntry);
-              kvm.msg("Datenbank erfolgreich gesichert in: " + dstFileEntry.nativeURL);
+              // console.log("dstFileEntry: %o", dstFileEntry);
+							if (msg) {
+								kvm.msg(msg, 'Sicherung');
+							}
             },
             function (error) {
               console.log("copying FAILED %o", error);
@@ -144,6 +146,41 @@ export const FileUtils = {
       );
     });
   },
+
+	copyFiles(srcDir, dstDir) {
+		window.resolveLocalFileSystemURL(
+			srcDir,
+			function (fileSystem) {
+				let reader = (<any>fileSystem).createReader();
+				reader.readEntries(
+					function (entries) {
+						let msg = '';
+						console.log(`Anzahl Entries im Verzeichnis ${srcDir}: ${entries.length}`);
+						entries.forEach((entry) => {
+							let srcFile = entry.name;
+							let dstFile = srcFile;
+							//console.log(`Copy file: ${srcFile} nach: ${dstDir}`);
+							kvm.controller.files.copyFile(
+								srcDir,
+								srcFile,
+								dstDir,
+								dstFile
+							);
+						});
+						msg = `${entries.length} Datei${entries.length > 0 ? 'en': ''} nach ${dstDir} gesichert!`;
+						console.log(msg);
+						kvm.msg(msg, 'Sicherung');
+					},
+					function (err) {
+						console.log(err);
+					}
+				);
+			}, function (err) {
+				console.log(err);
+			}
+		);
+	}
+
 };
 /*
 window.requestFileSystem(

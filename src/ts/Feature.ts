@@ -40,6 +40,7 @@ export class Feature {
 	editableLayer: any;
 	newGeom: any;
 	geom: any;
+	startLatLng: number[];
 
 	constructor(
 		data: any = {},
@@ -67,6 +68,7 @@ export class Feature {
 		this.setGeomFromData();
 	}
 	get(key) {
+		// ToDo: value auf null nicht auf 'null' setzen wenn er undefined ist
 		return typeof this.data[key] == "undefined" ? "null" : this.data[key];
 	}
 
@@ -81,6 +83,35 @@ export class Feature {
 			this.editableLayer = kvm.controller.mapper.removeEditable(this);
 		}
 		this.isEditable = editable;
+	}
+
+	setDefaultValuesForNonSaveables() {
+		let layer = kvm.layers[this.globalLayerId];
+		let nonSaveableAttributes = layer.attributes.filter((attribute) => {
+			return attribute.settings.saveable == '0' && attribute.settings.default != '';
+		});
+		nonSaveableAttributes.forEach((attribute) => {
+			let value = null;
+			switch (true) {
+				case (attribute.get('default').startsWith('gdi_conditional_val')): {
+					const parentLayer = kvm.layers[layer.parentLayerId];
+					const parentFeature = parentLayer.features[layer.parentFeatureId];
+					// Frage den Spaltennamen ab, von dem der Defaultwert des parentLayers abgefragt werden soll.
+					//z.B: entwicklungsphase_id aus gdi_conditional_val('kob', 'baum', 'entwicklungsphase_id', 'uuid = ''$baum_uuid''')
+					const column = attribute.get('default').split(',')[2].trim().replace(/^["'](.+(?=["']$))["']$/, '$1');
+					value = parentFeature.get(column);
+					// value = kvm.layers[this.parentLayerId].features[this.parentFeatureId].get(column)
+				} break;
+				case (attribute.get('default').includes('gdi_current_date')): {
+					const today = new Date();
+					value = `${today.getFullYear()}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getDate()}`;
+				} break;
+				default: {
+					value = attribute.get('default');
+				}
+			}
+			this.set(attribute.get('name'), value);
+		});
 	}
 
 	getWaypoint(end = "last") {
@@ -433,7 +464,7 @@ export class Feature {
   };
   */
 
-	zoomTo(zoom) {
+	zoomTo(zoom, startLatLng = <any>[]) {
 		if (this.layerId) {
 			let layer = this.isEditable ? this.editableLayer : (<any>kvm.map)._layers[this.layerId];
 			if (this.options.geometry_type == "Point") {
@@ -444,8 +475,17 @@ export class Feature {
 				kvm.map.panTo(layer.getLatLng());
 			} else {
 				console.log('flyToBounds %s %o', (this.isEditable ? 'editableLayer: ' : 'feature bounds: '), layer.getBounds().getCenter());
-				kvm.map.flyToBounds(layer.getBounds());
-				// kvm.map.fitBounds(layer.getBounds());
+				$('#map').show();
+				kvm.map.invalidateSize();
+				//kvm.map.flyToBounds(layer.getBounds());
+				kvm.map.fitBounds(layer.getBounds());
+				$('#map').hide();
+			}
+		}
+		else {
+			kvm.map.setZoom(18);
+			if (startLatLng.length > 0) {
+				kvm.map.panTo(startLatLng);
 			}
 		}
 	}

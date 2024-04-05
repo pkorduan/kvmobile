@@ -24,7 +24,7 @@ child-src * 'self' blob: http:
 /-->
 
 
-    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline'; style-src * 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; worker-src * 'self' blob: file:; media-src *; img-src * data: content://com.android.providers.media.documents 'unsafe-inline' 'unsafe-eval';"/>
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline'; style-src * 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src-elem *; worker-src * 'self' blob: file:; media-src *; img-src * data: content://com.android.providers.media.documents 'unsafe-inline' 'unsafe-eval';"/>
 
     <link rel="stylesheet" type="text/css" href="style.css"/>
     <style>
@@ -112,14 +112,14 @@ child-src * 'self' blob: http:
     <div id="kopfbereich">
       <div class="col-xs-3" style="text-align:center;">
         <a id="showSettings" class="menu-button">
-          <i class="fa fa-ellipsis-v fa-2x" aria-hidden="true"></i>
+          <i class="fa fa-layer-group fa-2x" aria-hidden="true"></i>
         </a>
-        <a id="showMapEdit" class="menu-button" style="display: none;">
+				<a id="showMapEdit" class="menu-button" style="display: none;">
           <i class="fa fa-map fa-2x" aria-hidden="true"></i>
           <i class="fa fa-pencil" aria-hidden="true"></i>
         </a>
         <a id="showFormEdit" class="menu-button" style="display: none;">
-          <i class="fa fa-bars fa-2x" aria-hidden="true"></i>
+          <i class="fa fa-file fa-2x" aria-hidden="true"></i>
           <i class="fa fa-pencil" aria-hidden="true"></i>
         </a>
       </div>
@@ -136,17 +136,17 @@ child-src * 'self' blob: http:
           <i class="fa fa-map fa-2x" aria-hidden="true"></i>
         </a>
         <a id="saveFeatureButton" class="menu-button text-button" style="display: none;">
-          <i class="fa fa-floppy-o" aria-hidden="true"></i>
+          <i class="fa fa-floppy-disk" aria-hidden="true"></i>
         </a>
       </div>
       <div class="col-xs-3" style="text-align:center;">
         <!--a onClick="kvm.showItem('formular')" class="menu-button" id="showLine">
           <i id="addHaltestelle" class="fa fa-plus-square fa-2x" aria-hidden="true"></i>
         </a //-->
-        <i id="newFeatureButton" class="fa fa-plus-square fa-2x menu-button" aria-hidden="true" style="display: none;"></i>
-        <i id="editFeatureButton" class="fa fa-pencil fa-2x menu-button" aria-hidden="true" style="display: none;"></i>
+        <i id="newFeatureButton" class="fa fa-solid fa-square-plus fa-2x menu-button" aria-hidden="true" style="display: none;"></i>
+        <i id="editFeatureButton" class="fa fa-pen fa-2x menu-button" aria-hidden="true" style="display: none;"></i>
         <i id="tplFeatureButton" class="fa fa-clone fa-2x menu-button" aria-hidden="true" style="display: none;"></i>
-        <i id="restoreFeatureButton" class="fa fa-undo fa-2x menu-button" aria-hidden="true" style="display: none;"></i>
+        <i id="restoreFeatureButton" class="fa fa-rotate-left fa-2x menu-button" aria-hidden="true" style="display: none;"></i>
         <i id="deleteFeatureButton" class="fa fa-trash fa-2x menu-button" aria-hidden="true" style="display: none;"></i>
       </div>
     </div>
@@ -183,7 +183,7 @@ child-src * 'self' blob: http:
       <input id="kvwmapServerStellenField" name="kvwmapServerStellen" type="hidden" value="">
 
       <button id="saveServerSettingsButton" class="settings-button" style="display: none;">
-        <i class="fa fa-floppy-o" aria-hidden="true"></i> Einstellungen Speichern
+        <i class="fa fa-regular fa-floppy-disk" aria-hidden="true"></i> Einstellungen Speichern
       </button>
     </div>
     <hr>
@@ -191,7 +191,7 @@ child-src * 'self' blob: http:
     <div class="h2-div"><h2 id="h2_layer" class="b-collapsed">Layer</h2></div>
     <div>
       <button id="requestLayersButton" class="settings-button" style="display: none;">
-        <i class="fa fa-download" aria-hidden="true"> Layer abfragen</i>
+        <i class="fa fa-download" aria-hidden="true"></i> Layer abfragen
       </button>
       <div style="clear: both"></div>
       <div id="layer_list">
@@ -199,14 +199,22 @@ child-src * 'self' blob: http:
     </div>
     <hr>
 
-		<div
+    <div class="h2-div"><h2 id="h2_layerparams" class="b-collapsed">Layerparameter</h2></div>
+    <div>
+      <div id="layer_prams_list">
+      </div>
+      <div style="clear: both"></div>
+    </div>
+    <hr>
+
+    <div id="toggle_mehr"
       class="toggle-settings-div"
-		>mehr <i class="fa fa-expand"></i></div>
+    >mehr <i class="fa fa-angles-down"></i></div>
 
     <div
       id="switchable_settings_div"
       style="display:none"
-			>
+      >
       <div class="h2-div">
         <h2 id="h2_anzeigefilter" class="b-collapsed switchable-setting">Anzeigefilter</h2>
       </div>
@@ -220,7 +228,7 @@ child-src * 'self' blob: http:
         <div style="clear:both"></div>
         Nur historische Datensätze: <input id="historyFilter" type="checkbox">
         Nur eigene Datensätze: <input id="userIdFilter" type="checkbox">
-				<div style="clear:both"></div>
+        <div style="clear:both"></div>
         <input id="runFilterButton" type="button" value="Anwenden" class="settings-button" style="margin-top: 5px"/>
         <input id="toggleFilterDivButton" type="button" value="mehr" class="settings-button"/>
         <div id="filterDiv" style="display: none">
@@ -343,36 +351,36 @@ child-src * 'self' blob: http:
         <div style="clear: both"></div>
       </div>
       <hr>
-			
-			<div class="h2-div"><h2 id="h2_sachdateneinstellungen" class="b-collapsed">Sachdateneinstellungen</h2></div>
+      
+      <div class="h2-div"><h2 id="h2_sachdateneinstellungen" class="b-collapsed">Sachdateneinstellungen</h2></div>
       <div id="viewSettingsDiv" style="padding-left: 10px">
-				Was soll nach dem Speichern eines neuen Datensatzes angezeigt werden? <i
-					class="fa fa-exclamation-circle"
-					style="color: #f57802"
-					onclick="kvm.msg(`<b>Hinweis</b><br>Wirkt sich nicht aus wenn die Option 'und neuen Datensatz erzeugen' unten im Eingabeformular ausgewählt ist.`);"
-				></i><br>
-				<select id="viewAfterCreate" name="viewAfterCreate">
+        Was soll nach dem Speichern eines neuen Datensatzes angezeigt werden? <i
+          class="fa fa-circle-exclamation"
+          style="color: #f57802"
+          onclick="kvm.msg(`<b>Hinweis</b><br>Wirkt sich nicht aus wenn die Option 'und neuen Datensatz erzeugen' unten im Eingabeformular ausgewählt ist.`);"
+        ></i><br>
+        <select id="viewAfterCreate" name="viewAfterCreate">
           <option value="featurelist">Liste der Datensätze</option>
           <option value="map">Kartenansicht</option>
           <option value="last">zuletzt verwendete Ansicht</option>
-					<option value="dataView">Erzeugter Datensatz zum Lesen</option>
+          <option value="dataView">Erzeugter Datensatz zum Lesen</option>
           <option value="formular">Erzeugter Datensatz im Formular</option>
         </select>
-				<div style="margin-top: 20px">Was soll nach dem Aktualisieren eines neuen vorhandenen Datensatzes angezeigt werden?</div>
-				<select id="viewAfterUpdate" name="viewAfterUpdate">
+        <div style="margin-top: 20px">Was soll nach dem Aktualisieren eines neuen vorhandenen Datensatzes angezeigt werden?</div>
+        <select id="viewAfterUpdate" name="viewAfterUpdate">
           <option value="featurelist">Liste der Datensätze</option>
           <option value="map">Kartenansicht</option>
           <option value="last">zuletzt verwendete Ansicht</option>
-					<option value="dataView">Geänderter Datensatz zum Lesen</option>
+          <option value="dataView">Geänderter Datensatz zum Lesen</option>
           <option value="formular">Geänderter Datensatz im Formular</option>
         </select>
-				<input id="confirmSave" type="checkbox" style="margin-top: 20px;"> Vor dem Speichern Bestätigung abfragen
-			</div>
+        <input id="confirmSave" type="checkbox" style="margin-top: 20px;"> Vor dem Speichern Bestätigung abfragen
+      </div>
       <hr>
 
       <div class="h2-div"><h2 id="h2_kartenverwaltung" class="b-collapsed">Offline-Karten</h2></div>
       <div id="loadOfflineMapsDiv">
-			</div>
+      </div>
       <hr>
 
       <!--div class="h2-div"><h2 id="h2_overlay" class="b-collapsed">Overlays</h2></div>
@@ -389,13 +397,13 @@ child-src * 'self' blob: http:
         <div id="backgroundLayerSettingsDiv">
         </div>
         <button id="resetBackgroundLayerSettingsButton" class="settings-button">
-          <i class="fa fa-refresh" aria-hidden="true"> Zurücksetzen</i>
+          <i class="fa fa-rotate" aria-hidden="true"></i> Zurücksetzen
         </button>
         <button id="changeBackgroundLayerSettingsButton" class="settings-button">
-          <i class="fa fa-floppy-o" aria-hidden="true"> Speichern</i>
+          <i class="fa fa-regular fa-floppy-disk" aria-hidden="true"></i> Speichern
         </button>
         <button id="loadBackgroundLayerButton" class="settings-button">
-          <i class="fa fa-download" aria-hidden="true"> Download</i>
+          <i class="fa fa-download" aria-hidden="true"></i> Download
         </button>
       </div>
       <hr>
@@ -410,7 +418,7 @@ child-src * 'self' blob: http:
         <div id="gpsCurrentPosition"></div>
         <div id="zoomToCurrentLocation" style="display: none">
           <button id="zoomToCurrentLocationButton" class="settings-button">
-            <i class="fa fa-location-arrow" aria-hidden="true"> Zoom zur aktuellen GPS-Position</i>
+            <i class="fa fa-location-arrow" aria-hidden="true"></i> Zoom zur aktuellen GPS-Position
           </button>
         </div>
       </div>
@@ -420,7 +428,7 @@ child-src * 'self' blob: http:
       <div id="secirotyOptionsDiv" style="padding-left: 10px">
         <input id="fingerprintAuth" type="checkbox"> Beim Start Muster oder PIN anfordern
       </div>
-			<hr>
+      <hr>
 
       <div class="h2-div"><h2 id="h2_geraeteinformationen" class="b-collapsed">Geräteinformationen</h2></div>
       <div id="deviceDataText">
@@ -451,23 +459,28 @@ child-src * 'self' blob: http:
       <div>
         Datenbankname: <span id="dbnameText">...wird geladen</span><br>
         <button id="showDeltasButton" class="settings-button">
-          <i class="fa fa-pencil-square-o" aria-hidden="true"> Zeige Änderungen</i>
+          <i class="fa fa-pen-to-square" aria-hidden="true"></i> Zeige Änderungen
         </button>
         <i id="showDeltasWaiting" class="fa fa-spinner fa-pulse fa-3x fa-fw" style="display: none;"></i>
         <button id="hideDeltasButton" class="settings-button" style="display: none;">
-          <i class="fa fa-window-close-o" aria-hidden="true"> Blende Änderungen aus</i>
+          <i class="fa-regular fa-square-xmark" aria-hidden="true"></i> Blende Änderungen aus
         </button>
         <div id="showDeltasDiv" style="display: none;">
         </div><br>
         Backup-Speicherpfad:<br>
         <input id="localBackupPath" type="text"><br>
-        <button id="saveDatabaseButton" class="settings-button">
+				<button id="saveDatabaseButton" class="settings-button">
           <i class="fa fa-database" aria-hidden="true"></i>
           <i class="fa fa-check" aria-hidden="true"></i> Sichere Datenbank
         </button>
         <br>
         <button id="resetSettingsButton" class="settings-button">
-          <i class="fa fa-refresh" aria-hidden="true"></i> Reset Datenbank und Einstellungen
+          <i class="fa fa-rotate" aria-hidden="true"></i> Reset Datenbank und Einstellungen
+        </button>
+				<br>
+        <button id="saveImagesButton" class="settings-button">
+          <i class="fa fa-image" aria-hidden="true"></i>
+          <i class="fa fa-check" aria-hidden="true"></i> Sichere Bilddaten
         </button>
 			</div>
       <hr>
@@ -486,13 +499,13 @@ child-src * 'self' blob: http:
         <div style="clear: both"></div>
         <input type="checkbox" id="show_allways_debug_messages" value="1"> Debug-Meldung immer einblenden<br>
         <button id="showLoggingsButton" class="settings-button">
-          <i class="fa fa-list" aria-hidden="true"> Zeige Protokoll an</i>
+          <i class="fa fa-list" aria-hidden="true"></i> Zeige Protokoll an
         </button>
         <button id="clearLoggingsButton" class="settings-button">
-          <i class="fa fa-list" aria-hidden="true"> Leere Protokoll</i>
+          <i class="fa fa-list" aria-hidden="true"></i> Leere Protokoll
         </button><br>
         <button id="showSperrDivButton" class="settings-button">
-          <i class="fa fa-list" aria-hidden="true"> Zeige Lademeldungen</i>
+          <i class="fa fa-list" aria-hidden="true"></i> Zeige Lademeldungen
         </button>
       </div>
       <hr>
@@ -514,10 +527,10 @@ child-src * 'self' blob: http:
       <hr>
     </div>
 
-    <div
+    <div id="toggle_weniger"
     class="toggle-settings-div"
-		style="display:none;"
-  ><i class="fa fa-compress"></i> weniger</div>
+    style="display:none;"
+  ><i class="fa fa-angles-up"></i> weniger</div>
 
   <div style="margin-bottom: 20px">
     </div>
@@ -536,7 +549,7 @@ child-src * 'self' blob: http:
       <h1 id="featurelistHeading" style="font-size: 24px"></h1>
     </div>
     <div style="float: right; margin-right: 5px">
-      <h1><i id="showSearch" class="fa fa-search" aria-hidden="true"></i></h1>
+      <h1><i id="showSearch" class="fa fa-magnifying-glas" aria-hidden="true"></i></h1>
     </div>
     <div style="clear: both;"></div>
     <input type="search" id="searchFeatureField" placeholder="Datensatz suchen" aria-label"Liste der Datensätze durchsuchen" autocomplete="off" class="hidden" style="margin-left: 6px; margin-bottom: 4px; padding-left: 4px; padding-top: 2px; padding-bottom: 2px; font-size: 24px; width: 97%; border-radius: 5px;">
@@ -597,7 +610,7 @@ child-src * 'self' blob: http:
     <div id="debText" style="clear: both; height: 300px; overflow: auto;"></div>
     <div style="text-align: center; padding: 2px;"><input type="button" value="Schließen" onclick="document.getElementById('debugs').classList.toggle('hidden')"></div>
   </div>
-  	<div class="clear"></div>
+    <div class="clear"></div>
 
     <div id="map_hint_div"></div>
     <div id="geolocation_div"></div>

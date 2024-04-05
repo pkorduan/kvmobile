@@ -30,14 +30,14 @@ export class SelectFormField {
 				${(kvm.coalesce(this.get("requires"), "") != "" ? ' requires="' + this.get("requires") + '"' : "")}
 			>
         ${(this.isArrayType() ? '' : '<option value="">Bitte wählen</option>')}
-				${$.map(this.get("options"), function (option) {
+				${$.map(this.get("enums"), function (option) {
       //          option = option.replace(/(^')|('$)/g, '')
       return `
-							<option
-								value="${option.value}"
-								${(kvm.coalesce(option.requires_value, "") != "" ? 'requires="' + option.requires_value + '"' : '')}
-							>${option.output}</option>
-						`;
+        <option
+          value="${option.value}"
+          ${(kvm.coalesce(option.requires_value, "") != "" ? 'requires="' + option.requires_value + '"' : '')}
+        >${option.output}</option>
+      `;
     }).join("\n")}
 			</select>
     `);

@@ -64,12 +64,13 @@ export class SubFormFKFormField {
 
   setValue(val) {
 		console.log('Attribute: %s, SubFormFKFormField.setValue options: %o, value: %s', this.get("name"), this.get('options'), val);
-
+		// ToDo: Prüfen warum hier noch mal default gesetzt wird. Das wird auch schon in getNewData gemacht.
 		if (kvm.coalesce(val, "") == "" && this.get("default")) {
 			val = this.get("default");
 		}
 
-		if (kvm.coalesce(val, "") == "" && kvm.activeLayer.activeFeature.options.new) {
+		// ToDo: Das darf nur gemacht werden wenn der Layer Geometrie hat und der übergeordnete auch.
+		if (kvm.activeLayer.activeFeature.options.new) {
 			// Abfragen des übergeordneten Layers
 			const pkLayer = kvm.layers[`${this.get('stelleId')}_${this.get('options').split(',')[0]}`];
 			console.log('Übergeordneter Layer %s', pkLayer.title);
@@ -86,6 +87,7 @@ export class SubFormFKFormField {
 						GeomFromEWKB(${pkLayer.get('geometry_attribute')})
 					)
 			`;
+			// console.log('Frage parent id mit sql ab: ', sql);
 			kvm.db.executeSql(
 				sql,
 				[],

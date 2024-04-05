@@ -41,6 +41,7 @@ require("leaflet.locatecontrol");
 require("leaflet-betterscale");
 require("leaflet-easybutton");
 require("leaflet-editable");
+require('leaflet-bing-layer');
 import type from "leaflet-easybutton";
 import { LatLngExpression, LeafletMouseEvent } from "leaflet";
 require("proj4leaflet");
@@ -85,6 +86,8 @@ class Kvm {
   GpsIsOn: boolean = false;
   inputNextDataset: boolean = false;
   lastMapOrListView: String = 'featureList';
+  versionNumber: String;
+  layerParams: any = {};
 
   // showItem: <(p:any)=>void>undefined,
   // log: <(p:any)=>void>undefined,
@@ -440,14 +443,13 @@ class Kvm {
 
     let stelle: Stelle = undefined;
     if (this.store.getItem("activeStelleId") && this.store.getItem("stelleSettings_" + this.store.getItem("activeStelleId"))) {
-      var activeStelleId = this.store.getItem("activeStelleId"),
-        activeStelleSettings = this.store.getItem("stelleSettings_" + activeStelleId);
-
-      stelle = new Stelle(activeStelleSettings);
+      let activeStelleId = this.store.getItem("activeStelleId");
+      let activeStelleSettings = this.store.getItem("stelleSettings_" + activeStelleId);
 
       //console.log("Aktive Stelle " + activeStelleId + " gefunden.");
 
       try {
+        stelle = new Stelle(activeStelleSettings);
         stelle.viewSettings();
         stelle.activate();
       } catch ({ name, message }) {
@@ -457,7 +459,8 @@ class Kvm {
       if (this.store.getItem("layerIds_" + activeStelleId)) {
         // Auslesen der layersettings
         var layerIds = JSON.parse(this.store.getItem("layerIds_" + activeStelleId));
-        stelle.loadAllLayers = true;
+        stelle.readAllLayers = true;
+        stelle.numLayersRead = 0;
         stelle.numLayers = layerIds.length;
         kvm.openSperrDiv('Lade Layerdaten.');
         for (let layerId of layerIds) {
@@ -468,7 +471,7 @@ class Kvm {
             if (settings.vector_tile_url) {
               const layer = new MapLibreLayer(settings, true, stelle);
               layer.appendToApp();
-              stelle.finishLayerLoading(layer);
+              stelle.finishLayerReading(layer);
             }
             else {
               const layer = new Layer(stelle, settings);
@@ -541,8 +544,8 @@ class Kvm {
     /**
      * ToDo pk: Reload activeLayer last so that it is on top of all in map.
      */
-    this.activeStelle.loadAllLayers = true;
-    this.activeStelle.numLayersLoaded = 0;
+    this.activeStelle.readAllLayers = true;
+    this.activeStelle.numLayersRead = 0;
     Object.keys(this.layers).forEach((key) => {
       kvm.layers[key].readData();
     });
@@ -744,6 +747,27 @@ class Kvm {
     kvm.controls.reloadLayers = (<any>L).Control.reloadLayers({
       position: "topleft",
     }).addTo(map);
+
+    let zoomLevelControl = L.Control.extend({
+      options: {
+        position: 'topleft' // Position the control in the top left corner
+      },
+
+      onAdd: function(map) {
+        let container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-zoomLevel'); // Create a container for the control
+        let zoomLevel = L.DomUtil.create('div', 'leaflet-bar-part', container); // Create a div for displaying zoom level
+        zoomLevel.innerHTML = 'Zoom: ' + map.getZoom(); // Set initial zoom level
+
+        // Update zoom level when zoom changes
+        map.on('zoomend', function() {
+          zoomLevel.innerHTML = 'Zoom: ' + map.getZoom();
+        });
+
+        return container;
+      }
+    });
+    kvm.controls.zoomLevelControl = (new zoomLevelControl()).addTo(map);
+
     kvm.controls.betterscale = (<any>L).control
       .betterscale({
         metric: true,
@@ -1181,16 +1205,19 @@ class Kvm {
     });
 
     $("#saveServerSettingsButton").on("click", function () {
-      var stelle = new Stelle({
-        id: $("#kvwmapServerIdField").val(),
-        name: $("#kvwmapServerNameField").val(),
-        bezeichnung: $("#kvwmapServerStelleSelectField option:selected").text(),
-        url: $("#kvwmapServerUrlField").val(),
-        login_name: $("#kvwmapServerLoginNameField").val(),
-        passwort: $("#kvwmapServerPasswortField").val(),
-        Stelle_ID: $("#kvwmapServerStelleSelectField").val(),
-        stellen: $("#kvwmapServerStellenField").val(),
-      });
+      let stellen = String($("#kvwmapServerStellenField").val());
+      let selectedStelleId = $("#kvwmapServerStelleSelectField").val();
+      let stelleSettings = JSON.parse(stellen).find((stelle) => { return stelle.ID == selectedStelleId; });
+      stelleSettings['id'] = $("#kvwmapServerIdField").val();
+      stelleSettings['name'] = $("#kvwmapServerNameField").val();
+      stelleSettings['bezeichnung'] = $("#kvwmapServerStelleSelectField option:selected").text();
+      stelleSettings['url'] = $("#kvwmapServerUrlField").val();
+      stelleSettings['login_name'] = $("#kvwmapServerLoginNameField").val();
+      stelleSettings['passwort'] = $("#kvwmapServerPasswortField").val();
+      stelleSettings['Stelle_ID'] = $("#kvwmapServerStelleSelectField").val();
+      // stelleSettings['stellen'] = $("#kvwmapServerStellenField").val(); Das brauchen wir hier nicht, denn für die eine Stelle wurde alles hinterlegt.
+      // wenn andere Stellen ausgewählt werden sollen müssen die vorher noch mal vom Server geholt werden.
+      var stelle = new Stelle(stelleSettings);
       stelle.saveToStore();
       if (kvm.activeLayer) {
         kvm.activeLayer["stelle"] = stelle;
@@ -1359,50 +1386,69 @@ class Kvm {
       );
     });
 
-    $("#showDeltasButton").on("click", { context: this }, function (evt) {
+		$("#saveImagesButton").on("click", function () {
+			let destDir = $('#localBackupPath').val() || kvm.store.getItem("localBackupPath") || kvm.config.localBackupPath;
+
+			navigator.notification.confirm(
+				`Sollen die Bilddaten nach ${destDir} gesichert werden? Gleichnamige Dateien im Zielverzeichnis werden überschrieben!`,
+				(buttonIndex) => {
+					if (buttonIndex == 1) {
+						kvm.controller.files.copyFiles(kvm.config.localImgPath, destDir)
+					}
+					if (buttonIndex == 2) {
+						// nein
+					}
+				},
+				'Bilddaten sichern?',
+				['ja', 'nein']
+			);
+		});
+
+    $("#showDeltasButton").on("click", () => {
       //kvm.log("Delta anzeigen.", 3);
-      var this_ = evt.data.context,
-        sql =
-          "\
-              SELECT\
-                * \
-              FROM\
-                " +
-          this_.activeLayer.get("schema_name") +
-          "_" +
-          this_.activeLayer.get("table_name") +
-          "_deltas\
-            ";
+      if (kvm.activeLayer.hasEditPrivilege) {
+        let sql = `
+          SELECT
+            *
+          FROM
+            ${kvm.activeLayer.get("schema_name")}_${kvm.activeLayer.get("table_name")}_deltas
+        `;
 
-      $("#showDeltasButton").hide();
-      $("#showDeltasWaiting").show();
-      this_.db.executeSql(
-        sql,
-        [],
-        function (rs) {
-          var numRows = rs.rows.length,
-            item,
-            i;
+        $("#showDeltasButton").hide();
+        $("#showDeltasWaiting").show();
+        kvm.db.executeSql(
+          sql,
+          [],
+          (rs) => {
+            var numRows = rs.rows.length,
+              item,
+              i;
 
-          if (numRows > 0) {
-            $("#showDeltasDiv").html("<b>Deltas</b>");
-            for (i = 0; i < numRows; i++) {
-              item = rs.rows.item(i);
-              $("#showDeltasDiv").append("<br>" + item.version + ": " + (item.type == "sql" ? item.delta : item.change + " " + item.delta));
+            if (numRows > 0) {
+              $("#showDeltasDiv").html("<b>Deltas</b>");
+              for (i = 0; i < numRows; i++) {
+                item = rs.rows.item(i);
+                $("#showDeltasDiv").append("<br>" + item.version + ": " + (item.type == "sql" ? item.delta : item.change + " " + item.delta));
+              }
+              $("#showDeltasDiv").show();
+              $("#hideDeltasButton").show();
+            } else {
+              kvm.msg("Keine Änderungen vorhanden");
+              $("#showDeltasButton").show();
             }
-            $("#showDeltasDiv").show();
-            $("#hideDeltasButton").show();
-          } else {
-            kvm.msg("Keine Änderungen vorhanden");
-            $("#showDeltasButton").show();
+            $("#showDeltasWaiting").hide();
+          },
+          (error) => {
+            let msg = `Fehler in bei Abfrage der Deltas mit sql: ${sql} Fehler: ${error.message} code: ${error.code}`;
+            console.error(msg);
+            kvm.log(msg, 1);
+            kvm.msg(msg, 'Datenbank');
           }
-          $("#showDeltasWaiting").hide();
-        },
-        function (error) {
-          kvm.log("Fehler in bei Abfrage der Deltas: " + JSON.stringify(error), 1);
-          alert("Fehler beim Zugriff auf die Datenbank");
-        }
-      );
+        );
+      }
+      else {
+        kvm.msg(`Der Layer ${kvm.activeLayer.title} hat keine Änderungen weil auf dem Server keine Rechte zum Ändern von Datensätzen des Layers eingestellt wurden.`, 'Datenbank');
+      }
     });
 
     $("#hideDeltasButton").on("click", function () {
@@ -1438,68 +1484,33 @@ class Kvm {
      */
     $("#cancelFeatureButton").on("click", { context: this }, function (evt) {
       console.log("cancelFeatureButton geklickt.");
-      var this_ = evt.data.context;
+      const this_ = evt.data.context;
+			//console.log("Änderungen verwerfen.");
+			const activeLayer = this_.activeLayer;
+			const activeFeature = activeLayer.activeFeature;
+			const featureId = activeFeature.id;
 
-      navigator.notification.confirm(
-        "Änderungen verwerfen?",
-        function (buttonIndex) {
-          //console.log("Änderungen verwerfen.");
-          let activeLayer = this_.activeLayer;
-          let activeFeature = activeLayer.activeFeature;
-          let featureId = activeFeature.id;
-
-          if (buttonIndex == 1) {
-            // ja
-            if (this_.activeLayer.get('geometry_attribute')) {
-              //console.log("Feature ist neu? %s", activeFeature.options.new);
-              if (activeFeature.options.new) {
-                //console.log("Änderungen am neuen Feature verwerfen.");
-                if (this_.activeLayer.get('geometry_attribute')) {
-                  this_.activeLayer.cancelEditGeometry();
-                  if (this_.controller.mapper.isMapVisible()) {
-                    this_.showItem("map");
-                  } else {
-                    this_.showItem("featurelist");
-                  }
-                }
-                else {
-                  this_.showItem("featurelist");
-                }
-              } else {
-                //console.log("Änderungen am vorhandenen Feature verwerfen.");
-                this_.activeLayer.cancelEditGeometry(featureId); // Editierung der Geometrie abbrechen
-                this_.activeLayer.loadFeatureToForm(activeFeature, { editable: false }); // Formular mit ursprünglichen Daten laden
-
-                if (this_.controller.mapper.isMapVisible()) {
-                  // ToDo editableLayer existier im Moment nur, wenn man den Änderungsmodus im Popup in der Karte ausgelößt hat.
-                  // auch noch für neue Features einbauen.
-                  this_.showItem("map");
-                } else {
-                  this_.showItem("dataView");
-                }
-              }
-            }
-            else {
-              // Wenn aktuelles Feature neu ist und zu einem übergeordneten Feature gehört dieses laden und darstellen.
-              if (activeFeature.options.new) {
-                let parentFeature = activeFeature.findParentFeature();
-                if (parentFeature) {
-                  let parentLayer = this_.layers[parentFeature.globalLayerId];
-                  parentLayer.activateFeature(parentFeature, true);
-                }
-              }
-              this_.showItem("dataView");
-            }
-            this_.controller.mapper.clearWatch(); // GPS-Tracking ausschalten
-          }
-          if (buttonIndex == 2) {
-            // nein
-            // Do nothing
-          }
-        },
-        "Formular",
-        ["ja", "nein"]
-      );
+			const changes = activeLayer.collectChanges(activeFeature.options.new ? 'insert' : 'update');
+			if (changes.length > 0) {
+				navigator.notification.confirm(
+					"Änderungen verwerfen?",
+					(buttonIndex) => {
+						//console.log("Änderungen verwerfen.");
+						if (buttonIndex == 1) {
+							kvm.cancelEditFeature()
+						}
+						if (buttonIndex == 2) {
+							// nein
+							// Do nothing
+						}
+					},
+					"Eingabeformular schließen",
+					["ja", "nein"]
+				);
+			}
+			else {
+				kvm.cancelEditFeature()
+			}
     });
 
     $("#statusFilterSelect").on("change", function (evt) {
@@ -1519,7 +1530,7 @@ class Kvm {
 
     $("#anzeigeSortSelect").on("change", function (evt) {
       kvm.store.setItem("sortAttribute", $("#anzeigeSortSelect").val().toString());
-      kvm.activeStelle.loadAllLayers = false;
+      kvm.activeStelle.readAllLayers = false;
       kvm.activeLayer.readData($("#limit").val(), $("#offset").val());
     });
 
@@ -1895,12 +1906,16 @@ class Kvm {
   }
 
   backupDatabase(filename = '') {
-    filename = filename || "Sicherung_" + kvm.now().toString().replace("T", "_").replace(/:/g, "-").replace("Z", "");
+		let srcDir = cordova.file.applicationStorageDirectory + "databases/";
+		let srcFile = "kvmobile.db";
+		let dstDir = kvm.store.getItem("localBackupPath") || kvm.config.localBackupPath;
+		let dstFile = (filename || "Sicherung_" + kvm.now().toString().replace("T", "_").replace(/:/g, "-").replace("Z", "")) + '.db';
     kvm.controller.files.copyFile(
-      cordova.file.applicationStorageDirectory + "databases/",
-      "kvmobile.db",
-      kvm.store.getItem("localBackupPath") || kvm.config.localBackupPath,
-      filename + ".db"
+			srcDir,
+			srcFile,
+			dstDir,
+			dstFile,
+			`Datenbank erfolgreich gesichert in: ${dstDir} ${dstFile}`
     );
   }
 
@@ -1920,6 +1935,53 @@ class Kvm {
     );
   }
 
+	cancelEditFeature() {
+		const activeLayer = kvm.activeLayer;
+		const activeFeature = activeLayer.activeFeature;
+
+		if (activeLayer.get('geometry_attribute')) {
+			//console.log("Feature ist neu? %s", activeFeature.options.new);
+			if (activeFeature.options.new) {
+				//console.log("Änderungen am neuen Feature verwerfen.");
+				if (activeLayer.get('geometry_attribute')) {
+					activeLayer.cancelEditGeometry();
+					if (kvm.controller.mapper.isMapVisible()) {
+						kvm.showItem("map");
+					} else {
+						kvm.showItem("featurelist");
+					}
+				}
+				else {
+					kvm.showItem("featurelist");
+				}
+			} else {
+				//console.log("Änderungen am vorhandenen Feature verwerfen.");
+				activeLayer.cancelEditGeometry(activeFeature.id); // Editierung der Geometrie abbrechen
+				activeLayer.loadFeatureToForm(activeFeature, { editable: false }); // Formular mit ursprünglichen Daten laden
+
+				if (kvm.controller.mapper.isMapVisible()) {
+					// ToDo editableLayer existier im Moment nur, wenn man den Änderungsmodus im Popup in der Karte ausgelößt hat.
+					// auch noch für neue Features einbauen.
+					kvm.showItem("map");
+				} else {
+					kvm.showItem("dataView");
+				}
+			}
+		}
+		else {
+			// Wenn aktuelles Feature neu ist und zu einem übergeordneten Feature gehört dieses laden und darstellen.
+			if (activeFeature.options.new) {
+				let parentFeature = activeFeature.findParentFeature();
+				if (parentFeature) {
+					let parentLayer = kvm.layers[parentFeature.globalLayerId];
+					parentLayer.activateFeature(parentFeature, true);
+				}
+			}
+			kvm.showItem("dataView");
+		}
+		kvm.controller.mapper.clearWatch(); // GPS-Tracking ausschalten
+	}
+
   /**
    * Function activate the feature with featureId in layer with layerId and show it in dataView.
    * @param layerId 
@@ -1937,6 +1999,39 @@ class Kvm {
     }
   }
 
+  /**
+   * Function open form to create a new feature for a subLayer.
+   * If activeFeature has open changes a confirm dialog comes up.
+	 * Input form only open if user confirm else nothing happens.
+   */
+  newSubFeature(options = { parentLayerId: '', subLayerId: '', fkAttribute: '' }) {
+    if (this.activeLayer && this.activeLayer.activeFeature) {
+      const changes = this.activeLayer.collectChanges('update');
+      if (changes.length > 0) {
+        navigator.notification.confirm(
+          "Es sind noch offene Änderungen. Diese müssen erst gespeichert werden.",
+          (buttonIndex) => {
+            if (buttonIndex == 1) {
+              // Abbrechen
+            }
+            if (buttonIndex == 2) {
+              // Fortfahren ohne Speichern
+              this.activeLayer.newSubDataSet(options);
+            }
+          },
+          "Formular",
+          ["Abbrechen", "Ohne Speichern Fortfahren"]
+        );
+      }
+      else {
+        this.activeLayer.newSubDataSet(options);
+      }
+    }
+    else {
+      this.activeLayer.newSubDataSet(options);
+    }
+  }
+
 	/**
 	 * Function open form to edit feature with featureId in layer with layerId.
 	 * If activeFeature has open changes a confirm dialog comes up.
@@ -1948,26 +2043,45 @@ class Kvm {
     // console.log('editFeature');
     const layer = kvm.layers[layerId];
     const feature = layer.features[featureId];
-		const changes = kvm.activeLayer.collectChanges(kvm.activeLayer.activeFeature.options.new ? 'insert' : 'update');
-    if (changes.length > 0) {
-      navigator.notification.confirm(
-        "Es sind noch offene Änderungen. Die müssen erst gespeichert werden.",
-        (buttonIndex) => {
-          if (buttonIndex == 1) {
-            // Abbrechen
-          }
-          if (buttonIndex == 2) {
-            // Fortfahren ohne Speichern
-            layer.editFeature(featureId);
-          }
-        },
-        "Formular",
-        ["Abbrechen", "Ohne Speichern Fortfahren"]
-      );
+		// ToDo: 
+		//parentLayerId und parentFeatureId müssen woanders hier kommen
+		// denn editFeature kann ja auch von einem subform kommen in dem
+		// der parent aufgerufen wird. Das hier geht nur wenn man von einem
+		// parent ein child feature aufruft zum editieren.
+		// z.B. mit feature.findParentFeature
+		// Anpassungen erforderlich für die Abfrage der default Attribute
+		// Am besten man fragt die Pseudoattribute gleich über sql mit ab.
+		// dann gilt halt die Konvention dass nur Tables in der Query verwendet werden dürfen,
+		// für die es auch layer in der Stelle gibt, um sicher zu gehen dass die Tabellen auch da sind.
+		// Wenn man die Query nimmt kann man auch Joins machen und die in notsaveable-Attributes anzeigen.
+		// Wie in kvwmap halt.
+    if (kvm.activeLayer && kvm.activeLayer.activeFeature) {
+      layer.parentLayerId = kvm.activeLayer.getGlobalId();
+      layer.parentFeatureId = kvm.activeLayer.activeFeature.id;
+      const changes = kvm.activeLayer.collectChanges(kvm.activeLayer.activeFeature.options.new ? 'insert' : 'update');
+      if (changes.length > 0) {
+        navigator.notification.confirm(
+          "Es sind noch offene Änderungen. Diese müssen erst gespeichert werden.",
+          (buttonIndex) => {
+            if (buttonIndex == 1) {
+              // Abbrechen
+            }
+            if (buttonIndex == 2) {
+              // Fortfahren ohne Speichern
+              layer.editFeature(featureId);
+            }
+          },
+          "Formular",
+          ["Abbrechen", "Ohne Speichern Fortfahren"]
+        );
+      }
+      else {
+        layer.editFeature(featureId);
+      }
     }
-		else {
-			layer.editFeature(featureId);
-		}
+    else {
+      layer.editFeature(featureId);
+    }
   }
 
   setConnectionStatus() {
@@ -1990,11 +2104,58 @@ class Kvm {
     $("#logLevel").val(logLevel);
   }
 
+  /**
+   * Function load the given layer parameter to the settings field for layerparamer
+   * Set the currently selected or default value and set it also in kvm.layerParams
+   * @param layerParamSettings 
+   * @param layerParams 
+   */
+  loadLayerParams(layerParamSettings, layerParams = []) {
+    let layerParamsDiv = $('#h2_layerparams').parent();
+    if (layerParamSettings && Object.keys(layerParamSettings).length > 0) {
+      let layerParamsList = $('#layer_prams_list');
+      layerParamsList.html('');
+      Object.keys(layerParamSettings).forEach((key) => {
+        let paramSetting = layerParamSettings[key];
+        let savedValue = key in layerParams ? layerParams[key] : null; // übernehme gespeicherten Wert wenn er existiert
+        kvm.layerParams[key] = savedValue || paramSetting.default_value; // setze gespeicherten oder wenn leer dann den default Wert.
+        
+        let labelElement = $(`<div class="form-label><label for="${key}">${paramSetting.alias}</label></div>`);
+        let valueElement = $(`
+          <div class="form-value">
+            <select id="${key}" name="${key}" onchange="kvm.saveLayerParams(this)">
+              ${paramSetting.options.map((option) => {
+                return `<option value="${option.value}"${kvm.layerParams[key] == option.value ? ' selected' : ''}>${option.output}</option>`;
+              }).join('')}
+            </select>
+          </div>
+        `);
+        layerParamsList.append(labelElement).append(valueElement);
+      });
+      layerParamsDiv.show();
+    }
+    else {
+      layerParamsDiv.hide();
+    }
+  }
+
+  saveLayerParams(paramElement) {
+    console.log('saveLayerParams');
+    // Set changed param to kvm Object
+    kvm.layerParams[paramElement.name] = $(paramElement).val();
+    // Save all params in store
+    let selectFields = $('#layer_prams_list select');
+    let layerParams = {};
+    selectFields.each((index, selectField: any) => { layerParams[selectField.name] = $(selectField).val(); })
+    kvm.store.setItem(`layerParams_${kvm.activeStelle.get('id')}`, JSON.stringify(layerParams));
+  }
+
   loadDeviceData() {
     //kvm.log("loadDeviceData", 4);
     (<any>cordova).getAppVersion.getVersionNumber((versionNumber) => {
       $("#cordovaAppVersion").html(versionNumber);
       document.title = "kvmobile " + versionNumber;
+      kvm.versionNumber = versionNumber;
     });
     $("#deviceCordova").html(device.cordova);
     $("#deviceModel").html(device.model);
@@ -2055,7 +2216,8 @@ class Kvm {
     switch (item) {
       case "settings":
         kvm.showDefaultMenu();
-        $("#settings").show();
+				kvm.showSettingsDiv('layer');
+				$("#settings").show();
         break;
       case "loggings":
         kvm.showDefaultMenu();
@@ -2096,8 +2258,11 @@ class Kvm {
           $("#restoreFeatureButton").show();
         } else {
           if (kvm.activeLayer.hasEditPrivilege) {
-            $("#editFeatureButton, #tplFeatureButton").show();
-          } else {
+						// erstmal rausgenommen weil es zu Fehler führen kann.
+						// klären was mit den die Kopiert wird passiert beim Speichern und Sync.
+            // $("#editFeatureButton, #tplFeatureButton").show();
+            $("#editFeatureButton").show();
+					} else {
             $("#newFeatureButton").hide();
           }
         }
@@ -2131,7 +2296,8 @@ class Kvm {
   }
 
   expandAllSettingsDiv() {
-    $(".h2-div > h2").removeClass("b-collapsed").addClass("b-expanded"), $(".h2-div + div").show();
+    $(".h2-div > h2").removeClass("b-collapsed").addClass("b-expanded");
+		$(".h2-div + div").show();
   }
 
   hideSettingsDiv(name) {
@@ -2147,7 +2313,15 @@ class Kvm {
     target.removeClass("b-collapsed").addClass("b-expanded");
     target.parent().next().show();
     $("#settings").scrollTop(target.offset().top);
-  }
+		if (name == 'layer') {
+			$('#switchable_settings_div').hide();
+			$('#toggle_weniger').hide();
+			$('#toggle_mehr').show();
+			$('.layer-functions-button').removeClass('fa-ellipsis-vertical, fa-square-xmark');
+			$('.layer-functions-button').addClass('fa-ellipsis-vertical');
+			$('.layer-functions-div').hide();
+		}
+	}
 
   toggleSwitchableSettings() {
     $('#switchable_settings_div, .toggle-settings-div').toggle();
@@ -2327,28 +2501,42 @@ class Kvm {
 
   nextval(schema_name, table_name, column_name) {
     const sql = `
-			SELECT
-				max(${column_name}) + 1 AS next_val
-			FROM
-				${schema_name}_${table_name}
-		`;
+      SELECT
+        max(${column_name}) + 1 AS next_val
+      FROM
+        ${schema_name}_${table_name}
+    `;
     return sql;
   }
 
   gdi_conditional_next_val(schema_name, table_name, column_name, condition) {
     const sql = `
-			SELECT
-				max(${column_name}) + 1 AS next_val
-			FROM
-				${schema_name}_${table_name}
-			WHERE
-				${condition}
-		`;
+      SELECT
+        max(${column_name}) + 1 AS next_val
+      FROM
+        ${schema_name}_${table_name}
+      WHERE
+        ${condition}
+    `;
+    return sql;
+  }
+
+  gdi_conditional_val(schema_name, table_name, column_name, condition) {
+    const sql = `
+      SELECT
+        ${column_name} AS val
+      FROM
+        ${schema_name}_${table_name}
+      WHERE
+        ${condition}
+    `;
     return sql;
   }
 
   msg(msg, title = "") {
-    navigator.notification.confirm(msg, function (buttonIndex) { }, title, ["ok"]);
+		if (msg) {
+	    navigator.notification.confirm(msg, function (buttonIndex) { }, title, ["ok"]);
+		}
   }
 
   mapHint(msg, delay = 3000, duration = 1000) {

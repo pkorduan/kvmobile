@@ -308,7 +308,7 @@ export class Overlay {
       var target = $(evt.target);
       console.log("click on overlay-functions-button von div %o", target.parent().attr("id"));
       target.parent().children().filter(".overlay-functions-div").toggle();
-      target.toggleClass("fa-ellipsis-v fa-window-close-o");
+      target.toggleClass("fa-ellipsis-v fa-regular fa-rectangle-xmark");
     });
 
     $("#syncOverlayButton_" + this.globalId).on("click", function (evt) {

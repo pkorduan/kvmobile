@@ -21,12 +21,17 @@ export class Stelle {
 	settings: any;
 	numOverlays: any;
 	numLayersLoaded: number = 0;
+	numLayersRead: number = 0;
 	numLayers: number = 0;
 	loadAllLayers: boolean = false;
+	readAllLayers: boolean = false;
+	tableNames: string[] = [];
 
 	constructor(settings = {}) {
 		this.settings = typeof settings == "string" ? JSON.parse(settings) : settings;
+		this.tableNames = this.getTableNames();
 	}
+
 	get(key) {
 		return this.settings[key];
 	}
@@ -53,9 +58,9 @@ export class Stelle {
 		$("#kvwmapServerPasswortField").val(this.get("passwort"));
 
 		$("#kvwmapServerStelleSelectField").find("option").remove();
-		$.each(JSON.parse(this.get("stellen")), function (index, stelle) {
-			$("#kvwmapServerStelleSelectField").append('<option value="' + stelle.ID + '">' + stelle.Bezeichnung + "</option>");
-		});
+		// $.each(JSON.parse(this.get("stellen")), function (index, stelle) {
+		// 	$("#kvwmapServerStelleSelectField").append('<option value="' + stelle.ID + '">' + stelle.Bezeichnung + "</option>");
+		// });
 		$("#kvwmapServerStelleSelectField").val(this.get("Stelle_ID"));
 		$("#kvwmapServerStellenField").val(this.get("stellen"));
 	}
@@ -70,6 +75,11 @@ export class Stelle {
 		kvm.activeStelle = this;
 		kvm.store.setItem("activeStelleId", this.get("id"));
 		$("#activeStelleBezeichnungDiv").html(this.get("bezeichnung")).show();
+		let layerParams = [];
+		if (kvm.store.getItem(`layerParams`)) {
+			layerParams = JSON.parse(kvm.store.getItem('layerParams'));
+		}
+		kvm.loadLayerParams(this.settings.layer_params, layerParams);
 	}
 
 	/*
@@ -171,7 +181,7 @@ export class Stelle {
 	}
 
 	finishLayerLoading(layer) {
-		console.log("finishLayerLoading: loadAllLayers=%s, numLayersLoaded=%s, numLayers=%s", this.loadAllLayers, this.numLayersLoaded, this.numLayers);
+		console.log("finishLayerReading: readAllLayers= %s, numLayersLoaded=%s, numLayers=%s", this.readAllLayers, this.numLayersLoaded, this.numLayers);
 		if (this.loadAllLayers) {
 			if (this.numLayersLoaded < this.numLayers - 1) {
 				this.numLayersLoaded += 1;
@@ -180,6 +190,27 @@ export class Stelle {
 				kvm.tick(`${layer.title}:<br>&nbsp;&nbsp;Laden beeendet.`);
 				this.numLayersLoaded = 0;
 				this.loadAllLayers = false;
+				// read all layers
+				kvm.reloadFeatures();
+			}
+		}
+		else {
+			// read only this layer
+			this.readAllLayers = false;
+			layer.readData();
+		}
+	}
+
+	finishLayerReading(layer) {
+		console.log("finishLayerReading: readAllLayers= %s, numLayersRead=%s, numLayers=%s", this.readAllLayers, this.numLayersRead, this.numLayers);
+		if (this.readAllLayers) {
+			if (this.numLayersRead < this.numLayers - 1) {
+				this.numLayersRead += 1;
+				kvm.tick(`${layer.title}:<br>&nbsp;&nbsp;${this.numLayersRead} Layer geladen. Noch ${this.numLayers - this.numLayersRead} Layer zu laden.`);
+			} else {
+				kvm.tick(`${layer.title}:<br>&nbsp;&nbsp;Laden beeendet.`);
+				this.numLayersRead = 0;
+				this.readAllLayers = false;
 				const globalLayerId = `${kvm.store.getItem('activeStelleId')}_${kvm.store.getItem('activeLayerId')}`;
 				if (Object.keys(kvm.layers).includes(globalLayerId)) {
 					kvm.layers[globalLayerId].activate(); // activate latest active
@@ -187,18 +218,21 @@ export class Stelle {
 				else {
 					layer.activate(); // activate latest loaded
 				}
+				this.tableNames = this.getTableNames();
 				kvm.showActiveItem();
-				kvm.closeSperrDiv('Laden der Layer beendet. Schließe Sperr-Bildschirm.');
+				// kvm.closeSperrDiv('Laden der Layer beendet. Schließe Sperr-Bildschirm.');
+				kvm.closeSperrDiv('');
 			}
 		}
 		else {
 			kvm.tick(layer.title + ": Laden beeendet.");
 			this.sortOverlays();
 			layer.activate();
+			this.tableNames = this.getTableNames();
 			kvm.showActiveItem();
 			kvm.closeSperrDiv('Fertig.');
 		}
-		console.log("activeLayer after finishLayerLoading: ", kvm.activeLayer ? kvm.activeLayer.get("id") : "keiner aktiv");
+		console.log("activeLayer after finishLayerReading: ", kvm.activeLayer ? kvm.activeLayer.get("id") : "keiner aktiv");
 	}
 
 	/*
@@ -213,6 +247,20 @@ export class Stelle {
 		if (file == "") file = "/index.php?";
 
 		return file;
+	}
+
+	getTableNames() {
+		let stelleId = this.get('id');
+		if (stelleId) {
+			let layerIds = JSON.parse(kvm.store.getItem(`layerIds_${this.get('id')}`));
+			return layerIds.map((layerId) => {
+				let layerSettings = JSON.parse(kvm.store.getItem(`layerSettings_${stelleId}_${layerId}`))
+				return `${layerSettings.schema_name}.${layerSettings.table_name}`;
+			});
+		}
+		else {
+			return [];
+		}
 	}
 
 	/**
@@ -322,7 +370,7 @@ export class Stelle {
 	/*
 	 * Remove existing layer of stelle with sequential function calls
 	 * 	dropDataTable
- 	 * 	dropDeltasTable
+		 * 	dropDeltasTable
 	 * 	removeFromApp
 	 * Request Layer from Stelle and create the layer new with sequential function calls
 	 * 	createTable
@@ -362,7 +410,7 @@ export class Stelle {
 								// remove existing layers
 								// ToDo Hier prüfen was genau gelöscht werden soll, auch die Tabellen?
 								kvm.tick("Entferne existierende Layer aus der Anwendung.");
-								
+
 								document.getElementById("layer_list").innerHTML = "";
 								if ("layerIds_" + kvm.activeStelle.get("id") in kvm.store) {
 									let layerIds = JSON.parse(kvm.store["layerIds_" + kvm.activeStelle.get("id")]);
@@ -392,6 +440,9 @@ export class Stelle {
 								);
 								$("#showSearch").hide();
 								this.loadAllLayers = true;
+								this.numLayersLoaded = 0;
+								this.readAllLayers = true;
+								this.numLayersRead = 0;
 								this.numLayers = resultObj.layers.length;
 								if (this.numLayers > 0) {
 									kvm.tick('Lege Layer neu an.');
@@ -407,7 +458,7 @@ export class Stelle {
 											const layer = new MapLibreLayer(layerSetting, true, this);
 											layer.appendToApp();
 											layer.saveToStore();
-											this.finishLayerLoading(layer);
+											this.finishLayerReading(layer);
 										}
 										else {
 											console.log('Erzeuge einen normales Layer-Objekt');
@@ -423,7 +474,7 @@ export class Stelle {
 								kvm.setConnectionStatus();
 								//console.log('Store after save layer: %o', kvm.store);
 								$("#requestLayersButton").hide();
-							  // hier nicht schließen, sonden am Ende von requestData kvm.closeSperrDiv();
+								// hier nicht schließen, sonden am Ende von requestData kvm.closeSperrDiv();
 							} else {
 								kvm.log("Fehlerausgabe von parseLayerResult!", 4);
 								kvm.msg(resultObj.errMsg, "Downloadfehler");
@@ -455,31 +506,10 @@ export class Stelle {
 
 	getLayerUrl(options = { hidePassword: false }) {
 		//kvm.log("Stelle.getLayerUrl", 4);
-		var url = this.get("url"),
-			file = this.getUrlFile(url);
+		let url = this.get("url");
+		let file = this.getUrlFile(url);
 
-		url +=
-			file +
-			"go=mobile_get_layers" +
-			"&login_name=" +
-			this.get("login_name") +
-			"&passwort=" +
-			(options.hidePassword ? "*****" : encodeURIComponent(this.get("passwort"))) +
-			"&Stelle_ID=" +
-			this.get("Stelle_ID") +
-			"&format=json";
+		url += `${file}go=mobile_get_layers&login_name=${this.get("login_name")}&passwort=${(options.hidePassword ? "*****" : encodeURIComponent(this.get("passwort")))}&Stelle_ID=${this.get("Stelle_ID")}&kvmobile_version=${kvm.versionNumber}&format=json`;
 		return url;
-	}
-
-	allLayerLoaded() {
-		const layerIds = JSON.parse(kvm.store.getItem("layerIds_" + this.get("id")));
-		$.each(layerIds, function (key, layerId) {
-			// TODO
-			const layerSettings = JSON.parse(kvm.store.getItem("layerSettings_" + layerId));
-			if (layerSettings.loaded === false) {
-				return false;
-			}
-		});
-		return true;
 	}
 }

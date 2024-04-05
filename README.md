@@ -14,18 +14,33 @@ Doku zu kvmobile: https://kvwmap.de/index.php/kvmobile
 Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.de/public/kvmobile/
 
 # Change log
+## 1.13.0
+  * Bugfixes
+    * Correct zoom for new features.
+  * Maintainance
+    * Update to awesomefont v 6.5.1
+  * Features
+    * Add bing areal imagery layer.
+    * Show output from Auswahlliste in Vorschau from subformPK attribute.
+    * Make use of gdi_conditional_val function for default values from other tables
+    * Change settings button to open always layer settings first.
+    * Support querys for layers with joined tables
+    * Selectable layer parameters.
 ## 1.12.3
   * Features
     * Links zu Parent und Child Feature
       * Sprung zum Ändern eines anderen Features erst nach Bestätigung.
+    * Bestätigung beim Wechsel vom Formular zur Datenansicht nur wenn vorher im Formular etwas geändert wurde.
+    * Darstellung der Optionswerte bei Auswahllisten mit mehreren Möglichkeiten. 
     * New configurable options
       * Require FingerprintAuth and PIN on start yes / no
       * Confirm before save a dataset yes / no
       * Create a new dataset after create yes / no
       * Next view after create
-      * Next view after update 
+      * Next view after update
+    * Funktion zur Sicherung der Bilddaten im lokalen Verzeichnis
 ## 1.12.2
-  *	Features
+  *  Features
     * Anzeige von Rücksprunglinks zu Parentobjekt mit Vorschau aus drittem Element von Attribute-Option.
     * Nach der Eingabe eines neuen Sub-Datensatz "Weiter"-Button der Zeigt auf das übergeordnete Objekt und "Nächsten anlegen" öffnet Form für nächsten neuen Datensatz.
 ## 1.12.1
@@ -54,7 +69,7 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
     * Clear both bevor form-field-rows
     * Gray attribute names
     * 5px Padding input form fields
-	* Features
+  * Features
     * Jump from Parent to Client form and vise versa.
     * Save and show last active background layer
     * Enable Abhängige Auswahlfelder
@@ -71,7 +86,7 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
     * Catch Error for incorrect formField type.
 ## 1.10.4
   * Bugfix
-    *	Asynchron loading images and previews.
+    *  Asynchron loading images and previews.
     * Different image elements for data and form view.
     * ReadData only from layer when sorting.
 ## 1.10.3
@@ -224,110 +239,110 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
     * Fix Bug, that overlays will not be loaded in offline mode
     * Fix Bug, that vector will tiles not be shown in map in offline mode
     * Make sync overlay button inactive in offline mode
-	* Code Structure
-  	* Switch to TypeScript, jquery only in app context, use node build chain with webpack
-  	* Switch some functions to classes
-  	* Switch from $.parseJSON to native JSON.parse
+  * Code Structure
+    * Switch to TypeScript, jquery only in app context, use node build chain with webpack
+    * Switch some functions to classes
+    * Switch from $.parseJSON to native JSON.parse
 ## 1.7.13
-	* Zeige Output von Auswahlfeld-Attributen in DataView an Stelle von Werten
+  * Zeige Output von Auswahlfeld-Attributen in DataView an Stelle von Werten
 ## 1.7.12
-	* Fix Bug beim erstmaligen Wechseln zwkschen Layern nach dem Laden von der Stelle.
+  * Fix Bug beim erstmaligen Wechseln zwkschen Layern nach dem Laden von der Stelle.
 ## 1.7.11
-	* Fix Bugs durch doppelt geladene oder nicht korrekt entfernte Layer
-	* Steuerung der Darstellung der Popup Funktionen an nur einer Stelle in Funktion per Style
-	* Anzeige aller Overlays in Layer-Control
-	* Größere Klicktoleranz für verbessertes Anklicken von Linien.
-	* Hervorheben des selektierten Layer in Layer-Control
+  * Fix Bugs durch doppelt geladene oder nicht korrekt entfernte Layer
+  * Steuerung der Darstellung der Popup Funktionen an nur einer Stelle in Funktion per Style
+  * Anzeige aller Overlays in Layer-Control
+  * Größere Klicktoleranz für verbessertes Anklicken von Linien.
+  * Hervorheben des selektierten Layer in Layer-Control
 ## 1.7.10
-	* Funktion zum Download neuer Versionen
-	* Fix Bug in usage of coalesce add coalempty to ignore also empty spaces and to show overlaynames correcty
+  * Funktion zum Download neuer Versionen
+  * Fix Bug in usage of coalesce add coalempty to ignore also empty spaces and to show overlaynames correcty
 ## 1.7.9
-	* Behebung des Fehlers, dass beim neu Anlegen eines Objektes nichts passiert. (Anpassung coalesce Funktion)
+  * Behebung des Fehlers, dass beim neu Anlegen eines Objektes nichts passiert. (Anpassung coalesce Funktion)
 ## 1.7.8
-	* Behebung des Fehlers, dass beim Reload von Overlays die ohne Daten nicht vorher entfert werden.
-	* Dynmaische Einstellung der Opacity von Overlayflächen möglich
+  * Behebung des Fehlers, dass beim Reload von Overlays die ohne Daten nicht vorher entfert werden.
+  * Dynmaische Einstellung der Opacity von Overlayflächen möglich
 ## 1.7.7
-	* Behebung des Fehlers, dass die Opacity der Overlay nicht von der Klasse des Layers übernommen wurde
+  * Behebung des Fehlers, dass die Opacity der Overlay nicht von der Klasse des Layers übernommen wurde
 ## 1.7.6
-	* Darstellung der Overlays mit Style der 1. Klasse des Layers in kvwmap
+  * Darstellung der Overlays mit Style der 1. Klasse des Layers in kvwmap
 ## 1.7.5
-	* Anzeige und Reload von Overlays
+  * Anzeige und Reload von Overlays
 ## 1.7.4
-	* Verbesserung beim Synchronisieren und Versionieren.
+  * Verbesserung beim Synchronisieren und Versionieren.
 ## 1.7.3
-	* Fehler bei der Synchronisierung behoben
-	* Alle Ja Links in Dialogen rechts
+  * Fehler bei der Synchronisierung behoben
+  * Alle Ja Links in Dialogen rechts
 ## 1.7.2
-	* Selectable configurations
-	* BackgroundGeolocation enabled
+  * Selectable configurations
+  * BackgroundGeolocation enabled
 ## 1.7.1
-	* Fix issues mit more than one layer and offline maps
+  * Fix issues mit more than one layer and offline maps
 ## 1.7.0
-	* Vector-Tile Layer als Hintergrundlayer und Cache für offline-Nutzung
+  * Vector-Tile Layer als Hintergrundlayer und Cache für offline-Nutzung
 ## 1.6.0
-	* Unterstützung von abhängigen Auswahllisten
-	* Funktion zum Anzeigen und Editieren von Polygonen
+  * Unterstützung von abhängigen Auswahllisten
+  * Funktion zum Anzeigen und Editieren von Polygonen
 ## 1.5.9
-	* Fix bug bei Positionierung des Markers nach dem Erzeugen oder Ändern von Featurs und dem Zeigen der Funktions-Buttons im Popup-Fenster
+  * Fix bug bei Positionierung des Markers nach dem Erzeugen oder Ändern von Featurs und dem Zeigen der Funktions-Buttons im Popup-Fenster
 ## 1.5.8
-	* Fix bug bei Erzeugung neuer Feature. Die Geometrie wird jetzt korrekt übernommen und keine Fehler wegen fehlernder Werte.
-	* Default Werte werden korrekt gesetzt bei neuen Datensätzen
-	* Zoomeinstellung wird nach dem Speichern von Geometrien erhalten.
-	* Fehler beim Speichern von Date bei neuen Datensätzen behoben.
-	* Funktion zum Übernehmen der Werte vorhandener Features in Formular eines neuen Features.
+  * Fix bug bei Erzeugung neuer Feature. Die Geometrie wird jetzt korrekt übernommen und keine Fehler wegen fehlernder Werte.
+  * Default Werte werden korrekt gesetzt bei neuen Datensätzen
+  * Zoomeinstellung wird nach dem Speichern von Geometrien erhalten.
+  * Fehler beim Speichern von Date bei neuen Datensätzen behoben.
+  * Funktion zum Übernehmen der Werte vorhandener Features in Formular eines neuen Features.
 ## 1.5.7
-	* Datumsfelder als Formularfeld mit Datumspicker.
-	* Bessere Formatierung des Formulars mit besserer Unterscheidung von editier- und nicht editierbaren Feldern.
+  * Datumsfelder als Formularfeld mit Datumspicker.
+  * Bessere Formatierung des Formulars mit besserer Unterscheidung von editier- und nicht editierbaren Feldern.
 ## 1.5.6
-	* Jetzt sind auch Datensätze, die keine Geometrie haben editierbar.
-	* Werte, die null sind, werden beim INSERT nicht mehr geschrieben.
-	* Autoattribute werden als Changes immer angehängt.
-	* Auch die Karteneinstellung "Startposition neuer Objekte" wird in den Einstellungen gespeichert.
-	* Neu angelegte und geänderte Daten werden jetzt vor dem Hinzufügen in die Featureliste immer von der Datenbank abgefragt, damit zusammengesetzte Attribute gleich richtig angezeigt werden.
+  * Jetzt sind auch Datensätze, die keine Geometrie haben editierbar.
+  * Werte, die null sind, werden beim INSERT nicht mehr geschrieben.
+  * Autoattribute werden als Changes immer angehängt.
+  * Auch die Karteneinstellung "Startposition neuer Objekte" wird in den Einstellungen gespeichert.
+  * Neu angelegte und geänderte Daten werden jetzt vor dem Hinzufügen in die Featureliste immer von der Datenbank abgefragt, damit zusammengesetzte Attribute gleich richtig angezeigt werden.
 ## 1.5.5
-	* Funktion zum Wiederherstellen von Datensätzen.
-	* Korrektur von Fehlern bei Synchronisierung.
-	* Auf- und Zuklappbare Abschnitte in den Einstellungen.
+  * Funktion zum Wiederherstellen von Datensätzen.
+  * Korrektur von Fehlern bei Synchronisierung.
+  * Auf- und Zuklappbare Abschnitte in den Einstellungen.
 ## 1.5.4
-	* Berücksichtigung von zusammengesetzten Attributen, die auf dem Server als not saveable pseudoattribute definiert sind.
-	* Layerfunktionen mit Beschriftung und toggle.
-	* Löschfunktion auf Client korrigiert.
-	* Monat im Timestamp auf Client korrigiert.
-	* Speicherpfad für Backups lässt sich einstellen.
-	* Änderungsmöglichkeit für Transparenz der MarkerSymbole.
-	* Featurelayer zum Layercontrol hinzugefügt um ihn ein- und ausschalten zu können.
-	* Send Passwort for login escaped.
+  * Berücksichtigung von zusammengesetzten Attributen, die auf dem Server als not saveable pseudoattribute definiert sind.
+  * Layerfunktionen mit Beschriftung und toggle.
+  * Löschfunktion auf Client korrigiert.
+  * Monat im Timestamp auf Client korrigiert.
+  * Speicherpfad für Backups lässt sich einstellen.
+  * Änderungsmöglichkeit für Transparenz der MarkerSymbole.
+  * Featurelayer zum Layercontrol hinzugefügt um ihn ein- und ausschalten zu können.
+  * Send Passwort for login escaped.
 ## 1.5.3
-	* Änder- und speicherbare Karteneinstellungen, Ausdehnung, min-, maxzoom, sowie Startposition und Startzoom.
-	* Bug beim Speichern von Bildern behoben.
-	* Speichern des Autoatributes user_id und user_name ermöglicht.
+  * Änder- und speicherbare Karteneinstellungen, Ausdehnung, min-, maxzoom, sowie Startposition und Startzoom.
+  * Bug beim Speichern von Bildern behoben.
+  * Speichern des Autoatributes user_id und user_name ermöglicht.
 ## 1.5.2
-	* Der Zurück-Button zeigt einen Dialog ob man die Anwendung beenden möchte.
-	* Formularelementtypen Time, User und UserID werden auf der Client-Seite automatisch befüllt entsprechend der Optionen die für das Attribut gesetzt sind.
-	* Status-, Layerattributfilter und Sortierattribut werden local gespeichert, so dass sie nach einem Neustart der App wieder verwendet werden.
-	* Auf Client erzeugte Zeiten in Local-Time.
+  * Der Zurück-Button zeigt einen Dialog ob man die Anwendung beenden möchte.
+  * Formularelementtypen Time, User und UserID werden auf der Client-Seite automatisch befüllt entsprechend der Optionen die für das Attribut gesetzt sind.
+  * Status-, Layerattributfilter und Sortierattribut werden local gespeichert, so dass sie nach einem Neustart der App wieder verwendet werden.
+  * Auf Client erzeugte Zeiten in Local-Time.
 ## 1.5.1
-	* Fix incomplete sync procedure.
-	* Colorselector in settings.
-	* Pfadeinstellung zu orka-tiles geändert auf files/orka-tiles-vg.
+  * Fix incomplete sync procedure.
+  * Colorselector in settings.
+  * Pfadeinstellung zu orka-tiles geändert auf files/orka-tiles-vg.
 ## 1.5.0
-	* Change methode to load layer.
-	* enable different types of geometry by applying geom_attribut setting of layer.
-	* sort function.
-	* filter function.
-	* settings for taking pictures.
+  * Change methode to load layer.
+  * enable different types of geometry by applying geom_attribut setting of layer.
+  * sort function.
+  * filter function.
+  * settings for taking pictures.
 ## 1.4.4
-	* Enable origin https://geoport-vr.de/kvwmap/ in config.xml.
+  * Enable origin https://geoport-vr.de/kvwmap/ in config.xml.
 ## 1.4.3
-	* Enable origin https://geoportal-vg.de/kvwmap/ in config.xml.
+  * Enable origin https://geoportal-vg.de/kvwmap/ in config.xml.
 ## 1.4.2
-	* Toggle style and function of sync Buttons pending from networkstatus.
-	* Send also layer sync request with no deltas on client side.
+  * Toggle style and function of sync Buttons pending from networkstatus.
+  * Send also layer sync request with no deltas on client side.
 ## 1.4.1
-	* Fix destination path of images taken with the camera. New images now will be strored allways to the directory specified in config.js parameter localImgPath.
-	* Eye Button to show and hide the password text in settings view.
-	* Remove note about apache Licence in app.js because the software ist under GNU Licence as defined in LICENSE file.
+  * Fix destination path of images taken with the camera. New images now will be strored allways to the directory specified in config.js parameter localImgPath.
+  * Eye Button to show and hide the password text in settings view.
+  * Remove note about apache Licence in app.js because the software ist under GNU Licence as defined in LICENSE file.
 ## 1.4.0
-	* Change username to login_name.
-	* Add change log to Readme.
-	* Set Version in package.json, config.xml widget version attribut and app.js kvm.version.
+  * Change username to login_name.
+  * Add change log to Readme.
+  * Set Version in package.json, config.xml widget version attribut and app.js kvm.version.

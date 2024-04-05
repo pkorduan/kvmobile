@@ -276,10 +276,10 @@ export class MapLibreLayer extends LLayer {
     const html = `
       <div id="layer_${this.getGlobalId()}" class="layer-list-div">
         <input type="radio" name="activeLayerId" value="${this.getGlobalId()}"/> ${this.get("alias") ? this.get("alias") : this.get("title")}
-        <i id="layer-functions-button_${this.getGlobalId()}" class="layer-functions-button fa fa-ellipsis-v" aria-hidden="true"></i>
+        <i id="layer-functions-button_${this.getGlobalId()}" class="layer-functions-button fa-regular fa-ellipsis-vertical" aria-hidden="true"></i>
         <div class="layer-functions-div">
           <button id="reloadLayerButton_${this.getGlobalId()}" value="${this.getGlobalId()}" class="settings-button reload-layer-button active-button layer-function-button">
-            <i id="reloadLayerIcon_${this.getGlobalId()}" class="fa fa-window-restore" aria-hidden="true"></i>
+            <i id="reloadLayerIcon_${this.getGlobalId()}" class="fa fa-download" aria-hidden="true"></i>
           </button> Layer neu laden
         </div>
       </div>`;
@@ -290,8 +290,8 @@ export class MapLibreLayer extends LLayer {
 		(<any>$("input[value=" + this.getGlobalId() + "]")[0]).checked = true;
 		$(".layer-functions-button, .layer-functions-div").hide();
 		$("#layer_" + this.getGlobalId() + " > .layer-functions-button").show();
-		$("#layer_" + this.getGlobalId() + " > .layer-functions-button").removeClass("fa-ellipsis-v fa-window-close-o");
-		$("#layer_" + this.getGlobalId() + " > .layer-functions-button").addClass("fa-ellipsis-v");
+		$("#layer_" + this.getGlobalId() + " > .layer-functions-button").removeClass("fa-ellipsis-vertical fa-square-xmark");
+		$("#layer_" + this.getGlobalId() + " > .layer-functions-button").addClass("fa-ellipsis-vertical");
 		$("#newFeatureButton").hide();
 	}
 
@@ -325,7 +325,7 @@ export class MapLibreLayer extends LLayer {
       var target = $(evt.target);
       console.log("click on layer-functions-button von div %o", target.parent().attr("id"));
       target.parent().children().filter(".layer-functions-div").toggle();
-      target.toggleClass("fa-ellipsis-v fa-window-close-o");
+      target.toggleClass("fa-ellipsis-vertical fa-square-xmark");
     });
 
     $(".reload-layer-button" + (layerGlobalId > 0 ? "[id='reloadLayerButton_" + layerGlobalId + "']" : "")).on("click", function (evt) {
