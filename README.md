@@ -14,6 +14,19 @@ Doku zu kvmobile: https://kvwmap.de/index.php/kvmobile
 Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.de/public/kvmobile/
 
 # Change log
+## 1.13.2
+  * Features
+    * Shows images sync button on layer settings only if layer has document attribute.
+  * Bug
+    * Delete fk related sub features before deleting a parent feature.
+    * Fix search for parent feature with within test.
+    * Fix display of feature without geometry in dataview.
+## 1.13.1
+  * Maintainance
+    * Better getTimeStamp function.
+    * Backup Database only if response from sync have deltas.
+  * Features
+    * Write Logs to file in backupPath.
 ## 1.13.0
   * Bugfixes
     * Correct zoom for new features.

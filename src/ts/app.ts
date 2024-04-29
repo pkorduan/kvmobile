@@ -88,6 +88,7 @@ class Kvm {
   lastMapOrListView: String = 'featureList';
   versionNumber: String;
   layerParams: any = {};
+  logFileEntry: FileEntry;
 
   // showItem: <(p:any)=>void>undefined,
   // log: <(p:any)=>void>undefined,
@@ -270,32 +271,16 @@ class Kvm {
     console.dir(e);
   }
 
-  writeLog(str) {
-    // TODO
-    var logOb;
-    if (!logOb) return;
-    var t = new Date();
-    var log =
-      "[" +
-      t.getFullYear() +
-      "-" +
-      t.getMonth() +
-      "-" +
-      t.getDay() +
-      " " +
-      t.getHours() +
-      ":" +
-      t.getMinutes().toString().padStart(2, "0") +
-      ":" +
-      t.getSeconds().toString().padStart(2, "0") +
-      "] " +
-      str +
-      "\n";
-    logOb.createWriter(function (fileWriter) {
-      fileWriter.seek(fileWriter.length);
-      var blob = new Blob([log], { type: "text/plain" });
-      fileWriter.write(blob);
-    }, kvm.fail);
+  /**
+   * Diese Funktion schreibt den Text aus variable log die Log-Datei.
+   * Die Log-Datei ist in kvm.openLogFile() definiert worden.
+   * @param str 
+   * @returns 
+   */
+  writeLog(log) {
+    log = `[${kvm.now(' ', '', ':')}] ${log}` + "\n";
+    let dataObj = new Blob([log], { type: "text/plain" });
+    this.controller.files.writeFile(kvm.logFileEntry, dataObj, true);
   }
 
   onDeviceReady() {
@@ -405,7 +390,7 @@ class Kvm {
 
     try {
       kvm.store.getItem("activeView") || "featurelist";
-      console.log("startApplication");
+      // console.log("startApplication");
 
       const dbPromise = idb.openDB("keyval-store", 1, {
         upgrade(db) {
@@ -426,6 +411,7 @@ class Kvm {
 
     try {
       this.loadLogLevel();
+      this.openLogFile();
       this.loadDeviceData();
       //    SyncStatus.load(this.store); ToDo: Wenn das nicht gebraucht wird auch in index.html löschen.
       this.setConnectionStatus();
@@ -484,7 +470,6 @@ class Kvm {
                 if (layer.hasEditPrivilege) {
                   try {
                     console.log("Layer " + layer.title + ": SyncData with local deltas if exists.");
-                    kvm.backupDatabase();
                     layer.syncData();
                   } catch ({ name, message }) {
                     kvm.msg("Fehler beim synchronisieren des Layers id: " + layer.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
@@ -1579,7 +1564,7 @@ class Kvm {
         return false;
       }
 
-      if (kvm.activeLayer.get('geometry_attribute') && !$("#featureFormular input[name=" + kvm.activeLayer.get("geometry_attribute") + "]").val()) {
+      if (kvm.activeLayer.hasGeometry && !$("#featureFormular input[name=" + kvm.activeLayer.get("geometry_attribute") + "]").val()) {
         kvm.msg('Sie haben noch keine Koordinaten erfasst!', "Formular");
         return false;
       }
@@ -1901,7 +1886,7 @@ class Kvm {
   featureItemClickEventFunction(evt) {
     console.log("featureItemClickEvent on feature id: %o", evt.target.id);
     let feature = kvm.activeLayer.features[evt.target.id];
-    kvm.showItem((kvm.activeLayer.get('geometry_attribute') && feature.get(kvm.activeLayer.get('geometry_attribute')) != 'null') ? 'map' : 'dataView');
+    kvm.showItem((kvm.activeLayer.hasGeometry && feature.get(kvm.activeLayer.get('geometry_attribute')) != 'null') ? 'map' : 'dataView');
     kvm.activeLayer.activateFeature(feature, true);
   }
 
@@ -1909,7 +1894,7 @@ class Kvm {
 		let srcDir = cordova.file.applicationStorageDirectory + "databases/";
 		let srcFile = "kvmobile.db";
 		let dstDir = kvm.store.getItem("localBackupPath") || kvm.config.localBackupPath;
-		let dstFile = (filename || "Sicherung_" + kvm.now().toString().replace("T", "_").replace(/:/g, "-").replace("Z", "")) + '.db';
+		let dstFile = filename || `Sicherung_${kvm.now('_', '', '-')}.db`;
     kvm.controller.files.copyFile(
 			srcDir,
 			srcFile,
@@ -1935,25 +1920,26 @@ class Kvm {
     );
   }
 
+  /**
+   * Beendet die Editierung des Features
+   * Wenn das Feature eine Geometrie hat beende die Editierung der Geometrie
+   * Wenn das Feature neu angelegt werden sollte und ein parent feature hat springe dort hin
+   * Wenn die Editierung in der Karte abgebrochen wird wechsel zur Karte, sonst zur Feature Liste
+   */
 	cancelEditFeature() {
 		const activeLayer = kvm.activeLayer;
 		const activeFeature = activeLayer.activeFeature;
 
-		if (activeLayer.get('geometry_attribute')) {
+		if (activeLayer.hasGeometry) {
 			//console.log("Feature ist neu? %s", activeFeature.options.new);
 			if (activeFeature.options.new) {
 				//console.log("Änderungen am neuen Feature verwerfen.");
-				if (activeLayer.get('geometry_attribute')) {
-					activeLayer.cancelEditGeometry();
-					if (kvm.controller.mapper.isMapVisible()) {
-						kvm.showItem("map");
-					} else {
-						kvm.showItem("featurelist");
-					}
-				}
-				else {
-					kvm.showItem("featurelist");
-				}
+        activeLayer.cancelEditGeometry();
+        if (kvm.controller.mapper.isMapVisible()) {
+          kvm.showItem("map");
+        } else {
+          kvm.showItem("featurelist");
+        }
 			} else {
 				//console.log("Änderungen am vorhandenen Feature verwerfen.");
 				activeLayer.cancelEditGeometry(activeFeature.id); // Editierung der Geometrie abbrechen
@@ -2102,6 +2088,16 @@ class Kvm {
       kvm.store.setItem("logLevel", logLevel);
     }
     $("#logLevel").val(logLevel);
+  }
+
+  openLogFile() {
+    window.resolveLocalFileSystemURL(
+      kvm.store.getItem("localBackupPath") || kvm.config.localBackupPath,
+      (dirEntry) => {
+        console.log(dirEntry);
+        (<DirectoryEntry>dirEntry).getFile('kvmobile_logfile.txt', { create: true, exclusive: false}, (fileEntry) => { console.log(fileEntry); kvm.logFileEntry = fileEntry; })
+      }
+    );
   }
 
   /**
@@ -2272,7 +2268,7 @@ class Kvm {
       case "formular":
         $(".menu-button").hide();
         $("#saveFeatureButton, #cancelFeatureButton").show();
-        if (kvm.activeLayer && kvm.activeLayer.get('geometry_attribute')) {
+        if (kvm.activeLayer && kvm.activeLayer.hasGeometry) {
           $('#showMapEdit').show();
         }
         else {
@@ -2447,7 +2443,7 @@ class Kvm {
         console.log("Log msg: " + msg);
       }
       setTimeout(function () {
-        $("#logText").append("<br>" + msg);
+        $("#logText").append(`<br>${kvm.now(' ', '', ':')}: ${msg}`);
         if (show_in_sperr_div) {
           $("#sperr_div").show();
           if (append) {
@@ -2710,42 +2706,15 @@ class Kvm {
     return filter;
   }
 
-  now() {
+  now(datePrefix = 'T', timePrefix = 'Z', timeSeparator = ':') {
     const now = new Date();
-
-    // TODO falsch implementiert
-    return (
-      now.getFullYear() +
-      "-" +
-      String("0" + (now.getMonth() + 1).toString()).slice(-2) +
-      "-" +
-      String("0" + now.getDate()).slice(-2) +
-      "T" +
-      String("0" + now.getHours()).slice(-2) +
-      ":" +
-      String("0" + now.getMinutes()).slice(-2) +
-      ":" +
-      String("0" + now.getSeconds()).slice(-2) +
-      "Z"
-    );
-  }
-
-  now_local() {
-    const now = new Date();
-    // TODO falsch implementiert
-    return (
-      now.getFullYear() +
-      "-" +
-      String("0" + (now.getMonth() + 1).toString()).slice(-2) +
-      "-" +
-      String("0" + now.getDate()).slice(-2) +
-      "T" +
-      String("0" + now.getHours()).slice(-2) +
-      ":" +
-      String("0" + now.getMinutes()).slice(-2) +
-      ":" +
-      String("0" + now.getSeconds()).slice(-2)
-    );
+    const jahr = now.getFullYear();
+    const monat = String("0" + (now.getMonth() + 1).toString()).slice(-2);
+    const tag = String("0" + now.getDate()).slice(-2);
+    const stunde = String("0" + now.getHours()).slice(-2);
+    const minute = String("0" + now.getMinutes()).slice(-2);
+    const sekunde = String("0" + now.getSeconds()).slice(-2);
+    return (`${jahr}-${monat}-${tag}${datePrefix}${[stunde, minute, sekunde].join(timeSeparator)}${timePrefix}`);
   }
 
   today(): string {

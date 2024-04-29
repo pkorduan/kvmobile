@@ -59,7 +59,7 @@ export class DateTimeFormField {
 
   getAutoValue() {
     // kvm.log("DateTimeFormField.getAutoValue", 4);
-    return kvm.now_local();
+    return kvm.now();
   }
 
   bindEvents() {

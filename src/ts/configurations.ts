@@ -993,7 +993,7 @@ export const configurations = [
     mapSettings: {
       newPosSelect: 1,
       minZoom: 8,
-      maxZoom: 19,
+      maxZoom: 18,
       startZoom: 8,
       west: 5.81839,
       south: 47.53976,

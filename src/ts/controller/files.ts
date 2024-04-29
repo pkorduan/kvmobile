@@ -8,7 +8,7 @@ export const FileUtils = {
       var reader = new FileReader();
 
       reader.onloadend = function () {
-        console.log("Successful file read: " + this.result);
+        // console.log("Successful file read: " + this.result);
         kvm.controller.files.displayFileData(fileEntry.nativeURL + ": " + this.result);
       };
 
@@ -21,11 +21,12 @@ export const FileUtils = {
     fileEntry.createWriter(function (fileWriter) {
       fileWriter.onwriteend = function () {
         console.log("Successful file write...");
-        kvm.controller.files.readFile(fileEntry);
+        // kvm.controller.files.readFile(fileEntry);
       };
 
       fileWriter.onerror = function (e) {
-        console.log("Failed file read: " + e.toString());
+        let msg = `Fehler beim Schreiben in die Logdatei: ${e.toString()}`;
+        console.error(msg);
       };
 
       // If we are appending data to file, go to the end of the file.
@@ -33,7 +34,8 @@ export const FileUtils = {
         try {
           fileWriter.seek(fileWriter.length);
         } catch (e) {
-          console.log("file doesn't exist!");
+          let msg = `Logdatei existiert nicht!`;
+          console.error(msg);
         }
       }
       fileWriter.write(dataObj);

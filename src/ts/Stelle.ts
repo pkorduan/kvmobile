@@ -71,7 +71,7 @@ export class Stelle {
 	}
 
 	activate() {
-		kvm.log("Stelle.js activate", 4);
+		// kvm.log("Stelle.js activate", 4);
 		kvm.activeStelle = this;
 		kvm.store.setItem("activeStelleId", this.get("id"));
 		$("#activeStelleBezeichnungDiv").html(this.get("bezeichnung")).show();
@@ -190,6 +190,7 @@ export class Stelle {
 				kvm.tick(`${layer.title}:<br>&nbsp;&nbsp;Laden beeendet.`);
 				this.numLayersLoaded = 0;
 				this.loadAllLayers = false;
+				this.tableNames = this.getTableNames();
 				// read all layers
 				kvm.reloadFeatures();
 			}
@@ -251,16 +252,25 @@ export class Stelle {
 
 	getTableNames() {
 		let stelleId = this.get('id');
-		if (stelleId) {
-			let layerIds = JSON.parse(kvm.store.getItem(`layerIds_${this.get('id')}`));
-			return layerIds.map((layerId) => {
+		if (typeof stelleId == 'undefined') return [];
+
+		let layerIdsText = kvm.store.getItem(`layerIds_${this.get('id')}`);
+		if (layerIdsText == null) return [];
+
+		let layerIds = JSON.parse(layerIdsText);
+		if (!Array.isArray(layerIds)) return [];
+
+		return layerIds.map((layerId) => {
+			try {
 				let layerSettings = JSON.parse(kvm.store.getItem(`layerSettings_${stelleId}_${layerId}`))
 				return `${layerSettings.schema_name}.${layerSettings.table_name}`;
-			});
-		}
-		else {
-			return [];
-		}
+			}
+			catch ({ name, message }) {
+				let msg = `Fehler beim Parsen der layerSettings ${stelleId}_${layerId}, Einstellungen des Layers können nicht aus dem Store geladen werden. TypeError: ${name}, Message: ${message}`;
+				console.error(msg);
+				kvm.msg(msg, 'Fehler');
+			}
+		}).filter((tableName) => { return typeof tableName != 'undefined'; });
 	}
 
 	/**

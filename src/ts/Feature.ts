@@ -475,11 +475,16 @@ export class Feature {
 				kvm.map.panTo(layer.getLatLng());
 			} else {
 				console.log('flyToBounds %s %o', (this.isEditable ? 'editableLayer: ' : 'feature bounds: '), layer.getBounds().getCenter());
-				$('#map').show();
+				let isVisible = $('#map').is(':visible');
+				if (!isVisible) {
+					$('#map').show();
+				}
 				kvm.map.invalidateSize();
 				//kvm.map.flyToBounds(layer.getBounds());
 				kvm.map.fitBounds(layer.getBounds());
-				$('#map').hide();
+				if (!isVisible) {
+					$('#map').hide();
+				}
 			}
 		}
 		else {
@@ -509,7 +514,7 @@ export class Feature {
 		if (kvmLayer.activeFeature) {
 			kvmLayer.activeFeature.deactivate();
 		}
-		if (kvmLayer.get('geometry_attribute')) {
+		if (kvmLayer.hasGeometry) {
 			let mapLayer = (<any>kvm.map)._layers[this.layerId];
 			if (this.newGeom) {
 				//console.log("Feature has newGeom");
