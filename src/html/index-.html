@@ -1,0 +1,618 @@
+<!doctype html>
+<html>
+  <head>
+    <TITLE>kvmobile</TITLE>
+    <META charset="UTF-8">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="msapplication-tap-highlight" content="no">
+    <meta name="viewport" content="user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, width=device-width, height=device-height">
+    <!-- target-densityDpi=device-dpi us bit supported //-->
+    <!-- This is a wide open CSP declaration. To lock this down for production, see below. -->
+    <!--meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline'; style-src 'self' 'unsafe-inline'; media-src *"-->
+    <!--meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline'; img-src * filesystem://com.android.providers.media.documents/document/ content://com.android.providers.media.documents/document/ data://com.android.providers.media.documents/document/ blob://com.android.providers.media.documents/document/ android-webview-video-poster:content://com.android.providers.media.documents/document/ gap: https://ssl.gstatic.com content://com.android.providers.media.documents/document/ unsafe-eval'; style-src * 'unsafe-inline'; media-src *"-->
+
+    <!--meta http-equiv="Content-Security-Policy" content="default-src *; 'unsafe-inline'; style-src * 'unsafe-inline'; media-src *; img-src * data: content://com.android.providers.media.documents 'unsafe-inline' 'unsafe-eval';"/-->
+<!-- No restrictions
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src *; 
+      style-src * 'unsafe-inline'; 
+      script-src * 'unsafe-inline'; 
+      media-src *; img-src * data:; 
+    ">
+For worker-src use instead
+child-src * 'self' blob: http:
+/-->
+
+
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline'; style-src * 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src-elem *; worker-src * 'self' blob: file:; media-src *; img-src * data: content://com.android.providers.media.documents 'unsafe-inline' 'unsafe-eval';"/>
+
+    <link rel="stylesheet" type="text/css" href="style.css"/>
+    <style>
+      .hidden {
+        display: none;
+      }
+    </style>
+
+    <script src="cordova.js"></script>
+<!--        
+    <script src="3rdparty/jquery-3.5.1/jquery.min.js"></script>
+
+    <script src="3rdparty/leaflet-1.3.1/leaflet.js"></script>
+
+
+    <script src="3rdparty/leaflet-1.3.1/Leaflet.Editable.js"></script>
+    <script src="3rdparty/leaflet-1.3.1/Path.Drag.js"></script>
+-->    
+    <!--script src="3rdparty/indexdb/index-min.js"></script//-->
+
+<!--
+    <script src="3rdparty/Leaflet.TileLayer/maplibre-gl-unminified.js"></script>
+    
+    <script src="3rdparty/leaflet-maplibre/leaflet-maplibre-gl.js"></script>
+
+
+    <script src="3rdparty/leaflet-locatecontrol-gh-pages/dist/L.Control.Locate.min.js"></script>
+    <script src="3rdparty/leaflet-betterscale-master/L.Control.BetterScale.js"></script>
+    <script src="3rdparty/leaflet-geoman/leaflet-geoman.min.js"></script>
+    <script src="3rdparty/proj4js-2.3.12/proj4.js"></script>
+    <script src="3rdparty/leaflet-proj4/proj4leaflet.js"></script>
+    <script src="3rdparty/leaflet-tilelayer-cordova/leaflet-tilelayer-cordova.js"></script>
+    <script src="3rdparty/leaflet-easy-button/easy-button.js"></script>
+    <script src="3rdparty/wkx-0.4.2/dist/wkx.min.js"></script>
+    <script src="3rdparty/md5/js/md5.min.js"></script>
+-->
+    
+    <!--script src="3rdparty/Leaflet.TileLayer/Leaflet.MTBTileAccessor.js"></script-->
+<!--    <script src="js/config.js"></script>
+    <script src="js/Layer.js"></script>
+    <script src="js/Overlay.js"></script>
+    <script src="js/CheckboxFormField.js"></script>
+    <script src="js/SelectFormField.js"></script>
+    <script src="js/GeometryFormField.js"></script>
+    <script src="js/BilderFormField.js"></script>
+    <script src="js/TextfeldFormField.js"></script>
+    <script src="js/TextFormField.js"></script>
+    <script src="js/DateTimeFormField.js"></script>
+    <script src="js/DateFormField.js"></script>
+    <script src="js/ZahlFormField.js"></script>
+    <script src="js/UserFormField.js"></script>
+    <script src="js/UserIDFormField.js"></script>
+    <script src="js/DataViewField.js"></script>
+    <script src="js/Stelle.js"></script>
+    <script src="js/Stelle.js"></script>
+    <script src="js/Feature.js"></script>
+    <script src="js/Attribute.js"></script>
+    <script src="js/syncStatus.js"></script>
+    <script src="js/networkStatus.js"></script>
+    <script src="js/gpsStatus.js"></script>
+    <script src="js/teststyle.js"></script> -->
+    <script type="module" src="app.js"></script>
+  </head>
+  <body">
+    <div id="sperr_div" class="modal">
+      <i class="fa fa-spinner fa-pulse fa-2x"></i>
+      <div id="sperr_div_content" class="sperr-div-content"></div>
+    </div>
+
+    <div id="login" class="login">
+      <div class="login-header">kvmobile</div>
+      <img src="img/logo_gdi.png"><br>
+      <div id="short_password_div">
+        <span id="short_password_label">Die ersten 4 Zeichen des Passwortes:</span>
+        <input id="short_password_field" type="password" name="short_password">
+      </div>
+      <div id="password_div">
+        <span id="password_label" style="font-size: 10px">Bitte vollständiges Passwort eingeben:
+        <div><input id="password_field" type="password" name="password"><input id="password_ok_button" type="button" name="submit_password" value="ok"></div>
+        <input id="password_view_checkbox" type="checkbox" name="show_password" value="1"> Passwort anzeigen</span>
+      </div>
+    </div>
+
+    <!-- Menue -->
+    <div id="kopfbereich">
+      <div class="col-xs-3" style="text-align:center;">
+        <a id="showSettings" class="menu-button">
+          <i class="fa fa-layer-group fa-2x" aria-hidden="true"></i>
+        </a>
+				<a id="showMapEdit" class="menu-button" style="display: none;">
+          <i class="fa fa-map fa-2x" aria-hidden="true"></i>
+          <i class="fa fa-pencil" aria-hidden="true"></i>
+        </a>
+        <a id="showFormEdit" class="menu-button" style="display: none;">
+          <i class="fa fa-file fa-2x" aria-hidden="true"></i>
+          <i class="fa fa-pencil" aria-hidden="true"></i>
+        </a>
+      </div>
+      <div class="col-xs-3" style="text-align:center;">
+        <a id="showFeatureList" class="menu-button" style="display: none;">
+          <i class="fa fa-list fa-2x" aria-hidden="true"></i>
+        </a>
+        <a id="cancelFeatureButton" class="menu-button text-button" style="display: none;">
+          <i class="fa fa-arrow-left" aria-hidden="true"></i>
+        </a>
+      </div>
+      <div class="col-xs-3" style="text-align:center;">
+        <a id="showMap" class="menu-button" onClick="kvm.showItem('map')" style="display: none;">
+          <i class="fa fa-map fa-2x" aria-hidden="true"></i>
+        </a>
+        <a id="saveFeatureButton" class="menu-button text-button" style="display: none;">
+          <i class="fa fa-floppy-disk" aria-hidden="true"></i>
+        </a>
+      </div>
+      <div class="col-xs-3" style="text-align:center;">
+        <!--a onClick="kvm.showItem('formular')" class="menu-button" id="showLine">
+          <i id="addHaltestelle" class="fa fa-plus-square fa-2x" aria-hidden="true"></i>
+        </a //-->
+        <i id="newFeatureButton" class="fa fa-solid fa-square-plus fa-2x menu-button" aria-hidden="true" style="display: none;"></i>
+        <i id="editFeatureButton" class="fa fa-pen fa-2x menu-button" aria-hidden="true" style="display: none;"></i>
+        <i id="tplFeatureButton" class="fa fa-clone fa-2x menu-button" aria-hidden="true" style="display: none;"></i>
+        <i id="restoreFeatureButton" class="fa fa-rotate-left fa-2x menu-button" aria-hidden="true" style="display: none;"></i>
+        <i id="deleteFeatureButton" class="fa fa-trash fa-2x menu-button" aria-hidden="true" style="display: none;"></i>
+      </div>
+    </div>
+  </div>
+  <div class="clear"></div>
+
+  <!-- Einstellungen -->
+  <div id="settings" class="panel v-scroll-div">
+    <h1>Einstellungen</h1>
+    <div class="h2-div"><h2 id="h2_konfiguration" class="b-collapsed">Konfiguration</h2></div>
+    <div id="configFileDiv">
+    </div>
+    <hr>
+
+    <div class="h2-div"><h2 id="h2_server" class="b-collapsed">Server</h2></div>
+    <div id="kvwmapServerDataForm" class="div-form">
+      <input id="kvwmapServerIdField" name="kvwmapServerId" type="hidden" value="1">
+      Name<br>
+      <input id="kvwmapServerNameField" name="kvwmapServerName" type="text" value="Server kvwmap LK-ROS"><br>
+      URL<br>
+      <input id="kvwmapServerUrlField" name="kvwmapServerUrl" type="text"><br>
+      Nutzername<br>
+      <input id="kvwmapServerLoginNameField" name="kvwmapServerLoginName" type="text" value=""><br>
+      Passwort <i class="fa fa-eye" aria-hidden="true" onclick="this.classList.toggle('fa-eye'); this.classList.toggle('fa-eye-slash'); document.getElementById('kvwmapServerPasswortField').type = (document.getElementById('kvwmapServerPasswortField').type === 'text' ? 'password' : 'text');"></i><br>
+      <input id="kvwmapServerPasswortField" name="kvwmapServerPasswort" type="password" value=""><br>
+      Stelle<br>
+      <div id="activeStelleBezeichnungDiv"></div>
+      <button id="requestStellenButton" class="settings-button">
+        <i class="fa fa-key" aria-hidden="true"></i> Stellen abfragen
+      </button>
+      <select id="kvwmapServerStelleSelectField" name="kvwmapServerStelleId" style="display: none;">
+        <option value="">Stelle Wählen</option>
+      </select>
+      <input id="kvwmapServerStellenField" name="kvwmapServerStellen" type="hidden" value="">
+
+      <button id="saveServerSettingsButton" class="settings-button" style="display: none;">
+        <i class="fa fa-regular fa-floppy-disk" aria-hidden="true"></i> Einstellungen Speichern
+      </button>
+    </div>
+    <hr>
+
+    <div class="h2-div"><h2 id="h2_layer" class="b-collapsed">Layer</h2></div>
+    <div>
+      <button id="requestLayersButton" class="settings-button" style="display: none;">
+        <i class="fa fa-download" aria-hidden="true"></i> Layer abfragen
+      </button>
+      <div style="clear: both"></div>
+      <div id="layer_list">
+      </div>
+    </div>
+    <hr>
+
+    <div class="h2-div"><h2 id="h2_layerparams" class="b-collapsed">Layerparameter</h2></div>
+    <div>
+      <div id="layer_prams_list">
+      </div>
+      <div style="clear: both"></div>
+    </div>
+    <hr>
+
+    <div id="toggle_mehr"
+      class="toggle-settings-div"
+    >mehr <i class="fa fa-angles-down"></i></div>
+
+    <div
+      id="switchable_settings_div"
+      style="display:none"
+      >
+      <div class="h2-div">
+        <h2 id="h2_anzeigefilter" class="b-collapsed switchable-setting">Anzeigefilter</h2>
+      </div>
+      <div id="anzeigeFilterDiv" class="switchable-setting">
+        <!--select id="statusFilterSelect">
+          <option value="" selected>kein Filter</option>
+        </select//-->
+        <div class="settings-label">Anzahl der Zeilen:</div><input type="number" id="limit" value="1000" size="5"/>
+        <div style="clear:both"></div>
+        <div class="settings-label">Starten bei Zeile:</div><input type="number" id="offset" value="0" size="5"/>
+        <div style="clear:both"></div>
+        Nur historische Datensätze: <input id="historyFilter" type="checkbox">
+        Nur eigene Datensätze: <input id="userIdFilter" type="checkbox">
+        <div style="clear:both"></div>
+        <input id="runFilterButton" type="button" value="Anwenden" class="settings-button" style="margin-top: 5px"/>
+        <input id="toggleFilterDivButton" type="button" value="mehr" class="settings-button"/>
+        <div id="filterDiv" style="display: none">
+          <div id="attributeFilterFieldDiv"></div>
+        </div>
+      </div>
+      <hr>
+
+      <div class="h2-div"><h2 id="h2_sortierung" class="b-collapsed">Sortierung</h2></div>
+      <div id="anzeigeSortDiv">
+        <select id="anzeigeSortSelect">
+          <option value="">keine Sortierung</option>
+        </select>
+      </div>
+      <hr>
+
+      <div class="h2-div"><h2 id="h2_farben" class="b-collapsed">Farben</h2></div>
+      <div id="colorSelectorDiv">
+      </div>
+      <hr>
+
+      <div class="h2-div"><h2 id="h2_symbole" class="b-collapsed">Symbole</h2></div>
+      <div id="transfarencySelectorDiv">
+        Symboltransparenz : <span id="fillOpacitySpan">0.8</span><br>
+        <input type="range" class="camera-options-slider" id="fillOpacitySlider" name="fillOpacity" min="0" max="10" value="8"><i class="fa fa-info" aria-hidden="true" onclick="kvm.msg('0 ist ganz durchsichtig, 1 ohne Transparenz. Wirkt sich erst nach dem neu Laden der Datensätze z.B. durch Filterung aus. Dazu einmal bei Filter auf Anwenden klicken.')" style="margin-left: 5px"></i>
+      </div>
+      <hr>
+
+      <div class="h2-div"><h2 id="h2_bildaufnahme" class="b-collapsed">Bildaufnahme</h2></div>
+      <div id="cameraOptionsDiv">
+        Bildqualität: <span id="cameraOptionsQuality">25</span> % <input id="cameraOptionsQualitySlider" type="range" min="10" max="100" value="25" class="camera-options-slider"><i class="fa fa-info" aria-hidden="true" onclick="kvm.msg('Verringert die Größe der aufgenommenen Bilddateien auf die angegebenen % der in der Kamera eingestellten Größe.')" style="margin-left: 5px"></i><br>
+        <!--input id="cameraOptionsAllowEdit" type="checkbox"> Editieren erlauben<br>
+        <input id="cameraOptionsCorrectOrientation" type="checkbox" checked> Bildrichtung anpassen<br//-->
+        <input id="cameraOptionsSaveToPhotoAlbum" type="checkbox" checked> Auch im Fotoalbum speichern
+      </div>
+      <hr>
+
+      <div class="h2-div"><h2 id="h2_karteneinstellungen" class="b-collapsed">Karteneinstellungen</h2></div>
+      <div id="mapSettingsDiv" style="padding-left: 10px">
+        Startposition neuer Objekte<br>
+        <div id="newPosDiv">
+          <select id="newPosSelect" name="newPosSelect" class="mapSetting">
+            <option value="1">An GPS-Position falls Signal vorhanden</option>
+            <option value="2" selected>Immer am aktuellen Kartenmittelpunkt</option>
+          </select>
+        </div><br>
+        Mindestdistanz beim Tracking: <span id="minTrackDistance">5</span> m <input id="minTrackDistanceSlider" type="range" min="1" max="100" value="5" class="min-track-distance-slider"><i class="fa fa-info" aria-hidden="true" onclick="kvm.msg('Stellt die Mindestentfernung zum nächsten aufgezeichneten Wegpunkt beim Linientracking ein. Punkte in kleinerem Abstand werden bei der Aufzeichnung ignoriert.')" style="margin-left: 5px"></i><p>
+        maximale Kartenausdehnung:
+        <div class="settings-label">West:</div><input id="mapSettings_west" name="west" class="mapSetting" type="number" size="7"/>
+        <div style="clear: both"></div>
+        <div class="settings-label">Süd:</div> <input id="mapSettings_south" name="south" class="mapSetting" type="number" size="7"/>
+        <div style="clear: both"></div>
+        <div class="settings-label">Ost:</div><input id="mapSettings_east" name="east" class="mapSetting" type="number" size="7"/>
+        <div style="clear: both"></div>
+        <div class="settings-label">Nord:</div><input id="mapSettings_north" name="north" class="mapSetting" type="number" size="7"/>
+        <div style="clear: both"></div>
+        <div class="settings-label">Start Center Lat:</div><input id="mapSettings_startCenterLat" name="startCenterLat" class="mapSetting" type="number" size="7"/>
+        <div style="clear: both"></div>
+        <div class="settings-label">Start Center Lon:</div><input id="mapSettings_startCenterLon" name="startCenterLon" class="mapSetting" type="number" size="7"/>
+        <div style="clear: both"></div>
+        <div class="settings-label">kleinste Zoomstufe:</div>
+        <select id="mapSettings_minZoom" name="minZoom" class="mapSetting">
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10</option>
+          <option value="11">11</option>
+          <option value="12">12</option>
+          <option value="13">13</option>
+          <option value="14">14</option>
+          <option value="15">15</option>
+          <option value="16">16</option>
+          <option value="17">17</option>
+          <option value="18">18</option>
+          <option value="19">19</option>
+          <option value="20">20</option>
+          <option value="21">21</option>
+          <option value="22">22</option>
+        </select>
+        <div style="clear: both"></div>
+        <div class="settings-label">größte Zoomstufe:</div>
+        <select id="mapSettings_maxZoom" name="maxZoom" class="mapSetting">
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10</option>
+          <option value="11">11</option>
+          <option value="12">12</option>
+          <option value="13">13</option>
+          <option value="14">14</option>
+          <option value="15">15</option>
+          <option value="16">16</option>
+          <option value="17">17</option>
+          <option value="18">18</option>
+          <option value="19">19</option>
+        </select>
+        <div style="clear: both"></div>
+        <div class="settings-label">Start Zoomstufe:</div>
+        <select id="mapSettings_startZoom" name="startZoom" class="mapSetting">
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10</option>
+          <option value="11">11</option>
+          <option value="12">12</option>
+          <option value="13">13</option>
+          <option value="14">14</option>
+          <option value="15">15</option>
+          <option value="16">16</option>
+          <option value="17">17</option>
+          <option value="18">18</option>
+          <option value="19">19</option>
+        </select>
+        <div style="clear: both"></div>
+      </div>
+      <hr>
+      
+      <div class="h2-div"><h2 id="h2_sachdateneinstellungen" class="b-collapsed">Sachdateneinstellungen</h2></div>
+      <div id="viewSettingsDiv" style="padding-left: 10px">
+        Was soll nach dem Speichern eines neuen Datensatzes angezeigt werden? <i
+          class="fa fa-circle-exclamation"
+          style="color: #f57802"
+          onclick="kvm.msg(`<b>Hinweis</b><br>Wirkt sich nicht aus wenn die Option 'und neuen Datensatz erzeugen' unten im Eingabeformular ausgewählt ist.`);"
+        ></i><br>
+        <select id="viewAfterCreate" name="viewAfterCreate">
+          <option value="featurelist">Liste der Datensätze</option>
+          <option value="map">Kartenansicht</option>
+          <option value="last">zuletzt verwendete Ansicht</option>
+          <option value="dataView">Erzeugter Datensatz zum Lesen</option>
+          <option value="formular">Erzeugter Datensatz im Formular</option>
+        </select>
+        <div style="margin-top: 20px">Was soll nach dem Aktualisieren eines neuen vorhandenen Datensatzes angezeigt werden?</div>
+        <select id="viewAfterUpdate" name="viewAfterUpdate">
+          <option value="featurelist">Liste der Datensätze</option>
+          <option value="map">Kartenansicht</option>
+          <option value="last">zuletzt verwendete Ansicht</option>
+          <option value="dataView">Geänderter Datensatz zum Lesen</option>
+          <option value="formular">Geänderter Datensatz im Formular</option>
+        </select>
+        <input id="confirmSave" type="checkbox" style="margin-top: 20px;"> Vor dem Speichern Bestätigung abfragen
+      </div>
+      <hr>
+
+      <div class="h2-div"><h2 id="h2_kartenverwaltung" class="b-collapsed">Offline-Karten</h2></div>
+      <div id="loadOfflineMapsDiv">
+      </div>
+      <hr>
+
+      <!--div class="h2-div"><h2 id="h2_overlay" class="b-collapsed">Overlays</h2></div>
+      <div>
+        <div id="overlay_list">
+        </div>
+      </div>
+      <hr//-->
+
+      <div class="h2-div"><h2 id="h2_hintergrundlayer" class="b-collapsed">Hintergrundlayer</h2></div>
+      <div id="backgroundLayersDiv">
+        <textarea id="backgroundLayersTextarea" style="height: 200px; display: none">
+        </textarea>
+        <div id="backgroundLayerSettingsDiv">
+        </div>
+        <button id="resetBackgroundLayerSettingsButton" class="settings-button">
+          <i class="fa fa-rotate" aria-hidden="true"></i> Zurücksetzen
+        </button>
+        <button id="changeBackgroundLayerSettingsButton" class="settings-button">
+          <i class="fa fa-regular fa-floppy-disk" aria-hidden="true"></i> Speichern
+        </button>
+        <button id="loadBackgroundLayerButton" class="settings-button">
+          <i class="fa fa-download" aria-hidden="true"></i> Download
+        </button>
+      </div>
+      <hr>
+
+      <div class="h2-div"><h2 id="h2_netzwerkstatus" class="b-collapsed">Netzwerkstatus</h2></div>
+      <div id="networkStatusText">...wird geladen</div>
+      <hr>
+
+      <div class="h2-div"><h2 id="h2_gps_status" class="b-collapsed">GPS-Status</h2></div>
+      <div>
+        <div id="gpsStatusText">...wird geladen</div>
+        <div id="gpsCurrentPosition"></div>
+        <div id="zoomToCurrentLocation" style="display: none">
+          <button id="zoomToCurrentLocationButton" class="settings-button">
+            <i class="fa fa-location-arrow" aria-hidden="true"></i> Zoom zur aktuellen GPS-Position
+          </button>
+        </div>
+      </div>
+      <hr>
+
+      <div class="h2-div"><h2 id="h2_security" class="b-collapsed">Sicherheit</h2></div>
+      <div id="secirotyOptionsDiv" style="padding-left: 10px">
+        <input id="fingerprintAuth" type="checkbox"> Beim Start Muster oder PIN anfordern
+      </div>
+      <hr>
+
+      <div class="h2-div"><h2 id="h2_geraeteinformationen" class="b-collapsed">Geräteinformationen</h2></div>
+      <div id="deviceDataText">
+        kvmobile Version: <span id="cordovaAppVersion"></span><br>
+        Cordova Version: <span id="deviceCordova"></span><br>
+        Modell: <span id="deviceModel"></span><br>
+        Platform: <span id="devicePlatform"></span><br>
+        Uuid: <span id="deviceUuid"></span><br>
+        Android Version: <span id="deviceVersion"></span><br>
+        Hersteller: <span id="deviceManufacturer"></span><br>
+        Seriennummer: <span id="deviceSerial"></span><br>
+        applicationDirectory: <span id="applicationDirectory"></span><br>
+        applicationStorageDirectory: <span id="applicationStorageDirectory"></span><br>
+        dataDirectory: <span id="dataDirectory"></span><br>
+        cacheDirectory: <span id="cacheDirectory"></span><br>
+        externalApplicationStorageDirectory: <span id="externalApplicationStorageDirectory"></span><br>
+        externalDataDirectory: <span id="externalDataDirectory"></span><br>
+        externalCacheDirectory: <span id="externalCacheDirectory"></span><br>
+        externalRootDirectory: <span id="externalRootDirectory"></span><br>
+        tempDirectory: <span id="tempDirectory"></span><br>
+        syncedDataDirectory: <span id="syncedDataDirectory"></span><br>
+        documentsDirectory: <span id="documentsDirectory"></span><br>
+        sharedDirectory: <span id="sharedDirectory"></span>
+      </div>
+      <hr>
+
+      <div class="h2-div"><h2 id="h2_datenbank" class="b-collapsed">Datenbank</h2></div>
+      <div>
+        Datenbankname: <span id="dbnameText">...wird geladen</span><br>
+        <button id="showDeltasButton" class="settings-button">
+          <i class="fa fa-pen-to-square" aria-hidden="true"></i> Zeige Änderungen
+        </button>
+        <i id="showDeltasWaiting" class="fa fa-spinner fa-pulse fa-3x fa-fw" style="display: none;"></i>
+        <button id="hideDeltasButton" class="settings-button" style="display: none;">
+          <i class="fa-regular fa-square-xmark" aria-hidden="true"></i> Blende Änderungen aus
+        </button>
+        <div id="showDeltasDiv" style="display: none;">
+        </div><br>
+        Backup-Speicherpfad:<br>
+        <input id="localBackupPath" type="text"><br>
+				<button id="saveDatabaseButton" class="settings-button">
+          <i class="fa fa-database" aria-hidden="true"></i>
+          <i class="fa fa-check" aria-hidden="true"></i> Sichere Datenbank
+        </button>
+        <br>
+        <button id="resetSettingsButton" class="settings-button">
+          <i class="fa fa-rotate" aria-hidden="true"></i> Reset Datenbank und Einstellungen
+        </button>
+				<br>
+        <button id="saveImagesButton" class="settings-button">
+          <i class="fa fa-image" aria-hidden="true"></i>
+          <i class="fa fa-check" aria-hidden="true"></i> Sichere Bilddaten
+        </button>
+			</div>
+      <hr>
+
+      <div class="h2-div"><h2 class="b-collapsed">Protokoll</h2></div>
+      <div>
+        <div class="settings-label">Protokollierungsstufe:</div>
+        <select id="logLevel" name="logLevel" class="mapSetting">
+          <option value="0">0 - ausgeschaltet</option>
+          <option value="1">1 - error</option>
+          <option value="2">2 - waring</option>
+          <option value="3">3 - info</option>
+          <option value="4">4 - debug</option>
+          <option value="5">5 - alles</option>
+        </select>
+        <div style="clear: both"></div>
+        <input type="checkbox" id="show_allways_debug_messages" value="1"> Debug-Meldung immer einblenden<br>
+        <button id="showLoggingsButton" class="settings-button">
+          <i class="fa fa-list" aria-hidden="true"></i> Zeige Protokoll an
+        </button>
+        <button id="clearLoggingsButton" class="settings-button">
+          <i class="fa fa-list" aria-hidden="true"></i> Leere Protokoll
+        </button><br>
+        <button id="showSperrDivButton" class="settings-button">
+          <i class="fa fa-list" aria-hidden="true"></i> Zeige Lademeldungen
+        </button>
+      </div>
+      <hr>
+
+      <div class="h2-div"><h2 id="h2_update" class="b-collapsed">Update</h2></div>
+      <div>
+      Nach neuen Updates suchen.<p>
+        Der nachstehende Link öffnet eine Web-Seite im Standardbrowser Ihres Gerätes mit den letzten Versionen von kvwmobile.<br>
+        Zum aktualisieren der App laden Sie die apk-Datei mit der höchsten Versionsnummer herunter.<br>
+        Bestätigen Sie mit "OK" dass Sie die Datei behalten möchten wenn Sie gefragt werden.<br>
+        Klicken Sie dann auf "Öffnen" und stellen Sie wenn Sie gefragt werden ein, dass Sie der Quelle vertrauen.<br>
+        Danach klicken Sie auf "Installieren". Nach dem Installationsvorgang werden Sie gefragt ob Sie die App öffnen wollen. Bestätigen Sie das und die neue Version wird gestartet.<br>
+        Danach können Sie den Browser wieder schließen und in kvmobile prüfen ob die neue Version läuft. Die Versionsnummer wird unter Einstellungen > Geräteinformationen angezeigt.<p>
+          <a
+            href="https://gdi-service.de/public/kvmobile"
+            onclick="window.open('https://gdi-service.de/public/kvmobile', '_system');"
+          >Download-Bereich</a>
+      </div>
+      <hr>
+    </div>
+
+    <div id="toggle_weniger"
+    class="toggle-settings-div"
+    style="display:none;"
+  ><i class="fa fa-angles-up"></i> weniger</div>
+
+  <div style="margin-bottom: 20px">
+    </div>
+  </div>
+
+  <!-- Logs -->
+  <div id="loggings" class="panel v-scroll-div">
+    <h1>Logging</h1>
+    <div id="logText"></div>
+  </div>
+  <div class="clear"></div>
+
+  <!-- featurelist-->
+  <div id="featurelist" class="panel v-scroll-div">
+    <div style="float: left; margin-left: 5px;">
+      <h1 id="featurelistHeading" style="font-size: 24px"></h1>
+    </div>
+    <div style="float: right; margin-right: 5px">
+      <h1><i id="showSearch" class="fa fa-magnifying-glass" aria-hidden="true"></i></h1>
+    </div>
+    <div style="clear: both;"></div>
+    <input type="search" id="searchFeatureField" placeholder="Datensatz suchen" title="Liste der Datensätze durchsuchen" autocomplete="off" class="hidden" style="margin-left: 6px; margin-bottom: 4px; padding-left: 4px; padding-top: 2px; padding-bottom: 2px; font-size: 24px; width: 97%; border-radius: 5px;">
+    <!--div class="center">
+      <div class="pagination">
+        <a class="page_first_link" href="#" page="0" onclick="kvm.paginate(this)" style="display: none">&laquo;</a>
+        <a class="page_prev_link" href="#" page="0" onclick="kvm.paginate(this)" style="display: none">zurück</a>
+        <a class="page_next_link" href="#" page="25" onclick="kvm.paginate(this)">weiter</a>
+        <a class="page_last_link" href="#" page="" onclick="kvm.paginate(this)" style="display: none">&raquo;</a>
+      </div>
+    </div//-->
+    <div id="featurelistBody" style="
+      width: 100%;
+      float: left;
+    "></div>
+    <div id="alphabetical_list" style="
+      float: right;
+      margin-right: 7px;
+      display: none;
+    ">
+      <ul style="
+        list-style-type: none;
+      ">
+        <li>A</li>
+        <li>B</li>
+        <li>C</li>
+      </ul>
+    </div>
+    <!--div class="center">
+      <div class="pagination">
+        <a class="page_first_link" href="#" page="0" onclick="kvm.paginate(this)" style="display: none">&laquo;</a>
+        <a class="page_prev_link" href="#" page="0" onclick="kvm.paginate(this)" style="display: none">zurück</a>
+        <a class="page_next_link" href="#" page="25" onclick="kvm.paginate(this)">weiter</a>
+        <a class="page_last_link" href="#" page="" onclick="kvm.paginate(this)" style="display: none">&raquo;</a>
+      </div>
+    </div//-->
+  </div>
+  <div class="clear"></div>
+
+  <!-- Karte -->
+  <div id="map" class="panel">
+  </div>
+  <div class="clear"></div>
+
+  <!-- DataView -->
+  <div id="dataView" class="panel v-scroll-div">
+  </div>
+  <div class="clear"></div>
+
+  <!-- Formular -->
+  <div id="formular" class="panel v-scroll-div">
+  </div>
+  <div class="clear"></div>
+
+  <!-- Debugs -->
+  <div id="debugs" class="deb">
+    <div style="padding: 2px;"><h1>Debugmeldungen</h1></div>
+    <div id="debText" style="clear: both; height: 300px; overflow: auto;"></div>
+    <div style="text-align: center; padding: 2px;"><input type="button" value="Schließen" onclick="document.getElementById('debugs').classList.toggle('hidden')"></div>
+  </div>
+    <div class="clear"></div>
+
+    <div id="map_hint_div"></div>
+    <div id="geolocation_div"></div>
+  </body>
+</html>

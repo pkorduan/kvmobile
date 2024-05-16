@@ -25,6 +25,19 @@ export interface LayerSetting {
     classitem?: any;
 }
 
+// export interface Feature {
+//     data?: any;
+//     editableLayer?: Layer;
+//     geom?: any; // Point {srid: 4326, hasZ: false, hasM: false, x: 9.308695298532259, y: 48.84202286797464, …}
+//     newGeom: any; //Point {srid: 4326, hasZ: false, hasM: false, x: 9.308695298532259, y: 48.84202286797464, …}
+//     globalLayerId?: string; // "1_277"
+//     id: string; // "bb3826b3-ecc2-4317-98e5-490fe725870b"
+//     isActive: boolean;
+//     isEditable: boolean;
+//     layerId: number;
+//     options: any;
+// }
+
 export class Layer {
     stelle: Stelle;
     settings: LayerSetting;
@@ -64,6 +77,7 @@ export class Layer {
         this.stelle = stelle;
         this.settings = typeof settings === "string" ? JSON.parse(settings) : settings;
         this.title = kvm.coalempty(this.get("alias"), this.get("title"), this.get("table_name"), "overlay" + this.getGlobalId());
+        console.error("layer", stelle, this.settings);
         // console.log(
         //   "%s: Erzeuge Layerobjekt (id: %s) mit drawingorder: %s in Stelle: %s",
         //   this.title,
@@ -1344,6 +1358,7 @@ export class Layer {
     }
 
     downloadImage(localFile: string, remoteFile: string) {
+        console.info("downloadImage(localFile=" + localFile + ", remoteFile=" + remoteFile + ")");
         const fileTransfer = new FileTransfer();
         const downloadURL = this.getImgDownloadUrl(remoteFile);
 
@@ -1576,29 +1591,26 @@ export class Layer {
      * - Setzt das Feature als activeFeature im Layer
      * - Startet das GPS-Tracking
      */
-    loadFeatureToForm(feature, options = { editable: false }) {
-        console.log("Layer.loadFeature %o ToForm with options: %o", feature, options);
+    loadFeatureToForm(feature: Feature, options = { editable: false }) {
+        console.error("Layer.loadFeature %o ToForm with options: %o", feature, options);
         this.activeFeature = feature;
 
-        $.map(
-            this.attributes,
-            function (attr) {
-                const key = attr.get("name");
-                const val = this.get(key) == "null" ? null : this.get(key);
+        $.map(this.attributes, function (attr) {
+            const key = attr.get("name");
+            const val = feature.get(key) == "null" ? null : feature.get(key);
 
-                //console.log("Feature is new? %s", this.options.new);
-                //console.log("Set %s %s: %s", attr.get("form_element_type"), key, val);
-                //console.log('Set Value of feature: %s in formField: %s for key: %s with value: %s', JSON.stringify(this), attr.formField.constructor.name, key, val);
-                attr.formField.setValue(val);
-                if (kvm.coalesce(attr.get("required_by"), "") != "") {
-                    const required_by_idx = kvm.activeLayer.attribute_index[attr.get("required_by")];
-                    kvm.activeLayer.attributes[required_by_idx].formField.filter_by_required(attr.get("name"), val);
-                }
-                if (attr.hasVisibilityDependency()) {
-                    kvm.activeLayer.vcheckAttributes(attr.get("name"), val);
-                }
-            }.bind(feature)
-        );
+            //console.log("Feature is new? %s", this.options.new);
+            //console.log("Set %s %s: %s", attr.get("form_element_type"), key, val);
+            //console.log('Set Value of feature: %s in formField: %s for key: %s with value: %s', JSON.stringify(this), attr.formField.constructor.name, key, val);
+            attr.formField.setValue(val);
+            if (kvm.coalesce(attr.get("required_by"), "") != "") {
+                const required_by_idx = kvm.activeLayer.attribute_index[attr.get("required_by")];
+                kvm.activeLayer.attributes[required_by_idx].formField.filter_by_required(attr.get("name"), val);
+            }
+            if (attr.hasVisibilityDependency()) {
+                kvm.activeLayer.vcheckAttributes(attr.get("name"), val);
+            }
+        });
         if (feature.geom) {
             $("#geom_wkt").val(feature.geom.toWkt());
             $("#goToGpsPositionButton").show();

@@ -1,7 +1,8 @@
 /// <reference types="cordova-plugin-camera"/>
 /// <reference types="cordova-plugin-file-opener2"/>
 
-import { kvm } from "./app";
+import { getWebviewUrl, kvm } from "./app";
+import { listFiles } from "./Util";
 
 export class BilderFormField {
     settings: any;
@@ -9,7 +10,7 @@ export class BilderFormField {
     selector: string;
     element: JQuery<HTMLElement>;
 
-    moveFile: (srcFile, dstDir) => void;
+    // moveFile: (srcFile, dstDir) => void;
 
     constructor(formId, settings) {
         console.error("BilderFormField", formId, settings);
@@ -31,7 +32,7 @@ export class BilderFormField {
                 "\
         />"
         );
-        this.moveFile = this.moveFile_.bind(this);
+        // this.moveFile = this.moveFile_.bind(this);
     }
     get(key) {
         return this.settings[key];
@@ -41,10 +42,10 @@ export class BilderFormField {
      * create corresponding form and view elements.
      * @params any set to '' if val is undefined, null, 'null' or NAN
      */
-    setValue(val) {
-        console.error("BilderFormField.setValue", val);
+    setValue(kvwmapFilePath: string) {
+        console.error("BilderFormField.setValue kvwmapFilePath=" + kvwmapFilePath);
         // console.log("BilderFormField.setValue with value: " + val);
-        var val = kvm.coalesce(val, "");
+        const val = kvm.coalesce(kvwmapFilePath, "");
         // let images;
         // let localFile;
         // let remoteFile;
@@ -72,7 +73,11 @@ export class BilderFormField {
                     localFile,
                     (fileEntry) => {
                         console.log("Datei " + fileEntry.toURL() + " existiert.");
-                        this.addImage(fileEntry.toURL());
+                        try {
+                            this.addImage(fileEntry.nativeURL);
+                        } catch (ex) {
+                            console.error(ex);
+                        }
                     },
                     () => {
                         kvm.log("Datei " + localFile + " existiert nicht!", 2);
@@ -103,11 +108,13 @@ export class BilderFormField {
      * Images not downloaded yet to the device are default no_image.png
      * otherwise src is equal to name
      */
-    addImage(src, name = "") {
-        console.error("addimage", src, name);
-        name = name == "" ? src : name;
-        console.log("BilderFormField: Add Image with src: %s and name: %s", src, name);
-        const imgDiv = $('<div class="img" src="' + src + '" style="background-image: url(' + src + ');" field_id="' + this.get("index") + '"name="' + name + '"></div>');
+    async addImage(nativeURL: string, name = "") {
+        console.error("BilderFormField.addimage", nativeURL, name);
+        name = name == "" ? nativeURL : name;
+        console.log("BilderFormField: Add Image with src: %s and name: %s", nativeURL, name);
+        const webviewUrl = await getWebviewUrl(nativeURL);
+        // const url = await getFileUrl(src);
+        const imgDiv = $('<div class="img" src="' + webviewUrl + '" style="background-image: url(' + webviewUrl + ');" field_id="' + this.get("index") + '"name="' + name + '"></div>');
         /*  ToDo: Ein Kommentarfeld einfügen. Realisieren über Datentyp, der dann aber auch das Datum des Bildes beinhaltet.
     img_div.append($('<br>'));
     img_div.append($('<input type="text"\ name="' + src + '"/>'));
@@ -118,7 +125,7 @@ export class BilderFormField {
 
         $("#dropAllPictureButton_" + this.get("index")).show();
 
-        imgDiv.on("click", function (evt) {
+        imgDiv.on("click", (evt) => {
             var target = $(evt.target),
                 src = target.attr("src"),
                 fieldId = target.attr("field_id");
@@ -129,8 +136,8 @@ export class BilderFormField {
                         function (buttonIndex) {
                             if (buttonIndex == 1) {
                                 // ja
-                                var remoteFile = target.attr("name"),
-                                    localFile = kvm.activeLayer.attributes[fieldId].formField.serverToLocalPath(remoteFile);
+                                const remoteFile = target.attr("name");
+                                const localFile = kvm.activeLayer.attributes[fieldId].formField.serverToLocalPath(remoteFile);
 
                                 kvm.activeLayer.downloadImage(localFile, remoteFile);
                             }
@@ -147,7 +154,7 @@ export class BilderFormField {
                 }
             } else {
                 kvm.log("Versuche das Bild zu öffnen: " + src, 4);
-                cordova.plugins.fileOpener2.open(src, "image/jpeg", {
+                cordova.plugins.fileOpener2.open(nativeURL, "image/jpeg", {
                     error: function (e) {
                         alert("Fehler beim laden der Datei: " + e.message + " Status: " + e.status);
                     },
@@ -260,18 +267,19 @@ export class BilderFormField {
         kvm.log("BilderFormField.takePicture: " + JSON.stringify(evt), 4);
 
         navigator.camera.getPicture(
-            function (cameraPicture) {
-                kvm.log("this.addImage(" + cameraPicture + ");", 4);
+            (fileURL) => {
+                kvm.log("this.addImage(" + fileURL + ");", 4);
 
-                if (kvm.hasFilePath(cameraPicture, kvm.config.localImgPath)) {
-                    this.addImage(cameraPicture);
-                    this.addImgNameToVal(kvm.localToServerPath(cameraPicture));
+                if (kvm.hasFilePath(fileURL, kvm.config.localImgPath)) {
+                    this.addImgNameToVal(kvm.localToServerPath(fileURL));
+                    getWebviewUrl(fileURL).then((webviewUrl) => this.addImage(webviewUrl));
                 } else {
-                    this.moveFile(cameraPicture, kvm.config.localImgPath);
+                    this.moveFile(fileURL, kvm.config.localImgPath);
                 }
+
                 $("#featureFormular input[name=bilder_updated_at]").val(new Date().toISOString().replace("Z", "")).show();
-            }.bind(evt.data.context),
-            function (message) {
+            },
+            (message) => {
                 kvm.msg("Keine Aufnahme gemacht! " + message);
             },
             {
@@ -292,22 +300,27 @@ export class BilderFormField {
      * @param String dstDir, Path of the destination directory
      * @return String Path and name of the file at destination directory
      */
-    moveFile_(srcFile: string, dstDir: string) {
+    moveFile(srcFile: string, dstDir: string) {
         const dstFile = dstDir + srcFile.substring(srcFile.lastIndexOf("/") + 1);
 
+        listFiles(dstDir);
+        listFiles(srcFile.substring(0, srcFile.lastIndexOf("/") + 1));
+
         kvm.log("moveFile " + srcFile + " nach " + dstDir, 4);
+        console.error("moveFile(" + srcFile + ", " + dstDir + ")");
         window.resolveLocalFileSystemURL(
             dstDir,
-            (dirEntry: any) => {
+            (dirEntry) => {
                 kvm.log("Erzeuge dirEntry", 4);
                 console.log("Kopiere nach dstDirEntry: %o", dirEntry);
+
                 window.resolveLocalFileSystemURL(
                     srcFile,
                     (fileEntry: Entry) => {
                         fileEntry.moveTo(
-                            dirEntry,
+                            <DirectoryEntry>dirEntry,
                             fileEntry.name,
-                            () => {
+                            async () => {
                                 // TODO
                                 // kvm.log('Datei: ' + fileEntry.name + ' nach: ' + dstDirEntry.toURL() + ' verschoben.');
                                 this.addImage(dstFile);

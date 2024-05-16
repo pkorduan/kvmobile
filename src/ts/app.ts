@@ -54,6 +54,29 @@ require("@maplibre/maplibre-gl-leaflet");
 declare var FingerprintAuth: typeof FingerprintAuthT;
 
 //export var config: any;
+/**
+ *
+ * @param filePath deviceFilePath oder FileUrl
+ * @returns
+ */
+export async function getWebviewUrl(filePath: string): Promise<string> {
+    const path = filePath.startsWith("file") ? filePath : "file://" + filePath;
+
+    return new Promise((resolve, reject) => {
+        window.resolveLocalFileSystemURL(
+            path,
+            (fileEntry) => {
+                const fileEntryURL = fileEntry.toURL();
+                console.error("getFileUrl(" + filePath + ")=>" + fileEntryURL);
+                resolve(fileEntryURL);
+            },
+            (err) => {
+                console.error("getFileUrl(" + filePath + ")=>error: " + err);
+                reject(err);
+            }
+        );
+    });
+}
 
 class Kvm {
     // Buffer: require("buffer").Buffer,
@@ -2712,43 +2735,76 @@ export function createHtmlElement<K extends keyof HTMLElementTagNameMap>(tag: K,
     return el;
 }
 
-class Test {
-    static instance: Test;
+// class Test {
+//     static instance: Test;
 
-    _init() {
-        const main = document.getElementById("main");
-        const div01 = createHtmlElement("div", main);
-        for (let i = 0; i < 5; i++) {
-            const bttn = createHtmlElement("button", div01, null, { id: "botton_01_" + i });
-            bttn.addEventListener("click", (ev) => {
-                this.buttonClicked(bttn.id + "  " + i);
-            });
-        }
-    }
-    buttonClicked(s: string) {
-        console.error(s);
-        navigator.camera.getPicture(
-            (data) => {
-                console.error(data);
-            },
-            (error) => {
-                console.error(error);
-            },
-            {}
-        );
-    }
+//     imageDiv: HTMLDivElement;
+//     image: HTMLImageElement;
 
-    static init() {
-        if (this.instance) {
-            return;
-        }
-        const test = (Test.instance = new Test());
-        test._init();
-    }
-}
+//     _init() {
+//         const main = document.getElementById("main");
+//         const div01 = createHtmlElement("div", main);
+//         div01.style.fontSize = "40px";
+//         const bttnMkFoto = createHtmlElement("button", div01, null, { innerHTML: "Foto" });
+//         bttnMkFoto.addEventListener("click", (ev) => {
+//             this.getImage(Camera.PictureSourceType.CAMERA);
+//         });
+//         const bttnLoadFoto = createHtmlElement("button", div01, null, { innerHTML: "Bild laden" });
+//         bttnLoadFoto.addEventListener("click", (ev) => {
+//             this.getImage(Camera.PictureSourceType.PHOTOLIBRARY);
+//         });
+
+//         this.imageDiv = createHtmlElement("div", main, null);
+//     }
+
+//     showImage(imageUri: string) {
+//         console.error(imageUri);
+//         if (!this.image) {
+//             this.image = createHtmlElement("img", this.imageDiv);
+//             this.image.style.width = "100%";
+//         }
+//         if (!imageUri.startsWith("file")) {
+//             imageUri = "file://" + imageUri;
+//         }
+
+//         window.resolveLocalFileSystemURL(
+//             imageUri,
+//             (fileEntry) => {
+//                 const fileEntryURL = fileEntry.toURL();
+//                 console.error(fileEntryURL);
+//                 this.image.src = fileEntryURL;
+//             },
+//             (err) => {
+//                 console.error("error", err);
+//             }
+//         );
+//     }
+
+//     getImage(sourceType: number) {
+//         console.error(sourceType);
+//         navigator.camera.getPicture(
+//             (data) => {
+//                 this.showImage(data);
+//             },
+//             (error) => {
+//                 console.error(error);
+//             },
+//             {
+//                 sourceType: sourceType,
+//             }
+//         );
+//     }
+
+//     static init() {
+//         if (this.instance) {
+//             return;
+//         }
+//         const test = (Test.instance = new Test());
+//         test._init();
+//     }
+// }
 
 if (document.readyState === "interactive" || document.readyState === "complete") {
-    // kvm.init();
-    Test.init();
-    console.info("d003", kvm);
+    kvm.init();
+    console.error("d003", kvm);
 }

@@ -1,4 +1,4 @@
-import { kvm } from "./app";
+import { createHtmlElement, getWebviewUrl, kvm } from "./app";
 import { Attribute } from "./Attribute";
 
 export class DataViewField {
@@ -30,7 +30,7 @@ export class DataViewField {
         return this.attribute.settings[key];
     }
 
-    setValue(val) {
+    async setValue(val) {
         // let images, localFile, remoteFile, i, imgDiv;
         if (val == "null") {
             val = null;
@@ -62,44 +62,55 @@ export class DataViewField {
                 //console.log("setValue add images to previews div: %s", val);
                 console.error(this);
                 const images = kvm.removeBrackes(val).split(",");
+
                 for (let i = 0; i < images.length; i++) {
                     const remoteFile = images[i];
                     const localFile = kvm.removeOriginalName(kvm.serverToLocalPath(remoteFile));
                     const f = localFile.replace("file:///storage/emulated/0/", "");
-                    console.log("Add remoteFile: %s localFile: %s", remoteFile, localFile);
-                    window.requestFileSystem(
-                        LocalFileSystem.PERSISTENT,
-                        0,
-                        function (fs) {
-                            console.log("file system open: " + fs.name);
-                            fs.root.getFile(
-                                f,
-                                {},
-                                function (fileEntry) {
-                                    console.error("fileEntry is file?" + fileEntry.isFile.toString());
-                                },
-                                function (err) {
-                                    console.error(err);
-                                }
-                            );
-                        },
-                        function (err) {
-                            console.error(err);
-                        }
-                    );
-                    // const imgDiv = $('<div id="preview_' + this.get("index") + "_" + i + '" class="img preview" src="' + localFile + '" style="background-image: url(' + localFile + ');" field_id="' + this.get("index") + '"name="preview_' + localFile + '"></div>');
-                    const imgDiv = $('<div id="preview_' + this.get("index") + "_" + i + '" class="img preview" src=file:///"' + f + '" style="background-image: url(' + localFile + ');" field_id="' + this.get("index") + '"name="preview_' + f + '"></div>');
-                    imgDiv.on("click", function (evt) {
-                        const target = $(evt.target);
-                        const src = target.attr("src");
-                        // fieldId = target.attr("field_id");
+                    console.error("Add remoteFile: %s localFile: %s", remoteFile, localFile);
 
-                        cordova.plugins.fileOpener2.open(src, "image/jpeg", {
+                    // window.requestFileSystem(
+                    //     LocalFileSystem.PERSISTENT,
+                    //     0,
+                    //     function (fs) {
+                    //         console.log("file system open: " + fs.name);
+                    //         fs.root.getFile(
+                    //             f,
+                    //             {},
+                    //             async function (fileEntry) {
+                    //                 console.error("fileEntry is file?" + fileEntry.isFile.toString());
+                    //                 console.error("getFileUrl(fileEntry.fullPath)" + (await getFileUrl(fileEntry.fullPath)));
+                    //             },
+                    //             function (err) {
+                    //                 console.error(err);
+                    //             }
+                    //         );
+                    //     },
+                    //     function (err) {
+                    //         console.error(err);
+                    //     }
+                    // );
+                    // const imgDiv = $('<div id="preview_' + this.get("index") + "_" + i + '" class="img preview" src="' + localFile + '" style="background-image: url(' + localFile + ');" field_id="' + this.get("index") + '"name="preview_' + localFile + '"></div>');
+
+                    const imgUrl = await getWebviewUrl(localFile);
+                    // const imgDiv = $('<div id="preview_' + this.get("index") + "_" + i + '" class="img preview" src=file:///"' + f + '" style="background-image: url(' + localFile + ');" field_id="' + this.get("index") + '"name="preview_' + f + '"></div>');
+                    // const imgDivOld = $('<div id="preview_' + this.get("index") + "_" + i + '" class="img preview" src=file:///"' + url +
+                    // '" style="background-image: url(' + url + ');" field_id="' + this.get("index") + '"name="preview_' + f + '"></div>');
+
+                    //  localFile
+                    const imgDiv = createHtmlElement("input", null, "img preview", {
+                        id: `preview_${this.get("index")}_${i}`,
+                        field_id: this.get("index"),
+                    });
+                    imgDiv.style.backgroundImage = `url('${imgUrl}')`;
+
+                    imgDiv.addEventListener("click", (evt) => {
+                        cordova.plugins.fileOpener2.open(localFile, "image/jpeg", {
                             error: function (e) {
                                 alert("Fehler beim laden der Datei: " + e.message + " Status: " + e.status);
                             },
                             success: function () {
-                                kvm.log("Datei " + src + " erfolgreich geöffnet.", 4);
+                                kvm.log("Datei " + localFile + " erfolgreich geöffnet.", 4);
                             },
                         });
                     });
@@ -265,13 +276,14 @@ export class DataViewField {
     }
 
     /*
-     * src is the file shown in view
+     * src is der FileName file shown in view
      * name is the file stored in database
      * Images not downloaded yet to the device are default no_image.png
      * otherwise src is equal to name
      */
-    addImage(src, name = "") {
+    addImage(src: string, name = "") {
         //console.log("DataViewField: Add Image with src: %s and name: %s", src, name);
+        console.error("DataViewField.addimage", src, name);
         name = name == "" ? src : name;
         const imgDiv = $('<div class="img" src="' + src + '" style="background-image: url(' + src + ');" field_id="' + this.get("index") + '"name="' + name + '"></div>');
         $("#" + this.images_div_id)
@@ -282,7 +294,8 @@ export class DataViewField {
             var target = $(evt.target),
                 src = target.attr("src"),
                 fieldId = target.attr("field_id");
-            if (src == "img/no_image.png") {
+
+            if (src === "img/no_image.png") {
                 if (navigator.onLine) {
                     navigator.notification.confirm(
                         "Bild herunterladen?",
