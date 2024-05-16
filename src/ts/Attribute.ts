@@ -24,7 +24,7 @@ export class Attribute {
     formField: any;
     viewField: DataViewField;
 
-    constructor(layer: Layer, settings = {}) {
+    constructor(layer: any, settings = {}) {
         //console.log('Erzeuge Attributeobjekt with settings %o', settings);
         this.layer = layer;
         this.settings = settings;
