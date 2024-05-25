@@ -1,6 +1,7 @@
 import { Buffer } from "buffer";
 import { kvm } from "./app";
 import * as wkx from "wkx";
+import { Field } from "./Field";
 /*
  * create a geometry form field in the structure
  *   <div class="form-field">
@@ -12,7 +13,7 @@ import * as wkx from "wkx";
  *     </div>
  *   </div>
  */
-export class GeometrieFormField {
+export class GeometrieFormField implements Field {
     settings: any;
     element: JQuery<HTMLElement>;
     selector: string;

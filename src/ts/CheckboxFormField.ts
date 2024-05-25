@@ -1,4 +1,6 @@
-export class CheckboxFormField {
+import { Field } from "./Field";
+
+export class CheckboxFormField implements Field {
     settings: any;
     selector: string;
     element: JQuery<HTMLElement>;
@@ -6,12 +8,20 @@ export class CheckboxFormField {
     constructor(formId, settings) {
         this.settings = settings;
         this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
-        this.element = $('\
+        this.element = $(
+            '\
         <input\
           type="checkbox"\
-          id="' + this.get("index") + '"\
-          name="' + this.get("name") + '"' + (this.get("privilege") == "0" ? " disabled" : "") + "\
-        />");
+          id="' +
+                this.get("index") +
+                '"\
+          name="' +
+                this.get("name") +
+                '"' +
+                (this.get("privilege") == "0" ? " disabled" : "") +
+                "\
+        />"
+        );
     }
 
     get(key) {

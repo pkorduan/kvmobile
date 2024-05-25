@@ -1,7 +1,8 @@
 import { createHtmlElement, getWebviewUrl, kvm } from "./app";
 import { Attribute } from "./Attribute";
+import { Field } from "./Field";
 
-export class DataViewField {
+export class DataViewField implements Field {
     settings: any;
     element: JQuery<HTMLElement>;
     images_div_id: string;

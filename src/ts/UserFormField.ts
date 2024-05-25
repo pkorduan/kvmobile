@@ -1,3 +1,4 @@
+import { Field } from "./Field";
 import { kvm } from "./app";
 
 /*
@@ -11,7 +12,7 @@ import { kvm } from "./app";
  *     </div>
  *   </div>
  */
-export class UserFormField {
+export class UserFormField implements Field {
     settings: any;
     selector: string;
     element: JQuery<HTMLElement>;
@@ -20,13 +21,19 @@ export class UserFormField {
         //console.log('Erzeuge UserFormField with settings %o', settings);
         this.settings = settings;
         this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
-        this.element = $('\
+        this.element = $(
+            '\
         <input\
           type="text"\
-          id="' + this.get("index") + '"\
-          name="' + this.get("name") + '"\
+          id="' +
+                this.get("index") +
+                '"\
+          name="' +
+                this.get("name") +
+                '"\
           value="" disabled\
-        />');
+        />'
+        );
     }
 
     get(key) {

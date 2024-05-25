@@ -1,3 +1,4 @@
+import { Field } from "./Field";
 import { kvm } from "./app";
 
 /*
@@ -12,7 +13,7 @@ import { kvm } from "./app";
  *	</select>
  * </div>
  */
-export class SelectAutoFormField {
+export class SelectAutoFormField implements Field {
     settings: any;
     selector: string;
     element: JQuery<HTMLElement>;

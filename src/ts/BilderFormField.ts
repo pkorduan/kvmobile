@@ -2,9 +2,10 @@
 /// <reference types="cordova-plugin-file-opener2"/>
 
 import { getWebviewUrl, kvm } from "./app";
+import { Field } from "./Field";
 import { listFiles } from "./Util";
 
-export class BilderFormField {
+export class BilderFormField implements Field {
     settings: any;
     images_div_id: string;
     selector: string;
@@ -165,7 +166,7 @@ export class BilderFormField {
                             function (buttonIndex) {
                                 if (buttonIndex == 1) {
                                     // ja
-                                    var field = kvm.activeLayer.attributes[fieldId].formField;
+                                    const field = kvm.activeLayer.attributes[fieldId].formField;
                                     field.dropImage(target);
                                 }
                                 if (buttonIndex == 2) {
@@ -196,10 +197,10 @@ export class BilderFormField {
      * the corresponding path from hidden formfield
      */
     dropImage(imgDiv) {
-        var imageField = this.element,
-            src = imgDiv.attr("src"),
-            activeLayer = kvm.activeLayer,
-            sql = "";
+        const imageField = this.element;
+        const src = imgDiv.attr("src");
+        // activeLayer = kvm.activeLayer,
+        // sql = "";
 
         kvm.log("BilderFormField.dropImage img: " + src, 4);
         // ToDo implement this function and bind to delte choice of after dialog from image click
@@ -235,24 +236,24 @@ export class BilderFormField {
       this.selectPicture,
     );
 */
-        $("#dropAllPictureButton_" + this.get("index")).bind("click", { context: this }, this.dropAllPictures);
+        $("#dropAllPictureButton_" + this.get("index")).on("click", { context: this }, (ev) => this.dropAllPictures(ev));
     }
 
-    dropAllPictures(evt) {
-        var context = evt.data.context;
+    dropAllPictures(evt: JQuery.ClickEvent) {
+        // const context = evt.data.context;
         //console.log('BilderformField.dropAllPictures');
         navigator.notification.confirm(
             "Wirklich alle Bilder in diesem Datensatz Löschen?",
-            function (buttonIndex) {
-                if (buttonIndex == 1) {
+            (buttonIndex) => {
+                if (buttonIndex === 1) {
                     // ja
-                    context.setValue("");
-                    context.element.trigger("change");
+                    this.setValue("");
+                    this.element.trigger("change");
                 }
-                if (buttonIndex == 2) {
-                    // nein
-                    // Do nothing
-                }
+                // if (buttonIndex == 2) {
+                //     // nein
+                //     // Do nothing
+                // }
             },
             "",
             ["ja", "nein"]
@@ -262,7 +263,7 @@ export class BilderFormField {
     /**
      * capture a picture
      */
-    takePicture(evt) {
+    takePicture(evt: JQuery.ClickEvent) {
         console.error("takePicture", evt);
         kvm.log("BilderFormField.takePicture: " + JSON.stringify(evt), 4);
 

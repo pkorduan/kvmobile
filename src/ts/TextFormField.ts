@@ -1,3 +1,4 @@
+import { Field } from "./Field";
 import { kvm } from "./app";
 /*
  * create a text form field in the structure
@@ -10,7 +11,7 @@ import { kvm } from "./app";
  *     </div>
  *   </div>
  */
-export class TextFormField {
+export class TextFormField implements Field {
     settings: any;
     selector: string;
     element: JQuery<HTMLElement>;
@@ -19,26 +20,34 @@ export class TextFormField {
         //console.log('Erzeuge TextformField with settings %o', settings);
         this.settings = settings;
         this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
-        this.element = $('\
+        this.element = $(
+            '\
             <input\
             type="text"\
-            id="' + this.get("index") + '"\
-            name="' + this.get("name") + '"\
-            value=""' + (this.get("privilege") == "0" ? " disabled" : "") + "\
-            />");
+            id="' +
+                this.get("index") +
+                '"\
+            name="' +
+                this.get("name") +
+                '"\
+            value=""' +
+                (this.get("privilege") == "0" ? " disabled" : "") +
+                "\
+            />"
+        );
     }
 
     get(key) {
-      return this.settings[key];
+        return this.settings[key];
     }
 
     setValue(val) {
-			//console.log("TextFormField " + this.get("name") + " setValue with value: %o", val);
-			if (kvm.coalesce(val, "") == "" && this.get("default")) {
-					val = this.get("default");
-			}
-			this.element.val(val == null || val == "null" ? "" : val);
-		}
+        //console.log("TextFormField " + this.get("name") + " setValue with value: %o", val);
+        if (kvm.coalesce(val, "") == "" && this.get("default")) {
+            val = this.get("default");
+        }
+        this.element.val(val == null || val == "null" ? "" : val);
+    }
 
     /*
      * get the value from form field expect

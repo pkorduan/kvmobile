@@ -42,3 +42,14 @@ export function listFiles(dir: string) {
         }
     );
 }
+
+export function executeSQL(db: SQLitePlugin.Database, statement: string, params: any[]): Promise<SQLitePlugin.Results> {
+    return new Promise<SQLitePlugin.Results>((resove, reject) => {
+        db.executeSql(
+            statement,
+            params,
+            (results) => resove(results),
+            (err) => reject(err)
+        );
+    });
+}

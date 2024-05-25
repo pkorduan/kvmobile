@@ -9,13 +9,13 @@ export class Overlay {
     stelle: Stelle;
     settings: any;
     globalId: String;
-    attributes: any;
+    attributes: Attribute[];
     features: any;
     layerGroup: any;
-    attribute_index: any;
+    attribute_index: { [key: string]: number };
 
     constructor(stelle: Stelle, settings = {}) {
-        let overlay_ = this;
+        // const overlay_ = this;
         this.stelle = stelle;
         this.settings = typeof settings == "string" ? JSON.parse(settings) : settings;
 
@@ -30,13 +30,16 @@ export class Overlay {
         this.features = [];
 
         if (this.settings.attributes) {
-            this.attributes = $.map(this.settings.attributes, function (attribute) {
-                return new Attribute(overlay_, attribute);
+            // this.attributes = $.map(this.settings.attributes, function (attribute) {
+            //     return new Attribute(overlay_, attribute);
+            // });
+            this.attributes = this.settings.attributes.map((attribute) => {
+                return new Attribute(this, attribute);
             });
             this.attribute_index = this.attributes.reduce((hash, elem) => {
                 hash[elem.settings.name] = Object.keys(hash).length;
                 return hash;
-            }, {});
+            }, <{ [key: string]: number }>{});
         }
 
         this.features = {};

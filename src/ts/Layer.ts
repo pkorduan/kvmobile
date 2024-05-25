@@ -10,6 +10,13 @@ import { Klasse } from "./Klasse";
 import { AttributeGroup } from "./AttributeGroup";
 import { Icon } from "leaflet";
 
+export type AttributteDelta = {
+    key: string;
+    oldVal: any;
+    newVal: any;
+    type: string;
+};
+
 export interface LayerSetting {
     name_attribute?: string;
     id_attribute?: string;
@@ -45,7 +52,7 @@ export class Layer {
     attributes: Attribute[] = [];
     attributeGroups: AttributeGroup[] = [];
     layerGroup: LayerGroup<any>;
-    attribute_index: any;
+    attribute_index: { [key: string]: number };
     classes: Klasse[];
     features: { [id: string]: Feature };
     activeFeature: Feature;
@@ -117,15 +124,15 @@ export class Layer {
             this.attributes = $.map(this.settings.attributes, (attribute) => {
                 const groupName = attribute.group ? attribute.group.split(";")[0] : "";
                 const groupCollapsed = attribute.group ? attribute.group.split(";")[1] === "collapsed" : false;
-                let attributeGroup: AttributeGroup;
-                let attributeGroupIndex = this.attributeGroups.findIndex((attributeGroup) => {
+                const attributeGroupIndex = this.attributeGroups.findIndex((attributeGroup) => {
                     return attributeGroup.name == groupName;
                 });
 
+                let attributeGroup: AttributeGroup;
                 if (attributeGroupIndex == -1) {
                     attributeGroup = new AttributeGroup(groupName, groupCollapsed);
                     this.attributeGroups.push(attributeGroup);
-                    attributeGroupIndex++;
+                    // attributeGroupIndex++;
                 } else {
                     attributeGroup = this.attributeGroups[attributeGroupIndex];
                 }
@@ -136,7 +143,7 @@ export class Layer {
             this.attribute_index = this.attributes.reduce((hash, elem) => {
                 hash[elem.settings.name] = Object.keys(hash).length;
                 return hash;
-            }, {});
+            }, <{ [key: string]: number }>{});
             this.hasDocumentAttribute =
                 this.attributes.filter((a) => {
                     return a.get("form_element_type") == "Dokument";
@@ -234,16 +241,16 @@ export class Layer {
                 } else {
                     // console.log('vorschauOption: ', vorschauOption);
                     const keys = Object.keys(rs.rows.item(0));
-                    let vorschauOptions = vorschauOption.split(" ");
-                    let vorschauElements = [];
+                    const vorschauOptions = vorschauOption.split(" ");
+                    // let vorschauElements = [];
                     let vorschauList = "";
                     for (let i = 0; i < numRows; i++) {
                         const item = rs.rows.item(i);
-                        vorschauElements = vorschauOptions.map((elm) => {
-                            let value = elm in item ? item[elm] : elm;
-                            let subLayerAttribute = subLayer.attributes[subLayer.attribute_index[elm]];
+                        const vorschauElements = vorschauOptions.map((elm) => {
+                            const value = elm in item ? item[elm] : elm;
+                            const subLayerAttribute = subLayer.attributes[subLayer.attribute_index[elm]];
                             if (subLayerAttribute.get("form_element_type") == "Auswahlfeld") {
-                                let enum_option = subLayerAttribute.get("enums").find((e) => e.value == value);
+                                const enum_option = subLayerAttribute.get("enums").find((e) => e.value == value);
                                 return enum_option ? enum_option.output : "";
                             }
                             return value;
@@ -1312,14 +1319,14 @@ export class Layer {
         kvm.db.executeSql(
             sql,
             [],
-            function (rs: SQLitePlugin.Results) {
+            (rs: SQLitePlugin.Results) => {
                 // kvm.log("Deltas von Layer " + this.layer.get("title") + " erfolgreich gelöscht.", 3);
-                let icon = $("#clearLayerIcon_" + this.layer.getGlobalId());
+                let icon = $("#clearLayerIcon_" + this.getGlobalId());
                 if (icon.hasClass("fa-spinner")) {
                     icon.toggleClass("fa-ban fa-spinner fa-spin");
                     kvm.closeSperrDiv("Syncronisation des Layers beendet.");
                 }
-                icon = $("#syncImagesIcon_" + this.layer.getGlobalId());
+                icon = $("#syncImagesIcon_" + this.getGlobalId());
                 if (icon.hasClass("fa-spinner")) {
                     icon.toggleClass("fa-upload fa-spinner fa-spin");
                     kvm.closeSperrDiv("Syncronisation der Bilder beendet.");
@@ -1335,18 +1342,18 @@ export class Layer {
           ['OK']
         );
 */
-            }.bind({
-                layer: this,
-                delta: delta,
-            }),
-            function (error: Error) {
+                // }.bind({
+                //     layer: this,
+                //     delta: delta,
+            },
+            (error: Error) => {
                 kvm.log("Fehler beim Löschen der Deltas!", 1);
                 const icon = $("#clearLayerIcon_" + this.getGlobalId());
                 if (icon.hasClass("fa-spinner")) {
                     icon.toggleClass("fa-ban fa-spinner fa-spin");
                 }
                 navigator.notification.confirm(
-                    "Fehler bei Löschen der Änderungsdaten des Layers!\nFehlercode: " + (<any>error).code + "\nMeldung: " + error.message,
+                    "Fehler bei Löschen der Änderungsdaten des Layers! \nMeldung: " + error.message,
                     function (buttonIndex) {
                         // ToDo handling choices after error
                     },
@@ -1387,7 +1394,7 @@ export class Layer {
         $("#formular")
             .append('<h1 id="featureFormHeader" style="margin-left: 5px;">' + this.title + "</h1>")
             .append($('<div id="formDiv">').append('<form id="featureFormular">'));
-        let formAttr = this.attributes;
+        const formAttr = this.attributes;
         for (let i = 0; i < formAttr.length; i++) {
             const attr = formAttr[i];
             console.log(`viewAttr: ${attr.get("name")} arrangement: ${attr.get("arrangement")}`);
@@ -1472,8 +1479,8 @@ export class Layer {
         this.attributeGroups.forEach((attributeGroup) => {
             if (attributeGroup.attributeIds.length > 0) {
                 attributeGroup.div = $('<div class="attribute-group">');
-                let attrGrpHead = $(`<div class="attribute-group-header ${attributeGroup.collapsed ? "b-collapsed" : "b-expanded"}">`);
-                let attrGrpBody = $(`<div class="attribute-group-body"${attributeGroup.collapsed ? 'style="display: none"' : ""}>`);
+                const attrGrpHead = $(`<div class="attribute-group-header ${attributeGroup.collapsed ? "b-collapsed" : "b-expanded"}">`);
+                const attrGrpBody = $(`<div class="attribute-group-body"${attributeGroup.collapsed ? 'style="display: none"' : ""}>`);
                 attrGrpHead.append(attributeGroup.name); // befülle group header
                 attributeGroup.attributeIds.forEach((attributeId) => {
                     let attr = this.attributes[attributeId];
@@ -2332,64 +2339,64 @@ export class Layer {
         return this.activeFeature ? true : false;
     }
 
-    isActiveFeature(feature) {
+    isActiveFeature(feature: Feature) {
         return this.hasActiveFeature() && this.activeFeature.id === feature.id;
     }
 
-    collectChanges(action) {
+    collectChanges(action: string): AttributteDelta[] {
         //kvm.log("Layer.collectChanges " + (action ? " with action: " + action : ""), 4);
-        var activeFeature = this.activeFeature,
-            changes = [];
+        const activeFeature = this.activeFeature;
+        // changes = [];
 
+        const geometry_attribute = this.get("geometry_attribute");
+        const id_attribute = this.get("id_attribute");
         // loop over all elements of the form or over all attributes of the layer respectively
         // compare form element content with old values and if changes exists assign
-        changes = $.map(
-            this.attributes,
-            function (attr) {
-                console.log("attr name: %s", attr.get("name"));
-                //console.log('attr.privilege: %s', attr.get('privilege'));
-                if (attr.get("name") != this.id_attribute && !attr.isAutoAttribute(action) && !attr.isPseudoAttribute() && attr.get("privilege") != "0") {
-                    let key = attr.get("name");
-                    let oldVal = activeFeature.get(key) == "null" ? null : activeFeature.get(key);
-                    let newVal = attr.formField.getValue(action);
+        const changes = this.attributes.map(function (attr: Attribute): AttributteDelta {
+            console.log("attr name: %s", attr.get("name"));
+            //console.log('attr.privilege: %s', attr.get('privilege'));
+            if (attr.get("name") != id_attribute && !attr.isAutoAttribute(action) && !attr.isPseudoAttribute() && attr.get("privilege") != "0") {
+                let key = attr.get("name");
+                let oldVal = activeFeature.get(key) == "null" ? null : activeFeature.get(key);
+                let newVal = attr.formField.getValue(action);
 
-                    if (typeof oldVal == "string") oldVal = oldVal.trim();
-                    if (typeof newVal == "string") newVal = newVal.trim();
-                    if (oldVal == "null" && newVal == null) {
-                        newVal = "null"; // null String und null Object sollen gleich sein beim Vergleich
-                    }
-
-                    if (
-                        action == "insert"
-                        //  && (
-                        //   attr.get("name") == this.geometry_attribute ||
-                        //   (
-                        //     attr.get('nullable') === '0' && !attr.isEmpty(newVal) && oldVal == newVal
-                        //   )
-                        // )
-                    ) {
-                        // Setze oldVal auf leer zurück, damit die geometry und die in getNewData erzeugten
-                        // und in das Formular geladenen Default-Werte übernommen werden.
-                        oldVal = "";
-                    }
-
-                    kvm.log("Vergleiche " + attr.get("form_element_type") + " Attribut: " + key + " " + oldVal + " (" + typeof oldVal + ") vs. " + newVal + "(" + typeof newVal + "))");
-
-                    if (oldVal != newVal) {
-                        kvm.log("Änderung in Attribut " + key + " gefunden.", 3);
-                        //kvm.deb("Änderung in Attribut " + key + " gefunden.");
-                        //            activeFeature.set(key, newVal); Wird jetzt in afterUpdateDataset ausgeführt mit feature.updateChanges
-
-                        return {
-                            key: key,
-                            oldVal: oldVal,
-                            newVal: newVal,
-                            type: attr.getSqliteType(),
-                        };
-                    }
+                if (typeof oldVal == "string") oldVal = oldVal.trim();
+                if (typeof newVal == "string") newVal = newVal.trim();
+                if (oldVal == "null" && newVal == null) {
+                    newVal = "null"; // null String und null Object sollen gleich sein beim Vergleich
                 }
-            }.bind({ geometry_attribute: this.get("geometry_attribute"), id_attribute: this.get("id_attribute") })
-        );
+
+                if (
+                    action == "insert"
+                    //  && (
+                    //   attr.get("name") == this.geometry_attribute ||
+                    //   (
+                    //     attr.get('nullable') === '0' && !attr.isEmpty(newVal) && oldVal == newVal
+                    //   )
+                    // )
+                ) {
+                    // Setze oldVal auf leer zurück, damit die geometry und die in getNewData erzeugten
+                    // und in das Formular geladenen Default-Werte übernommen werden.
+                    oldVal = "";
+                }
+
+                kvm.log("Vergleiche " + attr.get("form_element_type") + " Attribut: " + key + " " + oldVal + " (" + typeof oldVal + ") vs. " + newVal + "(" + typeof newVal + "))");
+
+                if (oldVal != newVal) {
+                    kvm.log("Änderung in Attribut " + key + " gefunden.", 3);
+                    //kvm.deb("Änderung in Attribut " + key + " gefunden.");
+                    //            activeFeature.set(key, newVal); Wird jetzt in afterUpdateDataset ausgeführt mit feature.updateChanges
+
+                    return {
+                        key: key,
+                        oldVal: oldVal,
+                        newVal: newVal,
+                        type: attr.getSqliteType(),
+                    };
+                }
+            }
+            // }.bind({ geometry_attribute: this.get("geometry_attribute"), id_attribute: this.get("id_attribute") })
+        });
 
         return changes;
     }
@@ -2494,9 +2501,9 @@ export class Layer {
 
     createDataset(rs) {
         //console.log('insertDataset rs: %o', rs);
-        var layer = this.context,
-            changes = layer.collectChanges("insert"),
-            imgChanges = changes.filter(function (change) {
+        const layer = <Layer>this.context;
+        let changes = layer.collectChanges("insert");
+        let imgChanges = changes.filter(function (change) {
                 return $.inArray(change.key, layer.getDokumentAttributeNames()) > -1;
             }),
             delta: any = {},
@@ -2565,7 +2572,7 @@ export class Layer {
      */
     runUpdateStrategy() {
         //console.log('runUpdateStrategy');
-        var strategy = {
+        const strategy = {
             context: this,
             succFunc: "backupDataset",
             next: {
@@ -2590,13 +2597,13 @@ export class Layer {
 
     updateDataset(rs) {
         //console.log('updateDataset rs: %o', rs);
-        var layer = this.context,
-            changes = layer.collectChanges("update"),
-            delta: any = {},
+        const layer = this.context;
+        let changes = layer.collectChanges("update");
+        const delta: any = {},
             sql = "";
 
         if (changes.length == 0) {
-            let msg = "Keine Änderungen! Zum Abbrechen verwenden Sie den Button neben Speichen.";
+            const msg = "Keine Änderungen! Zum Abbrechen verwenden Sie den Button neben Speichen.";
             kvm.closeSperrDiv(msg);
             //kvm.msg(msg);
         } else {
@@ -2614,8 +2621,8 @@ export class Layer {
             //kvm.log("Layer.updateDataset addAutoChanges", 4);
             changes = layer.addAutoChanges(changes, "update");
 
-            delta = layer.getUpdateDelta(changes);
-            sql = delta.delta + " AND endet IS NULL";
+            const delta = layer.getUpdateDelta(changes);
+            const sql = delta.delta + " AND endet IS NULL";
 
             this.next.context = layer;
             this.next.delta = delta;
@@ -2633,12 +2640,12 @@ export class Layer {
      * @param string action insert or update used to determine if auto value shall be created pending on option of the attribute
      * @return array The array of changes including the auto values
      */
-    addAutoChanges(changes, action) {
+    addAutoChanges(changes: AttributteDelta[], action: string): AttributteDelta[] {
         kvm.log("Layer.addAutoChanges mit action " + action, 4);
-        let changesKeys = $.map(changes, function (change) {
+        const changesKeys = $.map(changes, function (change) {
             return change.key;
         });
-        let autoChanges = $.map(this.attributes, function (attr) {
+        const autoChanges = this.attributes.map(function (attr): AttributteDelta {
             if (attr.isAutoAttribute(action) && !changesKeys.includes(attr.get("name"))) {
                 console.log("getAutoValue from attribute: %s formfield: %s", attr.get("name"), attr.formField.constructor.name);
                 try {

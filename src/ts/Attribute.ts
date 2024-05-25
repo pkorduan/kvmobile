@@ -50,7 +50,7 @@ export class Attribute {
      * @returns Attribute or null
      */
     getSuccessor() {
-        let index = parseInt(this.layer.attribute_index[this.get("name")]);
+        const index = this.layer.attribute_index[this.get("name")];
         return index < Object.keys(this.layer.attribute_index).length ? this.layer.attributes[index + 1] : null;
     }
 
@@ -60,7 +60,7 @@ export class Attribute {
      * @returns string The float left style or empty string
      */
     getArrangementStyle() {
-        let succesor = this.getSuccessor();
+        const succesor = this.getSuccessor();
         if ((succesor && succesor.get("arrangement") == "1") || this.get("arrangement") == "1") {
             return 'style="float: left"';
         } else {
@@ -100,7 +100,7 @@ export class Attribute {
      * @return string
      */
     getPKAttribute() {
-        let key_names = this.settings.options.split(";")[0].split(",")[1].split(":");
+        const key_names = this.settings.options.split(";")[0].split(",")[1].split(":");
         if (this.get("form_element_type") == "SubFormFK") {
             return key_names.length == 1 ? key_names[0] : key_names[1];
         } else {
@@ -198,8 +198,8 @@ export class Attribute {
     }
 
     getSqliteType() {
-        var pgType = this.get("type"),
-            slType = "";
+        const pgType = this.get("type");
+        let slType = "";
 
         switch (true) {
             case $.inArray(pgType, ["character varying", "text", "character", "bool"]) > -1:
@@ -269,7 +269,7 @@ export class Attribute {
     kvm.log('options ist leer? ' + (this.get('options') == ''), 4);
     kvm.log('action == options? ' + (action == this.get('options').toLowerCase()), 4);
     */
-        var answer = ["SubFormFK"].includes(this.get("form_element_type")) || ((["user_name", "updated_at_client", "created_at"].includes(this.get("name")) || ["User", "UserID", "Time"].includes(this.get("form_element_type"))) && this.get("name") != "updated_at_server" && (action == "" || this.get("options") == "" || action == this.get("options").toLowerCase()));
+        const answer = ["SubFormFK"].includes(this.get("form_element_type")) || ((["user_name", "updated_at_client", "created_at"].includes(this.get("name")) || ["User", "UserID", "Time"].includes(this.get("form_element_type"))) && this.get("name") != "updated_at_server" && (action == "" || this.get("options") == "" || action == this.get("options").toLowerCase()));
         //kvm.log("Attribute " + this.get("name") + " is Autoattribute" + (action ? " for action " + action : "") + "? " + answer, 4);
         return answer;
     }

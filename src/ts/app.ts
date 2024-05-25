@@ -1386,13 +1386,10 @@ class Kvm {
                     [],
                     (rs) => {
                         const numRows = rs.rows.length;
-                        let item: any;
-                        let i: number;
-
                         if (numRows > 0) {
                             $("#showDeltasDiv").html("<b>Deltas</b>");
-                            for (i = 0; i < numRows; i++) {
-                                item = rs.rows.item(i);
+                            for (let i = 0; i < numRows; i++) {
+                                const item = rs.rows.item(i);
                                 $("#showDeltasDiv").append("<br>" + item.version + ": " + (item.type == "sql" ? item.delta : item.change + " " + item.delta));
                             }
                             $("#showDeltasDiv").show();
