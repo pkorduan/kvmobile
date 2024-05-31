@@ -36,7 +36,7 @@ export class DataViewField implements Field {
         if (val == "null") {
             val = null;
         }
-        const options = this.get("enums");
+        // const options = this.get("enums");
 
         // console.log("DataViewField.setValue %s with value: %s", this.attribute.settings.name, val);
         if (val && this.get("type") === "timestamp") {
@@ -67,8 +67,7 @@ export class DataViewField implements Field {
                 for (let i = 0; i < images.length; i++) {
                     const remoteFile = images[i];
                     const localFile = kvm.removeOriginalName(kvm.serverToLocalPath(remoteFile));
-                    const f = localFile.replace("file:///storage/emulated/0/", "");
-                    console.error("Add remoteFile: %s localFile: %s", remoteFile, localFile);
+                    // const f = localFile.replace("file:///storage/emulated/0/", "");
 
                     // window.requestFileSystem(
                     //     LocalFileSystem.PERSISTENT,
@@ -94,6 +93,7 @@ export class DataViewField implements Field {
                     // const imgDiv = $('<div id="preview_' + this.get("index") + "_" + i + '" class="img preview" src="' + localFile + '" style="background-image: url(' + localFile + ');" field_id="' + this.get("index") + '"name="preview_' + localFile + '"></div>');
 
                     const imgUrl = await getWebviewUrl(localFile);
+                    console.error("Add\nremoteFile: %s \nlocalFile: %s \nwebviewUrl: %s", remoteFile, localFile, imgUrl);
                     // const imgDiv = $('<div id="preview_' + this.get("index") + "_" + i + '" class="img preview" src=file:///"' + f + '" style="background-image: url(' + localFile + ');" field_id="' + this.get("index") + '"name="preview_' + f + '"></div>');
                     // const imgDivOld = $('<div id="preview_' + this.get("index") + "_" + i + '" class="img preview" src=file:///"' + url +
                     // '" style="background-image: url(' + url + ');" field_id="' + this.get("index") + '"name="preview_' + f + '"></div>');
@@ -170,6 +170,7 @@ export class DataViewField implements Field {
             let feature = this.attribute.layer.activeFeature;
             this.attribute.layer.readVorschauAttributes(this.attribute, feature.get(this.attribute.getPKAttribute()), this.element, "activateFeature");
         } else if (this.get("form_element_type") == "Auswahlfeld") {
+            const options = this.get("enums");
             let output = "";
             if (val && options && Array.isArray(options)) {
                 // output options instead of values

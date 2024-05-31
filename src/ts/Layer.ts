@@ -9,6 +9,7 @@ import { Stelle } from "./Stelle";
 import { Klasse } from "./Klasse";
 import { AttributeGroup } from "./AttributeGroup";
 import { Icon } from "leaflet";
+import * as LayerDBJobs from "./LayerDBJobs";
 
 export type AttributteDelta = {
     key: string;
@@ -144,10 +145,12 @@ export class Layer {
                 hash[elem.settings.name] = Object.keys(hash).length;
                 return hash;
             }, <{ [key: string]: number }>{});
-            this.hasDocumentAttribute =
-                this.attributes.filter((a) => {
-                    return a.get("form_element_type") == "Dokument";
-                }).length > 0;
+
+            this.hasDocumentAttribute = this.attributes.some((a) => a.get("form_element_type") === "Dokument");
+            // this.hasDocumentAttribute =
+            //     this.attributes.filter((a) => {
+            //         return a.get("form_element_type") == "Dokument";
+            //     }).length > 0;
         }
 
         if (this.settings.classes) {
@@ -172,8 +175,8 @@ export class Layer {
 
     getDokumentAttributeNames() {
         return $.map(this.attributes, function (attr) {
-            if (attr.get("form_element_type") == "Dokument") {
-                return attr.get("name");
+            if (attr.settings.form_element_type === "Dokument") {
+                return attr.settings.name;
             }
         });
     }
@@ -300,8 +303,8 @@ export class Layer {
         //     order = $('#anzeigeSortSelect').val(),
         //     sql = '';
 
-        var filter = [];
-        let sql: string;
+        let filter = [];
+        // let sql: string;
 
         this.activeFeature = null;
 
@@ -310,11 +313,11 @@ export class Layer {
 
             filter = $(".filter-view-field")
                 .filter(function (i, field) {
-                    var value = $(field).find(".filter-view-value-field").val();
+                    const value = $(field).find(".filter-view-value-field").val();
                     return value !== undefined && value != "";
                 })
                 .map((i, field) => {
-                    var bracket = kvm.bracketForType($(field).attr("database_type"));
+                    const bracket = kvm.bracketForType($(field).attr("database_type"));
                     return `${this.settings.table_alias}.${$(field).attr("name")}` + " " + $(field).find(".filter-view-operator select").val() + " " + bracket + $(field).find(".filter-view-value-field").val() + bracket;
                 })
                 .get();
@@ -343,7 +346,7 @@ export class Layer {
             this.settings.query = this.settings.query.replace(table, table.replace(".", "_"));
         });
 
-        sql = this.extentSql(this.settings.query, filter, order, limit, offset);
+        const sql = this.extentSql(this.settings.query, filter, order, limit, offset);
 
         // console.log(`Lese Daten mit ${sql} aus der Datenbank`);
         kvm.db.executeSql(
@@ -374,6 +377,7 @@ export class Layer {
                         console.log("Item " + i + ": %o", item);
                         console.log("Erzeuge Feature %s: ", i);
                         console.log("Erzeuge Feature von item %o", item);
+
                         this.features[item[this.get("id_attribute")]] = new Feature(item, {
                             id_attribute: this.get("id_attribute"),
                             geometry_type: this.get("geometry_type"),
@@ -439,9 +443,9 @@ export class Layer {
 
         $.each(this.features, function (key, feature) {
             //console.log("append feature: %o to list", feature);
-            var needle = $("#searchFeatureField").val().toString().toLowerCase(),
-                element = $(feature.listElement()),
-                haystack = element.html().toLowerCase();
+            const needle = $("#searchFeatureField").val().toString().toLowerCase();
+            const element = $(feature.listElement());
+            const haystack = element.html().toLowerCase();
 
             html = html + feature.listElement();
             //console.log("Feature " + feature.options.id_attribute + ": " + feature.id + " zur Liste hinzugefügt.");
@@ -476,8 +480,8 @@ export class Layer {
                         return (attr.layer.hasEditPrivilege && attr.get("saveable") == "1") || !attr.layer.hasEditPrivilege;
                     }),
                     (attr) => {
-                        var type = attr.get("type"),
-                            value = type == "geometry" ? item.geometry : item.properties[attr.get("name")];
+                        const type = attr.get("type");
+                        const value = type == "geometry" ? item.geometry : item.properties[attr.get("name")];
                         //console.log('type: %s value: %s', type, value);
                         const v = attr.toSqliteValue(type, value);
                         return v;
@@ -554,7 +558,7 @@ export class Layer {
                         (tx, res) => {
                             kvm.log("Tabelle " + layer.getSqliteTableName() + " erfolgreich angelegt.", 3);
                             if (layer.hasEditPrivilege) {
-                                var tableName = layer.getSqliteTableName() + "_deltas",
+                                const tableName = layer.getSqliteTableName() + "_deltas",
                                     tableColumnDefinitions = ["version INTEGER PRIMARY KEY", "type text", "change text", "delta text", "created_at text"],
                                     sql = "CREATE TABLE IF NOT EXISTS " + tableName + " (" + tableColumnDefinitions.join(", ") + ")";
                                 //kvm.log("Erzeuge Delta-Tabelle mit sql: " + sql, 3);
@@ -574,7 +578,7 @@ export class Layer {
                             }
                         },
                         (tx, error) => {
-                            var tableName = layer.getSqliteTableName();
+                            const tableName = layer.getSqliteTableName();
                             kvm.msg("Fehler beim Anlegen der Tabelle: " + tableName + " " + error.message);
                         }
                     );
@@ -644,13 +648,13 @@ export class Layer {
                     [],
                     (tx, res) => {
                         kvm.tick("Tabelle " + this.getSqliteTableName() + " erfolgreich gelöscht.");
-                        var sql = this.getCreateTableSql();
+                        const sql = this.getCreateTableSql();
                         kvm.log("Erzeuge neue Tabelle mit sql: " + sql, 3);
                         kvm.tick("Erzeuge neue Tabelle " + this.getSqliteTableName());
                         tx.executeSql(
                             sql,
                             [],
-                            function (tx, res) {
+                            (tx, res) => {
                                 kvm.tick("Tabelle erfolgreich angelegt.");
                                 // update layer name in layerlist for this layer
                                 this.appendToApp();
@@ -659,11 +663,11 @@ export class Layer {
                                 this.saveToStore();
                                 kvm.setConnectionStatus();
                                 this.requestData();
-                            }.bind(this),
-                            function (error) {
-                                var tableName = this.getSqliteTableName();
+                            },
+                            (tx, error) => {
+                                const tableName = this.getSqliteTableName();
                                 kvm.msg("Fehler beim Anlegen der Tabelle: " + tableName + " " + error.message);
-                            }.bind(this)
+                            }
                         );
                     },
                     (tx, error) => {
@@ -699,26 +703,34 @@ export class Layer {
 
     getTableColumns() {
         //kvm.log("getTableColumns", 4);
-        var tableColumns = $.map(
-            this.attributes.filter(function (attr) {
+        console.error("getTableC");
+        // const tableColumns = $.map(
+        //     this.attributes.filter(function (attr) {
+        //         return (attr.layer.hasEditPrivilege && attr.get("saveable") == "1") || !attr.layer.hasEditPrivilege;
+        //     }),
+        //     function (attr) {
+        //         return attr.settings.name;
+        //     }
+        // );
+
+        const tableColumns = this.attributes
+            .filter((attr) => {
                 return (attr.layer.hasEditPrivilege && attr.get("saveable") == "1") || !attr.layer.hasEditPrivilege;
-            }),
-            function (attr) {
-                return attr.get("name");
-            }
-        );
+            })
+            .map((attr) => attr.settings.name);
+
         //console.log('Return tableColumns: %o', tableColumns);
         return tableColumns;
     }
 
     getColumnValues() {
         kvm.alog("getColumnValues", "", 4);
-        var values = $.map(
+        const values = $.map(
             this.attributes.filter(function (attr) {
                 return attr.get("saveable") == "1";
             }),
             function (attr) {
-                var type = attr.get("type"),
+                const type = attr.get("type"),
                     // TODO BugXX
                     // value = this.activeFeature.get(attr.get("name"));
                     value = (<any>this).activeFeature.get(attr.get("name"));
@@ -736,9 +748,9 @@ export class Layer {
      */
     getCreateTableSql() {
         //kvm.log("getCreateTableSql", 4);
-        var tableName = this.getSqliteTableName(),
-            tableColumnDefinitions = this.getTableColumnDefinitions(),
-            sql = "CREATE TABLE IF NOT EXISTS " + tableName + " (" + tableColumnDefinitions.join(", ") + ", endet TEXT)";
+        const tableName = this.getSqliteTableName();
+        const tableColumnDefinitions = this.getTableColumnDefinitions();
+        const sql = "CREATE TABLE IF NOT EXISTS " + tableName + " (" + tableColumnDefinitions.join(", ") + ", endet TEXT)";
 
         return sql;
     }
@@ -748,7 +760,7 @@ export class Layer {
      * use attribute name, if difference from real_name use it in stead
      */
     getSelectExpressions() {
-        var selectExpressions = $.map(this.attributes, function (attr) {
+        const selectExpressions = $.map(this.attributes, function (attr) {
             return attr.get("name") != attr.get("real_name") ? attr.get("real_name") + " AS " + attr.get("name") : attr.get("name");
         });
         return selectExpressions;
@@ -844,7 +856,7 @@ export class Layer {
      * function chain: writeFile  > upload > for each feature execServerDeltaSuccessFunc
      * > saveToStore, clearDeltas, readData
      */
-    sendDeltas(deltas) {
+    sendDeltas(deltas: { rows: { version: string; sql: string }[] }) {
         if (deltas.rows.length > 0) {
             kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Sende Änderungen zum Server.`);
         } else {
@@ -858,8 +870,8 @@ export class Layer {
             5 * 1024 * 1024,
             (fs) => {
                 //kvm.log(this.title + ": file system open: " + fs.name, 4);
-                var fileName = "delta_layer_" + this.getGlobalId() + ".json";
-                var dirEntry = fs.root;
+                const fileName = "delta_layer_" + this.getGlobalId() + ".json";
+                const dirEntry = fs.root;
 
                 //console.log(fileName);
                 console.log(`DirEntry ${dirEntry}`);
@@ -870,10 +882,10 @@ export class Layer {
                     (fileEntry) => {
                         // Write something to the file before uploading it.
                         console.log(`fileEntry ${fileEntry} for writing deltas`);
-                        this.writeFile(fileEntry, deltas_);
+                        this.writeFile(<any>fileEntry, deltas_);
                     },
                     (err) => {
-                        let msg = "Fehler beim Erzeugen der Delta-Datei, die geschickt werden soll.";
+                        const msg = "Fehler beim Erzeugen der Delta-Datei, die geschickt werden soll.";
                         kvm.msg(msg, "Upload Änderungen");
                         if ($("#syncLayerIcon_" + this.getGlobalId()).hasClass("fa-spinner")) {
                             $("#syncLayerIcon_" + this.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
@@ -888,7 +900,7 @@ export class Layer {
         );
     }
 
-    writeFile(fileEntry, deltas) {
+    writeFile(fileEntry: FileEntry, deltas: { rows: { version: string; sql: string }[] }) {
         console.log(`${this.title}: writeFile with deltas: ${JSON.stringify(deltas)}`);
         if (deltas.rows.length > 0) {
             kvm.writeLog(`Syncronisiere Layer ${this.title} mit folgendem Delta: ${JSON.stringify(deltas)}`);
@@ -901,7 +913,7 @@ export class Layer {
             };
 
             fileWriter.onerror = (e) => {
-                let msg = this.title + ": Fehler beim Schreiben der Datei: " + e.toString();
+                const msg = this.title + ": Fehler beim Schreiben der Datei: " + e.toString();
                 kvm.msg(msg, "Synchronisation");
                 console.error(msg);
                 kvm.writeLog(msg);
@@ -917,12 +929,12 @@ export class Layer {
         });
     }
 
-    upload(fileEntry) {
+    upload(fileEntry: FileEntry) {
         console.log(this.title + ": upload deltas file");
-        var fileURL = fileEntry.toURL();
-        var success = (r) => {
+        const fileURL = fileEntry.toURL();
+        const successFct = (r: FileUploadResult) => {
             console.log(this.title + ": Erfolgreich hochgeladen ResponseCode: %o Response: %o", r.responseCode, r.response);
-            var response = JSON.parse(r.response);
+            const response = JSON.parse(r.response);
 
             if (response.success) {
                 kvm.writeLog(`Synchronisierung des Layer ${this.get("title")} erfolgreich.`);
@@ -966,8 +978,8 @@ export class Layer {
             }
         };
 
-        var fail = (error) => {
-            var msg = "Fehler beim Hochladen der Sync-Datei! Prüfe die Netzverbindung! Fehler Nr: " + error.code;
+        const failFct = (error: FileTransferError) => {
+            const msg = "Fehler beim Hochladen der Sync-Datei! Prüfe die Netzverbindung! Fehler Nr: " + error.code;
             console.log("Fehler: %o", error);
             if ($("#syncLayerIcon_" + this.getGlobalId()).hasClass("fa-spinner")) {
                 $("#syncLayerIcon_" + this.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
@@ -979,29 +991,29 @@ export class Layer {
             stelle = layer.stelle,
             url = stelle.get("url"),
             file = stelle.getUrlFile(url),
-            server = url + file,
-            params: any = {},
-            // options = new FileUploadOptions();
-            options: any = {};
+            server = url + file;
 
-        params.device_id = device.uuid;
-        params.Stelle_ID = stelle.get("Stelle_ID");
-        params.login_name = stelle.get("login_name");
-        params.passwort = stelle.get("passwort");
-        params.selected_layer_id = layer.get("id");
-        params.table_name = layer.get("table_name");
-        params.client_time = new Date().toISOString();
-        params.last_client_version = layer.get("syncVersion");
-        params.go = "mobile_sync";
+        const params = {
+            device_id: device.uuid,
+            Stelle_ID: stelle.get("Stelle_ID"),
+            login_name: stelle.get("login_name"),
+            passwort: stelle.get("passwort"),
+            selected_layer_id: layer.get("id"),
+            table_name: layer.get("table_name"),
+            client_time: new Date().toISOString(),
+            last_client_version: layer.get("syncVersion"),
+            go: "mobile_sync",
+        };
 
-        options.params = params;
-        options.fileKey = "client_deltas";
-        options.fileName = fileURL.substr(fileURL.lastIndexOf("/") + 1);
-        options.mimeType = "application/json";
-
-        var ft = new FileTransfer();
-        console.log(this.title + ": Upload to server: %s with options: %s", server, JSON.stringify(options).replace(options.params.passwort, "secret"));
-        ft.upload(fileURL, encodeURI(server), success, fail, options);
+        const options: FileUploadOptions = {
+            params: params,
+            fileKey: "client_deltas",
+            fileName: fileURL.substr(fileURL.lastIndexOf("/") + 1),
+            mimeType: "application/json",
+        };
+        const ft = new FileTransfer();
+        console.log(this.title + ": Upload to server: %s with options: %s", server, JSON.stringify(options).replace(params.passwort, "secret"));
+        ft.upload(fileURL, encodeURI(server), successFct, failFct, options);
     }
 
     /*
@@ -1175,7 +1187,7 @@ export class Layer {
             },
             success: function (r) {
                 //console.log('Response: %o', r);
-                var data = JSON.parse(r);
+                const data = JSON.parse(r);
                 if (data.success) {
                     //kvm.log(data.msg);
                     kvm.log("Bild: " + this.img + " erfolgreich auf dem Server gelöscht.", 4);
@@ -1223,7 +1235,7 @@ export class Layer {
             (rs) => {
                 //kvm.log("Layer.syncData query deltas success result:" + JSON.stringify(rs), 3);
                 const numRows = rs.rows.length;
-                const deltas = { rows: [] };
+                const deltas: { rows: { version: string; sql: string }[] } = { rows: [] };
                 for (let i = 0; i < numRows; i++) {
                     // kvm.log("Push item " + i + " to deltas. sql: " + rs.rows.item(i).delta, 4);
                     deltas.rows.push({
@@ -1245,11 +1257,11 @@ export class Layer {
         );
     }
 
-    underlineToPointName(sql, schema, table) {
+    underlineToPointName(sql: string, schema, table) {
         return sql.replace(this.getSqliteTableName(), this.getPostgresTableName());
     }
 
-    pointToUnderlineName(sql, schema, table) {
+    pointToUnderlineName(sql: string, schema, table) {
         return sql.replace(this.getPostgresTableName(), this.getSqliteTableName());
     }
 
@@ -1378,7 +1390,7 @@ export class Layer {
             (fileEntry: FileEntry) => {
                 console.log("Download des Bildes abgeschlossen: %s", fileEntry.fullPath);
                 console.log("Set div[name$]=%s and src and background-image=%s", remoteFile, localFile);
-                var imageDiv = $('div[name$="' + remoteFile + '"]');
+                const imageDiv = $('div[name$="' + remoteFile + '"]');
                 imageDiv.attr("src", localFile);
                 imageDiv.css("background-image", "url('" + localFile + "')");
             },
@@ -1603,8 +1615,8 @@ export class Layer {
         this.activeFeature = feature;
 
         $.map(this.attributes, function (attr) {
-            const key = attr.get("name");
-            const val = feature.get(key) == "null" ? null : feature.get(key);
+            const attrName = attr.get("name");
+            const val = feature.getDataValue(attrName) == "null" ? null : feature.getDataValue(attrName);
 
             //console.log("Feature is new? %s", this.options.new);
             //console.log("Set %s %s: %s", attr.get("form_element_type"), key, val);
@@ -1629,17 +1641,18 @@ export class Layer {
 
     loadTplFeatureToForm(tplId) {
         //console.log("Layer.loadTplFeatureToForm.");
+        const feature = this.features[tplId];
         $.map(
             this.attributes,
-            function (attr) {
-                var key = attr.get("name"),
-                    val = this.get(key); // this is here the tplFeature
+            (attr) => {
+                const attrName = attr.get("name");
+                const val = feature.getDataValue(attrName); // this is here the tplFeature
 
-                if (!["uuid", "version", this.options.geometry_attribute].includes(key)) {
+                if (!["uuid", "version", feature.options.geometry_attribute].includes(attrName)) {
                     //console.log('Set %s %s: %s', attr.get('form_element_type'), key, val);
                     attr.formField.setValue(val);
                 }
-            }.bind(this.features[tplId])
+            } // .bind(this.features[tplId])
         );
     }
 
@@ -1689,7 +1702,7 @@ export class Layer {
                     //vectorLayer.on("popupclose", this.popupClose);
 
                     // Setze Style für Kartenobjekt
-                    var style = layer.hasClasses() ? feature.getStyle() : layer.getDefaultPathOptions();
+                    const style = layer.hasClasses() ? feature.getStyle() : layer.getDefaultPathOptions();
 
                     //console.log("Draw feature %o with style %o", feature, style);
                     vectorLayer.setStyle(style);
@@ -1828,7 +1841,7 @@ export class Layer {
         let featureArray = Object.values(this.features);
         return featureArray.reduce(
             (maxValue, currentFeature) => {
-                const currentValue = currentFeature.get(attribute);
+                const currentValue = currentFeature.getDataValue(attribute);
 
                 if (typeof currentValue !== "undefined" && currentValue > maxValue) {
                     return currentValue;
@@ -1836,7 +1849,7 @@ export class Layer {
                     return maxValue;
                 }
             },
-            featureArray[0].get(attribute) // Initialize with the attribute value of the first object
+            featureArray[0].getDataValue(attribute) // Initialize with the attribute value of the first object
         );
         // const sql = `
         // 	SELECT
@@ -2128,7 +2141,7 @@ export class Layer {
             // console.log("Setzte Geometry für Feature %o", alatlng, 4);
             feature.setGeom(feature.aLatLngsToWkx(alatlng));
             feature.geom = feature.newGeom;
-            feature.set(feature.options.geometry_attribute, feature.wkxToEwkb(feature.geom));
+            feature.setDataValue(feature.options.geometry_attribute, feature.wkxToEwkb(feature.geom));
         }
         this.loadFeatureToForm(feature, { editable: true });
         kvm.map.closePopup();
@@ -2173,7 +2186,7 @@ export class Layer {
             //Setzt den Style des circle Markers auf den alten zurück
             //layer.setStyle(feature.getNormalStyle()); Wird nicht mehr verwendet
 
-            var style = this.hasClasses() ? feature.getStyle() : this.getDefaultPathOptions();
+            const style = this.hasClasses() ? feature.getStyle() : this.getDefaultPathOptions();
             // console.log("Set style after cancleEditGeometry: %o", style);
             vectorLayer.setStyle(style);
             if (this.get("geometry_type") == "Point") {
@@ -2277,7 +2290,7 @@ export class Layer {
         //console.log('Style der neuen Geometrie auf default setzen');
         //vectorLayer.setStyle(feature.getNormalStyle()); veraltet wird nicht mehr verwendet
 
-        var style = this.hasClasses() ? feature.getStyle() : this.getDefaultPathOptions();
+        const style = this.hasClasses() ? feature.getStyle() : this.getDefaultPathOptions();
         // console.log("SetStyle after saveGeometry: %o", style);
         vectorLayer.setStyle(style);
         if (this.get("geometry_type") == "Point") {
@@ -2352,51 +2365,45 @@ export class Layer {
         const id_attribute = this.get("id_attribute");
         // loop over all elements of the form or over all attributes of the layer respectively
         // compare form element content with old values and if changes exists assign
-        const changes = this.attributes.map(function (attr: Attribute): AttributteDelta {
-            console.log("attr name: %s", attr.get("name"));
-            //console.log('attr.privilege: %s', attr.get('privilege'));
-            if (attr.get("name") != id_attribute && !attr.isAutoAttribute(action) && !attr.isPseudoAttribute() && attr.get("privilege") != "0") {
-                let key = attr.get("name");
-                let oldVal = activeFeature.get(key) == "null" ? null : activeFeature.get(key);
-                let newVal = attr.formField.getValue(action);
+        const changes = this.attributes
+            .map(function (attr: Attribute): AttributteDelta {
+                console.log("attr name: %s", attr.get("name"));
+                //console.log('attr.privilege: %s', attr.get('privilege'));
+                if (attr.get("name") != id_attribute && !attr.isAutoAttribute(action) && !attr.isPseudoAttribute() && attr.settings.privilege != "0") {
+                    const attrName = attr.settings.name;
+                    let oldVal = activeFeature.getDataValue(attrName) == "null" ? null : activeFeature.getDataValue(attrName);
+                    let newVal = attr.formField.getValue(action);
 
-                if (typeof oldVal == "string") oldVal = oldVal.trim();
-                if (typeof newVal == "string") newVal = newVal.trim();
-                if (oldVal == "null" && newVal == null) {
-                    newVal = "null"; // null String und null Object sollen gleich sein beim Vergleich
+                    if (typeof oldVal == "string") oldVal = oldVal.trim();
+                    if (typeof newVal == "string") newVal = newVal.trim();
+                    if (oldVal == "null" && newVal == null) {
+                        newVal = "null"; // null String und null Object sollen gleich sein beim Vergleich
+                    }
+
+                    if (action == "insert") {
+                        // Setze oldVal auf leer zurück, damit die geometry und die in getNewData erzeugten
+                        // und in das Formular geladenen Default-Werte übernommen werden.
+                        oldVal = "";
+                    }
+
+                    kvm.log("Vergleiche " + attr.get("form_element_type") + " Attribut: " + attrName + " " + oldVal + " (" + typeof oldVal + ") vs. " + newVal + "(" + typeof newVal + "))");
+
+                    if (oldVal != newVal) {
+                        kvm.log("Änderung in Attribut " + attrName + " gefunden.", 3);
+                        //kvm.deb("Änderung in Attribut " + key + " gefunden.");
+                        //            activeFeature.set(key, newVal); Wird jetzt in afterUpdateDataset ausgeführt mit feature.updateChanges
+
+                        return {
+                            key: attrName,
+                            oldVal: oldVal,
+                            newVal: newVal,
+                            type: attr.getSqliteType(),
+                        };
+                    }
                 }
-
-                if (
-                    action == "insert"
-                    //  && (
-                    //   attr.get("name") == this.geometry_attribute ||
-                    //   (
-                    //     attr.get('nullable') === '0' && !attr.isEmpty(newVal) && oldVal == newVal
-                    //   )
-                    // )
-                ) {
-                    // Setze oldVal auf leer zurück, damit die geometry und die in getNewData erzeugten
-                    // und in das Formular geladenen Default-Werte übernommen werden.
-                    oldVal = "";
-                }
-
-                kvm.log("Vergleiche " + attr.get("form_element_type") + " Attribut: " + key + " " + oldVal + " (" + typeof oldVal + ") vs. " + newVal + "(" + typeof newVal + "))");
-
-                if (oldVal != newVal) {
-                    kvm.log("Änderung in Attribut " + key + " gefunden.", 3);
-                    //kvm.deb("Änderung in Attribut " + key + " gefunden.");
-                    //            activeFeature.set(key, newVal); Wird jetzt in afterUpdateDataset ausgeführt mit feature.updateChanges
-
-                    return {
-                        key: key,
-                        oldVal: oldVal,
-                        newVal: newVal,
-                        type: attr.getSqliteType(),
-                    };
-                }
-            }
-            // }.bind({ geometry_attribute: this.get("geometry_attribute"), id_attribute: this.get("id_attribute") })
-        });
+                // }.bind({ geometry_attribute: this.get("geometry_attribute"), id_attribute: this.get("id_attribute") })
+            })
+            .filter((change) => change);
 
         return changes;
     }
@@ -2417,27 +2424,40 @@ export class Layer {
      */
     runInsertStrategy() {
         //console.log('runInsertStrategy');
-        const strategy = {
-            context: this,
-            succFunc: "backupDataset",
-            next: {
-                succFunc: "createDataset",
-                next: {
-                    succFunc: "writeDelta",
-                    next: {
-                        succFunc: "readDataset",
-                        next: {
-                            succFunc: "afterCreateDataset",
-                            succMsg: "Datensatz erfolgreich angelegt",
-                        },
-                    },
-                },
-            },
-        };
-        //    console.log('runInsertStrategy uebergebe strategy: %s', JSON.stringify(strategy));
+        // const strategy = {
+        //     context: this,
+        //     succFunc: "backupDataset",
+        //     next: {
+        //         succFunc: "createDataset",
+        //         next: {
+        //             succFunc: "writeDelta",
+        //             next: {
+        //                 succFunc: "readDataset",
+        //                 next: {
+        //                     succFunc: "afterCreateDataset",
+        //                     succMsg: "Datensatz erfolgreich angelegt",
+        //                 },
+        //             },
+        //         },
+        //     },
+        // };
+        // //    console.log('runInsertStrategy uebergebe strategy: %s', JSON.stringify(strategy));
 
-        this.runStrategy(this[strategy.succFunc].bind(strategy));
-        return true;
+        // this.runStrategy(this[strategy.succFunc].bind(strategy));
+        // return true;
+
+        const changes = this.getAllChanges("insert");
+        if (changes?.length > 0) {
+            const delta = this.getInsertDelta(changes);
+            LayerDBJobs.runInsert(this, delta)
+                .then((rs) => {
+                    console.error("resolved runInsertStrategy");
+                    this.afterCreateDataset(rs);
+                })
+                .catch((reason) => {
+                    kvm.msg("Etwas ist schief gegangen: " + reason);
+                });
+        }
     }
 
     /**
@@ -2446,12 +2466,12 @@ export class Layer {
      * @param object strategy Object with context and information about following processes
      */
     backupDataset() {
-        //console.log('backupDataset');
-        var layer = this.context,
+        console.error("backupDataset");
+        const layer = <Layer>this.context,
             table = layer.getSqliteTableName(),
             tableColumns = layer.getTableColumns(),
             id_attribute = layer.get("id_attribute"),
-            id = layer.activeFeature.get(id_attribute),
+            id = layer.activeFeature.getFeatureId(),
             sql =
                 "\
           INSERT INTO " +
@@ -2495,6 +2515,7 @@ export class Layer {
         //console.log('Backup vorhandenen Datensatz mit sql: %o', sql);
         this.next.context = layer;
         kvm.db.executeSql(sql, [], layer[this.next.succFunc].bind(this.next), function (err) {
+            console.error("Fehler", err);
             kvm.msg("Fehler beim Ausführen von " + sql + " in backupDataset! Fehler: " + (<any>err).code + "\nMeldung: " + err.message, "Fehler");
         });
     }
@@ -2536,7 +2557,7 @@ export class Layer {
      */
     afterCreateDataset(rs) {
         console.log("afterCreateDataset");
-        var layer = this.context;
+        const layer = this.context;
 
         //console.log("set data for activeFeature: %o", rs.rows.item(0));
         //console.log("with geom: %o", rs.rows.item(0).geom);
@@ -2572,35 +2593,44 @@ export class Layer {
      */
     runUpdateStrategy() {
         //console.log('runUpdateStrategy');
-        const strategy = {
-            context: this,
-            succFunc: "backupDataset",
-            next: {
-                succFunc: "updateDataset",
-                next: {
-                    succFunc: "writeDelta",
-                    next: {
-                        succFunc: "readDataset",
-                        next: {
-                            succFunc: "afterUpdateDataset",
-                            succMsg: "Datensatz erfolgreich aktualisiert",
-                        },
-                    },
-                },
-            },
-        };
-        //    console.log('runUpdateStrategy uebergebe strategy: %s', JSON.stringify(strategy));
+        // const strategy = {
+        //     context: this,
+        //     succFunc: "backupDataset",
+        //     next: {
+        //         succFunc: "updateDataset",
+        //         next: {
+        //             succFunc: "writeDelta",
+        //             next: {
+        //                 succFunc: "readDataset",
+        //                 next: {
+        //                     succFunc: "afterUpdateDataset",
+        //                     succMsg: "Datensatz erfolgreich aktualisiert",
+        //                 },
+        //             },
+        //         },
+        //     },
+        // };
+        // //    console.log('runUpdateStrategy uebergebe strategy: %s', JSON.stringify(strategy));
 
-        this.runStrategy(this[strategy.succFunc].bind(strategy));
-        return true;
+        // this.runStrategy(this[strategy.succFunc].bind(strategy));
+        // return true;
+
+        const changes = this.getAllChanges("insert");
+        if (changes?.length > 0) {
+            const delta = this.getUpdateDelta(changes);
+            LayerDBJobs.runUpdate(this, delta)
+                .then((rs) => {
+                    console.error("resolved runUpdateStrategy");
+                    this.afterUpdateDataset(rs);
+                })
+                .catch((reason) => {
+                    kvm.msg("Etwas ist schief gegangen: " + reason);
+                });
+        }
     }
 
-    updateDataset(rs) {
-        //console.log('updateDataset rs: %o', rs);
-        const layer = this.context;
-        let changes = layer.collectChanges("update");
-        const delta: any = {},
-            sql = "";
+    getAllChanges(type: "update" | "insert") {
+        let changes = this.collectChanges(type);
 
         if (changes.length == 0) {
             const msg = "Keine Änderungen! Zum Abbrechen verwenden Sie den Button neben Speichen.";
@@ -2608,28 +2638,61 @@ export class Layer {
             //kvm.msg(msg);
         } else {
             kvm.alog("Changes gefunden: ", changes, 4);
-            const imgChanges = changes.filter(function (change) {
-                return $.inArray(change.key, layer.getDokumentAttributeNames()) > -1;
+            const dokumentAttributeNames = this.getDokumentAttributeNames();
+            const imgChanges = changes.filter((change) => {
+                return $.inArray(change.key, dokumentAttributeNames) > -1;
             });
 
             if (imgChanges.length == 0) {
                 //console.log('no imgChanges');
             } else {
-                layer.createImgDeltas(imgChanges);
+                this.createImgDeltas(imgChanges);
             }
+            changes = this.addAutoChanges(changes, "update");
 
-            //kvm.log("Layer.updateDataset addAutoChanges", 4);
-            changes = layer.addAutoChanges(changes, "update");
+            return changes;
+        }
+    }
 
-            const delta = layer.getUpdateDelta(changes);
-            const sql = delta.delta + " AND endet IS NULL";
+    updateDataset(rs: SQLitePlugin.Results) {
+        console.error("updateDataset rs: %o", rs);
+        try {
+            const layer: Layer = <Layer>this.context;
+            let changes = layer.collectChanges("update");
+            const delta: any = {},
+                sql = "";
 
-            this.next.context = layer;
-            this.next.delta = delta;
-            this.next.changes = changes;
-            kvm.db.executeSql(sql, [], layer[this.next.succFunc].bind(this.next), function (err) {
-                kvm.msg("Fehler beim Aktualisieren des Datensatzes! Fehler: " + (<any>err).code + "\nMeldung: " + err.message, "Fehler");
-            });
+            if (changes.length == 0) {
+                const msg = "Keine Änderungen! Zum Abbrechen verwenden Sie den Button neben Speichen.";
+                kvm.closeSperrDiv(msg);
+                //kvm.msg(msg);
+            } else {
+                kvm.alog("Changes gefunden: ", changes, 4);
+                const imgChanges = changes.filter(function (change) {
+                    return $.inArray(change.key, layer.getDokumentAttributeNames()) > -1;
+                });
+
+                if (imgChanges.length == 0) {
+                    //console.log('no imgChanges');
+                } else {
+                    layer.createImgDeltas(imgChanges);
+                }
+
+                //kvm.log("Layer.updateDataset addAutoChanges", 4);
+                changes = layer.addAutoChanges(changes, "update");
+
+                const delta = layer.getUpdateDelta(changes);
+                const sql = delta.delta + " AND endet IS NULL";
+
+                this.next.context = layer;
+                this.next.delta = delta;
+                this.next.changes = changes;
+                kvm.db.executeSql(sql, [], layer[this.next.succFunc].bind(this.next), function (err) {
+                    kvm.msg("Fehler beim Aktualisieren des Datensatzes! Fehler: " + (<any>err).code + "\nMeldung: " + err.message, "Fehler");
+                });
+            }
+        } catch (ex) {
+            console.error("Error in updateDataset", ex);
         }
     }
 
@@ -2645,52 +2708,56 @@ export class Layer {
         const changesKeys = $.map(changes, function (change) {
             return change.key;
         });
-        const autoChanges = this.attributes.map(function (attr): AttributteDelta {
+        const results = changes.slice();
+        for (let i = 0; i < this.attributes.length; i++) {
+            const attr = this.attributes[i];
             if (attr.isAutoAttribute(action) && !changesKeys.includes(attr.get("name"))) {
                 console.log("getAutoValue from attribute: %s formfield: %s", attr.get("name"), attr.formField.constructor.name);
                 try {
-                    var autoValue = attr.formField.getAutoValue();
+                    const autoValue = attr.formField.getAutoValue();
                     kvm.log("Ergänze Autowert: " + attr.get("name") + " = " + autoValue);
+                    results.push({
+                        key: attr.get("name"),
+                        oldVal: kvm.activeLayer.activeFeature.getDataValue(attr.get("name")),
+                        newVal: autoValue,
+                        type: attr.getSqliteType(),
+                    });
                 } catch ({ name, message }) {
                     kvm.msg("Fehler beim Erzeugen des Autowertes für Attribut " + attr.get("name") + " im Formularfeld vom Typ: " + attr.formField.constructor.name + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
                 }
-                return {
-                    key: attr.get("name"),
-                    oldVal: kvm.activeLayer.activeFeature.get(attr.get("name")),
-                    newVal: autoValue,
-                    type: attr.getSqliteType(),
-                };
             }
-        });
+        }
 
-        kvm.alog("Add autoChanges: ", autoChanges, 4);
-        var result = changes.concat(autoChanges);
-        kvm.alog("Return:", result, 4);
-        return result;
+        // kvm.alog("Add autoChanges: ", autoChanges, 4);
+        // const result = changes.concat(autoChanges);
+        kvm.alog("Return:", results, 4);
+        return results;
     }
 
     /*
      * Function, die nach dem erfolgreichen Eintragen eines UPDATE ausgeführt werden soll
      * @param result set rs Resultset from a readDataset query
      */
-    afterUpdateDataset(rs) {
-        //console.log('afterUpdateDataset rs: %o', rs);
-        var layer = this.context;
+    afterUpdateDataset(rs: SQLitePlugin.Results) {
+        console.error("afterUpdateDataset rs", rs);
+        try {
+            this.activeFeature.setData(rs.rows.item(0));
+            this.activeFeature.updateListElement();
+            if (this.hasGeometry) {
+                this.saveGeometry(this.activeFeature);
+            }
+            this.loadFeatureToView(this.activeFeature, { editable: false });
+            kvm.showNextItem(kvm.config.viewAfterUpdate, this);
 
-        layer.activeFeature.setData(rs.rows.item(0));
-        layer.activeFeature.updateListElement();
-        if (layer.hasGeometry) {
-            layer.saveGeometry(layer.activeFeature);
+            $(".popup-aendern-link").show();
+            $("#saveFeatureButton").toggleClass("active-button inactive-button");
+            kvm.controller.mapper.clearWatch();
+            $("#numDatasetsText_" + this.getGlobalId()).html(`${Object.keys(this.features).length}`);
+            //kvm.closeSperrDiv(`${layer.title}: Update des Datensatzes erfolgreich beendet.`);
+            kvm.closeSperrDiv();
+        } catch (ex) {
+            console.error("Error in afterUpdateDataset", ex);
         }
-        layer.loadFeatureToView(layer.activeFeature, { editable: false });
-        kvm.showNextItem(kvm.config.viewAfterUpdate, layer);
-
-        $(".popup-aendern-link").show();
-        $("#saveFeatureButton").toggleClass("active-button inactive-button");
-        kvm.controller.mapper.clearWatch();
-        $("#numDatasetsText_" + layer.getGlobalId()).html(`${Object.keys(layer.features).length}`);
-        //kvm.closeSperrDiv(`${layer.title}: Update des Datensatzes erfolgreich beendet.`);
-        kvm.closeSperrDiv();
     }
 
     /**
@@ -2701,7 +2768,7 @@ export class Layer {
      */
     runDeleteStrategy() {
         //console.log('runDeleteStrategy');
-        var strategy = {
+        const strategy = {
             context: this,
             succFunc: "backupDataset",
             next: {
@@ -2804,15 +2871,16 @@ export class Layer {
      * for delete delta if insert delta exists or
      * for insert delta if delte delta exists
      */
-    writeDelta(rs) {
-        //console.log('writeDelta');
-        //console.log('layer: %o', this.context);
-        console.log("writeDelta: %o", this.delta);
-        //console.log('changes: %o', this.changes);
-        const layer = this.context;
-        const delta = this.delta;
-        const changes = this.changes;
-        const sql = `
+    writeDelta(rs: SQLitePlugin.Results) {
+        try {
+            //console.log('writeDelta');
+            //console.log('layer: %o', this.context);
+            console.error("writeDelta: %o", this.delta);
+            //console.log('changes: %o', this.changes);
+            const layer = <Layer>this.context;
+            const delta = this.delta;
+            const changes = this.changes;
+            const sql = `
       INSERT INTO ${layer.getSqliteTableName()}_deltas (
         type,
         change,
@@ -2831,7 +2899,7 @@ export class Layer {
           FROM
             ${layer.getSqliteTableName()}_deltas
           WHERE
-            INSTR(delta, '${layer.activeFeature.get(layer.get("id_attribute"))}') > 0 AND
+            INSTR(delta, '${layer.activeFeature.getFeatureId()}') > 0 AND
             type = 'sql' AND
             (
               (change = 'insert' AND '${delta.change} ' = 'delete') OR
@@ -2840,13 +2908,16 @@ export class Layer {
         ) = 0
     `;
 
-        this.next.context = layer;
-        //console.log("SQL zum Schreiben des Deltas: %s", sql);
-        console.log("Funktion nach schreiben des Deltas: %s", this.next.succFunc);
-        kvm.db.executeSql(sql, [], layer[this.next.succFunc].bind(this.next), function (err) {
-            console.log(`Fehler beim Schreiben der Deltas ${sql} Fehler: ${JSON.stringify(err)}`);
-            kvm.msg(`Fehler beim Schreiben der Deltas ${sql} Fehler: ${JSON.stringify(err)}`, "Änderung Speichern");
-        });
+            this.next.context = layer;
+            //console.log("SQL zum Schreiben des Deltas: %s", sql);
+            console.log("Funktion nach schreiben des Deltas: %s", this.next.succFunc);
+            kvm.db.executeSql(sql, [], layer[this.next.succFunc].bind(this.next), function (err) {
+                console.log(`Fehler beim Schreiben der Deltas ${sql} Fehler: ${JSON.stringify(err)}`);
+                kvm.msg(`Fehler beim Schreiben der Deltas ${sql} Fehler: ${JSON.stringify(err)}`, "Änderung Speichern");
+            });
+        } catch (ex) {
+            console.error("Error in writeDelta", ex);
+        }
     }
 
     runRestoreStrategy() {
@@ -2918,28 +2989,32 @@ export class Layer {
      * @param resultset rs Result set from former function is here not used
      */
     readDataset(rs = null) {
-        console.log("readDataset");
-        //console.log('layer: %o', this.context);
-        let layer = this.context;
-        let id_attribute = layer.get("id_attribute");
-        let featureId = layer.activeFeature.get(id_attribute);
-        let sql = layer.extentSql(layer.settings.query, [`${id_attribute} = '${featureId}'`, `${layer.settings.table_alias}.endet IS NULL`]);
-        console.log("SQL zum lesen des Datensatzes: ", sql);
+        try {
+            console.log("readDataset");
+            //console.log('layer: %o', this.context);
+            const layer = <Layer>this.context;
+            const id_attribute = layer.get("id_attribute");
+            const featureId = layer.activeFeature.getFeatureId();
+            const sql = layer.extentSql(layer.settings.query, [`${id_attribute} = '${featureId}'`, `${layer.settings.table_alias}.endet IS NULL`]);
+            console.log("SQL zum lesen des Datensatzes: ", sql);
 
-        // let sql = `
-        //       SELECT
-        //         ${layer.getSelectExpressions().join(", ")}
-        //       FROM
-        //         ${layer.getSqliteTableName()}
-        //       WHERE
-        // 				${id_attribute} = '${id}'
-        // 	`;
+            // let sql = `
+            //       SELECT
+            //         ${layer.getSelectExpressions().join(", ")}
+            //       FROM
+            //         ${layer.getSqliteTableName()}
+            //       WHERE
+            // 				${id_attribute} = '${id}'
+            // 	`;
 
-        this.next.context = layer;
-        //console.log("Funktion nach readDataset: %s", this.next.succFunc);
-        kvm.db.executeSql(sql, [], layer[this.next.succFunc].bind(this.next), function (err) {
-            kvm.msg("Fehler beim Lesen des Datensatzes aus der Datenbank! Fehler: " + (<any>err).code + "\nMeldung: " + err.message, "Fehler");
-        });
+            this.next.context = layer;
+            //console.log("Funktion nach readDataset: %s", this.next.succFunc);
+            kvm.db.executeSql(sql, [], layer[this.next.succFunc].bind(this.next), function (err) {
+                kvm.msg("Fehler beim Lesen des Datensatzes aus der Datenbank! Fehler: " + (<any>err).code + "\nMeldung: " + err.message, "Fehler");
+            });
+        } catch (ex) {
+            console.error("Fehler in readDataset", ex);
+        }
     }
 
     /**
@@ -3000,7 +3075,7 @@ export class Layer {
                     }
                 }).join(", ") +
                 ", '" +
-                this.activeFeature.get(this.get("id_attribute")) +
+                this.activeFeature.getFeatureId() +
                 "'\
             )",
         };
@@ -3012,9 +3087,9 @@ export class Layer {
     /**
      * Create update delta
      */
-    getUpdateDelta(changes) {
+    getUpdateDelta(changes: AttributteDelta[]) {
         //kvm.log("Erzeuge SQL für UPDATE Delta", 3);
-        var delta = {
+        const delta = {
             type: "sql",
             change: "update",
             delta: `
@@ -3031,7 +3106,7 @@ export class Layer {
                 }
             }).join(", ")}
         WHERE
-        	${this.get("id_attribute")} = '${this.activeFeature.get(this.get("id_attribute"))}'
+        	${this.get("id_attribute")} = '${this.activeFeature.getFeatureId()}'
       `,
         };
         kvm.log("UPDATE Delta sql: " + JSON.stringify(delta), 3);
@@ -3041,15 +3116,15 @@ export class Layer {
     /**
      * Create delete delta
      */
-    getDeleteDelta(changes) {
+    getDeleteDelta() {
         //kvm.log("Erzeuge SQL für DELETE Delta", 3);
-        var delta = {
+        const delta = {
             type: "sql",
             change: "delete",
             delta: `
         DELETE FROM ${this.getSqliteTableName()}
         WHERE
-          ${this.get("id_attribute")} = '${this.activeFeature.get(this.get("id_attribute"))}'
+          ${this.get("id_attribute")} = '${this.activeFeature.getFeatureId()}'
       `,
         };
         kvm.log("DELETE Delta sql: " + JSON.stringify(delta), 3);
@@ -3071,7 +3146,7 @@ export class Layer {
       WHERE
         type = 'sql' AND
         (change = 'update' OR change = '${this.other}') AND
-        INSTR(delta, '${layer.activeFeature.get(layer.get("id_attribute"))}') > 0
+        INSTR(delta, '${layer.activeFeature.getId()}') > 0
     `;
         console.log("Lösche Deltas mit sql: %s", sql);
         kvm.db.executeSql(sql, [], layer[this.next.succFunc].bind(this.next), function (err) {
@@ -3079,7 +3154,7 @@ export class Layer {
         });
     }
 
-    createImgDeltas(changes) {
+    createImgDeltas(changes: AttributteDelta[]) {
         //kvm.log("Layer.createImgDeltas with changes: " + JSON.stringify(changes), 4);
         $.each(
             changes,
@@ -4052,7 +4127,7 @@ export class Layer {
      * @param offset string
      * @returns
      */
-    extentSql(sql, where, order = "", limit = "", offset = "") {
+    extentSql(sql: string, where: string[], order = "", limit = "", offset = "") {
         let whereIndex = sql.toLowerCase().indexOf("where");
         let orderByIndex = sql.toLowerCase().indexOf("order by");
         let limitIndex = sql.toLowerCase().indexOf("limit ");

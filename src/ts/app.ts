@@ -78,6 +78,10 @@ export async function getWebviewUrl(filePath: string): Promise<string> {
     });
 }
 
+type LayerEntry = {
+    [index: string]: Layer;
+};
+
 class Kvm {
     // Buffer: require("buffer").Buffer,
     // wkx: require("wkx"),
@@ -92,7 +96,7 @@ class Kvm {
     layerDataLoaded: boolean = false;
     featureListLoaded: boolean = false;
     mapSettings: any;
-    layers: Layer[] = [];
+    layers: { [key: string]: Layer } = {};
     overlays = [];
     store: Storage;
     map: LMap;
@@ -553,6 +557,7 @@ class Kvm {
          */
         this.activeStelle.readAllLayers = true;
         this.activeStelle.numLayersRead = 0;
+        // TODO
         Object.keys(this.layers).forEach((key) => {
             kvm.layers[key].readData();
         });
@@ -1503,9 +1508,12 @@ class Kvm {
                         if (buttonIndex == 1) {
                             let id_attribute = kvm.activeLayer.get("id_attribute");
                             // ja
-                            console.log("Lösche Feature " + id_attribute + ": " + kvm.activeLayer.activeFeature.get(id_attribute));
+                            console.log("Lösche Feature " + id_attribute + ": " + kvm.activeLayer.activeFeature.getDataValue(id_attribute));
                             kvm.controller.mapper.clearWatch();
                             kvm.activeLayer.runDeleteStrategy();
+
+                            // TODO Bug?
+                            /*
                             kvm.activeLayer.createImgDeltas(
                                 $.map(kvm.activeLayer.getDokumentAttributeNames(), function (name) {
                                     return {
@@ -1514,6 +1522,7 @@ class Kvm {
                                     };
                                 })
                             );
+                            */
                         }
 
                         if (buttonIndex == 2) {
@@ -1855,7 +1864,7 @@ class Kvm {
     featureItemClickEventFunction(evt) {
         console.log("featureItemClickEvent on feature id: %o", evt.target.id);
         let feature = kvm.activeLayer.features[evt.target.id];
-        kvm.showItem(kvm.activeLayer.hasGeometry && feature.get(kvm.activeLayer.get("geometry_attribute")) != "null" ? "map" : "dataView");
+        kvm.showItem(kvm.activeLayer.hasGeometry && feature.getDataValue(kvm.activeLayer.get("geometry_attribute")) != "null" ? "map" : "dataView");
         kvm.activeLayer.activateFeature(feature, true);
     }
 
@@ -1921,7 +1930,7 @@ class Kvm {
             if (activeFeature.options.new) {
                 let parentFeature = activeFeature.findParentFeature();
                 if (parentFeature) {
-                    let parentLayer = kvm.layers[parentFeature.globalLayerId];
+                    const parentLayer = <Layer>kvm.layers[parentFeature.globalLayerId];
                     parentLayer.activateFeature(parentFeature, true);
                 }
             }
@@ -1936,7 +1945,7 @@ class Kvm {
      * @param featureId
      */
     activateFeature(layerId, featureId) {
-        let layer = kvm.layers[layerId];
+        let layer = <Layer>kvm.layers[layerId];
         let feature = layer.features[featureId];
         if (feature) {
             layer.activateFeature(feature, false);
@@ -2686,7 +2695,7 @@ class Kvm {
      */
     showGeomStatus() {
         if (kvm.activeLayer && kvm.activeLayer.activeFeature) {
-            console.log("activeFeature.point %o", kvm.activeLayer.activeFeature.get("point"));
+            console.log("activeFeature.point %o", kvm.activeLayer.activeFeature.getDataValue("point"));
             console.log("activeFeature.oldGeom %o", kvm.activeLayer.activeFeature.oldGeom);
             console.log("activeFeature.geom %o", kvm.activeLayer.activeFeature.geom);
             console.log("activeFeature.newGeom %o", kvm.activeLayer.activeFeature.newGeom);

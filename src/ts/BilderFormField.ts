@@ -321,7 +321,7 @@ export class BilderFormField implements Field {
                         fileEntry.moveTo(
                             <DirectoryEntry>dirEntry,
                             fileEntry.name,
-                            async () => {
+                            () => {
                                 // TODO
                                 // kvm.log('Datei: ' + fileEntry.name + ' nach: ' + dstDirEntry.toURL() + ' verschoben.');
                                 this.addImage(dstFile);

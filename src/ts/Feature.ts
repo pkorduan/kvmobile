@@ -30,9 +30,10 @@ import { Klasse } from "./Klasse";
  * Wenn das Zentrale Format immer wkx ist, kann man mit fromXY und asXY alle Transformationen umsetzen
  */
 export class Feature {
-    data: any = {};
-    options: any = {};
+    data: { [id: string]: any } = {};
+    options: { [id: string]: any } = {};
     id: string;
+    // Achtung reine Id von leaflet
     layerId: number;
     globalLayerId: string;
     isEditable: boolean;
@@ -56,7 +57,7 @@ export class Feature {
         this.data = typeof data == "string" ? JSON.parse(data) : data;
         this.options = options; // Optionen, die beim Erzeugen des Features mit übergeben wurden. Siehe Default-Argument in init-Klasse.
         this.id = this.data[options.id_attribute];
-        this.layerId = null; // Leaflet Layer id des Layers (z.B. circleMarkers) in dem das Feature gezeichnet ist
+        // this.layerId = null; // Leaflet Layer id des Layers (z.B. circleMarkers) in dem das Feature gezeichnet ist
         this.globalLayerId = options.globalLayerId; // Id des Layers zu dem das Feature gehört
         /*kvm
   console.log('Erzeuge eine editierbare Geometrie vom Feature');
@@ -67,9 +68,14 @@ export class Feature {
         this.isActive = false; // Feature is aktuell gerade ausgewählt, Style in Karte gändert und evtl. Popup offen oder nicht
         this.setGeomFromData();
     }
-    get(key) {
+
+    // getId() {
+    //     return this.id;
+    // }
+
+    getDataValue(attributeName: string) {
         // ToDo: value auf null nicht auf 'null' setzen wenn er undefined ist
-        return typeof this.data[key] == "undefined" ? "null" : this.data[key];
+        return typeof this.data[attributeName] == "undefined" ? "null" : this.data[attributeName];
     }
 
     setEditable(editable) {
@@ -104,7 +110,7 @@ export class Feature {
                             .split(",")[2]
                             .trim()
                             .replace(/^["'](.+(?=["']$))["']$/, "$1");
-                        value = parentFeature.get(column);
+                        value = parentFeature.getDataValue(column);
                         // value = kvm.layers[this.parentLayerId].features[this.parentFeatureId].get(column)
                     }
                     break;
@@ -118,7 +124,7 @@ export class Feature {
                     value = attribute.get("default");
                 }
             }
-            this.set(attribute.get("name"), value);
+            this.setDataValue(attribute.get("name"), value);
         });
     }
 
@@ -136,23 +142,23 @@ export class Feature {
     }
 
     getFeatureId() {
-        return this.get(this.options.id_attribute);
+        return this.getDataValue(this.options.id_attribute);
     }
 
     findParentFeature() {
-        let layer = kvm.layers[this.globalLayerId];
-        let subFormFKAttribute = layer.attributes.find((attr) => attr.get("form_element_type") == "SubFormFK");
+        const layer = <Layer>kvm.layers[this.globalLayerId];
+        const subFormFKAttribute = layer.attributes.find((attr) => attr.get("form_element_type") == "SubFormFK");
         if (subFormFKAttribute === undefined) {
             return false;
         } else {
             let fkAttributeIndex = layer.attribute_index[subFormFKAttribute.getFKAttribute()];
             let parentFeatureId = layer.attributes[fkAttributeIndex].formField.getValue();
             let parentLayer = kvm.layers[subFormFKAttribute.getGlobalParentLayerId()];
-            return parentLayer.features[parentFeatureId];
+            return <Feature>parentLayer.features[parentFeatureId];
         }
     }
 
-    set(key, value) {
+    setDataValue(key: string, value: any) {
         this.data[key] = value;
         return this.data[key];
     }
@@ -161,7 +167,7 @@ export class Feature {
         return this.data;
     }
 
-    setData(data) {
+    setData(data: string | { [id: string]: any }) {
         //console.log('Feature.setData %o', data);
         this.data = typeof data == "string" ? JSON.parse(data) : data;
         this.setGeomFromData();
@@ -171,7 +177,7 @@ export class Feature {
      * Setzt die Geometrie neu an Hand der übergebenen wkx Geometrie wenn sie sich gegenüber der vorherigen geändert hat.
      * und lößt den Trigger aus, der angibt, dass sich die Geom des Features geändert hat.
      */
-    setGeom(wkx) {
+    setGeom(wkx: wkx.Geometry) {
         console.log("setGeom mit wkx: %o", wkx);
         console.log("Überschreibe oldGeom: %o mit newGeom: %o", this.oldGeom, this.newGeom);
         const oldGeom = this.newGeom;
@@ -574,14 +580,14 @@ export class Feature {
 
     listElement() {
         //console.log('Erzeuge Listenelement für Feature', this.get(this.options.id_attribute));
-        var markerStyles = JSON.parse(kvm.store.getItem("markerStyles")),
+        const markerStyles = JSON.parse(kvm.store.getItem("markerStyles")),
             numStyles = Object.keys(markerStyles).length,
-            markerStyleIndex = this.get("status") && this.get("status") >= 0 && this.get("status") < numStyles ? this.get("status") : 0;
+            markerStyleIndex = this.getDataValue("status") && this.getDataValue("status") >= 0 && this.getDataValue("status") < numStyles ? this.getDataValue("status") : 0;
 
         return (
             '\
       <div class="feature-item" id="' +
-            this.get(this.options.id_attribute) +
+            this.getFeatureId() +
             '" style="background-color: ' +
             markerStyles[markerStyleIndex].fillColor +
             '">' +
@@ -592,7 +598,7 @@ export class Feature {
     }
 
     getLabelValue() {
-        const kvmLayer: Layer = kvm.layers[this.globalLayerId];
+        const kvmLayer = <Layer>kvm.layers[this.globalLayerId];
         let label_value = "";
         const label_attribute = kvmLayer.get("name_attribute");
         let formField;
@@ -600,15 +606,15 @@ export class Feature {
             formField = kvmLayer.attributes[kvmLayer.attribute_index[label_attribute]].formField;
         }
 
-        if (this.get(label_attribute)) {
+        if (this.getDataValue(label_attribute)) {
             if (formField && formField.getFormattedValue) {
-                label_value = formField.getFormattedValue(this.get(label_attribute));
+                label_value = formField.getFormattedValue(this.getDataValue(label_attribute));
             } else {
-                label_value = this.get(label_attribute);
+                label_value = this.getDataValue(label_attribute);
             }
         }
         if (label_value == "" || label_value == "null") {
-            label_value = "Datensatz " + this.get(this.options.id_attribute);
+            label_value = "Datensatz " + this.getDataValue(this.options.id_attribute);
         }
         return label_value;
     }
@@ -631,9 +637,9 @@ export class Feature {
         kvm.log("Feature.updateListElement", 4);
         let markerStyles = JSON.parse(kvm.store.getItem("markerStyles"));
         let numStyles = Object.keys(markerStyles).length;
-        let markerStyleIndex = this.get("status") && this.get("status") >= 0 && this.get("status") < numStyles ? this.get("status") : 0;
-        $("#" + this.get(this.options.id_attribute)).html(this.getLabelValue());
-        $("#" + this.get(this.options.id_attribute)).css("background-color", markerStyles[markerStyleIndex].fillColor);
+        let markerStyleIndex = this.getDataValue("status") && this.getDataValue("status") >= 0 && this.getDataValue("status") < numStyles ? this.getDataValue("status") : 0;
+        $("#" + this.getFeatureId()).html(this.getLabelValue());
+        $("#" + this.getFeatureId()).css("background-color", markerStyles[markerStyleIndex].fillColor);
     }
 
     /**
@@ -644,11 +650,12 @@ export class Feature {
      * @return leafletPathOptions
      */
     getStyle() {
+        // TODO
         let matchingClass: Klasse;
         let style: any;
-        let kvmLayer: Layer = kvm.layers[this.globalLayerId];
+        const kvmLayer: Layer = kvm.layers[this.globalLayerId];
 
-        if (typeof (matchingClass = kvmLayer.getClass(this.get(kvmLayer.settings.classitem))) == "undefined") {
+        if (typeof (matchingClass = kvmLayer.getClass(this.getDataValue(kvmLayer.settings.classitem))) == "undefined") {
             style = kvmLayer.getDefaultPathOptions();
         } else {
             //console.log("%s: Use styles from matching class.", layer.title);
@@ -669,9 +676,9 @@ export class Feature {
 
     getNormalPolylineStyle() {
         //console.log('getNormalPolylineStyle');
-        var markerStyles = JSON.parse(kvm.store.getItem("markerStyles")),
+        const markerStyles = JSON.parse(kvm.store.getItem("markerStyles")),
             numStyles = Object.keys(markerStyles).length,
-            markerStyleIndex = this.get("status") >= 0 && this.get("status") < numStyles ? this.get("status") : 0,
+            markerStyleIndex = this.getDataValue("status") >= 0 && this.getDataValue("status") < numStyles ? this.getDataValue("status") : 0,
             style = markerStyles[markerStyleIndex];
 
         style.color = style.fillColor;
@@ -686,7 +693,7 @@ export class Feature {
         //console.log('getNormalPolygonStyle');
         const markerStyles = JSON.parse(kvm.store.getItem("markerStyles")),
             numStyles = Object.keys(markerStyles).length,
-            markerStyleIndex = this.get("status") >= 0 && this.get("status") < numStyles ? this.get("status") : 0,
+            markerStyleIndex = this.getDataValue("status") >= 0 && this.getDataValue("status") < numStyles ? this.getDataValue("status") : 0,
             style = markerStyles[markerStyleIndex];
 
         style.stroke = true;
@@ -700,7 +707,7 @@ export class Feature {
         //kvm.log('getNormalCircleMarkerStyle for status: ' + this.get('status'), 4);
         const markerStyles = JSON.parse(kvm.store.getItem("markerStyles")),
             numStyles = Object.keys(markerStyles).length,
-            markerStyleIndex = this.get("status") >= 0 && this.get("status") < numStyles ? this.get("status") : 0;
+            markerStyleIndex = this.getDataValue("status") >= 0 && this.getDataValue("status") < numStyles ? this.getDataValue("status") : 0;
         return markerStyles[markerStyleIndex];
     }
 
@@ -740,9 +747,9 @@ export class Feature {
     setGeomFromData() {
         //console.log('setGeomFromData');
         const geom_attribute = this.options.geometry_attribute;
-        if (geom_attribute in this.data && this.get(geom_attribute) !== "null") {
+        if (geom_attribute in this.data && this.getDataValue(geom_attribute) !== "null") {
             //console.log('Setze geom des neuen Features mit data: %o', this.data);
-            this.geom = this.wkbToWkx(this.get(this.options.geometry_attribute));
+            this.geom = this.wkbToWkx(this.getDataValue(geom_attribute));
         }
         this.newGeom = this.geom; // Aktuelle WKX-Geometry beim Editieren. Entspricht this.geom wenn das Feature neu geladen wurde und Geometrie in Karte, durch GPS oder Formular noch nicht geändert wurde.
         //console.log('new feature newGeom: %o', this.newGeom);
