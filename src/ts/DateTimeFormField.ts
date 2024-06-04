@@ -1,3 +1,4 @@
+import { AttributeSetting } from "./Attribute";
 import { Field } from "./Field";
 import { kvm } from "./app";
 
@@ -13,26 +14,26 @@ import { kvm } from "./app";
  *   </div>
  */
 export class DateTimeFormField implements Field {
-    settings: any;
+    settings: AttributeSetting;
     element: JQuery<HTMLElement>;
     selector: string;
 
-    constructor(formId, settings) {
+    constructor(formId: string, settings: AttributeSetting) {
         //console.log('Erzeuge DateTimeFormField with settings %o', settings);
         this.settings = settings;
-        this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
+        this.selector = "#" + formId + " input[id=" + this.settings.index + "]";
         this.element = $(`<input
       type="datetime-local"
-      id="${this.get("index")}"
-      name="${this.get("name")}"
+      id="${this.settings.index}"
+      name="${this.settings.name}"
       value=""
-      ${this.get("privilege") == "0" ? " disabled" : ""}
+      ${this.settings.privilege == "0" ? " disabled" : ""}
     />`);
     }
 
-    get(key) {
-        return this.settings[key];
-    }
+    // get(key) {
+    //     return this.settings[key];
+    // }
 
     setValue(val) {
         // console.log('DateTimeFormField setVal val: -%s-', val);
@@ -65,7 +66,7 @@ export class DateTimeFormField implements Field {
 
     bindEvents() {
         //console.log('DateTimeFormField.bindEvents');
-        $("#featureFormular input[id=" + this.get("index") + "]").on("change", function () {
+        $("#featureFormular input[id=" + this.settings.index + "]").on("change", function () {
             if (!$("#saveFeatureButton").hasClass("active-button")) {
                 $("#saveFeatureButton").toggleClass("active-button inactive-button");
             }

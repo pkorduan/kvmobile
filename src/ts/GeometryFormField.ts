@@ -2,6 +2,7 @@ import { Buffer } from "buffer";
 import { kvm } from "./app";
 import * as wkx from "wkx";
 import { Field } from "./Field";
+import { AttributeSetting } from "./Attribute";
 /*
  * create a geometry form field in the structure
  *   <div class="form-field">
@@ -14,32 +15,32 @@ import { Field } from "./Field";
  *   </div>
  */
 export class GeometrieFormField implements Field {
-    settings: any;
+    settings: AttributeSetting;
     element: JQuery<HTMLElement>;
     selector: string;
-    constructor(formId, settings) {
+    constructor(formId: string, settings: AttributeSetting) {
         this.settings = settings;
-        this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
+        this.selector = "#" + formId + " input[id=" + this.settings.index + "]";
         this.element = $(
             '\
         <input\
         type="hidden"\
         id="' +
-                this.get("index") +
+                this.settings.index +
                 '"\
         name="' +
-                this.get("name") +
+                this.settings.name +
                 '"\
         value=""' +
-                (this.get("privilege") == "0" ? " disabled" : "") +
+                (this.settings.privilege == "0" ? " disabled" : "") +
                 "\
         />"
         );
     }
 
-    get(key) {
-        return this.settings[key];
-    }
+    // get(key) {
+    //     return this.settings[key];
+    // }
 
     setValue(val) {
         // kvm.log("GeometrieFormField.setValue with value:" + val);
@@ -74,7 +75,7 @@ export class GeometrieFormField implements Field {
 
     bindEvents() {
         //console.log('SelectFormField.bindEvents');
-        $("#featureFormular input[id=" + this.get("index") + "]").on("change", function () {
+        $("#featureFormular input[id=" + this.settings.index + "]").on("change", function () {
             if (!$("#saveFeatureButton").hasClass("active-button")) {
                 $("#saveFeatureButton").toggleClass("active-button inactive-button");
             }
@@ -185,7 +186,7 @@ export class GeometrieFormField implements Field {
             if (exclude != "latlngs") {
                 feature.setLatLngs(geom);
             }
-            //        kvm.activeLayer.features[feature.id] = feature;
+            //        kvm.activeLayer.features.get(feature.id) = feature;
             //        kvm.activeLayer.activeFeature = feature;
             // console.log("Trigger Funktion geomChanged: fertig");
         });

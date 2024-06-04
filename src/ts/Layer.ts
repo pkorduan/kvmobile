@@ -33,6 +33,25 @@ export interface LayerSetting {
     classitem?: any;
 }
 
+export interface BackgroundLayerSetting {
+    layer_id: string;
+    label: string;
+    online: boolean;
+    type: string;
+    url: string;
+    params: {
+        layers: string; // "de_basemapde_web_raster_farbe"
+        format: string; // "image/png"
+        attribution: string; // "Basemap DE dl-de/by-2-0"}
+        minZoom: number;
+        maxNativeZoom: number;
+        south: number;
+        north: number;
+        west: number;
+        east: number;
+    };
+}
+
 // export interface Feature {
 //     data?: any;
 //     editableLayer?: Layer;
@@ -55,7 +74,7 @@ export class Layer {
     layerGroup: LayerGroup<any>;
     attribute_index: { [key: string]: number };
     classes: Klasse[];
-    features: { [id: string]: Feature };
+    _features: Map<string, Feature>;
     activeFeature: Feature;
     numFeatures: number;
     next: any;
@@ -161,7 +180,7 @@ export class Layer {
             });
         }
 
-        this.features = {};
+        this._features = new Map();
     }
 
     get(key: string) {
@@ -171,6 +190,23 @@ export class Layer {
     set(key: string, value: any) {
         this.settings[key] = value;
         return this.settings[key];
+    }
+
+    getFeature(featureId: string) {
+        return this._features.get(featureId);
+    }
+
+    /*
+     * fügt das Feature zum Layer hinzu, existiert ein Feature mit der gleichen Id wird es ersetzt
+     *
+     * @param feature
+     * @returns
+     */
+    addFeature(feature: Feature) {
+        return this._features.set(feature.getFeatureId(), feature);
+    }
+    removeFeature(feature: Feature) {
+        return this._features.delete(feature.getFeatureId());
     }
 
     getDokumentAttributeNames() {
@@ -204,11 +240,11 @@ export class Layer {
      * @param vorschauElement
      * @param clickFunction
      */
-    readVorschauAttributes(attribute: Attribute, featureId: string, vorschauElement: JQuery<HTMLElement>, clickFunction = "activateFeature") {
+    readVorschauAttributesNotUsed(attribute: Attribute, featureId: string, vorschauElement: JQuery<HTMLElement>, clickFunction = "activateFeature") {
         const subLayerId = attribute.getGlobalSubLayerId();
         const fkAttribute: String = attribute.getFKAttribute();
         const vorschauOption: String = attribute.getVorschauOption();
-        const subLayer: Layer = kvm.layers[subLayerId];
+        const subLayer: Layer = kvm.getLayer(subLayerId);
         const filter = [`${subLayer.settings.table_alias}.${fkAttribute} = '${featureId}'`];
 
         if ($("#historyFilter").is(":checked")) {
@@ -359,7 +395,7 @@ export class Layer {
                 //console.log("  readData) " + numRows + " Datensätze gelesen, erzeuge Featureliste neu...");
                 this.numFeatures = numRows;
 
-                this.features = {};
+                this._features = new Map();
                 //console.log("id_attribute: %o", this.get("id_attribute"));
                 if (numRows == 0) {
                     if (filter.length > 0) {
@@ -374,24 +410,27 @@ export class Layer {
                 for (let i = 0; i < numRows; i++) {
                     const item = rs.rows.item(i);
                     try {
-                        console.log("Item " + i + ": %o", item);
-                        console.log("Erzeuge Feature %s: ", i);
-                        console.log("Erzeuge Feature von item %o", item);
+                        // console.log("Item " + i + ": %o", item);
+                        // console.log("Erzeuge Feature %s: ", i);
+                        // console.log("Erzeuge Feature von item %o", item);
 
-                        this.features[item[this.get("id_attribute")]] = new Feature(item, {
-                            id_attribute: this.get("id_attribute"),
-                            geometry_type: this.get("geometry_type"),
-                            geometry_attribute: this.get("geometry_attribute"),
-                            globalLayerId: this.getGlobalId(),
-                            new: false,
-                        });
-                        //console.log('Feature ' + i + ': %o', this.features[item[this.get('id_attribute')]]);
+                        // TODO !!!!
+                        this.addFeature(
+                            new Feature(item, {
+                                id_attribute: this.get("id_attribute"),
+                                geometry_type: this.get("geometry_type"),
+                                geometry_attribute: this.get("geometry_attribute"),
+                                globalLayerId: this.getGlobalId(),
+                                new: false,
+                            })
+                        );
+                        //console.log('Feature ' + i + ': %o', this.features.get(item[this.get('id_attribute')]));
                     } catch (e) {
                         console.error(e);
                         kvm.msg("Fehler beim Erzeugen des Feature mit id: " + item[this.get("id_attribute")] + "! Fehlertyp: " + e.name + " Fehlermeldung: " + e.message);
                     }
                 }
-                kvm.tick(`${this.title}:<br>&nbsp;&nbsp;${Object.keys(this.features).length} Features erzeugt.`);
+                kvm.tick(`${this.title}:<br>&nbsp;&nbsp;${this._features.size} Features erzeugt.`);
 
                 //console.log("Check if syncLayerIcon exists");
                 if ($("#syncLayerIcon_" + this.getGlobalId()) && $("#syncLayerIcon_" + this.getGlobalId()).hasClass("fa-spinner")) {
@@ -441,7 +480,7 @@ export class Layer {
         $("#featurelistBody").html("");
         let html = "";
 
-        $.each(this.features, function (key, feature) {
+        this._features.forEach((feature) => {
             //console.log("append feature: %o to list", feature);
             const needle = $("#searchFeatureField").val().toString().toLowerCase();
             const element = $(feature.listElement());
@@ -453,9 +492,9 @@ export class Layer {
         });
         $("#featurelistBody").append(html);
         kvm.bindFeatureItemClickEvents();
-        if (Object.keys(this.features).length > 0) {
+        if (this._features.size > 0) {
             //      kvm.showItem("featurelist");
-            $("#numDatasetsText_" + this.getGlobalId()).html(`${Object.keys(this.features).length}`);
+            $("#numDatasetsText_" + this.getGlobalId()).html(`${this._features.size}`);
         }
         //console.log("createFeatureList abgeschlossen. in Layer id: " + this.getGlobalId());
     }
@@ -1303,7 +1342,7 @@ export class Layer {
         );
 
         this.clearDeltas("all");
-        this.features = {};
+        this._features = new Map();
         $("#featurelistBody").html("");
         if (this.layerGroup) {
             this.layerGroup.clearLayers();
@@ -1581,22 +1620,22 @@ export class Layer {
     /**
      * Setzt die Werte des Features im dataView
      */
-    loadFeatureToView(feature, options = {}) {
+    loadFeatureToView(feature: Feature, options = {}) {
         console.log(this.get("title") + ": Lade Feature in View.");
         //$('#featureFormHeader').append('/' + feature.id);
-        $.map(
-            this.attributes.filter(function (attribute) {
+        this.attributes
+            .filter(function (attribute) {
                 return attribute.get("type") != "geometry";
-            }),
-            (attr) => {
+            })
+            .map((attr) => {
                 const key = attr.get("name");
-                const val = feature.get(key) == "null" ? null : feature.get(key);
+                const val = feature.getDataValue(key) == "null" ? null : feature.getDataValue(key);
                 if (attr.hasVisibilityDependency()) {
                     kvm.activeLayer.vcheckAttributes(key, val);
                 }
                 attr.viewField.setValue(val);
-            }
-        );
+            });
+
         //this.selectFeature(feature, true);
         if (feature.new) {
             $("#newAfterCreateDiv").show();
@@ -1639,9 +1678,9 @@ export class Layer {
         }
     }
 
-    loadTplFeatureToForm(tplId) {
+    loadTplFeatureToForm(tplId: string) {
         //console.log("Layer.loadTplFeatureToForm.");
-        const feature = this.features[tplId];
+        const feature = this.getFeature(tplId);
         $.map(
             this.attributes,
             (attr) => {
@@ -1652,7 +1691,7 @@ export class Layer {
                     //console.log('Set %s %s: %s', attr.get('form_element_type'), key, val);
                     attr.formField.setValue(val);
                 }
-            } // .bind(this.features[tplId])
+            } // .bind(this.features.get(tplId))
         );
     }
 
@@ -1660,30 +1699,30 @@ export class Layer {
      * Zeichnet die Features in die Karte
      */
     drawFeatures() {
-        kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Zeichne ${Object.keys(this.features).length} Features neu.`);
+        kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Zeichne ${this._features.size} Features neu.`);
         const layerRenderer = undefined; //new L.SVG();
 
-        $.each(this.features, (key, feature) => {
+        this._features.forEach((feature) => {
             try {
                 let vectorLayer;
-                const layer: Layer = this;
+                // const layer: Layer = this;
 
                 if (feature.newGeom) {
                     //console.log("Zeichne Feature: %o in Layer: ", feature, this.get("title"));
                     if (feature.options.geometry_type == "Point") {
                         vectorLayer = new CircleMarker(feature.wkxToLatLngs(feature.newGeom), <any>{
                             featureId: feature.id,
-                            globalLayerId: layer.getGlobalId(),
+                            globalLayerId: this.getGlobalId(),
                         });
                     } else if (feature.options.geometry_type == "Line") {
                         vectorLayer = new Polyline(feature.wkxToLatLngs(feature.newGeom), <any>{
                             featureId: feature.id,
-                            globalLayerId: layer.getGlobalId(),
+                            globalLayerId: this.getGlobalId(),
                         });
                     } else if (feature.options.geometry_type == "Polygon") {
                         vectorLayer = new Polygon(feature.wkxToLatLngs(feature.newGeom), <any>{
                             featureId: feature.id,
-                            globalLayerId: layer.getGlobalId(),
+                            globalLayerId: this.getGlobalId(),
                         });
                     }
                     // const popupFunc = () => {
@@ -1702,7 +1741,7 @@ export class Layer {
                     //vectorLayer.on("popupclose", this.popupClose);
 
                     // Setze Style für Kartenobjekt
-                    const style = layer.hasClasses() ? feature.getStyle() : layer.getDefaultPathOptions();
+                    const style = this.hasClasses() ? feature.getStyle() : this.getDefaultPathOptions();
 
                     //console.log("Draw feature %o with style %o", feature, style);
                     vectorLayer.setStyle(style);
@@ -1807,7 +1846,7 @@ export class Layer {
                 class="edit-feature"
                 href="#"
                 title="Geometrie ändern"
-                onclick="kvm.layers['${feature.globalLayerId}'].editFeature('${featureId}')"
+                onclick="kvm.layers.get('${feature.globalLayerId}').editFeature('${featureId}')"
               ><span class="fa-stack fa-lg">
                   <i class="fa fa-square fa-stack-2x"></i>
                   <i class="fa fa-pencil fa-stack-1x fa-inverse"></i>
@@ -1818,7 +1857,7 @@ export class Layer {
             class="popup-link"
             href="#"
             title="Sachdaten anzeigen"
-            onclick="kvm.layers['${feature.globalLayerId}'].showDataView('${featureId}')"
+            onclick="kvm.layers.get('${feature.globalLayerId}').showDataView('${featureId}')"
           ><span class="fa-stack fa-lg">
               <i class="fa fa-square fa-stack-2x"></i>
               <i class="fa fa-bars fa-stack-1x fa-inverse"></i>
@@ -1836,38 +1875,38 @@ export class Layer {
      * @param {String} attribute The name of the attribute from which the maximum value will be determined.
      * @return {Integer} The maximum value.
      */
-    getNextVal(attribute) {
-        let nextValue = 0;
-        let featureArray = Object.values(this.features);
-        return featureArray.reduce(
-            (maxValue, currentFeature) => {
-                const currentValue = currentFeature.getDataValue(attribute);
+    // getNextVal(attribute) {
+    //     // let nextValue = 0;
+    //     const featureArray = Array.from(this._features.values());
+    //     return featureArray.reduce(
+    //         (maxValue, currentFeature) => {
+    //             const currentValue = currentFeature.getDataValue(attribute);
 
-                if (typeof currentValue !== "undefined" && currentValue > maxValue) {
-                    return currentValue;
-                } else {
-                    return maxValue;
-                }
-            },
-            featureArray[0].getDataValue(attribute) // Initialize with the attribute value of the first object
-        );
-        // const sql = `
-        // 	SELECT
-        // 		max(${attribute}) AS max_id
-        // 	FROM
-        // 		${this.getSqliteTableName()}
-        // `;
-        // kvm.db.executeSql(
-        // 	sql,
-        // 	[],
-        // 	(rs) => {
-        // 		let max_id = 0;
-        // 		if (rs.rows.item.length == 1) {
-        // 			max_id = rs.rows.item(0).max_id;
-        // 		}
-        // 	}
-        // );
-    }
+    //             if (typeof currentValue !== "undefined" && currentValue > maxValue) {
+    //                 return currentValue;
+    //             } else {
+    //                 return maxValue;
+    //             }
+    //         },
+    //         featureArray[0].getDataValue(attribute) // Initialize with the attribute value of the first object
+    //     );
+    //     // const sql = `
+    //     // 	SELECT
+    //     // 		max(${attribute}) AS max_id
+    //     // 	FROM
+    //     // 		${this.getSqliteTableName()}
+    //     // `;
+    //     // kvm.db.executeSql(
+    //     // 	sql,
+    //     // 	[],
+    //     // 	(rs) => {
+    //     // 		let max_id = 0;
+    //     // 		if (rs.rows.item.length == 1) {
+    //     // 			max_id = rs.rows.item(0).max_id;
+    //     // 		}
+    //     // 	}
+    //     // );
+    // }
 
     // async getResultset(sql, params)  {
     // 	let p = new Promise(async (resolve, reject) => {
@@ -1943,8 +1982,8 @@ export class Layer {
                         switch (true) {
                             case attribute.get("default").startsWith("gdi_conditional_val"):
                                 {
-                                    const parentLayer = kvm.layers[this.parentLayerId];
-                                    const parentFeature = parentLayer.features[this.parentFeatureId];
+                                    const parentLayer = kvm.getLayer(this.parentLayerId);
+                                    const parentFeature = parentLayer.getFeature(this.parentFeatureId);
                                     // Frage den Spaltennamen ab, von dem der Defaultwert des parentLayers abgefragt werden soll.
                                     //z.B: entwicklungsphase_id aus gdi_conditional_val('kob', 'baum', 'entwicklungsphase_id', 'uuid = ''$baum_uuid''')
                                     const column = attribute
@@ -1952,8 +1991,8 @@ export class Layer {
                                         .split(",")[2]
                                         .trim()
                                         .replace(/^["'](.+(?=["']$))["']$/, "$1");
-                                    value = parentFeature.get(column);
-                                    // value = kvm.layers[this.parentLayerId].features[this.parentFeatureId].get(column)
+                                    value = parentFeature.getDataValue(column);
+                                    // value = kvm.layers[this.parentLayerId].features.get(this.parentFeatureId).get(column)
                                 }
                                 break;
                             case attribute.get("default").includes("gdi_current_date"):
@@ -2013,7 +2052,7 @@ export class Layer {
      */
     editFeature(featureId) {
         // console.log("Layer.editFeature featureId: ", featureId);
-        const feature = this.features[featureId] || this.activeFeature;
+        const feature = this.getFeature(featureId) || this.activeFeature;
 
         if (!this.isActive) {
             this.activate();
@@ -2121,7 +2160,7 @@ export class Layer {
         if (!this.isActive) {
             this.activate();
         }
-        const feature = this.features[featureId];
+        const feature = this.getFeature(featureId);
         if (!feature.isActive) {
             this.activateFeature(feature, true);
         }
@@ -2337,14 +2376,14 @@ export class Layer {
     popupOpen = (evt) => {
         const featureId = evt.target.options.featureId;
         const globalLayerId = evt.target.options.globalLayerId;
-        const kvmLayer = kvm.layers[globalLayerId];
+        const kvmLayer = kvm.getLayer(globalLayerId);
         const activeFeature = kvm.activeLayer.activeFeature;
-        const feature = kvmLayer.features[featureId];
+        const feature = kvmLayer.getFeature(featureId);
         const layer = (<any>kvm.map)._layers[feature.layerId];
         console.log("Event Open Popup of feature: %s in layer: %s globalLayerId: %s", featureId, kvmLayer.title, globalLayerId);
         layer.bindPopup(kvmLayer.getPopup(feature)).openPopup();
         if (kvmLayer.isActive && (!activeFeature || (activeFeature.id != featureId && !activeFeature.isEditable))) {
-            kvmLayer.activateFeature(kvmLayer.features[featureId], false);
+            kvmLayer.activateFeature(kvmLayer.getFeature(featureId), false);
         }
     };
 
@@ -2752,7 +2791,7 @@ export class Layer {
             $(".popup-aendern-link").show();
             $("#saveFeatureButton").toggleClass("active-button inactive-button");
             kvm.controller.mapper.clearWatch();
-            $("#numDatasetsText_" + this.getGlobalId()).html(`${Object.keys(this.features).length}`);
+            $("#numDatasetsText_" + this.getGlobalId()).html(`${this._features.size}`);
             //kvm.closeSperrDiv(`${layer.title}: Update des Datensatzes erfolgreich beendet.`);
             kvm.closeSperrDiv();
         } catch (ex) {
@@ -2828,9 +2867,8 @@ export class Layer {
      */
     afterDeleteDataset(rs) {
         //console.log('afterDeleteDataset');
-        let layer = this.context;
+        let layer = <Layer>this.context;
         let layerId = layer.activeFeature.layerId;
-        let featureId = layer.activeFeature.id;
         let parentLayerId = layer.parentLayerId;
         let parentFeatureId = layer.parentFeatureId;
 
@@ -2846,7 +2884,7 @@ export class Layer {
         $("#" + layer.activeFeature.id).remove();
 
         //console.log('Lösche Feature aus features Array des activeLayer');
-        delete layer.features[featureId];
+        layer.removeFeature(layer.activeFeature);
 
         //console.log('Lösche activeFeature')
         delete layer.activeFeature;
@@ -2963,7 +3001,7 @@ export class Layer {
                 return attr.get("saveable") == "1";
             }),
             function (attr) {
-                var key = attr.get("name");
+                const key = attr.get("name");
                 return {
                     key: key,
                     oldVal: null,
@@ -3046,7 +3084,7 @@ export class Layer {
         // 		)
         // 	`
         // };
-        var delta = {
+        const delta = {
             type: "sql",
             change: "insert",
             delta:
@@ -3156,47 +3194,42 @@ export class Layer {
 
     createImgDeltas(changes: AttributteDelta[]) {
         //kvm.log("Layer.createImgDeltas with changes: " + JSON.stringify(changes), 4);
-        $.each(
-            changes,
-            function (index, change) {
-                const img_old = change.oldVal && change.oldVal != "null" ? change.oldVal.slice(1, -1).split(",") : [];
-                const img_new = change.newVal ? change.newVal.slice(1, -1).split(",") : [];
-                console.log("img_old %o", img_old);
-                console.log("img_new: %o", img_new);
+        $.each(changes, (index, change) => {
+            const img_old: string[] = change.oldVal && change.oldVal != "null" ? change.oldVal.slice(1, -1).split(",") : [];
+            const img_new: string[] = change.newVal ? change.newVal.slice(1, -1).split(",") : [];
+            console.log("img_old %o", img_old);
+            console.log("img_new: %o", img_new);
 
-                $.map(
-                    img_new,
-                    function (img) {
-                        //console.log(img + ' in ' + img_old.join(', ') + '?');
-                        if (img_old.indexOf(img) < 0) {
-                            //console.log('neues Image');
-                            var context = {
-                                context: this,
-                                delta: {
-                                    type: "img",
-                                    change: "insert",
-                                    delta: img,
-                                },
-                                next: {
-                                    succFunc: "showMessage",
-                                    // msg: img + " als neues Bild eingetragen.",
-                                    msg: "",
-                                    title: "Datenbank",
-                                },
-                            };
-                            //console.log('context: %o', context);
-                            this.writeDelta.bind(context)();
-                        }
-                    }.bind(this)
-                );
+            $.map(img_new, (img) => {
+                //console.log(img + ' in ' + img_old.join(', ') + '?');
+                if (img_old.indexOf(img) < 0) {
+                    //console.log('neues Image');
+                    const context = {
+                        context: this,
+                        delta: {
+                            type: "img",
+                            change: "insert",
+                            delta: img,
+                        },
+                        next: {
+                            succFunc: "showMessage",
+                            // msg: img + " als neues Bild eingetragen.",
+                            msg: "",
+                            title: "Datenbank",
+                        },
+                    };
+                    //console.log('context: %o', context);
+                    this.writeDelta.bind(context)();
+                }
+            });
 
-                $.map(
-                    img_old,
-                    function (img) {
-                        //console.log(img + ' in ' + img_new.join(', ') + '?');
-                        if (img_new.indexOf(img) < 0) {
-                            // Remove insert delta of the image if exists, otherwise insert a delete delta for the img
-                            let sql = `
+            $.map(
+                img_old,
+                function (img) {
+                    //console.log(img + ' in ' + img_new.join(', ') + '?');
+                    if (img_new.indexOf(img) < 0) {
+                        // Remove insert delta of the image if exists, otherwise insert a delete delta for the img
+                        let sql = `
                 SELECT
                   *
                 FROM
@@ -3205,66 +3238,65 @@ export class Layer {
                   change = 'insert' AND
                   INSTR(delta, '${img}') > 0
               `;
-                            //kvm.log("Layer.createImgDeltas Abfrage ob insert für Bild in deltas table existiert mit sql: " + sql, 3);
-                            kvm.db.executeSql(
-                                sql,
-                                [],
-                                function (rs) {
-                                    //kvm.log("Layer.createImgDeltas Abfrage ob insert für Bild existiert erfolgreich, rs: " + JSON.stringify(rs), 4);
-                                    var numRows = rs.rows.length;
+                        //kvm.log("Layer.createImgDeltas Abfrage ob insert für Bild in deltas table existiert mit sql: " + sql, 3);
+                        kvm.db.executeSql(
+                            sql,
+                            [],
+                            function (rs) {
+                                //kvm.log("Layer.createImgDeltas Abfrage ob insert für Bild existiert erfolgreich, rs: " + JSON.stringify(rs), 4);
+                                var numRows = rs.rows.length;
 
-                                    //kvm.log("numRows: " + numRows, 4);
-                                    if (numRows > 0) {
-                                        // lösche diesen Eintrag
-                                        sql = `
+                                //kvm.log("numRows: " + numRows, 4);
+                                if (numRows > 0) {
+                                    // lösche diesen Eintrag
+                                    sql = `
                       DELETE FROM ${this.getSqliteTableName()}_deltas
                       WHERE
                         change = 'insert' AND
                         INSTR(delta, '${img}') > 0
                     `;
-                                        //kvm.log("Layer.createImgDeltas: insert delta vorhanden, Lösche diesen mit sql: " + sql, 4);
-                                        kvm.db.executeSql(
-                                            sql,
-                                            [],
-                                            function (rs) {
-                                                //kvm.log("Löschen des insert deltas erfolgreich", 3);
-                                            },
-                                            function (error) {
-                                                // TODO
-                                                // navigator.notification.alert("Fehler beim Löschen der Bildänderung!\nFehlercode: " + error.code + "\nMeldung: " + error.message);
-                                                navigator.notification.alert("Fehler beim Löschen der Bildänderung!\nFehlercode: " + (<any>error).code + "\nMeldung: " + error.message, undefined);
-                                            }
-                                        );
-                                    } else {
-                                        //kvm.log("Layer.createImgDeltas: kein insert delta vorhanden. Trage delete delta ein.", 3);
-                                        // Add delete of image to deltas table
-                                        this.writeDelta.bind({
-                                            context: this,
-                                            delta: {
-                                                type: "img",
-                                                change: "delete",
-                                                delta: img,
-                                            },
-                                            next: {
-                                                succFunc: "showMessage",
-                                                msg: "",
-                                                // msg: "Löschung von Bild " + img + " eingetragen.",
-                                                title: "Datenbank",
-                                            },
-                                        })();
-                                    }
-                                }.bind(this),
-                                function (error) {
-                                    // TODO
-                                    // navigator.notification.alert("Fehler bei der Speicherung der Änderungsdaten für das Bild in der delta-Tabelle!\nFehlercode: " + error.code + "\nMeldung: " + error.message);
-                                    navigator.notification.alert("Fehler bei der Speicherung der Änderungsdaten für das Bild in der delta-Tabelle!\nFehlercode: " + (<any>error).code + "\nMeldung: " + error.message, undefined);
+                                    //kvm.log("Layer.createImgDeltas: insert delta vorhanden, Lösche diesen mit sql: " + sql, 4);
+                                    kvm.db.executeSql(
+                                        sql,
+                                        [],
+                                        function (rs) {
+                                            //kvm.log("Löschen des insert deltas erfolgreich", 3);
+                                        },
+                                        function (error) {
+                                            // TODO
+                                            // navigator.notification.alert("Fehler beim Löschen der Bildänderung!\nFehlercode: " + error.code + "\nMeldung: " + error.message);
+                                            navigator.notification.alert("Fehler beim Löschen der Bildänderung!\nFehlercode: " + (<any>error).code + "\nMeldung: " + error.message, undefined);
+                                        }
+                                    );
+                                } else {
+                                    //kvm.log("Layer.createImgDeltas: kein insert delta vorhanden. Trage delete delta ein.", 3);
+                                    // Add delete of image to deltas table
+                                    this.writeDelta.bind({
+                                        context: this,
+                                        delta: {
+                                            type: "img",
+                                            change: "delete",
+                                            delta: img,
+                                        },
+                                        next: {
+                                            succFunc: "showMessage",
+                                            msg: "",
+                                            // msg: "Löschung von Bild " + img + " eingetragen.",
+                                            title: "Datenbank",
+                                        },
+                                    })();
                                 }
-                            );
-                        }
-                    }.bind(this)
-                );
-            }.bind(this)
-        );
+                            }.bind(this),
+                            function (error) {
+                                // TODO
+                                // navigator.notification.alert("Fehler bei der Speicherung der Änderungsdaten für das Bild in der delta-Tabelle!\nFehlercode: " + error.code + "\nMeldung: " + error.message);
+                                navigator.notification.alert("Fehler bei der Speicherung der Änderungsdaten für das Bild in der delta-Tabelle!\nFehlercode: " + (<any>error).code + "\nMeldung: " + error.message, undefined);
+                            }
+                        );
+                    }
+                }.bind(this)
+            );
+        });
     }
 
     showMessage() {
@@ -3343,7 +3375,7 @@ export class Layer {
                 //    kvm.map.addLayer(this.layerGroup);
                 kvm.controls.layers.addOverlay(this.layerGroup, '<span id="layerCtrLayerDiv_' + this.getGlobalId() + '">' + this.title + "</span>");
             }
-            kvm.layers[this.getGlobalId()] = this;
+            kvm.addLayer(this);
         } catch ({ name, message }) {
             kvm.msg(`Fehler beim Hinzufügen des Layers ${this.title} zur Anwendung! Fehlertyp: ${name} Fehlermeldung: ${message}`);
         }
@@ -3352,8 +3384,9 @@ export class Layer {
     /*
      * Erzeugt die Events für die Auswahl, Synchronisierung und das Zurücksetzen von Layern
      */
+    // TODO
     bindLayerEvents(layerGlobalId) {
-        console.log("bindLayerEvents for layerGlobalId: %s", layerGlobalId);
+        console.error("bindLayerEvents for layerGlobalId: %s", layerGlobalId);
         // Schaltet alle layer function button events zunächst aus.
         $(".layer-function-button").off();
         //
@@ -3362,8 +3395,8 @@ export class Layer {
         // Die Featureliste und Kartenelemente werden falls vorhanden aus der Datenbank geladen.
         //
         $("input[name=activeLayerId]" + (layerGlobalId ? "[value='" + layerGlobalId + "']" : "")).on("change", function (evt) {
-            var globalId = (<any>evt.target).value,
-                layer = kvm.layers[globalId];
+            const globalId = (<any>evt.target).value;
+            const layer = kvm.getLayer(globalId);
 
             // unselect activeLayer
             // unselect activeFeature
@@ -3598,15 +3631,15 @@ export class Layer {
         //console.log('Entferne layer von map');
         kvm.map.removeLayer(this.layerGroup);
         //console.log('Lösche activeLayer von kvm layers array');
-        delete kvm.layers[this.getGlobalId()];
+        kvm.removeLayer(this);
         //console.log('Lösche layer und seine id aus dem store');
         this.removeFromStore();
     }
 
     addActiveFeature() {
-        this.features[this.activeFeature.id] = this.activeFeature;
+        this.addFeature(this.activeFeature);
         this.activeFeature.addListElement();
-        $("#numDatasetsText_" + this.getGlobalId()).html(`${Object.keys(this.features).length}`);
+        $("#numDatasetsText_" + this.getGlobalId()).html(`${this._features.size}`);
     }
 
     getGlobalId() {
@@ -3765,7 +3798,7 @@ export class Layer {
     saveToStore() {
         //console.log('layerIds vor dem Speichern: %o', kvm.store.getItem('layerIds_' + this.stelle.get('id')));
         this.settings.loaded = false;
-        let layerIds = JSON.parse(kvm.store.getItem("layerIds_" + this.stelle.get("id"))) || [];
+        let layerIds = <string[]>JSON.parse(kvm.store.getItem("layerIds_" + this.stelle.get("id"))) || [];
         const settings = JSON.stringify(this.settings);
 
         kvm.store.setItem("layerSettings_" + this.getGlobalId(), settings);
@@ -3781,7 +3814,7 @@ export class Layer {
     removeFromStore() {
         //console.log("removeFromStore");
         console.log("layerIds in Store vor dem Löschen: %s", kvm.store.getItem("layerIds_" + this.stelle.get("id")));
-        const layerIds = JSON.parse(kvm.store.getItem("layerIds_" + this.stelle.get("id"))) || [];
+        const layerIds = <string[]>JSON.parse(kvm.store.getItem("layerIds_" + this.stelle.get("id"))) || [];
         console.log("Entferne LayerID %s aus layerIds Liste im Store.", this.get("id"));
         layerIds.splice(layerIds.indexOf(this.get("id")), 1);
         kvm.store.setItem("layerIds_" + this.stelle.get("id"), JSON.stringify(layerIds));
@@ -3832,7 +3865,8 @@ export class Layer {
                 kvm.activeLayer.deactivate();
             }
             this.isActive = true;
-            kvm.layers[this.getGlobalId()] = kvm.activeLayer = this;
+            kvm.addLayer(this);
+            kvm.activeLayer = this;
             kvm.store.setItem("activeLayerId", this.get("id"));
 
             $("#featurelistHeading").html(this.get("alias") ? this.get("alias") : this.get("title"));
@@ -3950,7 +3984,8 @@ export class Layer {
 
         if (this.isActive) {
             this.isActive = false;
-            kvm.layers[this.getGlobalId()] = this;
+            // TODO
+            kvm.addLayer(this);
             kvm.activeLayer = null;
             kvm.store.removeItem("activeLayerId");
             $("#searchFeatureField").val("");
@@ -4009,11 +4044,11 @@ export class Layer {
     newSubDataSet(options = { parentLayerId: "", subLayerId: "", fkAttribute: "" }) {
         // parentLayerId, parentFeatureId, subLayerId, subLayerFKAttribute) {
         kvm.openSperrDiv("Neuer Sublayer-Datensatz");
-        const parentLayer = kvm.layers[options.parentLayerId];
+        const parentLayer = kvm.getLayer(options.parentLayerId);
         if (parentLayer.hasGeometry) {
             parentLayer.cancelEditGeometry();
         }
-        const subLayer = kvm.layers[options.subLayerId];
+        const subLayer = kvm.getLayer(options.subLayerId);
         subLayer.parentLayerId = options.parentLayerId;
         subLayer.parentFeatureId = parentLayer.activeFeature.id;
         subLayer.specifiedValues[options.fkAttribute] = parentLayer.activeFeature.id;

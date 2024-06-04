@@ -24,11 +24,11 @@ import { BackgroundGeolocation, BackgroundGeolocationConfig, BackgroundGeolocati
 import { GpsStatus } from "./gpsStatus";
 import { SyncStatus } from "./syncStatus";
 import { Stelle } from "./Stelle";
-import { Layer } from "./Layer";
+import { BackgroundLayerSetting, Layer, LayerSetting } from "./Layer";
 import { BackgroundLayer } from "./BackgroundLayer";
 import { Feature } from "./Feature";
 import { Klasse } from "./Klasse";
-import { Overlay } from "./Overlay";
+// import { Overlay } from "./Overlay";
 import { maplibreStyleObj } from "./mapLibreStyles";
 import { NetworkStatus } from "./networkStatus";
 import { FileUtils } from "./controller/files";
@@ -96,7 +96,7 @@ class Kvm {
     layerDataLoaded: boolean = false;
     featureListLoaded: boolean = false;
     mapSettings: any;
-    layers: { [key: string]: Layer } = {};
+    _layers: Map<string, Layer> = new Map();
     overlays = [];
     store: Storage;
     map: LMap;
@@ -110,7 +110,7 @@ class Kvm {
     debug: any;
     config: any;
     backgroundLayers: BackgroundLayer[] = [];
-    backgroundLayerSettings: any[];
+    backgroundLayerSettings: BackgroundLayerSetting[];
     backgroundGeolocation: BackgroundGeolocation;
     isActive: boolean;
     GpsIsOn: boolean = false;
@@ -126,6 +126,36 @@ class Kvm {
     constructor() {
         this.controller = { files: FileUtils, mapper: Mapper };
         console.info("d001");
+    }
+
+    getLayer(layerId: string) {
+        return this._layers.get(layerId);
+    }
+
+    /**
+     *
+     ** @returns shallow copy of the Layers
+     */
+    getLayers() {
+        return Array.from(this._layers.values());
+    }
+
+    getLayersSortedByDrawingOrder() {
+        const layers = Array.from(this._layers.values());
+        return layers.sort((a, b) => (parseInt(a.get("drawingorder")) > parseInt(b.get("drawingorder")) ? 1 : -1));
+    }
+
+    /*
+     * fügt das Feature zum Layer hinzu, existiert ein Feature mit der gleichen Id wird es ersetzt
+     *
+     * @param feature
+     * @returns
+     */
+    addLayer(layer: Layer) {
+        this._layers.set(layer.getGlobalId(), layer);
+    }
+    removeLayer(layer: Layer | MapLibreLayer) {
+        this._layers.delete(layer.getGlobalId());
     }
 
     // loadHeadFile(filename, filetype) {
@@ -492,7 +522,8 @@ class Kvm {
                             layer.appendToApp();
                             if (layer.get("id") == kvm.store.getItem("activeLayerId")) {
                                 layer.isActive = true;
-                                kvm.layers[layer.getGlobalId()] = kvm.activeLayer = layer;
+                                kvm.addLayer(layer);
+                                kvm.activeLayer = layer;
                             }
                             if (navigator.onLine && layer.hasSyncPrivilege && layer.get("autoSync")) {
                                 if (layer.hasEditPrivilege) {
@@ -558,8 +589,8 @@ class Kvm {
         this.activeStelle.readAllLayers = true;
         this.activeStelle.numLayersRead = 0;
         // TODO
-        Object.keys(this.layers).forEach((key) => {
-            kvm.layers[key].readData();
+        this._layers.forEach((layer) => {
+            layer.readData();
         });
     }
 
@@ -1313,9 +1344,9 @@ class Kvm {
 
         $("#changeBackgroundLayerSettingsButton").on("click", function () {
             kvm.backgroundLayerSettings.forEach((l, i) => {
-                l.url = $("#backgroundLayerURL_" + i).val();
+                l.url = <string>$("#backgroundLayerURL_" + i).val();
                 if (l.params.layers) {
-                    l.params.layers = $("#backgroundLayerLayer_" + i).val();
+                    l.params.layers = <string>$("#backgroundLayerLayer_" + i).val();
                 }
             });
             console.log("Neue BackgroundLayerSettings: ", kvm.backgroundLayerSettings);
@@ -1712,15 +1743,15 @@ class Kvm {
                             }
                         );
 
-                        if (kvm.layers.length == 0) {
+                        if (kvm._layers.size === 0) {
                             kvm.msg("Keine Layer zum löschen vorhanden.");
                         } else {
-                            kvm.layers.forEach(function (layer) {
+                            kvm._layers.forEach((layer) => {
                                 console.log("Entferne Layer: %s", layer.get("title"));
                                 layer.removeFromApp();
                             });
                         }
-                        kvm.layers = [];
+                        kvm._layers = new Map();
                         $("#layer_list").html("");
                         kvm.activeLayer = kvm.activeStelle = undefined;
                         window.localStorage.clear();
@@ -1863,7 +1894,7 @@ class Kvm {
 
     featureItemClickEventFunction(evt) {
         console.log("featureItemClickEvent on feature id: %o", evt.target.id);
-        let feature = kvm.activeLayer.features[evt.target.id];
+        const feature = kvm.activeLayer.getFeature(evt.target.id);
         kvm.showItem(kvm.activeLayer.hasGeometry && feature.getDataValue(kvm.activeLayer.get("geometry_attribute")) != "null" ? "map" : "dataView");
         kvm.activeLayer.activateFeature(feature, true);
     }
@@ -1930,7 +1961,7 @@ class Kvm {
             if (activeFeature.options.new) {
                 let parentFeature = activeFeature.findParentFeature();
                 if (parentFeature) {
-                    const parentLayer = <Layer>kvm.layers[parentFeature.globalLayerId];
+                    const parentLayer = kvm.getLayer(parentFeature.globalLayerId);
                     parentLayer.activateFeature(parentFeature, true);
                 }
             }
@@ -1944,9 +1975,9 @@ class Kvm {
      * @param layerId
      * @param featureId
      */
-    activateFeature(layerId, featureId) {
-        let layer = <Layer>kvm.layers[layerId];
-        let feature = layer.features[featureId];
+    activateFeature(layerId: string, featureId: string) {
+        const layer = kvm.getLayer(layerId);
+        const feature = layer.getFeature(featureId);
         if (feature) {
             layer.activateFeature(feature, false);
             kvm.showItem("dataView");
@@ -1995,8 +2026,8 @@ class Kvm {
      */
     editFeature(layerId, featureId) {
         // console.log('editFeature');
-        const layer = kvm.layers[layerId];
-        const feature = layer.features[featureId];
+        const layer = kvm.getLayer(layerId);
+        const feature = layer.getFeature(featureId);
         // ToDo:
         //parentLayerId und parentFeatureId müssen woanders hier kommen
         // denn editFeature kann ja auch von einem subform kommen in dem

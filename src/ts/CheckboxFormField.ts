@@ -1,37 +1,38 @@
+import { AttributeSetting } from "./Attribute";
 import { Field } from "./Field";
 
 export class CheckboxFormField implements Field {
-    settings: any;
+    settings: AttributeSetting;
     selector: string;
     element: JQuery<HTMLElement>;
 
-    constructor(formId, settings) {
+    constructor(formId: string, settings: AttributeSetting) {
         this.settings = settings;
-        this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
+        this.selector = "#" + formId + " input[id=" + this.settings.index + "]";
         this.element = $(
             '\
         <input\
           type="checkbox"\
           id="' +
-                this.get("index") +
+                this.settings.index +
                 '"\
           name="' +
-                this.get("name") +
+                this.settings.name +
                 '"' +
-                (this.get("privilege") == "0" ? " disabled" : "") +
+                (this.settings.privilege == "0" ? " disabled" : "") +
                 "\
         />"
         );
     }
 
-    get(key) {
-        return this.settings[key];
-    }
+    // get(key) {
+    //     return this.settings[key];
+    // }
 
     setValue(val) {
         //console.log('CheckboxFormField.setValue with value: ' + val);
-        if (!val && this.get("default")) {
-            val = this.get("default");
+        if (!val && this.settings.default) {
+            val = this.settings.default;
         }
 
         this.element.val(val);
@@ -48,7 +49,7 @@ export class CheckboxFormField implements Field {
 
     bindEvents() {
         //console.log('CheckboxFormField.bindEvents');
-        $("#featureFormular input[id=" + this.get("index") + "]").on("change", function () {
+        $("#featureFormular input[id=" + this.settings.index + "]").on("change", function () {
             if (!$("#saveFeatureButton").hasClass("active-button")) {
                 $("#saveFeatureButton").toggleClass("active-button inactive-button");
             }

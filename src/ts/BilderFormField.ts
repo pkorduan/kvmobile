@@ -2,42 +2,43 @@
 /// <reference types="cordova-plugin-file-opener2"/>
 
 import { getWebviewUrl, kvm } from "./app";
+import { AttributeSetting } from "./Attribute";
 import { Field } from "./Field";
 import { listFiles } from "./Util";
 
 export class BilderFormField implements Field {
-    settings: any;
+    settings: AttributeSetting;
     images_div_id: string;
     selector: string;
     element: JQuery<HTMLElement>;
 
     // moveFile: (srcFile, dstDir) => void;
 
-    constructor(formId, settings) {
+    constructor(formId: string, settings: AttributeSetting) {
         console.error("BilderFormField", formId, settings);
         this.settings = settings;
         this.images_div_id = "images_" + settings["index"];
-        this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
+        this.selector = "#" + formId + " input[id=" + this.settings.index + "]";
         this.element = $('<div class="form-value">').append(
             '\
         <input\
         type="hidden"\
         id="' +
-                this.get("index") +
+                this.settings.index +
                 '"\
         name="' +
-                this.get("name") +
+                this.settings.name +
                 '"\
         value=""' +
-                (this.get("privilege") == "0" ? " disabled" : "") +
+                (this.settings.privilege == "0" ? " disabled" : "") +
                 "\
         />"
         );
         // this.moveFile = this.moveFile_.bind(this);
     }
-    get(key) {
-        return this.settings[key];
-    }
+    // get(key) {
+    //     return this.settings[key];
+    // }
 
     /* Assign the value of the feature to the form field as it is in the database and
      * create corresponding form and view elements.
@@ -61,7 +62,7 @@ export class BilderFormField implements Field {
             $("#" + this.images_div_id)
                 .html("")
                 .hide();
-            $("#dropAllPictureButton_" + this.get("index")).hide();
+            $("#dropAllPictureButton_" + this.settings.index).hide();
         } else {
             console.log("Add images to previews div: %s", val);
             const images = kvm.removeBrackes(val).split(",");
@@ -115,7 +116,7 @@ export class BilderFormField implements Field {
         console.log("BilderFormField: Add Image with src: %s and name: %s", nativeURL, name);
         const webviewUrl = await getWebviewUrl(nativeURL);
         // const url = await getFileUrl(src);
-        const imgDiv = $('<div class="img" src="' + webviewUrl + '" style="background-image: url(' + webviewUrl + ');" field_id="' + this.get("index") + '"name="' + name + '"></div>');
+        const imgDiv = $('<div class="img" src="' + webviewUrl + '" style="background-image: url(' + webviewUrl + ');" field_id="' + this.settings.index + '"name="' + name + '"></div>');
         /*  ToDo: Ein Kommentarfeld einfügen. Realisieren über Datentyp, der dann aber auch das Datum des Bildes beinhaltet.
     img_div.append($('<br>'));
     img_div.append($('<input type="text"\ name="' + src + '"/>'));
@@ -124,7 +125,7 @@ export class BilderFormField implements Field {
             .append(imgDiv)
             .show();
 
-        $("#dropAllPictureButton_" + this.get("index")).show();
+        $("#dropAllPictureButton_" + this.settings.index).show();
 
         imgDiv.on("click", (evt) => {
             var target = $(evt.target),
@@ -221,14 +222,14 @@ export class BilderFormField implements Field {
 
     bindEvents() {
         //console.log('BildFormField.bindEvents');
-        $("#featureFormular input[id=" + this.get("index") + "]").on("change", function () {
+        $("#featureFormular input[id=" + this.settings.index + "]").on("change", function () {
             // console.log('event on saveFeatureButton');
             if (!$("#saveFeatureButton").hasClass("active-button")) {
                 $("#saveFeatureButton").toggleClass("active-button inactive-button");
             }
         });
 
-        $("#takePictureButton_" + this.get("index")).on("click", { context: this }, (ev) => this.takePicture(ev));
+        $("#takePictureButton_" + this.settings.index).on("click", { context: this }, (ev) => this.takePicture(ev));
         /*
     $('#selectPictureButton_1').bind(
       'click',
@@ -236,7 +237,7 @@ export class BilderFormField implements Field {
       this.selectPicture,
     );
 */
-        $("#dropAllPictureButton_" + this.get("index")).on("click", { context: this }, (ev) => this.dropAllPictures(ev));
+        $("#dropAllPictureButton_" + this.settings.index).on("click", { context: this }, (ev) => this.dropAllPictures(ev));
     }
 
     dropAllPictures(evt: JQuery.ClickEvent) {

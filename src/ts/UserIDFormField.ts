@@ -1,3 +1,4 @@
+import { AttributeSetting } from "./Attribute";
 import { Field } from "./Field";
 import { kvm } from "./app";
 
@@ -13,42 +14,42 @@ import { kvm } from "./app";
  *   </div>
  */
 export class UserIDFormField implements Field {
-    settings: any;
+    settings: AttributeSetting;
     selector: string;
     element: JQuery<HTMLElement>;
-    constructor(formId, settings) {
+    constructor(formId: string, settings: AttributeSetting) {
         //console.log('Erzeuge UserIDFormField with settings %o', settings);
         this.settings = settings;
-        this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
+        this.selector = "#" + formId + " input[id=" + this.settings.index + "]";
         this.element = $(
             '\
         <input\
         type="text"\
         id="' +
-                this.get("index") +
+                this.settings.index +
                 '"\
         name="' +
-                this.get("name") +
+                this.settings.name +
                 '"\
         value="" disabled\
         />'
         );
     }
 
-    get(key) {
-        return this.settings[key];
-    }
+    // get(key) {
+    //     return this.settings[key];
+    // }
 
     setValue(val) {
-        if (kvm.coalesce(val, "") == "" && this.get("default")) {
-            val = this.get("default");
+        if (kvm.coalesce(val, "") == "" && this.settings.default) {
+            val = this.settings.default;
         }
         this.element.val(val == null || val == "null" ? "" : val);
     }
 
     getValue(action = "") {
         kvm.log("UserIDFormField.getValue", 4);
-        var val = this.element.val();
+        let val = this.element.val();
         if (typeof val === "undefined" || val == "") {
             val = null;
         }

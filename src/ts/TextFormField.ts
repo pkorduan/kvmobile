@@ -1,3 +1,4 @@
+import { AttributeSetting } from "./Attribute";
 import { Field } from "./Field";
 import { kvm } from "./app";
 /*
@@ -12,39 +13,39 @@ import { kvm } from "./app";
  *   </div>
  */
 export class TextFormField implements Field {
-    settings: any;
+    settings: AttributeSetting;
     selector: string;
     element: JQuery<HTMLElement>;
 
-    constructor(formId, settings) {
+    constructor(formId: string, settings: AttributeSetting) {
         //console.log('Erzeuge TextformField with settings %o', settings);
         this.settings = settings;
-        this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
+        this.selector = "#" + formId + " input[id=" + this.settings.index + "]";
         this.element = $(
             '\
             <input\
             type="text"\
             id="' +
-                this.get("index") +
+                this.settings.index +
                 '"\
             name="' +
-                this.get("name") +
+                this.settings.name +
                 '"\
             value=""' +
-                (this.get("privilege") == "0" ? " disabled" : "") +
+                (this.settings.privilege == "0" ? " disabled" : "") +
                 "\
             />"
         );
     }
 
-    get(key) {
-        return this.settings[key];
-    }
+    // get(key) {
+    //     return this.settings[key];
+    // }
 
     setValue(val) {
         //console.log("TextFormField " + this.get("name") + " setValue with value: %o", val);
-        if (kvm.coalesce(val, "") == "" && this.get("default")) {
-            val = this.get("default");
+        if (kvm.coalesce(val, "") == "" && this.settings.default) {
+            val = this.settings.default;
         }
         this.element.val(val == null || val == "null" ? "" : val);
     }
@@ -72,7 +73,7 @@ export class TextFormField implements Field {
 
     bindEvents() {
         //console.log('TextFormField.bindEvents');
-        $("#featureFormular input[id=" + this.get("index") + "]").on("keyup", function () {
+        $("#featureFormular input[id=" + this.settings.index + "]").on("keyup", function () {
             if (!$("#saveFeatureButton").hasClass("active-button")) {
                 $("#saveFeatureButton").toggleClass("active-button inactive-button");
             }

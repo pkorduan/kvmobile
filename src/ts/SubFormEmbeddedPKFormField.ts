@@ -20,20 +20,20 @@ import { Field } from "./Field";
  *   </div>
  */
 export class SubFormEmbeddedPKFormField implements Field {
-    settings: any;
+    // settings: any;
     selector: string;
     element: JQuery<HTMLElement>;
     attribute: Attribute;
 
-    constructor(formId, attribute) {
+    constructor(formId: string, attribute: Attribute) {
         this.attribute = attribute;
-        this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
+        this.selector = "#" + formId + " input[id=" + this.attribute.settings.index + "]";
         this.element = $("<div></div>");
     }
 
-    get(key) {
-        return this.attribute.settings[key];
-    }
+    // get(key) {
+    //     return this.attribute.settings[key];
+    // }
 
     /**
      *
@@ -41,7 +41,7 @@ export class SubFormEmbeddedPKFormField implements Field {
      * werden über die ID des Datensatzes der in id_attribut steht
      */
     setValue(val) {
-        let feature = this.attribute.layer.activeFeature;
+        const feature = this.attribute.layer.activeFeature;
         console.log("setValue of SubFormEmbeddedPK FormField");
         this.element.empty();
         if (feature.options.new) {

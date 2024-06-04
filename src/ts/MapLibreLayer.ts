@@ -37,11 +37,11 @@ export class MapLibreLayer extends LLayer {
         }
     }
 
-    get(key) {
+    get(key: string) {
         return this.settings[key];
     }
 
-    set(key, value) {
+    set(key: string, value: any) {
         this.settings[key] = value;
         return this.settings[key];
     }
@@ -120,7 +120,7 @@ export class MapLibreLayer extends LLayer {
         //console.log('Entferne layer von map');
         kvm.map.removeLayer(this);
         //console.log('Lösche activeLayer von kvm layers array');
-        delete kvm.layers[this.getGlobalId()];
+        kvm.removeLayer(this);
         //console.log('Lösche layer und seine id aus dem store');
         this.removeFromStore();
     }
@@ -128,7 +128,7 @@ export class MapLibreLayer extends LLayer {
     removeFromStore() {
         //console.log("removeFromStore");
         console.log("layerIds in Store vor dem Löschen: %s", kvm.store.getItem("layerIds_" + this.stelle.get("id")));
-        const layerIds = JSON.parse(kvm.store.getItem("layerIds_" + this.stelle.get("id"))) || [];
+        const layerIds = <string[]>JSON.parse(kvm.store.getItem("layerIds_" + this.stelle.get("id"))) || [];
         console.log("Entferne LayerID %s aus layerIds Liste im Store.", this.get("id"));
         layerIds.splice(layerIds.indexOf(this.get("id")), 1);
         kvm.store.setItem("layerIds_" + this.stelle.get("id"), JSON.stringify(layerIds));
@@ -234,7 +234,7 @@ export class MapLibreLayer extends LLayer {
     saveToStore() {
         //console.log('layerIds vor dem Speichern: %o', kvm.store.getItem('layerIds_' + this.stelle.get('id')));
         this.settings.loaded = false;
-        let layerIds = JSON.parse(kvm.store.getItem("layerIds_" + this.stelle.get("id"))) || [];
+        let layerIds = <string[]>JSON.parse(kvm.store.getItem("layerIds_" + this.stelle.get("id"))) || [];
         const settings = JSON.stringify(this.settings);
 
         kvm.store.setItem("layerSettings_" + this.getGlobalId(), settings);
@@ -266,7 +266,7 @@ export class MapLibreLayer extends LLayer {
         this.bindLayerEvents(this.getGlobalId());
         //    kvm.map.addLayer(this.layerGroup);
         kvm.controls.layers.addOverlay(this, `<span id="layerCtrLayerDiv_${this.getGlobalId()}">${this.title}</span>`);
-        kvm.layers[this.getGlobalId()] = this;
+        kvm.addLayer(<any>this);
     }
 
     getGlobalId() {
@@ -311,8 +311,8 @@ export class MapLibreLayer extends LLayer {
         // Die Featureliste und Kartenelemente werden falls vorhanden aus der Datenbank geladen.
         //
         $("input[name=activeLayerId]" + (layerGlobalId ? "[value='" + layerGlobalId + "']" : "")).on("change", function (evt) {
-            var globalId = (<any>evt.target).value,
-                layer = kvm.layers[globalId];
+            const globalId = (<any>evt.target).value;
+            const layer = kvm.getLayer(globalId);
 
             // unselect activeLayer
             // unselect activeFeature

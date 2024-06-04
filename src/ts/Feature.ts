@@ -42,6 +42,7 @@ export class Feature {
     newGeom: any;
     geom: any;
     startLatLng: number[];
+    new: boolean;
 
     constructor(
         data: any = {},
@@ -92,8 +93,8 @@ export class Feature {
     }
 
     setDefaultValuesForNonSaveables() {
-        let layer = kvm.layers[this.globalLayerId];
-        let nonSaveableAttributes = layer.attributes.filter((attribute) => {
+        const layer = kvm.getLayer(this.globalLayerId);
+        const nonSaveableAttributes = layer.attributes.filter((attribute) => {
             return attribute.settings.saveable == "0" && attribute.settings.default != "";
         });
         nonSaveableAttributes.forEach((attribute) => {
@@ -101,8 +102,8 @@ export class Feature {
             switch (true) {
                 case attribute.get("default").startsWith("gdi_conditional_val"):
                     {
-                        const parentLayer = kvm.layers[layer.parentLayerId];
-                        const parentFeature = parentLayer.features[layer.parentFeatureId];
+                        const parentLayer = kvm.getLayer(layer.parentLayerId);
+                        const parentFeature = parentLayer.getFeature(layer.parentFeatureId);
                         // Frage den Spaltennamen ab, von dem der Defaultwert des parentLayers abgefragt werden soll.
                         //z.B: entwicklungsphase_id aus gdi_conditional_val('kob', 'baum', 'entwicklungsphase_id', 'uuid = ''$baum_uuid''')
                         const column = attribute
@@ -111,7 +112,7 @@ export class Feature {
                             .trim()
                             .replace(/^["'](.+(?=["']$))["']$/, "$1");
                         value = parentFeature.getDataValue(column);
-                        // value = kvm.layers[this.parentLayerId].features[this.parentFeatureId].get(column)
+                        // value = kvm.layers[this.parentLayerId].features.get(this.parentFeatureId).get(column)
                     }
                     break;
                 case attribute.get("default").includes("gdi_current_date"):
@@ -146,15 +147,15 @@ export class Feature {
     }
 
     findParentFeature() {
-        const layer = <Layer>kvm.layers[this.globalLayerId];
+        const layer = kvm.getLayer(this.globalLayerId);
         const subFormFKAttribute = layer.attributes.find((attr) => attr.get("form_element_type") == "SubFormFK");
         if (subFormFKAttribute === undefined) {
             return false;
         } else {
-            let fkAttributeIndex = layer.attribute_index[subFormFKAttribute.getFKAttribute()];
-            let parentFeatureId = layer.attributes[fkAttributeIndex].formField.getValue();
-            let parentLayer = kvm.layers[subFormFKAttribute.getGlobalParentLayerId()];
-            return <Feature>parentLayer.features[parentFeatureId];
+            const fkAttributeIndex = layer.attribute_index[subFormFKAttribute.getFKAttribute()];
+            const parentFeatureId = layer.attributes[fkAttributeIndex].formField.getValue();
+            const parentLayer = kvm.getLayer(subFormFKAttribute.getGlobalParentLayerId());
+            return parentLayer.getFeature(parentFeatureId);
         }
     }
 
@@ -452,7 +453,7 @@ export class Feature {
         var data = rs.rows.item(0);
         kvmLayer.activeFeature.data = typeof data == "string" ? JSON.parse(data) : data;
 
-        if (typeof kvmLayer.features[data.uuid] == "undefined") {
+        if (typeof kvmLayer.features.get(data.uuid) == "undefined") {
           console.log("insert new feature name in feature list: " + kvmLayer.activeFeature.get("name"));
           $("#featurelistTable tr:first").before(kvmLayer.activeFeature.listElement);
         } else {
@@ -517,7 +518,7 @@ export class Feature {
      * @param boolean zoom Wenn Feature eine Geometrie hat und zoom=true wird auch auf das Feature gezoomt.
      */
     activate(zoom: boolean) {
-        let kvmLayer = kvm.layers[this.globalLayerId];
+        const kvmLayer = kvm.getLayer(this.globalLayerId);
         if (!kvmLayer.isActive) {
             kvmLayer.activate();
         }
@@ -558,7 +559,7 @@ export class Feature {
         }
         let mapLayer = (<any>kvm.map)._layers[this.layerId];
         if (mapLayer) {
-            const kvmLayer = kvm.layers[this.globalLayerId];
+            const kvmLayer = kvm.getLayer(this.globalLayerId);
             // console.log(
             // 	"Deselektiere Feature id: %s in Layer: %s, globalLayerId: %s in Leaflet layerId: %s",
             // 	this.id,
@@ -598,7 +599,7 @@ export class Feature {
     }
 
     getLabelValue() {
-        const kvmLayer = <Layer>kvm.layers[this.globalLayerId];
+        const kvmLayer = kvm.getLayer(this.globalLayerId);
         let label_value = "";
         const label_attribute = kvmLayer.get("name_attribute");
         let formField;
@@ -653,7 +654,7 @@ export class Feature {
         // TODO
         let matchingClass: Klasse;
         let style: any;
-        const kvmLayer: Layer = kvm.layers[this.globalLayerId];
+        const kvmLayer: Layer = kvm.getLayer(this.globalLayerId);
 
         if (typeof (matchingClass = kvmLayer.getClass(this.getDataValue(kvmLayer.settings.classitem))) == "undefined") {
             style = kvmLayer.getDefaultPathOptions();

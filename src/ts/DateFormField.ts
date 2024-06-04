@@ -1,3 +1,4 @@
+import { AttributeSetting } from "./Attribute";
 import { Field } from "./Field";
 import { kvm } from "./app";
 
@@ -13,39 +14,39 @@ import { kvm } from "./app";
  *   </div>
  */
 export class DateFormField implements Field {
-    settings: any;
+    settings: AttributeSetting;
     selector: string;
     element: JQuery<HTMLElement>;
-    constructor(formId, settings) {
+    constructor(formId: string, settings: AttributeSetting) {
         //console.log('Erzeuge DateFormField with settings %o', settings);
         this.settings = settings;
-        this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
+        this.selector = "#" + formId + " input[id=" + this.settings.index + "]";
         this.element = $(
             '\
     <input\
       type="date"\
       id="' +
-                this.get("index") +
+                this.settings.index +
                 '"\
       name="' +
-                this.get("name") +
+                this.settings.name +
                 '"\
       value=""' +
-                (this.get("privilege") == "0" ? " disabled" : "") +
+                (this.settings.privilege == "0" ? " disabled" : "") +
                 "\
     />"
         );
     }
-    get(key: string) {
-        return this.settings[key];
-    }
+    // get(key: string) {
+    //     return this.settings[key];
+    // }
     setValue(val) {
         kvm.log("val: " + val, 4);
-        var val = kvm.coalesce(val, "");
+        val = kvm.coalesce(val, "");
         if (this.isValidDate(val)) {
             val = this.toISO(val);
         }
-        kvm.log("DateFormField " + this.get("name") + " setValue with value: " + JSON.stringify(val), 4);
+        kvm.log("DateFormField " + this.settings.name + " setValue with value: " + JSON.stringify(val), 4);
         this.element.val(val);
     }
 
@@ -65,7 +66,7 @@ export class DateFormField implements Field {
 
     bindEvents() {
         //console.log('DateFormField.bindEvents');
-        $("#featureFormular input[id=" + this.get("index") + "]").on("change", function () {
+        $("#featureFormular input[id=" + this.settings.index + "]").on("change", function () {
             if (!$("#saveFeatureButton").hasClass("active-button")) {
                 $("#saveFeatureButton").toggleClass("active-button inactive-button");
             }
@@ -77,7 +78,7 @@ export class DateFormField implements Field {
     }
 
     fromISO(date) {
-        kvm.log("konvert " + this.get("name") + " date: " + date, 4);
+        kvm.log("konvert " + this.settings.name + " date: " + date, 4);
         return typeof date == "string" ? date.replace(/-/g, "/").replace("T", " ").replace("Z", "") : null;
     }
 

@@ -1,4 +1,3 @@
-import { kvm } from "./app";
 import * as wkx from "wkx";
 import { BilderFormField } from "./BilderFormField";
 import { CheckboxFormField } from "./CheckboxFormField";
@@ -17,7 +16,6 @@ import { SubFormEmbeddedPKFormField } from "./SubFormEmbeddedPKFormField";
 import { SubFormFKFormField } from "./SubFormFKFormField";
 import { Field } from "./Field";
 import { Layer } from "./Layer";
-import { Overlay } from "./Overlay";
 
 export type AttributeSetting = {
     index?: number;
@@ -27,7 +25,7 @@ export type AttributeSetting = {
     group?: string;
     tooltip?: string;
     type?: string;
-    nullable?: string;
+    nullable?: any;
     saveable?: string;
     form_element_type?: string;
     arrangement?: string;
@@ -40,6 +38,8 @@ export type AttributeSetting = {
     vcheck_value?: string;
     options?: string;
     enums?: { value: any; output: string }[] | string;
+    required_by?: any;
+    requires?: any;
     stelleId?: string;
     layerId?: string;
 };

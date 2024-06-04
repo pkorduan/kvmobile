@@ -32,7 +32,7 @@ export class SubFormFKFormField implements Field {
      *     </div>
      *   </div>
      */
-    constructor(formId, attribute) {
+    constructor(formId: string, attribute: Attribute) {
         this.attribute = attribute;
         this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
         let globalParentLayerId = this.attribute.getGlobalParentLayerId();
@@ -40,15 +40,15 @@ export class SubFormFKFormField implements Field {
         this.element = $(`
       <input
 				type="text"
-				id="${this.get("index")}"
-				name="${this.get("name")}"
+				id="${this.attribute.settings.index}"
+				name="${this.attribute.settings.name}"
 				value=""
 				disabled
         style="width:80%"
 			/>`);
 
         this.linkElement = $(`
-      <div onclick="kvm.editFeature('${globalParentLayerId}', document.getElementById('${this.get("index")}').value)" class="link-element">
+      <div onclick="kvm.editFeature('${globalParentLayerId}', document.getElementById('${this.attribute.settings.index}').value)" class="link-element">
         <i class="fa fa-arrow-left" aria-hidden="true" style="margin-right: 10px"></i> ${vorschauOption}
       </div>
     `);
@@ -73,7 +73,7 @@ export class SubFormFKFormField implements Field {
         // ToDo: Das darf nur gemacht werden wenn der Layer Geometrie hat und der übergeordnete auch.
         if (kvm.activeLayer.hasGeometry && kvm.activeLayer.activeFeature.options.new) {
             // Abfragen des übergeordneten Layers
-            const pkLayer = kvm.layers[`${this.get("stelleId")}_${this.get("options").split(",")[0]}`];
+            const pkLayer = kvm.getLayer(`${this.get("stelleId")}_${this.get("options").split(",")[0]}`);
             if (pkLayer.hasGeometry) {
                 console.log("Übergeordneter Layer %s", pkLayer.title);
                 // Abfragen der uuid des Features in das das aktive Feature fällt
@@ -99,7 +99,7 @@ export class SubFormFKFormField implements Field {
                         for (let i = 0; i < rs.rows.length; i++) {
                             if (typeof rs.rows.item(i).geom != "undefined" && rs.rows.item(i).geom != "") {
                                 id = rs.rows.item(i).id;
-                                kvm.mapHint(`Übergeordnetes Objekt ${pkLayer.features[id].get(pkLayer.get("name_attribute"))} aus Layer ${pkLayer.title} über Markerposition ermittelt.`, 5000);
+                                kvm.mapHint(`Übergeordnetes Objekt ${pkLayer.getFeature(id).getDataValue(pkLayer.get("name_attribute"))} aus Layer ${pkLayer.title} über Markerposition ermittelt.`, 5000);
                                 this.element.val(id);
                                 break;
                             }

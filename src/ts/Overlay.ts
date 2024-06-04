@@ -4,7 +4,7 @@ import { kvm } from "./app";
 import { Attribute } from "./Attribute";
 import { Stelle } from "./Stelle";
 
-export class Overlay {
+export class OverlayX {
     //var overlay_ = this;
     stelle: Stelle;
     settings: any;
@@ -34,7 +34,7 @@ export class Overlay {
             //     return new Attribute(overlay_, attribute);
             // });
             this.attributes = this.settings.attributes.map((attribute) => {
-                return new Attribute(this, attribute);
+                return new Attribute(<any>this, attribute);
             });
             this.attribute_index = this.attributes.reduce((hash, elem) => {
                 hash[elem.settings.name] = Object.keys(hash).length;

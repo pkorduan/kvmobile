@@ -225,8 +225,9 @@ export class Stelle {
                 this.numLayersRead = 0;
                 this.readAllLayers = false;
                 const globalLayerId = `${kvm.store.getItem("activeStelleId")}_${kvm.store.getItem("activeLayerId")}`;
-                if (Object.keys(kvm.layers).includes(globalLayerId)) {
-                    kvm.layers[globalLayerId].activate(); // activate latest active
+                const activeLayer = kvm.getLayer(globalLayerId);
+                if (activeLayer) {
+                    activeLayer.activate(); // activate latest active
                 } else {
                     layer.activate(); // activate latest loaded
                 }
@@ -365,22 +366,31 @@ export class Stelle {
      * Ein splice(index, 0, Wert) würde den Wert vor die 300 eintragen.
      * [10, 100, 100, 200, 200, 200, 300, 400]
      */
-    getLayerDrawingIndex(layer) {
+    getLayerDrawingIndex(layer: Layer | MapLibreLayer) {
         //console.log("Ermitteln des erforderlichen Index für die layerIds Liste entsprechend der drawingorder %o", layer);
-        const layers = Object.entries(kvm.layers);
-        let index = layers.sort((a, b) => (parseInt(a[1].get("drawingorder")) > parseInt(b[1].get("drawingorder")) ? 1 : -1)).findIndex(([k, v], i) => parseInt(v.get("drawingorder")) > parseInt(layer.get("drawingorder")));
+        // const layers = kvm.getLayers();
+        // const sortedLayers = layers.sort((a, b) => (parseInt(a.get("drawingorder")) > parseInt(b.get("drawingorder")) ? 1 : -1));
+        const sortedLayers = kvm.getLayersSortedByDrawingOrder();
+        // TODO CHECK !!
+        let index = sortedLayers.findIndex((layer, index, layers) => parseInt(layer.get("drawingorder")) > parseInt(layer.get("drawingorder")));
+
         if (index == -1) {
-            index = layers.length;
+            index = sortedLayers.length;
         }
         console.log("%s: Stelle.getLayerDrawingIndex return index: %s", layer.get("title"), index);
         return index;
     }
 
-    getLayerDrawingGlobalId(index) {
-        const layers = Object.entries(kvm.layers);
-        let globalId = layers.sort((a, b) => (parseInt(a[1].get("drawingorder")) > parseInt(b[1].get("drawingorder")) ? 1 : -1)).map(([k, v], i) => k)[index];
-        console.log("Stelle.getLayerDrawingGlobalId: %s", globalId);
-        return globalId;
+    getLayerDrawingGlobalId(index: number) {
+        // TODO Check !!!!
+        // ATTENTION
+        const layers = kvm.getLayersSortedByDrawingOrder();
+        // const layer = layers.sort((a, b) => (parseInt(a.get("drawingorder")) > parseInt(b.get("drawingorder")) ? 1 : -1)).map((k, v, i) => k)[index];
+        for (let i = 0; i < layers.length; i++) {
+            console.error(i + " " + layers[i].title + "\t" + layers[i].get("drawingorder"));
+        }
+        console.error("Stelle.getLayerDrawingGlobalId: %s", layers[index]);
+        return layers[index].getGlobalId();
     }
 
     downloadError(error: FileTransferError) {
@@ -401,7 +411,7 @@ export class Stelle {
      */
     requestLayers() {
         //console.log('Layer.requestLayers for stelle: %o', this);
-        var fileTransfer = new FileTransfer(),
+        const fileTransfer = new FileTransfer(),
             filename = cordova.file.dataDirectory + "layers_stelle_" + this.get("id") + ".json",
             //filename = 'temp_file.json',
             url = this.getLayerUrl();
@@ -415,13 +425,13 @@ export class Stelle {
             (fileEntry) => {
                 fileEntry.file(
                     (file) => {
-                        var reader = new FileReader();
+                        const reader = new FileReader();
 
                         reader.onloadend = (evt) => {
                             kvm.tick("Download der Layerdaten abgeschlossen.");
                             var items = [],
                                 validationResult = "";
-                            console.log("  requestLayers) Download Result: %o", <string>evt.target.result);
+                            console.error("  requestLayers) Download Result: %o", <string>evt.target.result);
                             const resultObj = <any>kvm.parseLayerResult(<string>evt.target.result);
 
                             if (resultObj.success) {
@@ -434,22 +444,23 @@ export class Stelle {
 
                                 document.getElementById("layer_list").innerHTML = "";
                                 if ("layerIds_" + kvm.activeStelle.get("id") in kvm.store) {
-                                    let layerIds = JSON.parse(kvm.store["layerIds_" + kvm.activeStelle.get("id")]);
+                                    const layerIds = JSON.parse(kvm.store["layerIds_" + kvm.activeStelle.get("id")]);
                                     kvm.tick("Lösche folgende Layer:");
                                     layerIds.map(function (id) {
                                         let globalId = kvm.activeStelle.get("id") + "_" + id;
-                                        if (kvm.layers[globalId]) {
-                                            kvm.tick(`&nbsp;&nbsp;-&nbsp;${kvm.layers[globalId].title}`);
+                                        if (kvm.getLayer(globalId)) {
+                                            kvm.tick(`&nbsp;&nbsp;-&nbsp;${kvm.getLayer(globalId).title}`);
                                         }
                                     });
-                                    layerIds.map(function (id) {
-                                        let globalId = kvm.activeStelle.get("id") + "_" + id;
-                                        if (kvm.layers[globalId]) {
-                                            if (kvm.layers[globalId].get("vector_tile_url") == "") {
-                                                kvm.layers[globalId].dropDataTable();
-                                                kvm.layers[globalId].dropDeltasTable();
+                                    layerIds.map(function (id: string) {
+                                        const globalId = kvm.activeStelle.get("id") + "_" + id;
+                                        const layer = kvm.getLayer(globalId);
+                                        if (layer) {
+                                            if (layer.get("vector_tile_url") == "") {
+                                                layer.dropDataTable();
+                                                layer.dropDeltasTable();
                                             }
-                                            kvm.layers[globalId].removeFromApp();
+                                            layer.removeFromApp();
                                         }
                                     });
                                 }

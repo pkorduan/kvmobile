@@ -162,9 +162,9 @@ export class DataViewField implements Field {
             }
         } // end of document
         else if (this.get("form_element_type") == "SubFormFK") {
-            let globalParentLayerId = this.attribute.getGlobalParentLayerId();
-            let parentLayer = kvm.layers[globalParentLayerId];
-            let vorschauOption = this.attribute.getVorschauOption();
+            const globalParentLayerId = this.attribute.getGlobalParentLayerId();
+            // let parentLayer = kvm.layers.get(globalParentLayerId);
+            const vorschauOption = this.attribute.getVorschauOption();
             this.element.html(`<div onclick="kvm.activateFeature('${globalParentLayerId}', '${val}')"><i class="fa fa-arrow-left" aria-hidden="true" style="margin-right: 10px"></i> ${vorschauOption}</div>`);
         } else if (this.get("form_element_type") == "SubFormEmbeddedPK") {
             let feature = this.attribute.layer.activeFeature;
