@@ -24,7 +24,7 @@ child-src * 'self' blob: http:
 /-->
 
 
-    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline'; style-src * 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src-elem *; worker-src * 'self' blob: file:; media-src *; img-src * data: content://com.android.providers.media.documents 'unsafe-inline' 'unsafe-eval';"/>
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline'; style-src * 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src-elem *; worker-src * 'self' blob: file:; media-src *; img-src * filesystem: cdvfile: data: content://com.android.providers.media.documents 'unsafe-inline' 'unsafe-eval';"/>
 
     <link rel="stylesheet" type="text/css" href="style.css"/>
     <style>
@@ -88,7 +88,7 @@ child-src * 'self' blob: http:
     <script src="js/teststyle.js"></script> -->
     <script type="module" src="app.js"></script>
   </head>
-  <body">
+  <body>
     <div id="sperr_div" class="modal">
       <i class="fa fa-spinner fa-pulse fa-2x"></i>
       <div id="sperr_div_content" class="sperr-div-content"></div>

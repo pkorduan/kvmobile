@@ -1,3 +1,5 @@
+import { AttributeSetting } from "./Attribute";
+import { Field } from "./Field";
 import { kvm } from "./app";
 
 /*
@@ -12,89 +14,93 @@ import { kvm } from "./app";
  *	</select>
  * </div>
  */
-export class SelectAutoFormField {
-  settings: any;
-  selector: string;
-  element: JQuery<HTMLElement>;
+export class SelectAutoFormField implements Field {
+    settings: AttributeSetting;
+    selector: string;
+    element: JQuery<HTMLElement>;
 
-  constructor(formId, settings) {
-    this.settings = settings;
-    this.selector = "#" + formId + " select[id=" + this.get("index") + "]";
-    this.element = $(`
+    constructor(formId: string, settings: AttributeSetting) {
+        this.settings = settings;
+        this.selector = "#" + formId + " select[id=" + this.settings.index + "]";
+        this.element = $(`
 			<input
 				id="${this.get("index")}"
 				name="${this.get("name")}"
 				${(this.get("privilege") == "0" ? ' disabled' : '')}
 			/>
+      <div
+        id="${this.get("index")}_autoSelect"
+      >
+        ${$.map(this.get("enums"), (option) => {
+          return `
+            <div
+              value="${option.value}"
+              class="${this.get("index")}_autoSelect"
+              style="display: none"
+            >${option.value}</div>
+          `;
+        }).join("")}
+      </div>
     `);
-  }
-
-  get(key) {
-    return this.settings[key];
-  }
-
-  setValue(val) {
-    //console.log('SelectFormField.setValue with value: ' + val);
-    if (kvm.coalesce(val, "") == "" && this.get("default")) {
-      val = this.get("default");
     }
-    this.element.val(val == "null" ? "" : val);
-  };
 
-  getValue(action = "") {
-    //console.log('SelectFormField.getValue');
-    var val = this.element.val();
-
-    if (typeof val === "undefined" || val == "") {
-      val = null;
+    get(key) {
+     return this.settings[key];
     }
-    return val;
-  };
 
-  filter_by_required (attribute, value) {
-    //console.log('filter_by_requiered attribute %s with %s="%s"', this.get("name"), attribute, value);
-    this.element.children().each(function (i, option) {
-      let o = $(option);
-      if (o.val() != "") {
-        //console.log("Vergleiche requires %s mit Wert %s", o.attr("requires"), value);
-        if (o.attr("requires") == value) {
-          o.show();
-        } else {
-          if (o.is(':selected')) {
-            o.prop('selected', false);
-          }
-          o.hide();
+    setValue(val) {
+        //console.log('SelectFormField.setValue with value: ' + val);
+        if (kvm.coalesce(val, "") == "" && this.settings.default) {
+            val = this.settings.default;
         }
-      }
-    });
-  };
+        this.element.val(val == "null" ? "" : val);
+    }
 
-  bindEvents() {
-    console.log('SelectAutoFormField.bindEvents');
-    $("#featureFormular input[id=" + this.get("index") + "]").on("change", function (evt) {
-      if (!$("#saveFeatureButton").hasClass("active-button")) {
-        $("#saveFeatureButton").toggleClass("active-button inactive-button");
-      }
-      let elm = evt.target;
-      if (elm.hasAttribute("required_by")) {
-        var required_by_idx = kvm.activeLayer.attribute_index[this.getAttribute("required_by")];
-        console.log("Select Feld %s hat abhängiges Auswahlfeld %s", (<HTMLInputElement>this).name, this.getAttribute("required_by"));
-        kvm.activeLayer.attributes[required_by_idx].formField.filter_by_required(elm.getAttribute("name"), $(elm).val());
-        // find attribute with the name in required_by
-        // apply the filter on the options, call filter_by_required
-      }
-    });
-    $("#featureFormular input[id=" + this.get("index") + "]").on("keyup", function (evt) {
-      let elm = $(evt.target);
-			let val: string = String(elm.val());
-			let selectField = $(`#featureFormular select[id="${elm.attr('id')}]`);
-			if ((val.length  > 2)) {
+    getValue(action = "") {
+        //console.log('SelectFormField.getValue');
+        const val = this.element.val();
+        if (typeof val === "undefined" || val == "") {
+            return null;
+        }
+        return val;
+    }
 
-				selectField.show();
-				console.log('Key up event on select auto field value: %s', elm.val());
-			}
-    });
-/**
+    bindEvents() {
+        console.log("SelectAutoFormField.bindEvents");
+		$("#featureFormular input[id=" + this.get("index") + "]").on('input', (evt) => {
+          console.log('KeyDown: evt: %o', evt);
+          console.log('target: %o', evt.target);
+          console.log('val: %o', $(evt.target).val());
+          const val = $(evt.target).val();
+          $(`.${this.get("index")}_autoSelect`).hide();
+          if (val != '') {
+            $(`div[value*='${val}']`).show();
+          }
+        });
+        $("#featureFormular input[id=" + this.get("index") + "]").on("change", function (evt) {
+          if (!$("#saveFeatureButton").hasClass("active-button")) {
+            $("#saveFeatureButton").toggleClass("active-button inactive-button");
+          }
+          let elm = evt.target;
+          if (elm.hasAttribute("required_by")) {
+            var required_by_idx = kvm.activeLayer.attribute_index[this.getAttribute("required_by")];
+            console.log("Select Feld %s hat abhängiges Auswahlfeld %s", (<HTMLInputElement>this).name, this.getAttribute("required_by"));
+            kvm.activeLayer.attributes[required_by_idx].formField.filter_by_required(elm.getAttribute("name"), $(elm).val());
+            // find attribute with the name in required_by
+            // apply the filter on the options, call filter_by_required
+          }
+        });
+        $("#featureFormular input[id=" + this.get("index") + "]").on("keyup", function (evt) {
+          let elm = $(evt.target);
+          let val: string = String(elm.val());
+          let selectField = $(`#featureFormular select[id="${elm.attr('id')}]`);
+          if ((val.length  > 2)) {
+    
+            selectField.show();
+            console.log('Key up event on select auto field value: %s', elm.val());
+          }
+        });
+        /**
  * Beispiel unter https://stackoverflow.com/questions/1447728/how-to-dynamic-filter-options-of-select-with-jquery
  jQuery.fn.filterByText = function(textbox) {
   return this.each(function() {
@@ -139,6 +145,5 @@ $(function() {
 </select>
 <input type="text">
 */
-
-	};
+    }
 }
