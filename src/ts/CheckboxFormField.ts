@@ -1,27 +1,38 @@
-export class CheckboxFormField {
-    settings: any;
+import { AttributeSetting } from "./Attribute";
+import { Field } from "./Field";
+
+export class CheckboxFormField implements Field {
+    settings: AttributeSetting;
     selector: string;
     element: JQuery<HTMLElement>;
 
-    constructor(formId, settings) {
+    constructor(formId: string, settings: AttributeSetting) {
         this.settings = settings;
-        this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
-        this.element = $('\
+        this.selector = "#" + formId + " input[id=" + this.settings.index + "]";
+        this.element = $(
+            '\
         <input\
           type="checkbox"\
-          id="' + this.get("index") + '"\
-          name="' + this.get("name") + '"' + (this.get("privilege") == "0" ? " disabled" : "") + "\
-        />");
+          id="' +
+                this.settings.index +
+                '"\
+          name="' +
+                this.settings.name +
+                '"' +
+                (this.settings.privilege == "0" ? " disabled" : "") +
+                "\
+        />"
+        );
     }
 
-    get(key) {
-        return this.settings[key];
-    }
+    // get(key) {
+    //     return this.settings[key];
+    // }
 
     setValue(val) {
         //console.log('CheckboxFormField.setValue with value: ' + val);
-        if (!val && this.get("default")) {
-            val = this.get("default");
+        if (!val && this.settings.default) {
+            val = this.settings.default;
         }
 
         this.element.val(val);
@@ -38,7 +49,7 @@ export class CheckboxFormField {
 
     bindEvents() {
         //console.log('CheckboxFormField.bindEvents');
-        $("#featureFormular input[id=" + this.get("index") + "]").on("change", function () {
+        $("#featureFormular input[id=" + this.settings.index + "]").on("change", function () {
             if (!$("#saveFeatureButton").hasClass("active-button")) {
                 $("#saveFeatureButton").toggleClass("active-button inactive-button");
             }

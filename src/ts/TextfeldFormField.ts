@@ -1,3 +1,5 @@
+import { AttributeSetting } from "./Attribute";
+import { Field } from "./Field";
 import { kvm } from "./app";
 /*
  * create a textarea form field in the structure
@@ -10,48 +12,56 @@ import { kvm } from "./app";
  *     </div>
  *   </div>
  */
-export class TextfeldFormField {
-    settings: any;
+export class TextfeldFormField implements Field {
+    settings: AttributeSetting;
     selector: string;
     element: JQuery<HTMLElement>;
 
-    constructor(formId, settings) {
+    constructor(formId: string, settings: AttributeSetting) {
         this.settings = settings;
-        this.selector = "#" + formId + " textarea[id=" + this.get("index") + "]";
-        this.element = $('\
+        this.selector = "#" + formId + " textarea[id=" + this.settings.index + "]";
+        this.element = $(
+            '\
         <textarea\
-          id="' + this.get("index") + '"\
-          name="' + this.get("name") + '"\
-          rows="3"' + (this.get("privilege") == "0" ? " disabled" : "") + "\
+          id="' +
+                this.settings.index +
+                '"\
+          name="' +
+                this.settings.name +
+                '"\
+          rows="3"' +
+                (this.settings.privilege == "0" ? " disabled" : "") +
+                "\
         >\
-        </textarea>");
+        </textarea>"
+        );
     }
-    get(key) {
-        return this.settings[key];
-    }
+    // get(key) {
+    //     return this.settings[key];
+    // }
 
     setValue(val) {
-      //console.log('TextFormField.setValue with value: ' + val);
-      if (kvm.coalesce(val, "") == "" && this.get("default")) {
-          val = this.get("default");
-      }
+        //console.log('TextFormField.setValue with value: ' + val);
+        if (kvm.coalesce(val, "") == "" && this.settings.default) {
+            val = this.settings.default;
+        }
 
-      this.element.val(val == null || val == "null" ? "" : val);
+        this.element.val(val == null || val == "null" ? "" : val);
     }
 
     getValue(action = "") {
-      var val = this.element.val();
+        var val = this.element.val();
 
-      if (typeof val === "undefined" || val == "") {
-          val = null;
-      }
+        if (typeof val === "undefined" || val == "") {
+            val = null;
+        }
 
-      return val;
+        return val;
     }
 
     bindEvents() {
         //console.log('TextfeldFormField.bindEvents');
-        $("#featureFormular textarea[id=" + this.get("index") + "]").on("keyup", function () {
+        $("#featureFormular textarea[id=" + this.settings.index + "]").on("keyup", function () {
             if (!$("#saveFeatureButton").hasClass("active-button")) {
                 $("#saveFeatureButton").toggleClass("active-button inactive-button");
             }

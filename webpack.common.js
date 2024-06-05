@@ -27,8 +27,8 @@ module.exports = {
   mode: 'development',
 
   entry: {
-    app:path.resolve('./src/ts/app.ts'),
-    style:path.resolve('./src/css/app.scss')
+    app: path.resolve('./src/ts/app.ts'),
+    style: path.resolve('./src/css/app.scss')
   },
 
   output: {
@@ -48,7 +48,7 @@ module.exports = {
         { from: "src/openmaptiles-fonts", to: "openmaptiles-fonts" }
       ]
     }),
-    new MiniCssExtractPlugin({ 
+    new MiniCssExtractPlugin({
       filename: "[name].css",
       chunkFilename: "[id].css"
     })
@@ -80,14 +80,22 @@ module.exports = {
           sourceMap: true
         }
       }]
-    }, {
-      test: /\.(png|jpg|gif|svg|eot|ttf|woff|woff2)$/,
-      // loader: 'url-loader',
-      loader: 'file-loader',
-      options: {
-          name: 'images/[name].[ext]'
-      }
-    }]
+    },
+    {
+      test: /\.(woff(2)?|ttf|eot)$/,
+      type: 'asset/resource',
+      generator: {
+        filename: './fonts/[name][ext]',
+      },
+    },
+    {
+      test: /\.(png|jpg|gif|svg)$/,
+      type: 'asset/resource',
+      generator: {
+        filename: './image/[name][ext]',
+      },
+    }
+    ]
   },
 
   resolve: {
@@ -101,16 +109,16 @@ module.exports = {
     minimizer: [
       new TerserPlugin({
         terserOptions: {
-            // keep_classnames: true,
-            // keep_fnames: true,
-            compress: {
-              // drop_console: true
-              pure_funcs: [ 'console.info', 'console.debug' ]
-            }
+          // keep_classnames: true,
+          // keep_fnames: true,
+          compress: {
+            // drop_console: true
+            pure_funcs: ['console.info', 'console.debug']
+          }
         }
       }),
       new CssMinimizerPlugin(),
     ],
 
- }
+  }
 }

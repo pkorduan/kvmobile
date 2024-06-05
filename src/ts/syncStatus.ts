@@ -10,7 +10,7 @@ export const SyncStatus = {
     },
 
     get: function () {
-        var syncLastLocalTimestamp = this.store.getItem("syncLastLocalTimestamp"),
+        const syncLastLocalTimestamp = this.store.getItem("syncLastLocalTimestamp"),
             syncLastLocalVersion = this.store.getItem("syncVersion");
 
         return {
