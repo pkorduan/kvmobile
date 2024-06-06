@@ -2,6 +2,7 @@ import { kvm } from "../app";
 import * as wkx from "wkx";
 import * as L from "leaflet";
 import { Buffer } from "buffer";
+import { Feature } from "../Feature";
 
 // kvm.views.mapper = {};
 /*
@@ -53,17 +54,17 @@ export const Mapper = {
         MULTIPOLYGON: 2, // L.GeoJSON.coordsToLatLngs(kvm.wkx.Geometry.parse('SRID=4326;MULTIPOLYGON(((10 20, 14 20, 14 24, 10 24, 10 20), (12 21, 13 21, 13 22, 12 22, 12 21)), ((30 40, 35 45, 56 67)))').toGeoJSON().coordinates, 2)
     },
 
-    createEditable: function (feature) {
+    createEditable: function (feature: Feature) {
         //ToDo auch implementieren für polyongs
-        console.log("Erzeuge Editierbare Geometrie für %s: %o", feature.options.geometry_type, feature);
+        console.log("Erzeuge Editierbare Geometrie für %s: %o", feature.layer.settings.geometry_type, feature);
         var editableLayer;
 
         // Erzeugt eine editierbare Geometrie der Featuregeometrie
-        if (feature.options.geometry_type == "Point") {
+        if (feature.layer.settings.geometry_type == "Point") {
             editableLayer = L.marker(feature.wkxToLatLngs(), {
                 icon: this.getDraggableIcon(),
             }).addTo(kvm.map);
-        } else if (feature.options.geometry_type == "Line") {
+        } else if (feature.layer.settings.geometry_type == "Line") {
             editableLayer = L.polyline(feature.wkxToLatLngs(), {
                 stroke: true,
                 fill: false,
@@ -72,7 +73,7 @@ export const Mapper = {
                 opacity: 0.7,
             }).addTo(kvm.map);
             $("#trackControl").parent().show();
-        } else if (feature.options.geometry_type == "Polygon") {
+        } else if (feature.layer.settings.geometry_type == "Polygon") {
             editableLayer = L.polygon(feature.wkxToLatLngs(), {
                 stroke: true,
                 color: "#ff3333",
@@ -86,13 +87,13 @@ export const Mapper = {
         return editableLayer;
     },
 
-    bindEventHandler: function (feature) {
+    bindEventHandler: function (feature: Feature) {
         console.log("bindEventHandler für feature: %o", feature);
         //ToDo auch implementieren für polyongs
 
         //    draggableId = draggable._leaflet_id;
         // kein Popup am Draggable, ist nicht notwendig wegen der Button im Menü   kvm.map._layers[draggable._leaflet_id].bindPopup(this.getDraggablePopup(feature, draggable));
-        if (feature.options.geometry_type == "Point") {
+        if (feature.layer.settings.geometry_type == "Point") {
             // TODO 3x (<any>kvm.map)
             (<any>kvm.map)._layers[feature.editableLayer._leaflet_id].on("dragend", function (evt) {
                 console.log("draged");
@@ -101,14 +102,14 @@ export const Mapper = {
                 // console.log("trigger geomChanged mit latlng: %o", latlng);
                 $(document).trigger("geomChanged", [{ geom: feature.aLatLngsToWkx([latlng]), exclude: "latlngs" }]);
             });
-        } else if (feature.options.geometry_type == "Line") {
+        } else if (feature.layer.settings.geometry_type == "Line") {
             (<any>kvm.map)._layers[feature.editableLayer._leaflet_id].on("isChanged", function (evt) {
                 console.log("isChanged");
                 var latlngs = feature.editableLayer.getLatLngs();
                 // console.log("trigger geomChange mit latlngs: %o", latlngs);
                 $(document).trigger("geomChanged", [{ geom: feature.aLatLngsToWkx(latlngs), exclude: "latlngs" }]);
             });
-        } else if (feature.options.geometry_type == "Polygon") {
+        } else if (feature.layer.settings.geometry_type == "Polygon") {
             // console.log("Handler to act on Geometry is changed.");
             (<any>kvm.map)._layers[feature.editableLayer._leaflet_id]
                 .on("editable:dragend", function (evt) {
@@ -124,8 +125,8 @@ export const Mapper = {
         }
     },
 
-    removeEditable: function (feature) {
-        if (feature.options.geometry_type == "Line") {
+    removeEditable: function (feature: Feature) {
+        if (feature.layer.settings.geometry_type == "Line") {
             $("#trackControl").parent().hide();
         }
         kvm.map.removeLayer(feature.editableLayer);
@@ -133,47 +134,43 @@ export const Mapper = {
 
     watchGpsAccuracy: function () {
         kvm.log("mapper controller: watchGpsAccuracy");
-        this.watchId = navigator.geolocation.watchPosition(
-            function (geoLocation) {
-                //        kvm.log('Set new geo location accuracy', 4);
-                this.accuracy = geoLocation.coords.accuracy;
+        this.watchId = navigator.geolocation.watchPosition((geoLocation) => {
+            //        kvm.log('Set new geo location accuracy', 4);
+            this.accuracy = geoLocation.coords.accuracy;
 
-                switch (true) {
-                    case this.accuracy > 50:
-                        this.signalLevel = 1;
-                        break;
-                    case this.accuracy > 25:
-                        this.signalLevel = 2;
-                        break;
-                    case this.accuracy > 15:
-                        this.signalLevel = 3;
-                        break;
-                    case this.accuracy > 11:
-                        this.signalLevel = 4;
-                        break;
-                    default:
-                        this.signalLevel = 5;
-                }
+            switch (true) {
+                case this.accuracy > 50:
+                    this.signalLevel = 1;
+                    break;
+                case this.accuracy > 25:
+                    this.signalLevel = 2;
+                    break;
+                case this.accuracy > 15:
+                    this.signalLevel = 3;
+                    break;
+                case this.accuracy > 11:
+                    this.signalLevel = 4;
+                    break;
+                default:
+                    this.signalLevel = 5;
+            }
 
-                $("#gps-signal-icon").attr("class", "gps-signal-level-" + this.signalLevel);
-            }.bind(this)
-        );
+            $("#gps-signal-icon").attr("class", "gps-signal-level-" + this.signalLevel);
+        });
     },
 
     startGpsTracking: function (startLatlng) {
         this.lastLatlng = startLatlng;
-        this.watchId = navigator.geolocation.watchPosition(
-            function (location) {
-                var latlng = L.latLng(location.coords.latitude, location.coords.longitude);
-                //console.log("gps Location: %s", latlng.toString());
-                if (this.lastLatlng.distanceTo(latlng) > (kvm.config.minTrackDistance ? kvm.config.minTrackDistance : 5)) {
-                    //console.log("Add Point to Line at Location: %s", latlng.toString());
-                    kvm.map.flyTo(latlng);
-                    kvm.activeLayer.activeFeature.editableLayer.setLatLng(latlng);
-                    this.lastLatlng = latlng;
-                }
-            }.bind(this)
-        );
+        this.watchId = navigator.geolocation.watchPosition((location) => {
+            const latlng = L.latLng(location.coords.latitude, location.coords.longitude);
+            //console.log("gps Location: %s", latlng.toString());
+            if (this.lastLatlng.distanceTo(latlng) > (kvm.config.minTrackDistance ? kvm.config.minTrackDistance : 5)) {
+                //console.log("Add Point to Line at Location: %s", latlng.toString());
+                kvm.map.flyTo(latlng);
+                kvm.activeLayer.activeFeature.editableLayer.setLatLng(latlng);
+                this.lastLatlng = latlng;
+            }
+        });
     },
 
     startUpdateMarkerWithGps: function () {

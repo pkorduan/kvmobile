@@ -25,11 +25,11 @@ import { GpsStatus } from "./gpsStatus";
 import { SyncStatus } from "./syncStatus";
 import { Stelle } from "./Stelle";
 import { BackgroundLayerSetting, Layer, LayerSetting } from "./Layer";
-import { BackgroundLayer } from "./BackgroundLayer";
+import { BackgroundLayer, prepareBackgrounLayer } from "./BackgroundLayer";
 import { Feature } from "./Feature";
 import { Klasse } from "./Klasse";
 // import { Overlay } from "./Overlay";
-import { maplibreStyleObj } from "./mapLibreStyles";
+// import { maplibreStyleObj } from "./mapLibreStyles";
 import { NetworkStatus } from "./networkStatus";
 import { FileUtils } from "./controller/files";
 import { Mapper } from "./controller/mapper";
@@ -250,6 +250,7 @@ class Kvm {
         // console.info('start customProtocolHandler with params: ', params);
         const urlPattern = /.*\d+\/\d+\/\d+\..*/;
         // check if url is a tile url if not assume it is a tile description url
+        console.error("customProtocolHandler", params.url);
         if (params.url.match(urlPattern)) {
             // matched tile url
             const key = kvm.getTileKey(params.url);
@@ -343,7 +344,8 @@ class Kvm {
         this.controller.files.writeFile(kvm.logFileEntry, dataObj, true);
     }
 
-    onDeviceReady() {
+    async onDeviceReady() {
+        await prepareBackgrounLayer();
         kvm.store = window.localStorage;
         console.log("onDeviceReady");
         const foundConfiguration = configurations.filter(function (c) {
@@ -601,7 +603,7 @@ class Kvm {
                     id: "configName",
                     name: "configName",
                 })
-                .on('change', (evt) => {
+                .on("change", (evt) => {
                     navigator.notification.confirm(
                         "Wollen Sie wirklich die Konfiguration ändern? Dabei gehen alle lokalen Änderungen verloren, die Layer und Einstellungen werden gelöscht und die Anwendung wird mit den Default-Werten der anderen Konfiguration neu gestartet!",
                         function (buttonIndex) {
