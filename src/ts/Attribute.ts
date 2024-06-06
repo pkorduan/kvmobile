@@ -47,11 +47,10 @@ export type AttributeSetting = {
 export class Attribute {
     settings: AttributeSetting;
     layer: any;
-    formField: any;
+    formField: Field;
     viewField: DataViewField;
 
     constructor(layer: Layer, settings = {}) {
-        console.error("newAttribute!!!!!!!!!!");
         //console.log('Erzeuge Attributeobjekt with settings %o', settings);
         this.layer = layer;
         this.settings = settings;
@@ -423,11 +422,12 @@ export class Attribute {
             case slType == "INTEGER":
                 slValue = pgValue;
                 break;
-            case pgType == "timestamp":
+            case this.formField instanceof DateTimeFormField:
                 slValue = "'" + this.formField.toISO(pgValue) + "'";
                 break;
-            case pgType == "date":
+            case this.formField instanceof DateFormField:
                 slValue = "'" + this.formField.toISO(pgValue) + "'";
+                break;
             default:
                 slValue = "'" + pgValue + "'";
         }
@@ -436,7 +436,7 @@ export class Attribute {
     }
 
     withLabel() {
-        let labelDiv = $('<label for="' + this.formField.get("name") + '">').append(this.formField.get("alias") ? this.formField.get("alias") : this.formField.get("name"));
+        let labelDiv = $('<label for="' + this.formField.settings.name + '">').append(this.formField.settings.alias ? this.formField.settings.alias : this.formField.settings.name);
         let valueDiv = $('<div class="form-value">');
 
         if (this.get("form_element_type") == "Geometrie") {
@@ -469,16 +469,17 @@ export class Attribute {
                     this.get("index") +
                     '" class="fa fa-trash fa-2x" style="color: rgb(238, 50, 50); float: right; display: none;"/></i>\
           <div id="' +
-                    this.formField.images_div_id +
+                    (<any>this.formField).images_div_id +
                     '" class="images-div"></div>\
       '
             );
         }
 
-        if (this.formField.get("tooltip")) {
-            labelDiv.append('&nbsp;<i class="fa fa-exclamation-circle" style="color: #f57802" onclick="kvm.msg(\'' + this.formField.get("tooltip") + "');\"></i>");
+        if (this.formField.settings.tooltip) {
+            labelDiv.append('&nbsp;<i class="fa fa-exclamation-circle" style="color: #f57802" onclick="kvm.msg(\'' + this.formField.settings.tooltip + "');\"></i>");
         }
 
+        const formField = <any>this.formField;
         if (this.get("form_element_type") == "SubFormEmbeddedPK" && this.get("privilege") > "0") {
             return $(`<div id="formFieldDiv_${this.get("index")}" class="form-field-rows">`)
                 .append(
@@ -492,12 +493,12 @@ export class Attribute {
 						/>
 					`)
                 )
-                .append(valueDiv.append(this.formField.element));
+                .append(valueDiv.append(formField.element));
         } else {
             return $(`<div id="formFieldDiv_${this.get("index")}" class="form-field-rows" ${this.getArrangementStyle()}>`)
-                .append("linkElement" in this.formField ? this.formField.linkElement : "")
+                .append("linkElement" in formField ? formField.linkElement : "")
                 .append($('<div class="form-label">').append(labelDiv))
-                .append(valueDiv.append(this.formField.element));
+                .append(valueDiv.append(formField.element));
         }
     }
 

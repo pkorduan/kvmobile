@@ -14,6 +14,9 @@ Doku zu kvmobile: https://kvwmap.de/index.php/kvmobile
 Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.de/public/kvmobile/
 
 # Change log
+## 1.14.0
+  * Maintainance
+    * Update cordova and reengeneering for type script
 ## 1.13.2
   * Features
     * Shows images sync button on layer settings only if layer has document attribute.

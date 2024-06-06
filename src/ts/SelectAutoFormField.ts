@@ -24,18 +24,18 @@ export class SelectAutoFormField implements Field {
         this.selector = "#" + formId + " select[id=" + this.settings.index + "]";
         this.element = $(`
 			<input
-				id="${this.get("index")}"
-				name="${this.get("name")}"
-				${(this.get("privilege") == "0" ? ' disabled' : '')}
+				id="${this.settings.index}"
+				name="${this.settings.name}"
+				${(this.settings.privilege === "0" ? ' disabled' : '')}
 			/>
       <div
-        id="${this.get("index")}_autoSelect"
+        id="${this.settings.index}_autoSelect"
       >
-        ${$.map(this.get("enums"), (option) => {
+        ${$.map(this.settings.enums, (option: any) => {
           return `
             <div
               value="${option.value}"
-              class="${this.get("index")}_autoSelect"
+              class="${this.settings.index}_autoSelect"
               style="display: none"
             >${option.value}</div>
           `;
@@ -44,9 +44,9 @@ export class SelectAutoFormField implements Field {
     `);
     }
 
-    get(key) {
-     return this.settings[key];
-    }
+    // get(key) {
+    //  return this.settings[key];
+    // }
 
     setValue(val) {
         //console.log('SelectFormField.setValue with value: ' + val);
@@ -67,17 +67,17 @@ export class SelectAutoFormField implements Field {
 
     bindEvents() {
         console.log("SelectAutoFormField.bindEvents");
-		$("#featureFormular input[id=" + this.get("index") + "]").on('input', (evt) => {
+		$("#featureFormular input[id=" + this.settings.index + "]").on('input', (evt) => {
           console.log('KeyDown: evt: %o', evt);
           console.log('target: %o', evt.target);
           console.log('val: %o', $(evt.target).val());
           const val = $(evt.target).val();
-          $(`.${this.get("index")}_autoSelect`).hide();
+          $(`.${this.settings.index}_autoSelect`).hide();
           if (val != '') {
             $(`div[value*='${val}']`).show();
           }
         });
-        $("#featureFormular input[id=" + this.get("index") + "]").on("change", function (evt) {
+        $("#featureFormular input[id=" + this.settings.index + "]").on("change", function (evt) {
           if (!$("#saveFeatureButton").hasClass("active-button")) {
             $("#saveFeatureButton").toggleClass("active-button inactive-button");
           }
@@ -85,12 +85,12 @@ export class SelectAutoFormField implements Field {
           if (elm.hasAttribute("required_by")) {
             var required_by_idx = kvm.activeLayer.attribute_index[this.getAttribute("required_by")];
             console.log("Select Feld %s hat abhängiges Auswahlfeld %s", (<HTMLInputElement>this).name, this.getAttribute("required_by"));
-            kvm.activeLayer.attributes[required_by_idx].formField.filter_by_required(elm.getAttribute("name"), $(elm).val());
+            (<any>kvm.activeLayer.attributes[required_by_idx].formField).filter_by_required(elm.getAttribute("name"), $(elm).val());
             // find attribute with the name in required_by
             // apply the filter on the options, call filter_by_required
           }
         });
-        $("#featureFormular input[id=" + this.get("index") + "]").on("keyup", function (evt) {
+        $("#featureFormular input[id=" + this.settings.index + "]").on("keyup", function (evt) {
           let elm = $(evt.target);
           let val: string = String(elm.val());
           let selectField = $(`#featureFormular select[id="${elm.attr('id')}]`);

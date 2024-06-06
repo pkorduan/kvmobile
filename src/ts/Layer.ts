@@ -240,7 +240,7 @@ export class Layer {
      * @param vorschauElement
      * @param clickFunction
      */
-    readVorschauAttributesNotUsed(attribute: Attribute, featureId: string, vorschauElement: JQuery<HTMLElement>, clickFunction = "activateFeature") {
+    readVorschauAttributes(attribute: Attribute, featureId: string, vorschauElement: JQuery<HTMLElement>, clickFunction = "activateFeature") {
         const subLayerId = attribute.getGlobalSubLayerId();
         const fkAttribute: String = attribute.getFKAttribute();
         const vorschauOption: String = attribute.getVorschauOption();
@@ -416,13 +416,7 @@ export class Layer {
 
                         // TODO !!!!
                         this.addFeature(
-                            new Feature(item, {
-                                id_attribute: this.get("id_attribute"),
-                                geometry_type: this.get("geometry_type"),
-                                geometry_attribute: this.get("geometry_attribute"),
-                                globalLayerId: this.getGlobalId(),
-                                new: false,
-                            })
+                            new Feature(item, this, false)
                         );
                         //console.log('Feature ' + i + ': %o', this.features.get(item[this.get('id_attribute')]));
                     } catch (e) {
@@ -771,8 +765,7 @@ export class Layer {
             function (attr) {
                 const type = attr.get("type"),
                     // TODO BugXX
-                    // value = this.activeFeature.get(attr.get("name"));
-                    value = (<any>this).activeFeature.get(attr.get("name"));
+                    value = (<any>this).activeFeature.getDataValue(attr.get("name"));
 
                 const v = attr.toSqliteValue(type, value);
                 return v;
@@ -1657,13 +1650,12 @@ export class Layer {
             const attrName = attr.get("name");
             const val = feature.getDataValue(attrName) == "null" ? null : feature.getDataValue(attrName);
 
-            //console.log("Feature is new? %s", this.options.new);
             //console.log("Set %s %s: %s", attr.get("form_element_type"), key, val);
             //console.log('Set Value of feature: %s in formField: %s for key: %s with value: %s', JSON.stringify(this), attr.formField.constructor.name, key, val);
             attr.formField.setValue(val);
             if (kvm.coalesce(attr.get("required_by"), "") != "") {
                 const required_by_idx = kvm.activeLayer.attribute_index[attr.get("required_by")];
-                kvm.activeLayer.attributes[required_by_idx].formField.filter_by_required(attr.get("name"), val);
+                (<any>kvm.activeLayer.attributes[required_by_idx].formField).filter_by_required(attr.get("name"), val);
             }
             if (attr.hasVisibilityDependency()) {
                 kvm.activeLayer.vcheckAttributes(attr.get("name"), val);
@@ -1687,7 +1679,7 @@ export class Layer {
                 const attrName = attr.get("name");
                 const val = feature.getDataValue(attrName); // this is here the tplFeature
 
-                if (!["uuid", "version", feature.options.geometry_attribute].includes(attrName)) {
+                if (!["uuid", "version", this.settings.geometry_attribute].includes(attrName)) {
                     //console.log('Set %s %s: %s', attr.get('form_element_type'), key, val);
                     attr.formField.setValue(val);
                 }
@@ -1709,17 +1701,17 @@ export class Layer {
 
                 if (feature.newGeom) {
                     //console.log("Zeichne Feature: %o in Layer: ", feature, this.get("title"));
-                    if (feature.options.geometry_type == "Point") {
+                    if (this.settings.geometry_type == "Point") {
                         vectorLayer = new CircleMarker(feature.wkxToLatLngs(feature.newGeom), <any>{
                             featureId: feature.id,
                             globalLayerId: this.getGlobalId(),
                         });
-                    } else if (feature.options.geometry_type == "Line") {
+                    } else if (this.settings.geometry_type == "Line") {
                         vectorLayer = new Polyline(feature.wkxToLatLngs(feature.newGeom), <any>{
                             featureId: feature.id,
                             globalLayerId: this.getGlobalId(),
                         });
-                    } else if (feature.options.geometry_type == "Polygon") {
+                    } else if (this.settings.geometry_type == "Polygon") {
                         vectorLayer = new Polygon(feature.wkxToLatLngs(feature.newGeom), <any>{
                             featureId: feature.id,
                             globalLayerId: this.getGlobalId(),
@@ -1835,7 +1827,6 @@ export class Layer {
 
     getPopup(feature) {
         //console.log("getPopup with feature %o, isActive: %", feature, isActive);
-        const featureId = feature.get(this.get("id_attribute"));
         const html = `<div style="min-width: 150px">
         <b>${this.get("title")}</b><br>
         ${feature.getLabelValue()}<br>
@@ -1846,7 +1837,7 @@ export class Layer {
                 class="edit-feature"
                 href="#"
                 title="Geometrie ändern"
-                onclick="kvm.layers.get('${feature.globalLayerId}').editFeature('${featureId}')"
+                onclick="kvm.getLayer('${feature.globalLayerId}').editFeature('${feature.id}')"
               ><span class="fa-stack fa-lg">
                   <i class="fa fa-square fa-stack-2x"></i>
                   <i class="fa fa-pencil fa-stack-1x fa-inverse"></i>
@@ -1857,7 +1848,7 @@ export class Layer {
             class="popup-link"
             href="#"
             title="Sachdaten anzeigen"
-            onclick="kvm.layers.get('${feature.globalLayerId}').showDataView('${featureId}')"
+            onclick="kvm.getLayer('${feature.globalLayerId}').showDataView('${feature.id}')"
           ><span class="fa-stack fa-lg">
               <i class="fa fa-square fa-stack-2x"></i>
               <i class="fa fa-bars fa-stack-1x fa-inverse"></i>
@@ -2032,13 +2023,7 @@ export class Layer {
         console.log("Layer.newFeature");
 
         this.deactivateFeature();
-        const feature = new Feature(this.getNewData(), {
-            id_attribute: this.get("id_attribute"),
-            geometry_type: this.get("geometry_type"),
-            geometry_attribute: this.get("geometry_attribute"),
-            globalLayerId: this.getGlobalId(),
-            new: true,
-        });
+        const feature = new Feature(this.getNewData(), this, true);
         this.activateFeature(feature, true);
         kvm.log(`Neues Feature mit id: ${this.activeFeature.id} erzeugt.`);
     }
@@ -2180,7 +2165,7 @@ export class Layer {
             // console.log("Setzte Geometry für Feature %o", alatlng, 4);
             feature.setGeom(feature.aLatLngsToWkx(alatlng));
             feature.geom = feature.newGeom;
-            feature.setDataValue(feature.options.geometry_attribute, feature.wkxToEwkb(feature.geom));
+            feature.setDataValue(this.settings.geometry_attribute, feature.wkxToEwkb(feature.geom));
         }
         this.loadFeatureToForm(feature, { editable: true });
         kvm.map.closePopup();
@@ -2601,7 +2586,7 @@ export class Layer {
         //console.log("set data for activeFeature: %o", rs.rows.item(0));
         //console.log("with geom: %o", rs.rows.item(0).geom);
         layer.activeFeature.setData(rs.rows.item(0));
-        layer.activeFeature.options.new = false;
+        layer.activeFeature.new = false;
         layer.addActiveFeature();
         kvm.msg(this.succMsg, "Hinweis");
 
@@ -2753,7 +2738,7 @@ export class Layer {
             if (attr.isAutoAttribute(action) && !changesKeys.includes(attr.get("name"))) {
                 console.log("getAutoValue from attribute: %s formfield: %s", attr.get("name"), attr.formField.constructor.name);
                 try {
-                    const autoValue = attr.formField.getAutoValue();
+                    const autoValue = (<any>attr.formField).getAutoValue();
                     kvm.log("Ergänze Autowert: " + attr.get("name") + " = " + autoValue);
                     results.push({
                         key: attr.get("name"),
@@ -2988,7 +2973,7 @@ export class Layer {
         //console.log('attr gefiltert: %o', );
         const layer = this.context;
         const id_attribute = layer.get("id_attribute");
-        const id = layer.activeFeature.get(id_attribute);
+        const id = layer.activeFeature.id;
         const sql = `
 			UPDATE ${layer.getSqliteTableName()}
 			SET endet = NULL
@@ -3005,7 +2990,7 @@ export class Layer {
                 return {
                     key: key,
                     oldVal: null,
-                    newVal: layer.activeFeature.get(key),
+                    newVal: layer.activeFeature.getDataValue(key),
                     type: attr.getSqliteType(),
                 };
             }
@@ -3080,7 +3065,7 @@ export class Layer {
         // 				} else {
         // 					return change.newVal;
         // 				}
-        // 			}).join(", ")}, '${this.activeFeature.get(this.get("id_attribute"))}'
+        // 			}).join(", ")}, '${this.activeFeature.id}'
         // 		)
         // 	`
         // };

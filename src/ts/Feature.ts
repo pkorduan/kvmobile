@@ -31,7 +31,8 @@ import { Klasse } from "./Klasse";
  */
 export class Feature {
     data: { [id: string]: any } = {};
-    options: { [id: string]: any } = {};
+    // options: { [id: string]: any } = {};
+    layer: Layer;
     id: string;
     // Achtung reine Id von leaflet
     layerId: number;
@@ -46,20 +47,23 @@ export class Feature {
 
     constructor(
         data: any = {},
-        options: any = {
-            id_attribute: "uuid",
-            geometry_type: "Point",
-            geometry_attribute: "geom",
-            globalLayerId: 0,
-            new: true,
-        }
+        layer: Layer,
+        isNew?: boolean
     ) {
+        // this.options = {
+        //     id_attribute: layer.get('id_attribute') ?? "uuid",
+        //     geometry_type: layer.get('geometry_type') ?? "Point",
+        //     geometry_attribute: layer.settings.geometry_attribute ?? "geom",
+        //     globalLayerId: layer.getGlobalId() ?? 0,
+        //     new: isNew ?? true
+        // }
+
         //console.log('Create Feature with data: %o and options: %o', data, options);
         this.data = typeof data == "string" ? JSON.parse(data) : data;
-        this.options = options; // Optionen, die beim Erzeugen des Features mit übergeben wurden. Siehe Default-Argument in init-Klasse.
-        this.id = this.data[options.id_attribute];
+        this.layer = layer;
+        this.id = this.data[this.layer.settings.id_attribute];
         // this.layerId = null; // Leaflet Layer id des Layers (z.B. circleMarkers) in dem das Feature gezeichnet ist
-        this.globalLayerId = options.globalLayerId; // Id des Layers zu dem das Feature gehört
+        this.globalLayerId = this.layer.getGlobalId(); // Id des Layers zu dem das Feature gehört
         /*kvm
   console.log('Erzeuge eine editierbare Geometrie vom Feature');
   this.editableLayer = kvm.controller.mapper.createEditable(this); // In vorheriger Version wurde hier L.marker(kvm.map.getCenter()) verwendet. ToDo: muss das hier überhaupt gesetzt werden, wenn es denn dann doch beim setEditable erzeugt wird?
@@ -100,14 +104,14 @@ export class Feature {
         nonSaveableAttributes.forEach((attribute) => {
             let value = null;
             switch (true) {
-                case attribute.get("default").startsWith("gdi_conditional_val"):
+                case attribute.settings.default.startsWith("gdi_conditional_val"):
                     {
                         const parentLayer = kvm.getLayer(layer.parentLayerId);
                         const parentFeature = parentLayer.getFeature(layer.parentFeatureId);
                         // Frage den Spaltennamen ab, von dem der Defaultwert des parentLayers abgefragt werden soll.
                         //z.B: entwicklungsphase_id aus gdi_conditional_val('kob', 'baum', 'entwicklungsphase_id', 'uuid = ''$baum_uuid''')
                         const column = attribute
-                            .get("default")
+                            .settings.default
                             .split(",")[2]
                             .trim()
                             .replace(/^["'](.+(?=["']$))["']$/, "$1");
@@ -115,17 +119,17 @@ export class Feature {
                         // value = kvm.layers[this.parentLayerId].features.get(this.parentFeatureId).get(column)
                     }
                     break;
-                case attribute.get("default").includes("gdi_current_date"):
+                case attribute.settings.default.includes("gdi_current_date"):
                     {
                         const today = new Date();
                         value = `${today.getFullYear()}/${(today.getMonth() + 1).toString().padStart(2, "0")}/${today.getDate()}`;
                     }
                     break;
                 default: {
-                    value = attribute.get("default");
+                    value = attribute.settings.default;
                 }
             }
-            this.setDataValue(attribute.get("name"), value);
+            this.setDataValue(attribute.settings.name, value);
         });
     }
 
@@ -143,12 +147,12 @@ export class Feature {
     }
 
     getFeatureId() {
-        return this.getDataValue(this.options.id_attribute);
+        return this.getDataValue(this.layer.settings.id_attribute);
     }
 
     findParentFeature() {
         const layer = kvm.getLayer(this.globalLayerId);
-        const subFormFKAttribute = layer.attributes.find((attr) => attr.get("form_element_type") == "SubFormFK");
+        const subFormFKAttribute = layer.attributes.find((attr) => attr.settings.form_element_type === "SubFormFK");
         if (subFormFKAttribute === undefined) {
             return false;
         } else {
@@ -208,7 +212,7 @@ export class Feature {
             // console.log("vergleiche alte mit neuer coord");
             if (oldLatLngs != newLatLngs) {
                 // console.log("Ändere alte latlngs: %o auf neue: %o", oldLatLngs, newLatLngs);
-                if (this.options.geometry_type == "Point") {
+                if (this.layer.settings.geometry_type == "Point") {
                     this.editableLayer.setLatLng(newLatLngs);
                 } else {
                     this.editableLayer.setLatLngs(newLatLngs);
@@ -221,7 +225,7 @@ export class Feature {
 
     getLatLngs() {
         // console.log("Feature.getLatLngs()");
-        if (this.options.geometry_type == "Point") {
+        if (this.layer.settings.geometry_type == "Point") {
             return this.editableLayer.getLatLng();
         } else {
             return this.editableLayer.getLatLngs();
@@ -232,12 +236,12 @@ export class Feature {
      * Gibt von einem WKX Geometry Objekt ein Array mit latlng Werten aus wie es für Leaflet Objekte gebraucht wird.
      */
     wkxToLatLngs(geom = this.geom) {
-        if (this.options.geometry_type == "Point") {
+        if (this.layer.settings.geometry_type == "Point") {
             // ToDo hier ggf. den Geometrietyp auch aus this.geometry_type auslesen und nicht aus der übergebenen geom
             // Problem dann, dass man die Funktion nur benutzen kann für den Geometrietype des activen Layer
             const coordsLevelDeep = kvm.controller.mapper.coordsLevelsDeep[geom.toWkt().split("(")[0].toUpperCase()];
             return coordsLevelDeep == 0 ? GeoJSON.coordsToLatLng(geom.toGeoJSON().coordinates) : GeoJSON.coordsToLatLngs(geom.toGeoJSON().coordinates, coordsLevelDeep);
-        } else if (this.options.geometry_type == "Line") {
+        } else if (this.layer.settings.geometry_type == "Line") {
             if (geom.constructor.name === "LineString") {
                 return geom.points.map(function (p) {
                     return [p.y, p.x];
@@ -249,7 +253,7 @@ export class Feature {
                     });
                 });
             }
-        } else if (this.options.geometry_type == "Polygon") {
+        } else if (this.layer.settings.geometry_type == "Polygon") {
             if (geom.constructor.name === "Polygon") {
                 /* returns a latlngs array in the form
         [
@@ -319,7 +323,7 @@ export class Feature {
     aLatLngsToWkx(alatlngs) {
         let result: wkx.Geometry;
 
-        switch (this.options.geometry_type) {
+        switch (this.layer.settings.geometry_type) {
             case "Point":
                 {
                     result = wkx.Geometry.parse("SRID=4326;POINT(" + alatlngs[0].lng + " " + alatlngs[0].lat + ")");
@@ -440,9 +444,9 @@ export class Feature {
       FROM\
         haltestellen\
       WHERE\
-        uuid = '" + this.get(this.options.id_attribute) + "'\
+        uuid = '" + this.get(this.layer.settings.id_attribute) + "'\
     ";
-    console.log("Frage feature " + this.options.id_attribute + ": " + this.get(this.options.id_attribute) + " mit sql: " + sql + " ab.");
+    console.log("Frage feature " + this.layer.settings.id_attribute + ": " + this.get(this.layer.settings.id_attribute) + " mit sql: " + sql + " ab.");
     kvm.db.executeSql(
       sql,
       [],
@@ -454,20 +458,20 @@ export class Feature {
         kvmLayer.activeFeature.data = typeof data == "string" ? JSON.parse(data) : data;
 
         if (typeof kvmLayer.features.get(data.uuid) == "undefined") {
-          console.log("insert new feature name in feature list: " + kvmLayer.activeFeature.get("name"));
+          console.log("insert new feature name in feature list: " + kvmLayer.activeFeature.layer.settings.name);
           $("#featurelistTable tr:first").before(kvmLayer.activeFeature.listElement);
         } else {
-          console.log("replace old with new name in feature list: " + kvmLayer.activeFeature.get("name"));
+          console.log("replace old with new name in feature list: " + kvmLayer.activeFeature.layer.settings.name);
           console.log("this in update of features %o", this);
-          $("#" + kvmLayer.activeFeature.get(this.options.id_attribute)).html(kvmLayer.activeFeature.get("name"));
+          $("#" + kvmLayer.activeFeature.layer.settings[this.layer.settings.id_attribute]).html(kvmLayer.activeFeature.layer.settings.name);
         }
       },
       function (error) {
         kvm.msg(
           "Fehler bei der Abfrage des Features mit " +
-            this.options.id_attribute +
+            this.layer.settings.id_attribute +
             ": " +
-            this.get(this.options.id_attribute) +
+            this.get(this.layer.settings.id_attribute) +
             " aus lokaler Datenbank: " +
             error.message
         );
@@ -479,7 +483,7 @@ export class Feature {
     zoomTo(zoom: boolean, startLatLng?: L.LatLngExpression) {
         if (this.layerId) {
             let layer = this.isEditable ? this.editableLayer : (<any>kvm.map)._layers[this.layerId];
-            if (this.options.geometry_type == "Point") {
+            if (this.layer.settings.geometry_type == "Point") {
                 if (zoom) {
                     kvm.map.setZoom(18);
                 }
@@ -529,7 +533,7 @@ export class Feature {
             let mapLayer = (<any>kvm.map)._layers[this.layerId];
             if (this.newGeom) {
                 //console.log("Feature has newGeom");
-                console.log("Markiere Feature %s in Layer %s", this.id, kvmLayer.get("title"));
+                console.log("Markiere Feature %s in Layer %s", this.id, kvmLayer.title);
                 mapLayer.setStyle(kvmLayer.getSelectedStyle(this.getStyle()));
                 mapLayer.bindPopup(kvmLayer.getPopup(this)).openPopup();
                 if (zoom) {
@@ -563,7 +567,7 @@ export class Feature {
             // console.log(
             // 	"Deselektiere Feature id: %s in Layer: %s, globalLayerId: %s in Leaflet layerId: %s",
             // 	this.id,
-            // 	kvmLayer.get("title"),
+            // 	kvmLayer.title,
             // 	this.globalLayerId,
             // 	this.layerId
             // );
@@ -580,7 +584,7 @@ export class Feature {
     }
 
     listElement() {
-        //console.log('Erzeuge Listenelement für Feature', this.get(this.options.id_attribute));
+        //console.log('Erzeuge Listenelement für Feature', this.get(this.layer.settings.id_attribute));
         const markerStyles = JSON.parse(kvm.store.getItem("markerStyles")),
             numStyles = Object.keys(markerStyles).length,
             markerStyleIndex = this.getDataValue("status") && this.getDataValue("status") >= 0 && this.getDataValue("status") < numStyles ? this.getDataValue("status") : 0;
@@ -601,7 +605,7 @@ export class Feature {
     getLabelValue() {
         const kvmLayer = kvm.getLayer(this.globalLayerId);
         let label_value = "";
-        const label_attribute = kvmLayer.get("name_attribute");
+        const label_attribute = kvmLayer.settings.name_attribute;
         let formField;
         if (kvmLayer.hasEditPrivilege) {
             formField = kvmLayer.attributes[kvmLayer.attribute_index[label_attribute]].formField;
@@ -615,7 +619,7 @@ export class Feature {
             }
         }
         if (label_value == "" || label_value == "null") {
-            label_value = "Datensatz " + this.getDataValue(this.options.id_attribute);
+            label_value = "Datensatz " + this.getDataValue(this.layer.settings.id_attribute);
         }
         return label_value;
     }
@@ -666,11 +670,11 @@ export class Feature {
     }
 
     getNormalStyle() {
-        if (this.options.geometry_type == "Point") {
+        if (this.layer.settings.geometry_type == "Point") {
             return this.getNormalCircleMarkerStyle();
-        } else if (this.options.geometry_type == "Line") {
+        } else if (this.layer.settings.geometry_type == "Line") {
             return this.getNormalPolylineStyle();
-        } else if (this.options.geometry_type == "Polygon") {
+        } else if (this.layer.settings.geometry_type == "Polygon") {
             return this.getNormalPolygonStyle();
         }
     }
@@ -714,9 +718,9 @@ export class Feature {
 
     getEditModeStyle() {
         //console.log('getEditModeStyle');
-        if (this.options.geometry_type == "Point") {
+        if (this.layer.settings.geometry_type == "Point") {
             return this.getEditModeCircleMarkerStyle();
-        } else if (this.options.geometry_type == "Line") {
+        } else if (this.layer.settings.geometry_type == "Line") {
             return this.getEditModePolylineStyle();
         }
     }
@@ -747,10 +751,10 @@ export class Feature {
 
     setGeomFromData() {
         //console.log('setGeomFromData');
-        const geom_attribute = this.options.geometry_attribute;
-        if (geom_attribute in this.data && this.getDataValue(geom_attribute) !== "null") {
-            //console.log('Setze geom des neuen Features mit data: %o', this.data);
-            this.geom = this.wkbToWkx(this.getDataValue(geom_attribute));
+        const dataGeom = this.getDataValue(this.layer.settings.geometry_attribute);
+        if (dataGeom && dataGeom !== 'null') {
+          //console.log('Setze geom des neuen Features mit data: %o', this.data);
+          this.geom = this.wkbToWkx(dataGeom);
         }
         this.newGeom = this.geom; // Aktuelle WKX-Geometry beim Editieren. Entspricht this.geom wenn das Feature neu geladen wurde und Geometrie in Karte, durch GPS oder Formular noch nicht geändert wurde.
         //console.log('new feature newGeom: %o', this.newGeom);

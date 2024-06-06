@@ -113,7 +113,7 @@ export class SelectFormField implements Field {
             if (elm.hasAttribute("required_by")) {
                 const required_by_idx = kvm.activeLayer.attribute_index[this.getAttribute("required_by")];
                 console.log("Select Feld %s hat abhängiges Auswahlfeld %s", (<HTMLInputElement>this).name, this.getAttribute("required_by"));
-                kvm.activeLayer.attributes[required_by_idx].formField.filter_by_required(elm.getAttribute("name"), $(elm).val());
+                (<any>kvm.activeLayer.attributes[required_by_idx].formField).filter_by_required(elm.getAttribute("name"), $(elm).val());
                 // find attribute with the name in required_by
                 // apply the filter on the options, call filter_by_required
             }

@@ -47,7 +47,7 @@ export class ZahlFormField implements Field {
         const layer = kvm.getLayer(`${this.settings.stelleId}_${this.settings.layerId}`);
         let sql = "";
 
-        if (layer.activeFeature.options.new) {
+        if (layer.activeFeature.new) {
             if (this.settings.default) {
                 // console.log('TextFormField default: %s', this.get('default'));
                 if (this.settings.default.startsWith("nextval")) {

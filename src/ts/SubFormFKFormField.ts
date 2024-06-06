@@ -1,5 +1,5 @@
 import { kvm } from "./app";
-import { Attribute } from "./Attribute";
+import { Attribute, AttributeSetting } from "./Attribute";
 import { Field } from "./Field";
 
 /**
@@ -9,11 +9,11 @@ import { Field } from "./Field";
  * und das ist dann kein Autoattribute
  */
 export class SubFormFKFormField implements Field {
-    settings: any;
-    selector: string;
+    settings: AttributeSetting;
     element: JQuery<HTMLElement>;
     linkElement: JQuery<HTMLElement>;
     attribute: Attribute;
+    selector: string;
 
     /**
      * create a SubFormFK form field in the structure
@@ -34,6 +34,7 @@ export class SubFormFKFormField implements Field {
      */
     constructor(formId: string, attribute: Attribute) {
         this.attribute = attribute;
+        this.settings = attribute.settings;
         this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
         let globalParentLayerId = this.attribute.getGlobalParentLayerId();
         let vorschauOption = this.attribute.getVorschauOption();
@@ -71,7 +72,7 @@ export class SubFormFKFormField implements Field {
         }
 
         // ToDo: Das darf nur gemacht werden wenn der Layer Geometrie hat und der übergeordnete auch.
-        if (kvm.activeLayer.hasGeometry && kvm.activeLayer.activeFeature.options.new) {
+        if (kvm.activeLayer.hasGeometry && kvm.activeLayer.activeFeature.new) {
             // Abfragen des übergeordneten Layers
             const pkLayer = kvm.getLayer(`${this.get("stelleId")}_${this.get("options").split(",")[0]}`);
             if (pkLayer.hasGeometry) {
@@ -133,7 +134,7 @@ export class SubFormFKFormField implements Field {
     getAutoValue() {
         return this.element.val();
         // const attributeName = this.attribute.get('name');
-        // return this.attribute.layer.activeFeature.get(attributeName);
+        // return this.attribute.layer.activeFeature.getDataValue(attributeName);
     }
 
     /**

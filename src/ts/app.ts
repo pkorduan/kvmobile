@@ -67,7 +67,7 @@ export async function getWebviewUrl(filePath: string): Promise<string> {
             path,
             (fileEntry) => {
                 const fileEntryURL = fileEntry.toURL();
-                console.error("getFileUrl(" + filePath + ")=>" + fileEntryURL);
+                console.log("getFileUrl(" + filePath + ")=>" + fileEntryURL);
                 resolve(fileEntryURL);
             },
             (err) => {
@@ -601,14 +601,14 @@ class Kvm {
                     id: "configName",
                     name: "configName",
                 })
-                .change(function (evt) {
+                .on('change', (evt) => {
                     navigator.notification.confirm(
                         "Wollen Sie wirklich die Konfiguration ändern? Dabei gehen alle lokalen Änderungen verloren, die Layer und Einstellungen werden gelöscht und die Anwendung wird mit den Default-Werten der anderen Konfiguration neu gestartet!",
                         function (buttonIndex) {
                             if (buttonIndex == 2) {
                                 $("#configName").val(kvm.store.getItem("configName"));
                             } else {
-                                const newVal = $(this).val();
+                                const newVal = $(evt.target).val();
                                 kvm.setConfigOption(newVal);
                             }
                         },
@@ -1240,7 +1240,7 @@ class Kvm {
 
         $(".leaflet-control-layers-selector").on("change", (evt) => {
             console.log("leaflet-control-layers-selector change evt");
-            console.error("layer changed");
+            console.log("layer changed");
             let target = $(evt.target);
             if (target.is(":checked")) {
                 let bgdLayerId = $(target.next().children()[0]).attr("id").split("_")[1];
@@ -1487,7 +1487,7 @@ class Kvm {
             const activeFeature = activeLayer.activeFeature;
             const featureId = activeFeature.id;
 
-            const changes = activeLayer.collectChanges(activeFeature.options.new ? "insert" : "update");
+            const changes = activeLayer.collectChanges(activeFeature.new ? "insert" : "update");
             if (changes.length > 0) {
                 navigator.notification.confirm(
                     "Änderungen verwerfen?",
@@ -1582,7 +1582,7 @@ class Kvm {
                 return false;
             }
 
-            let action = kvm.activeLayer.activeFeature.options.new ? "insert" : "update";
+            let action = kvm.activeLayer.activeFeature.new ? "insert" : "update";
             if (kvm.config.confirmSave) {
                 navigator.notification.confirm(
                     "Datensatz Speichern?",
@@ -1591,7 +1591,7 @@ class Kvm {
                         const activeFeature = kvm.activeLayer.activeFeature;
                         const editableLayer = kvm.activeLayer.activeFeature.editableLayer;
                         if (buttonIndex != 2) {
-                            if (activeFeature.options.geometry_type == "Line") {
+                            if (activeFeature.layer.settings.geometry_type == "Line") {
                                 let speichern = true;
                                 if (activeFeature.layerId) {
                                     speichern = (<any>kvm.map)._layers[activeFeature.layerId].getLatLngs() != editableLayer.getLatLngs();
@@ -1934,8 +1934,8 @@ class Kvm {
         const activeFeature = activeLayer.activeFeature;
 
         if (activeLayer.hasGeometry) {
-            //console.log("Feature ist neu? %s", activeFeature.options.new);
-            if (activeFeature.options.new) {
+            //console.log("Feature ist neu? %s", activeFeature.new);
+            if (activeFeature.new) {
                 //console.log("Änderungen am neuen Feature verwerfen.");
                 activeLayer.cancelEditGeometry();
                 if (kvm.controller.mapper.isMapVisible()) {
@@ -1958,7 +1958,7 @@ class Kvm {
             }
         } else {
             // Wenn aktuelles Feature neu ist und zu einem übergeordneten Feature gehört dieses laden und darstellen.
-            if (activeFeature.options.new) {
+            if (activeFeature.new) {
                 let parentFeature = activeFeature.findParentFeature();
                 if (parentFeature) {
                     const parentLayer = kvm.getLayer(parentFeature.globalLayerId);
@@ -2043,7 +2043,7 @@ class Kvm {
         if (kvm.activeLayer && kvm.activeLayer.activeFeature) {
             layer.parentLayerId = kvm.activeLayer.getGlobalId();
             layer.parentFeatureId = kvm.activeLayer.activeFeature.id;
-            const changes = kvm.activeLayer.collectChanges(kvm.activeLayer.activeFeature.options.new ? "insert" : "update");
+            const changes = kvm.activeLayer.collectChanges(kvm.activeLayer.activeFeature.new ? "insert" : "update");
             if (changes.length > 0) {
                 navigator.notification.confirm(
                     "Es sind noch offene Änderungen. Diese müssen erst gespeichert werden.",
@@ -2249,7 +2249,7 @@ class Kvm {
             case "mapEdit":
                 $(".menu-button").hide();
                 $("#showFormEdit, #saveFeatureButton, #saveFeatureButton, #cancelFeatureButton").show();
-                if (kvm.activeLayer && kvm.activeLayer.hasDeletePrivilege && !kvm.activeLayer.activeFeature.options.new) {
+                if (kvm.activeLayer && kvm.activeLayer.hasDeletePrivilege && !kvm.activeLayer.activeFeature.new) {
                     $("#deleteFeatureButton").show();
                 }
                 $("#map").show();
@@ -2283,7 +2283,7 @@ class Kvm {
                 } else {
                     $("#showMapEdit").hide();
                 }
-                if (kvm.activeLayer && kvm.activeLayer.hasDeletePrivilege && !kvm.activeLayer.activeFeature.options.new) {
+                if (kvm.activeLayer && kvm.activeLayer.hasDeletePrivilege && !kvm.activeLayer.activeFeature.new) {
                     $("#deleteFeatureButton").show();
                 }
                 $("#formular").show().scrollTop(0);

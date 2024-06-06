@@ -168,7 +168,7 @@ export class DataViewField implements Field {
             this.element.html(`<div onclick="kvm.activateFeature('${globalParentLayerId}', '${val}')"><i class="fa fa-arrow-left" aria-hidden="true" style="margin-right: 10px"></i> ${vorschauOption}</div>`);
         } else if (this.get("form_element_type") == "SubFormEmbeddedPK") {
             let feature = this.attribute.layer.activeFeature;
-            this.attribute.layer.readVorschauAttributes(this.attribute, feature.get(this.attribute.getPKAttribute()), this.element, "activateFeature");
+            this.attribute.layer.readVorschauAttributes(this.attribute, feature.getDataValue(this.attribute.getPKAttribute()), this.element, "activateFeature");
         } else if (this.get("form_element_type") == "Auswahlfeld") {
             const options = this.get("enums");
             let output = "";
