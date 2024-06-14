@@ -27,8 +27,10 @@ export const FileUtils = {
       };
 
       fileWriter.onerror = function (e) {
-        let msg = `Fehler beim Schreiben in die Logdatei: ${JSON.stringify(e)}`;
-        console.error(msg);
+        let msg = `onerror aufgerufen in writeFiles in files.ty: ${JSON.stringify(
+          e
+        )}`;
+        console.log(msg);
       };
 
       // If we are appending data to file, go to the end of the file.

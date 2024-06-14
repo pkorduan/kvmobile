@@ -1293,7 +1293,8 @@ export class Layer {
 
   upload(fileEntry: FileEntry) {
     console.log(this.title + ": upload deltas file");
-    const fileURL = fileEntry.toURL();
+    // const fileURL = fileEntry.toURL();
+    const fileURL = fileEntry.nativeURL;
     console.log(`upload fileURL: ${fileURL}`);
     const successFct = (r: FileUploadResult) => {
       console.log(
