@@ -9,7 +9,9 @@ export const FileUtils = {
 
       reader.onloadend = function () {
         // console.log("Successful file read: " + this.result);
-        kvm.controller.files.displayFileData(fileEntry.nativeURL + ": " + this.result);
+        kvm.controller.files.displayFileData(
+          fileEntry.nativeURL + ": " + this.result
+        );
       };
 
       reader.readAsText(file);
@@ -25,7 +27,7 @@ export const FileUtils = {
       };
 
       fileWriter.onerror = function (e) {
-        let msg = `Fehler beim Schreiben in die Logdatei: ${e.toString()}`;
+        let msg = `Fehler beim Schreiben in die Logdatei: ${JSON.stringify(e)}`;
         console.error(msg);
       };
 
@@ -117,8 +119,14 @@ export const FileUtils = {
    *  "sicherung.db"
    * )
    */
-  copyFile: function (srcDir, srcFile, dstDir, dstFile, msg = '') {
-    console.log("Copy File: %s from Dir: %s to File: %s Dir: %s", srcFile, srcDir, dstFile, dstDir);
+  copyFile: function (srcDir, srcFile, dstDir, dstFile, msg = "") {
+    console.log(
+      "Copy File: %s from Dir: %s to File: %s Dir: %s",
+      srcFile,
+      srcDir,
+      dstFile,
+      dstDir
+    );
     var dstEntry;
     //resolve url for source
     window.resolveLocalFileSystemURL(dstDir, function (dstDirEntry) {
@@ -133,9 +141,9 @@ export const FileUtils = {
             dstFile,
             function (dstFileEntry) {
               // console.log("dstFileEntry: %o", dstFileEntry);
-							if (msg) {
-								kvm.msg(msg, 'Sicherung');
-							}
+              if (msg) {
+                kvm.msg(msg, "Sicherung");
+              }
             },
             function (error) {
               console.log("copying FAILED %o", error);
@@ -149,40 +157,39 @@ export const FileUtils = {
     });
   },
 
-	copyFiles(srcDir, dstDir) {
-		window.resolveLocalFileSystemURL(
-			srcDir,
-			function (fileSystem) {
-				let reader = (<any>fileSystem).createReader();
-				reader.readEntries(
-					function (entries) {
-						let msg = '';
-						console.log(`Anzahl Entries im Verzeichnis ${srcDir}: ${entries.length}`);
-						entries.forEach((entry) => {
-							let srcFile = entry.name;
-							let dstFile = srcFile;
-							//console.log(`Copy file: ${srcFile} nach: ${dstDir}`);
-							kvm.controller.files.copyFile(
-								srcDir,
-								srcFile,
-								dstDir,
-								dstFile
-							);
-						});
-						msg = `${entries.length} Datei${entries.length > 0 ? 'en': ''} nach ${dstDir} gesichert!`;
-						console.log(msg);
-						kvm.msg(msg, 'Sicherung');
-					},
-					function (err) {
-						console.log(err);
-					}
-				);
-			}, function (err) {
-				console.log(err);
-			}
-		);
-	}
-
+  copyFiles(srcDir, dstDir) {
+    window.resolveLocalFileSystemURL(
+      srcDir,
+      function (fileSystem) {
+        let reader = (<any>fileSystem).createReader();
+        reader.readEntries(
+          function (entries) {
+            let msg = "";
+            console.log(
+              `Anzahl Entries im Verzeichnis ${srcDir}: ${entries.length}`
+            );
+            entries.forEach((entry) => {
+              let srcFile = entry.name;
+              let dstFile = srcFile;
+              //console.log(`Copy file: ${srcFile} nach: ${dstDir}`);
+              kvm.controller.files.copyFile(srcDir, srcFile, dstDir, dstFile);
+            });
+            msg = `${entries.length} Datei${
+              entries.length > 0 ? "en" : ""
+            } nach ${dstDir} gesichert!`;
+            console.log(msg);
+            kvm.msg(msg, "Sicherung");
+          },
+          function (err) {
+            console.log(err);
+          }
+        );
+      },
+      function (err) {
+        console.log(err);
+      }
+    );
+  },
 };
 /*
 window.requestFileSystem(

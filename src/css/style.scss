@@ -31,7 +31,7 @@ label {
   background-color: #e8e8e8;
 }
 
-.h2-div+div {
+.h2-div + div {
   display: none;
 }
 
@@ -46,11 +46,11 @@ label {
   float: right;
 }
 
-#mapSettingsDiv>input {
+#mapSettingsDiv > input {
   width: 100px;
 }
 
-#mapSettingsDiv>select {
+#mapSettingsDiv > select {
   width: 60px;
 }
 
@@ -60,17 +60,17 @@ label {
 }
 
 .style-layer-setting-label {
-  float: left
+  float: left;
 }
 
 .style-layer-setting-input {
   /*position: absolute;*/
   /*left: 150px;*/
-  margin-left: 10px
+  margin-left: 10px;
 }
 
 .style-layer-setting-div {
-  height: 36px
+  height: 36px;
 }
 
 .use-custom-style-div {
@@ -78,13 +78,13 @@ label {
 }
 
 .layer-functions-button {
-	width: 14px;
-	/* height: 38px; */
-	margin-top: 3px;
-	float: right;
-	color: gray;
-	display: none;
-	margin-right: 8px;
+  width: 14px;
+  /* height: 38px; */
+  margin-top: 3px;
+  float: right;
+  color: gray;
+  display: none;
+  margin-right: 8px;
 }
 
 .layer-functions-div {
@@ -101,13 +101,13 @@ label {
 }
 
 .layer-list-div {
-	margin-left: 6px;
+  margin-left: 6px;
 }
 
 .layer-list-element {
-	margin-left: 6px;
-	margin-bottom: 2px;
-	font-size: 23px;
+  margin-left: 6px;
+  margin-bottom: 2px;
+  font-size: 23px;
 }
 
 .classes-div {
@@ -360,7 +360,7 @@ ul.subformlist {
 }
 
 .attribute-group {
-  margin: 0px
+  margin: 0px;
 }
 
 .attribute-group-header {
@@ -371,7 +371,7 @@ ul.subformlist {
 }
 
 .attribute-group-body {
-  margin: 0px
+  margin: 0px;
 }
 
 .filter-view-field {
@@ -464,19 +464,20 @@ ul.subformlist {
 }
 
 .data-view-value > div {
-	color: firebrick;
-	font-weight: bold;
+  color: firebrick;
+  font-weight: bold;
 }
 
 .data-view-value > ul > li {
-	color: firebrick;
-	font-weight: bold;
+  color: firebrick;
+  font-weight: bold;
 }
 
-.link-element, .subFormEmbeddedPKFormField-list {
-	color: firebrick;
-	font-weight: bold;
-	font-size: 24px;
+.link-element,
+.subFormEmbeddedPKFormField-list {
+  color: firebrick;
+  font-weight: bold;
+  font-size: 24px;
 }
 
 .feature-item {
@@ -587,41 +588,41 @@ ul.subformlist {
   border: 1px solid rgb(38, 50, 134);
 }
 
-.gps-signal-level-0>.bar-1,
-.gps-signal-level-0>.bar-2,
-.gps-signal-level-0>.bar-3,
-.gps-signal-level-0>.bar-4,
-.gps-signal-level-0>.bar-5 {
+.gps-signal-level-0 > .bar-1,
+.gps-signal-level-0 > .bar-2,
+.gps-signal-level-0 > .bar-3,
+.gps-signal-level-0 > .bar-4,
+.gps-signal-level-0 > .bar-5 {
   fill: rgb(236, 236, 236);
 }
 
-.gps-signal-level-1>.bar-1 {
+.gps-signal-level-1 > .bar-1 {
   fill: #263286;
 }
 
-.gps-signal-level-2>.bar-1,
-.gps-signal-level-2>.bar-2 {
+.gps-signal-level-2 > .bar-1,
+.gps-signal-level-2 > .bar-2 {
   fill: #263286;
 }
 
-.gps-signal-level-3>.bar-1,
-.gps-signal-level-3>.bar-2,
-.gps-signal-level-3>.bar-3 {
+.gps-signal-level-3 > .bar-1,
+.gps-signal-level-3 > .bar-2,
+.gps-signal-level-3 > .bar-3 {
   fill: #263286;
 }
 
-.gps-signal-level-4>.bar-1,
-.gps-signal-level-4>.bar-2,
-.gps-signal-level-4>.bar-3,
-.gps-signal-level-4>.bar-4 {
+.gps-signal-level-4 > .bar-1,
+.gps-signal-level-4 > .bar-2,
+.gps-signal-level-4 > .bar-3,
+.gps-signal-level-4 > .bar-4 {
   fill: #263286;
 }
 
-.gps-signal-level-5>.bar-1,
-.gps-signal-level-5>.bar-2,
-.gps-signal-level-5>.bar-3,
-.gps-signal-level-5>.bar-4,
-.gps-signal-level-5>.bar-5 {
+.gps-signal-level-5 > .bar-1,
+.gps-signal-level-5 > .bar-2,
+.gps-signal-level-5 > .bar-3,
+.gps-signal-level-5 > .bar-4,
+.gps-signal-level-5 > .bar-5 {
   fill: #263286;
 }
 
@@ -987,12 +988,12 @@ ul.subformlist {
 }
 
 .leaflet-control-zoomLevel {
-	background-color: #ffffff66;
-	padding: 0px 3px 0px 3px;
-	font-weight: bold;
-	font-size: 19px;
-	top: -119px;
-	left: 44px;
+  background-color: #ffffff66;
+  padding: 0px 3px 0px 3px;
+  font-weight: bold;
+  font-size: 19px;
+  top: -119px;
+  left: 44px;
 }
 
 .subFormEmbeddedPKFormField-list {
@@ -1008,55 +1009,80 @@ li.pointer:hover {
 }
 
 .highlighted {
-	font-size: 25px;
-	font-weight: bold;
-	color: #263286;
-	background-color: white;
-	padding: 6px;
+  font-size: 25px;
+  font-weight: bold;
+  color: #263286;
+  background-color: white;
+  padding: 6px;
 }
 
 #geolocation_div {
-	position: absolute;
-	z-index: 999;
-	bottom: 0;
-	font-size: 14px;
-	padding: 3px;
-	background-color: #ffffff80;
+  position: absolute;
+  z-index: 999;
+  bottom: 0;
+  font-size: 14px;
+  padding: 3px;
+  background-color: #ffffff80;
 }
 
 #map_hint_div {
-	display: none;
-	z-index: 1001;
-	position: absolute;
-	/* bottom: 50%; */
-	left: 53px;
-	/*background-color: #00ff0050;*/
-	background-color: white;
-	padding: 5px;
-	border-radius: 5px;
-	border: 2px solid #b1a8a1;
-	top: 61px;
-	margin-right: 52px;
+  display: none;
+  z-index: 1001;
+  position: absolute;
+  /* bottom: 50%; */
+  left: 53px;
+  /*background-color: #00ff0050;*/
+  background-color: white;
+  padding: 5px;
+  border-radius: 5px;
+  border: 2px solid #b1a8a1;
+  top: 61px;
+  margin-right: 52px;
 }
 
 .multiple-options-list {
-	padding-left: 25px;
-	color: #263286;
+  padding-left: 25px;
+  color: #263286;
 }
 
 .multiple-options-list {
-	padding-left: 19px;
-	list-style-type: disc;
+  padding-left: 19px;
+  list-style-type: disc;
 }
 
 .multiple-options-list > li {
-	color: #263286 !important;
-	font-size: 24px;
-	line-height: 24px;
-	font-weight: normal !important;
+  color: #263286 !important;
+  font-size: 24px;
+  line-height: 24px;
+  font-weight: normal !important;
 }
 
 .images-div {
-	display: flex;
+  display: flex;
   flex-wrap: wrap;
+}
+
+.auto-complete-div {
+  position: absolute;
+  max-height: 260px;
+  overflow: auto;
+  border: 1px solid gray;
+  /* border-left: 1px solid gray; */
+  border-radius: 7px 7px 7px 7px;
+  /* width: 86%; */
+  margin-top: 2px;
+  box-shadow: 7px 7px 7px lightgray;
+  /* border-right: 1px solid gray; */
+  /* border-bottom: 1px solid gray; */
+  background-color: white;
+  margin-top: 38px;
+}
+
+.auto-complete-option-div {
+  color: black;
+  /* background-color: #fffee4; */
+  /* border: 1px solid black; */
+  /* margin-top: 4px; */
+  border-radius: 4px;
+  padding: 4px;
 }

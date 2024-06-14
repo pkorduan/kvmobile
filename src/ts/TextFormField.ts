@@ -13,70 +13,72 @@ import { kvm } from "./app";
  *   </div>
  */
 export class TextFormField implements Field {
-    settings: AttributeSetting;
-    selector: string;
-    element: JQuery<HTMLElement>;
+  settings: AttributeSetting;
+  selector: string;
+  element: JQuery<HTMLElement>;
 
-    constructor(formId: string, settings: AttributeSetting) {
-        //console.log('Erzeuge TextformField with settings %o', settings);
-        this.settings = settings;
-        this.selector = "#" + formId + " input[id=" + this.settings.index + "]";
-        this.element = $(
-            '\
-            <input\
-            type="text"\
-            id="' +
-                this.settings.index +
-                '"\
-            name="' +
-                this.settings.name +
-                '"\
-            value=""' +
-                (this.settings.privilege == "0" ? " disabled" : "") +
-                "\
-            />"
-        );
+  constructor(formId: string, settings: AttributeSetting) {
+    //console.log('Erzeuge TextformField with settings %o', settings);
+    this.settings = settings;
+    this.selector = "#" + formId + " input[id=" + this.settings.index + "]";
+    this.element = $(`
+      <input
+        type="text"
+        id="${this.settings.index}"
+        name="{this.settings.name}"
+        value=""
+        ${this.settings.privilege == "0" ? " disabled" : ""}
+      />
+    `);
+  }
+
+  // get(key) {
+  //     return this.settings[key];
+  // }
+
+  setValue(val) {
+    //console.log("TextFormField " + this.settings.name + " setValue with value: %o", val);
+    if (kvm.coalesce(val, "") == "" && this.settings.default) {
+      val = this.settings.default;
+    }
+    this.element.val(val == null || val == "null" ? "" : val);
+  }
+
+  /*
+   * get the value from form field expect
+   * form_element_type UserID, here get the value from store
+   * when no action is given in options specified or
+   * action == option
+   */
+  getValue(action = "") {
+    //console.log('TextFormField.getValue');
+    let val = this.element.val();
+
+    if (typeof val === "undefined" || val == "") {
+      val = null;
     }
 
-    // get(key) {
-    //     return this.settings[key];
-    // }
-
-    setValue(val) {
-        //console.log("TextFormField " + this.get("name") + " setValue with value: %o", val);
-        if (kvm.coalesce(val, "") == "" && this.settings.default) {
-            val = this.settings.default;
-        }
-        this.element.val(val == null || val == "null" ? "" : val);
+    if (
+      this.settings.form_element_type == "UserID" &&
+      (action == "" ||
+        this.settings.options == "" ||
+        action.toLowerCase() == this.settings.options.toLowerCase())
+    ) {
+      val = kvm.store.getItem("userId");
     }
 
-    /*
-     * get the value from form field expect
-     * form_element_type UserID, here get the value from store
-     * when no action is given in options specified or
-     * action == option
-     */
-    getValue = function (action = "") {
-        //console.log('TextFormField.getValue');
-        var val = this.element.val();
+    return val;
+  }
 
-        if (typeof val === "undefined" || val == "") {
-            val = null;
+  bindEvents() {
+    //console.log('TextFormField.bindEvents');
+    $("#featureFormular input[id=" + this.settings.index + "]").on(
+      "keyup",
+      function () {
+        if (!$("#saveFeatureButton").hasClass("active-button")) {
+          $("#saveFeatureButton").toggleClass("active-button inactive-button");
         }
-
-        if (this.get("form_element_type") == "UserID" && (action == "" || this.get("options") == "" || action.toLowerCase() == this.get("options").toLowerCase())) {
-            val = kvm.store.getItem("userId");
-        }
-
-        return val;
-    };
-
-    bindEvents() {
-        //console.log('TextFormField.bindEvents');
-        $("#featureFormular input[id=" + this.settings.index + "]").on("keyup", function () {
-            if (!$("#saveFeatureButton").hasClass("active-button")) {
-                $("#saveFeatureButton").toggleClass("active-button inactive-button");
-            }
-        });
-    }
+      }
+    );
+  }
 }

@@ -2,37 +2,41 @@ import { Layer } from "./Layer";
 import { executeSQL } from "./Util";
 import { kvm } from "./app";
 
-export async function runInsert(layer: Layer, delta: { type: string; change: string; delta: string }) {
-    // const strategy = {
-    //     context: this,
-    //     succFunc: "backupDataset",
-    //     next: {
-    //         succFunc: "createDataset",
-    //         next: {
-    //             succFunc: "writeDelta",
-    //             next: {
-    //                 succFunc: "readDataset",
-    //                 next: {
-    //                     succFunc: "afterCreateDataset",
-    //                     succMsg: "Datensatz erfolgreich angelegt",
-    //                 },
-    //             },
-    //         },
-    //     },
-    // };
-    return new Promise<SQLitePlugin.Results>(async (resolve, reject) => {
-        try {
-            const rsBackupDS = await backupDataset(layer);
-            const sql = delta.delta + " AND endet IS NULL";
-            const rsUpdate = await executeSQL(kvm.db, sql);
-            await writeDelta(layer, delta);
-            const rsNew = readDataset(layer);
-            console.error("resolve....");
-            resolve(rsNew);
-        } catch (ex) {
-            reject(ex);
-        }
-    });
+export async function runInsert(
+  layer: Layer,
+  delta: { type: string; change: string; delta: string }
+) {
+  // const strategy = {
+  //     context: this,
+  //     succFunc: "backupDataset",
+  //     next: {
+  //         succFunc: "createDataset",
+  //         next: {
+  //             succFunc: "writeDelta",
+  //             next: {
+  //                 succFunc: "readDataset",
+  //                 next: {
+  //                     succFunc: "afterCreateDataset",
+  //                     succMsg: "Datensatz erfolgreich angelegt",
+  //                 },
+  //             },
+  //         },
+  //     },
+  // };
+  return new Promise<SQLitePlugin.Results>(async (resolve, reject) => {
+    try {
+      const rsBackupDS = await backupDataset(layer);
+      const sql = delta.delta;
+      console.log("SQL zum Anlegen eines neuen Datensatzes: ", sql);
+      const rsUpdate = await executeSQL(kvm.db, sql);
+      await writeDelta(layer, delta);
+      const rsNew = readDataset(layer);
+      // console.log("resolve....");
+      resolve(rsNew);
+    } catch (ex) {
+      reject(ex);
+    }
+  });
 }
 
 // export async function runDeleteStrategy(layer: Layer, delta: { type: string; change: string; delta: string }) {
@@ -77,39 +81,42 @@ export async function runInsert(layer: Layer, delta: { type: string; change: str
  * @param delta
  * @returns
  */
-export async function runUpdate(layer: Layer, delta: { type: string; change: string; delta: string }) {
-    console.error("LayerDBJobs.runUpdate", layer, delta);
-    // const strategy = {
-    //     context: this,
-    //     succFunc: "backupDataset",
-    //     next: {
-    //         succFunc: "updateDataset",
-    //         next: {
-    //             succFunc: "writeDelta",
-    //             next: {
-    //                 succFunc: "readDataset",
-    //                 next: {
-    //                     succFunc: "afterUpdateDataset",
-    //                     succMsg: "Datensatz erfolgreich aktualisiert",
-    //                 },
-    //             },
-    //         },
-    //     },
-    // };
+export async function runUpdate(
+  layer: Layer,
+  delta: { type: string; change: string; delta: string }
+) {
+  console.log("LayerDBJobs.runUpdate", layer, delta);
+  // const strategy = {
+  //     context: this,
+  //     succFunc: "backupDataset",
+  //     next: {
+  //         succFunc: "updateDataset",
+  //         next: {
+  //             succFunc: "writeDelta",
+  //             next: {
+  //                 succFunc: "readDataset",
+  //                 next: {
+  //                     succFunc: "afterUpdateDataset",
+  //                     succMsg: "Datensatz erfolgreich aktualisiert",
+  //                 },
+  //             },
+  //         },
+  //     },
+  // };
 
-    return new Promise<SQLitePlugin.Results>(async (resolve, reject) => {
-        try {
-            const rsBackupDS = await backupDataset(layer);
-            const sql = delta.delta + " AND endet IS NULL";
-            const rsUpdate = await executeSQL(kvm.db, sql);
-            await writeDelta(layer, delta);
-            const rsNew = readDataset(layer);
-            console.error("resolve....");
-            resolve(rsNew);
-        } catch (ex) {
-            reject(ex);
-        }
-    });
+  return new Promise<SQLitePlugin.Results>(async (resolve, reject) => {
+    try {
+      const rsBackupDS = await backupDataset(layer);
+      const sql = delta.delta + " AND endet IS NULL";
+      const rsUpdate = await executeSQL(kvm.db, sql);
+      await writeDelta(layer, delta);
+      const rsNew = readDataset(layer);
+      // console.log("resolve....");
+      resolve(rsNew);
+    } catch (ex) {
+      reject(ex);
+    }
+  });
 }
 
 /**
@@ -118,60 +125,60 @@ export async function runUpdate(layer: Layer, delta: { type: string; change: str
  * @param object strategy Object with context and information about following processes
  */
 async function backupDataset(layer: Layer) {
-    console.error("backupDataset");
-    const table = layer.getSqliteTableName();
-    const tableColumns = layer.getTableColumns();
-    const id_attribute = layer.get("id_attribute");
-    const id = layer.activeFeature.getDataValue(id_attribute);
-    const sql =
-        "\
+  // console.log("backupDataset");
+  const table = layer.getSqliteTableName();
+  const tableColumns = layer.getTableColumns();
+  const id_attribute = layer.get("id_attribute");
+  const id = layer.activeFeature.getDataValue(id_attribute);
+  const sql =
+    "\
       INSERT INTO " +
-        table +
-        "(" +
-        tableColumns.join(", ") +
-        ",\
+    table +
+    "(" +
+    tableColumns.join(", ") +
+    ",\
         endet\
       )\
       SELECT " +
-        tableColumns.join(", ") +
-        ", '" +
-        kvm.now() +
-        "'\
+    tableColumns.join(", ") +
+    ", '" +
+    kvm.now() +
+    "'\
       FROM " +
-        table +
-        "\
+    table +
+    "\
       WHERE\
         " +
-        id_attribute +
-        " = '" +
-        id +
-        "' AND\
+    id_attribute +
+    " = '" +
+    id +
+    "' AND\
         (\
           SELECT " +
-        id_attribute +
-        "\
+    id_attribute +
+    "\
           FROM " +
-        table +
-        "\
+    table +
+    "\
           WHERE\
             " +
-        id_attribute +
-        " = '" +
-        id +
-        "' AND\
+    id_attribute +
+    " = '" +
+    id +
+    "' AND\
             endet IS NOT NULL\
         ) IS NULL\
     ";
 
-    return executeSQL(kvm.db, sql);
-    // kvm.db.executeSql(sql, [], layer[this.next.succFunc].bind(this.next), function (err) {
-    //     console.error("Fehler", err);
-    //     kvm.msg("Fehler beim Ausführen von " + sql + " in backupDataset! Fehler: " + (<any>err).code + "\nMeldung: " + err.message, "Fehler");
-    // });
+  return executeSQL(kvm.db, sql);
+  // kvm.db.executeSql(sql, [], layer[this.next.succFunc].bind(this.next), function (err) {
+  //     console.log("Fehler", err);
+  //     kvm.msg("Fehler beim Ausführen von " + sql + " in backupDataset! Fehler: " + (<any>err).code + "\nMeldung: " + err.message, "Fehler");
+  // });
 }
 
 // function getDelta(layer: Layer) {
-//     console.error("updateDataset");
+//     console.log("updateDataset");
 
 //     let changes = layer.collectChanges("update");
 
@@ -205,12 +212,12 @@ async function backupDataset(layer: Layer) {
 // }
 
 // function updateDataset(delta: string) {
-//     // console.error("updateDataset rs: %o", rs);
+//     // console.log("updateDataset rs: %o", rs);
 //     try {
 //         const sql = delta + " AND endet IS NULL";
 //         return executeSQL(kvm.db, sql);
 //     } catch (ex) {
-//         console.error("Error in updateDataset", ex);
+//         console.log("Error in updateDataset", ex);
 //     }
 // }
 
@@ -219,13 +226,16 @@ async function backupDataset(layer: Layer) {
  * for delete delta if insert delta exists or
  * for insert delta if delte delta exists
  */
-async function writeDelta(layer: Layer, delta: { type: string; change: string; delta: string }) {
-    try {
-        console.error("writeDelta: ", delta);
-        // const layer = this.layer;
-        // const delta = this.delta;
-        // const changes = this.changes;
-        const sql = `
+async function writeDelta(
+  layer: Layer,
+  delta: { type: string; change: string; delta: string }
+) {
+  try {
+    // console.log("writeDelta: ", delta);
+    // const layer = this.layer;
+    // const delta = this.delta;
+    // const changes = this.changes;
+    const sql = `
   INSERT INTO ${layer.getSqliteTableName()}_deltas (
     type,
     change,
@@ -235,7 +245,13 @@ async function writeDelta(layer: Layer, delta: { type: string; change: string; d
   SELECT
     '${delta.type}' AS type,
     '${delta.change}' AS change,
-    '${layer.underlineToPointName(delta.delta, layer.get("schema_name"), layer.get("table_name")).replace(/\'/g, "''")}' AS delta,
+    '${layer
+      .underlineToPointName(
+        delta.delta,
+        layer.get("schema_name"),
+        layer.get("table_name")
+      )
+      .replace(/\'/g, "''")}' AS delta,
     '${kvm.now()}' AS created_at
   WHERE
     (
@@ -253,11 +269,11 @@ async function writeDelta(layer: Layer, delta: { type: string; change: string; d
     ) = 0
 `;
 
-        // console.log("Funktion nach schreiben des Deltas: %s", this.next.succFunc);
-        return executeSQL(kvm.db, sql);
-    } catch (ex) {
-        console.error("Error in writeDelta", ex);
-    }
+    // console.log("Funktion nach schreiben des Deltas: %s", this.next.succFunc);
+    return executeSQL(kvm.db, sql);
+  } catch (ex) {
+    console.error("Error in writeDelta", ex);
+  }
 }
 
 // async function createDataset(layer: Layer) {
@@ -289,10 +305,13 @@ async function writeDelta(layer: Layer, delta: { type: string; change: string; d
  * @param resultset rs Result set from former function is here not used
  */
 async function readDataset(layer: Layer) {
-    console.error("readDataset");
-    const id_attribute = layer.get("id_attribute");
-    const featureId = layer.activeFeature.getDataValue(id_attribute);
-    const sql = layer.extentSql(layer.settings.query, [`${id_attribute} = '${featureId}'`, `${layer.settings.table_alias}.endet IS NULL`]);
-    console.log("SQL zum lesen des Datensatzes: ", sql);
-    return executeSQL(kvm.db, sql);
+  // console.log("readDataset");
+  const id_attribute = layer.get("id_attribute");
+  const featureId = layer.activeFeature.getDataValue(id_attribute);
+  const sql = layer.extentSql(layer.settings.query, [
+    `${id_attribute} = '${featureId}'`,
+    `${layer.settings.table_alias}.endet IS NULL`,
+  ]);
+  console.log("SQL zum lesen des Datensatzes: ", sql);
+  return executeSQL(kvm.db, sql);
 }
