@@ -39,8 +39,6 @@ export class SelectFormField implements Field {
             : ""
         }
 			>
-
-
         ${this.isArrayType() ? "" : '<option value="">Bitte wählen</option>'}
 				${$.map(this.settings.enums, function (option: any) {
           //          option = option.replace(/(^')|('$)/g, '')

@@ -80,7 +80,7 @@ export async function getWebviewUrl(filePath: string): Promise<string> {
       path,
       (fileEntry) => {
         const fileEntryURL = fileEntry.toURL();
-        console.log("getFileUrl(" + filePath + ")=>" + fileEntryURL);
+        // console.log("getFileUrl(" + filePath + ")=>" + fileEntryURL);
         resolve(fileEntryURL);
       },
       (err) => {
@@ -138,7 +138,6 @@ class Kvm {
 
   constructor() {
     this.controller = { files: FileUtils, mapper: Mapper };
-    console.info("d001");
   }
 
   getLayer(layerId: string) {
@@ -389,7 +388,7 @@ class Kvm {
   async onDeviceReady() {
     await prepareBackgrounLayer();
     kvm.store = window.localStorage;
-    console.log("onDeviceReady");
+    // console.log("onDeviceReady");
     const foundConfiguration = configurations.filter(function (c) {
       return (
         c.name ==
@@ -469,7 +468,7 @@ class Kvm {
         }
       },
       function (error) {
-        kvm.msg("Open database ERROR: " + JSON.stringify(error), "Fehler");
+        kvm.msg("Open database ERROR: " + error["message"], "Fehler");
       }
     );
   }
@@ -1699,10 +1698,16 @@ class Kvm {
         "Geben Sie einen Namen für die Sicherungsdatei an. Die Datenbank wird im Internen Speicher im Verzeichnis " +
           (kvm.store.getItem("localBackupPath") || kvm.config.localBackupPath) +
           ' mit der Dateiendung .db gespeichert. Ohne Eingabe wird der Name "Sicherung_" + aktuellem Zeitstempel + ".db" vergeben.',
-        function (arg) {
-          kvm.backupDatabase(arg.input1);
+        function (results) {
+          if (results.buttonIndex === 1) {
+            kvm.backupDatabase(
+              results.input1,
+              "Datenbank erfolgreich gesichert."
+            );
+          }
         },
-        "Datenbanksicherung"
+        "Datenbanksicherung",
+        ["OK", "Abbrechen"]
       );
     });
 
@@ -2313,19 +2318,15 @@ class Kvm {
     kvm.activeLayer.activateFeature(feature, true);
   }
 
-  backupDatabase(filename = "") {
+  backupDatabase(filename = "", msg = "") {
+    console.log("Sichere Datenbank");
     let srcDir = cordova.file.applicationStorageDirectory + "databases/";
     let srcFile = "kvmobile.db";
     let dstDir =
       kvm.store.getItem("localBackupPath") || kvm.config.localBackupPath;
     let dstFile = filename || `Sicherung_${kvm.now("_", "", "-")}.db`;
-    kvm.controller.files.copyFile(
-      srcDir,
-      srcFile,
-      dstDir,
-      dstFile,
-      `Datenbank erfolgreich gesichert in: ${dstDir} ${dstFile}`
-    );
+    msg += msg !== "" ? ` Gespeichert in Datei: ${dstDir} ${dstFile}` : "";
+    kvm.controller.files.copyFile(srcDir, srcFile, dstDir, dstFile, msg);
   }
 
   deleteDatabase(db) {
@@ -3314,7 +3315,6 @@ class Kvm {
 
 export const kvm = new Kvm();
 window["kvm"] = kvm;
-console.info("d002", kvm);
 
 export function createHtmlElement<K extends keyof HTMLElementTagNameMap>(
   tag: K,

@@ -1,4 +1,4 @@
-import { AttributeSetting } from "./Attribute";
+import { Attribute, AttributeSetting } from "./Attribute";
 import { Field } from "./Field";
 import { kvm } from "./app";
 
@@ -27,7 +27,17 @@ export class SelectAutoFormField implements Field {
         id="${this.settings.index}"
         name="${this.settings.name}"
         type="hidden"
-      />
+        ${
+          kvm.coalesce(this.settings.required_by, "") != ""
+            ? 'required_by="' + this.settings.required_by + '"'
+            : ""
+        }
+				${
+          kvm.coalesce(this.settings.requires, "") != ""
+            ? 'requires="' + this.settings.requires + '"'
+            : ""
+        }
+        />
       <input
         id="${this.settings.index}_autoSelectOutput"
         name="${this.settings.name}"
@@ -62,11 +72,22 @@ export class SelectAutoFormField implements Field {
             <div
               data-output="${option.output}"
               class="auto-complete-option-div ${this.settings.index}_autoSelect"
+              ${
+                kvm.coalesce(option.requires_value, "") != ""
+                  ? 'requires="' + option.requires_value + '"'
+                  : ""
+              }
               style="display: none"
               onclick="
-                document.getElementById('${this.settings.index}').value = '${option.value}';
-                document.getElementById('${this.settings.index}_autoSelectOutput').value = '${option.output}';
-                document.getElementById('${this.settings.index}_autoSelect').style.display = 'none';
+                document.getElementById('${this.settings.index}').value = '${
+            option.value
+          }';
+                document.getElementById('${
+                  this.settings.index
+                }_autoSelectOutput').value = '${option.output}';
+                document.getElementById('${
+                  this.settings.index
+                }_autoSelect').style.display = 'none';
               "
             >${option.output}</div>
           `;
@@ -85,10 +106,12 @@ export class SelectAutoFormField implements Field {
       val = this.settings.default;
     }
     this.element.val(val == "null" ? "" : val);
-    const option = (<any>this.settings.enums).filter((e) => {
+    const matchingOptions = (<any>this.settings.enums).filter((e) => {
       return e.value == val;
-    })[0].output;
-    $(`#${this.settings.index}_autoSelectOutput`).val(option);
+    });
+    $(`#${this.settings.index}_autoSelectOutput`).val(
+      matchingOptions.length > 0 ? matchingOptions[0].output : ""
+    );
   }
 
   getValue(action = "") {
@@ -100,43 +123,64 @@ export class SelectAutoFormField implements Field {
     return val;
   }
 
+  filter_by_required(attribute: Attribute, value: any) {
+    //console.log('filter_by_requiered attribute %s with %s="%s"', this.get("name"), attribute, value);
+    // required SelectAutoFormField options werden im mit bindEvents gebundenen input event gefiltert
+    // ToDo:
+    // Wenn sich der Wert in einem übergeordneten Feld geändert hat, muss der Wert hier gelöscht werden
+    // wenn er nicht in der Liste mit dem entsprechenden value in required vorkommt.
+    const fieldIdx = this.settings.index;
+    $(`${fieldIdx}, #${fieldIdx}_autoSelectOutput`).val("");
+    $(`#${fieldIdx}_autoSelect`).hide();
+  }
+
   bindEvents() {
     console.log("SelectAutoFormField.bindEvents");
-    $(
-      "#featureFormular input[id=" + this.settings.index + "_autoSelectOutput]"
-    ).on("input", (evt) => {
-      const val = $(evt.target).val();
-      $(`.${this.settings.index}_autoSelect`).hide();
-      if (val != "") {
-        const matchingOptions = $(`div[data-output*="${val}"]`);
-        if (matchingOptions.length == 0) {
-          matchingOptions.hide();
-        } else {
-          $(`#${this.settings.index}_autoSelect`).show();
-          matchingOptions.show();
+    const fieldIdx = this.settings.index;
+    $(`#featureFormular input[id=${fieldIdx}_autoSelectOutput]`).on(
+      "input",
+      (evt) => {
+        const val = $(evt.target).val();
+        $(`.${fieldIdx}_autoSelect`).hide();
+        if (val != "") {
+          let selector = `div[data-output*="${val}"]`;
+          const element = this.element[0];
+          if (element.hasAttribute("requires")) {
+            const requiresIdx =
+              kvm.activeLayer.attribute_index[element.getAttribute("requires")];
+            const requiresAttr = <any>kvm.activeLayer.attributes[requiresIdx];
+            const requiresValue = requiresAttr.formField.getValue();
+            selector += `[requires="${requiresValue}"]`;
+          }
+          const matchingOptions = $(selector);
+          if (matchingOptions.length == 0) {
+            $(`#${fieldIdx}_autoSelect`).hide();
+          } else {
+            $(`#${fieldIdx}_autoSelect`).show();
+            matchingOptions.show();
+          }
         }
       }
-    });
+    );
+
     $("#featureFormular input[id=" + this.settings.index + "]").on(
       "change",
       function (evt) {
         if (!$("#saveFeatureButton").hasClass("active-button")) {
           $("#saveFeatureButton").toggleClass("active-button inactive-button");
         }
-        let elm = evt.target;
+        // let elm = evt.target;
         // if (elm.hasAttribute("required_by")) {
-        //   var required_by_idx =
+        //   const requiredByIdx =
         //     kvm.activeLayer.attribute_index[this.getAttribute("required_by")];
-        //   // console.log(
-        //   //   "Select Feld %s hat abhängiges Auswahlfeld %s",
-        //   //   (<HTMLInputElement>this).name,
-        //   //   this.getAttribute("required_by")
-        //   // );
-        //   (<any>(
-        //     kvm.activeLayer.attributes[required_by_idx].formField
+        //   const requiredByAttr = (<any>(
+        //     kvm.activeLayer.attributes[requiredByIdx].formField
         //   )).filter_by_required(elm.getAttribute("name"), $(elm).val());
-        //   // find attribute with the name in required_by
-        //   // apply the filter on the options, call filter_by_required
+        //   console.log(
+        //     "AutoSelectField %s hat abhängiges Feld %s",
+        //     (<HTMLInputElement>this).name,
+        //     this.getAttribute("required_by")
+        //   );
         // }
       }
     );

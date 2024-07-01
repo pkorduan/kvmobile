@@ -323,7 +323,7 @@ export class BilderFormField implements Field {
         }
 
         $("#featureFormular input[name=bilder_updated_at]")
-          .val(new Date().toISOString().replace("Z", ""))
+          .val(kvm.now("T", ""))
           .show();
       },
       (message) => {

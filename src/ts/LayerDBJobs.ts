@@ -6,6 +6,7 @@ export async function runInsert(
   layer: Layer,
   delta: { type: string; change: string; delta: string }
 ) {
+  console.log("LayerDBJobs.runInsert", layer, delta);
   // const strategy = {
   //     context: this,
   //     succFunc: "backupDataset",
@@ -39,26 +40,73 @@ export async function runInsert(
   });
 }
 
+export async function runDelete(
+  layer: Layer,
+  delta: { type: string; change: string; delta: string }
+) {
+  console.log("LayerDBJobs.runDelete", layer);
+  // const strategy = {
+  //   context: this,
+  //   succFunc: "backupDataset",
+  //   next: {
+  //     succFunc: "deleteDataset",
+  //     next: {
+  //       succFunc: "writeDelta",
+  //       next: {
+  //         succFunc: "deleteDeltas",
+  //         other: "insert",
+  //         next: {
+  //           succFunc: "afterDeleteDataset",
+  //           succMsg:
+  //             "Datensatz erfolgreich gelöscht! Er kann wieder hergestellt werden.",
+  //         },
+  //       },
+  //     },
+  //   },
+  // };
+  return new Promise<SQLitePlugin.Results>(async (resolve, reject) => {
+    try {
+      const rsBackupDS = await backupDataset(layer);
+
+      // ToDo pk: Delete all sub featues
+      // layer.attributes
+      //   .filter((allAttr) => {
+      //     return allAttr.get("form_element_type") === "SubFormEmbeddedPK";
+      //   })
+      //   .forEach((subFormAttr) => {
+      //     let subLayerId = subFormAttr.getGlobalSubLayerId();
+      //     let subLayerFK = subFormAttr.getFKAttribute();
+      //     let featureId = layer.activeFeature.id;
+      //     console.log(
+      //       `Delete features in subLayerId: ${subLayerId} with featureId: ${featureId} in foreign key attribute: ${subLayerFK}`
+      //     );
+      //     [...kvm.getLayer(subLayerId).getFeaturesByFK(subLayerFK, featureId)].forEach(([id, feature]) => {
+      //       delta = layer.getDeleteDelta(feature.id);
+      //       sql =  delta.delta + " AND endet IS NULL";
+      //       console.log("SQL zum Löschen des SubFeatures: ", sql);
+      //       let rsDelete = await executeSQL(kvm.db, sql);
+      //       await writeDelta(layer, delta);
+      //       const rsNew = deleteDeltas(layer);
+      //       // console.log("resolve....");
+      //       resolve(rsNew);
+      //     });
+      //   });
+
+      const sql = delta.delta + " AND endet IS NULL";
+      console.log("SQL zum Löschen eines Datensatzes: ", sql);
+      let rsDelete = await executeSQL(kvm.db, sql);
+      await writeDelta(layer, delta);
+      const rsNew = deleteDeltas(layer);
+      // console.log("resolve....");
+      resolve(rsNew);
+    } catch (ex) {
+      reject(ex);
+    }
+  });
+}
+
 // export async function runDeleteStrategy(layer: Layer, delta: { type: string; change: string; delta: string }) {
 //     //console.log('runDeleteStrategy');
-//     const strategy = {
-//         context: this,
-//         succFunc: "backupDataset",
-//         next: {
-//             succFunc: "deleteDataset",
-//             next: {
-//                 succFunc: "writeDelta",
-//                 next: {
-//                     succFunc: "deleteDeltas",
-//                     other: "insert",
-//                     next: {
-//                         succFunc: "afterDeleteDataset",
-//                         succMsg: "Datensatz erfolgreich gelöscht! Er kann wieder hergestellt werden.",
-//                     },
-//                 },
-//             },
-//         },
-//     };
 //     return new Promise<SQLitePlugin.Results>(async (resolve, reject) => {
 //         try {
 //             const rsBackupDS = await backupDataset(layer);
@@ -309,9 +357,22 @@ async function readDataset(layer: Layer) {
   const id_attribute = layer.get("id_attribute");
   const featureId = layer.activeFeature.getDataValue(id_attribute);
   const sql = layer.extentSql(layer.settings.query, [
-    `${id_attribute} = '${featureId}'`,
+    `${layer.settings.table_alias}.${id_attribute} = '${featureId}'`,
     `${layer.settings.table_alias}.endet IS NULL`,
   ]);
-  console.log("SQL zum lesen des Datensatzes: ", sql);
+  console.log("LayerDBJobs->readDataset: ", sql);
+  return executeSQL(kvm.db, sql);
+}
+
+async function deleteDeltas(layer: Layer) {
+  // console.log("deleteDeltas");
+  let sql = `
+    DELETE FROM ${layer.getSqliteTableName()}_deltas
+    WHERE
+      type = 'sql' AND
+      (change = 'update' OR change = 'insert') AND
+      INSTR(delta, '${layer.activeFeature.id}') > 0
+  `;
+  console.log("Lösche Deltas mit sql: %s", sql);
   return executeSQL(kvm.db, sql);
 }

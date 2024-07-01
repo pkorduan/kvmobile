@@ -63,7 +63,7 @@ export class DateTimeFormField implements Field {
 
   getAutoValue() {
     console.log("DateTimeFormField.getAutoValue");
-    return kvm.now();
+    return kvm.now("T", "");
   }
 
   bindEvents() {

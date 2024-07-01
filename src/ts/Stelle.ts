@@ -304,7 +304,7 @@ export class Stelle {
       layer.activate();
       this.tableNames = this.getTableNames();
       kvm.showActiveItem();
-      kvm.closeSperrDiv("Fertig.");
+      kvm.closeSperrDiv();
     }
     console.log(
       "activeLayer after finishLayerReading: ",
