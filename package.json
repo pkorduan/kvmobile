@@ -60,17 +60,19 @@
       "cordova-plugin-network-information": {},
       "cordova-plugin-file-transfer": {},
       "cordova-plugin-dialogs": {},
-      "cordova-sqlite-storage": {},
       "cordova-plugin-file-opener2": {},
       "cordova-plugin-inappbrowser": {},
       "cordova-plugin-app-version": {},
-      "cordova-plugin-android-fingerprint-auth": {}
+      "cordova-plugin-android-fingerprint-auth": {},
+      "cordova-spatialite-storage-for-android": {},
+      "cordova-sqlite-storage": {}
     }
   },
   "dependencies": {
     "@awesome-cordova-plugins/background-geolocation": "^6.7.0",
     "@maplibre/maplibre-gl-leaflet": "^0.0.20",
     "buffer": "^6.0.3",
+    "cordova-spatialite-storage-for-android": "^0.0.2",
     "idb": "^8.0.0",
     "jquery": "^3.7.1",
     "leaflet": "^1.9.4",

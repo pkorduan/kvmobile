@@ -60,6 +60,7 @@ require("leaflet-bing-layer");
 import type from "leaflet-easybutton";
 import { LatLng, LatLngExpression, LeafletMouseEvent, latLng } from "leaflet";
 import { LocationEvent } from "leaflet";
+import { executeSQL } from "./Util";
 require("proj4leaflet");
 
 require("@maplibre/maplibre-gl-leaflet");
@@ -2592,7 +2593,7 @@ class Kvm {
     );
   }
 
-  loadDeviceData() {
+  async loadDeviceData() {
     //kvm.log("loadDeviceData", 4);
     (<any>cordova).getAppVersion.getVersionNumber((versionNumber) => {
       $("#cordovaAppVersion").html(versionNumber);
@@ -2622,6 +2623,16 @@ class Kvm {
     $("#syncedDataDirectory").html(cordova.file.syncedDataDirectory);
     $("#documentsDirectory").html(cordova.file.documentsDirectory);
     $("#sharedDirectory").html(cordova.file.sharedDirectory);
+    $("#spatialLiteVersion").html(await this.getSpatialLiteVersion());
+  }
+
+  async getSpatialLiteVersion() {
+    try {
+      const rs = await executeSQL(this.db, "SELECT spatialite_version()");
+      return <string>rs.rows.item(0).version;
+    } catch (err) {
+      return "Kann nicht ermittelt werden. Fehler: " + err.message;
+    }
   }
 
   showActiveItem() {

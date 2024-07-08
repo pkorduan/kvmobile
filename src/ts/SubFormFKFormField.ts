@@ -87,17 +87,19 @@ export class SubFormFKFormField implements Field {
         // Abfragen der uuid des Features in das das aktive Feature fällt
         // aktuelle mit Within umgesetzt. Bei Polygonen könnte auch ein Intersects notwendig werden.
         const sql = `
-					SELECT
-						${pkLayer.get("id_attribute")} AS id,
-						geom
-					FROM
-						${pkLayer.getSqliteTableName()}
-					WHERE
-						ST_Within(
-							ST_GeomFromText('${this.attribute.layer.activeFeature.geom.toWkt()}', 4326),
-							GeomFromEWKB(${pkLayer.get("geometry_attribute")})
-						)
+          SELECT spatialite_version();
 				`;
+        //   SELECT
+        //   ${pkLayer.get("id_attribute")} AS id,
+        //   geom
+        // FROM
+        //   ${pkLayer.getSqliteTableName()}
+        // WHERE
+        //   ST_Within(
+        //     ST_GeomFromText('${this.attribute.layer.activeFeature.geom.toWkt()}', 4326),
+        //     ST_GeomFromEWKB(${pkLayer.get("geometry_attribute")})
+        //   )
+
         console.log("Frage parent id mit sql ab: ", sql);
         kvm.db.executeSql(
           sql,
