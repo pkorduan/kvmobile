@@ -39,6 +39,7 @@
     <plugin name="cordova-plugin-network-information" spec="^3.0.0" />
     <plugin name="cordova-plugin-file-transfer" spec="^2.0.0" />
     <plugin name="cordova-plugin-dialogs" spec="^2.0.2" />
+	<plugin name="cordova-sqlite-storage" spec="^6.1.0" />
     <plugin name="cordova-plugin-file-opener2" spec="^4.0.0" />
     <icon density="mdpi" height="57" platform="android" src="res/icon/gdi-service_ball.png" width="57" />
 </widget>
