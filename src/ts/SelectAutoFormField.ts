@@ -1,6 +1,6 @@
-import { Attribute, AttributeSetting } from "./Attribute";
+import { AttributeSetting, OptionsAttributtes } from "./Attribute";
 import { Field } from "./Field";
-import { kvm } from "./app";
+import { createHtmlElement, kvm } from "./app";
 
 /*
  * create a select form field in the structure
@@ -14,186 +14,287 @@ import { kvm } from "./app";
  *  </select>
  * </div>
  */
+
+// class HTMLAutoSelectElement {
+//     wrapper: HTMLDivElement;
+//     inputField: HTMLInputElement;
+//     optionsPane: HTMLDivElement;
+
+//     constructor(settings: AttributeSetting) {
+//         this.wrapper = document.createElement("div");
+//         const inputField = (this.inputField = createHtmlElement("input", this.wrapper));
+//         inputField.id = `${settings.index}_autoSelectOutput`;
+//         inputField.name = `${settings.name}`;
+//         inputField.type = "text";
+//         inputField.disabled = settings.privilege === "0";
+//         inputField.style.float = "left";
+
+//         const optionsPane = (this.optionsPane = createHtmlElement("div", null, "auto-complete-div"));
+//         optionsPane.id = "${this.settings.index}_autoSelect";
+
+//         const closeBttn = createHtmlElement("i", wrapper, "fa fa-times-circle");
+//         closeBttn.style.marginLeft = "-26px";
+//         closeBttn.ariaHidden = "true";
+//         closeBttn.style.marginTop = "10px";
+//         closeBttn.style.color = "gray";
+//         closeBttn.style.float = "left";
+//         closeBttn.addEventListener("click", () => {
+//             // hiddenInput.value = "";
+//             inputField.value = "";
+//             optionsPane.style.display = "none";
+//         });
+
+//         inputField.addEventListener("click", (evt) => {
+//             this.showOptionPane();
+//             inputField.value = "";
+//         });
+//         inputField.addEventListener("keyup", (evt) => {
+//             this.filterOptionPane(inputField.value);
+//         });
+//     }
+
+//     filterOptionPane(txt: string) {
+//         this.optionsPane.querySelectorAll("div").forEach((el) => {
+//             el.style.display = el.innerHTML.indexOf(txt) >= 0 ? "" : "none";
+//         });
+//     }
+
+//     showOptionPane() {
+//         this.optionsPane.innerHTML = "";
+//         for (let i = 0; i < this.filteredOptions.length; i++) {
+//             const option = this.filteredOptions[i];
+//             const optionHtmlEle = createHtmlElement("div", this.optionsPane, "auto-complete-option-div");
+//             optionHtmlEle.innerHTML = option.output;
+//             optionHtmlEle.addEventListener("click", () => {
+//                 this._set(option);
+//                 this.optionsPane.remove();
+//             });
+//         }
+//         this.element.appendChild(this.optionsPane);
+//     }
+// }
+
 export class SelectAutoFormField implements Field {
-  settings: AttributeSetting;
-  selector: string;
-  element: JQuery<HTMLElement>;
+    settings: AttributeSetting;
+    element: HTMLElement;
+    // {value: 287, output: 'Lange grüne Herbstbirne', requires_value: '2'}
+    options: OptionsAttributtes[];
 
-  constructor(formId: string, settings: AttributeSetting) {
-    this.settings = settings;
-    this.selector = "#" + formId + " select[id=" + this.settings.index + "]";
-    this.element = $(`
-      <input
-        id="${this.settings.index}"
-        name="${this.settings.name}"
-        type="hidden"
-        ${
-          kvm.coalesce(this.settings.required_by, "") != ""
-            ? 'required_by="' + this.settings.required_by + '"'
-            : ""
+    inputField: HTMLElement;
+    autoSelectField: HTMLElement;
+    optionsPane: HTMLDivElement;
+    filteredOptions: OptionsAttributtes[];
+
+    val: any;
+
+    constructor(formId: string, settings: AttributeSetting) {
+        this.settings = settings;
+        // this.selector = "#" + formId + " select[id=" + this.settings.index + "]";
+        this.options = <OptionsAttributtes[]>this.settings.enums;
+        this.filteredOptions = this.options;
+
+        const div = (this.element = createHtmlElement("div"));
+        div.id = "${this.settings.index}";
+
+        if (this.options.length < 50) {
+            this.inputField = this.createSelectField(this.options);
+        } else {
+            this.inputField = this.createAutoSelectField();
         }
-				${
-          kvm.coalesce(this.settings.requires, "") != ""
-            ? 'requires="' + this.settings.requires + '"'
-            : ""
-        }
-        />
-      <input
-        id="${this.settings.index}_autoSelectOutput"
-        name="${this.settings.name}"
-        type="text"
-        ${this.settings.privilege === "0" ? " disabled" : ""}
-        style="float: left"
-      />
-      <i class="fa fa-times-circle"
-        aria-hidden="true"
-        style="
-          margin-left: -26px;
-          margin-top: 10px;
-          color: gray;
-          float: left;
-        "
-        onclick="
-          document.getElementById('${this.settings.index}').value = '';
-          document.getElementById('${
-            this.settings.index
-          }_autoSelectOutput').value = '';
-          document.getElementById('${
-            this.settings.index
-          }_autoSelect').style.display = 'none';
-        "
-      ></i>
-      <div
-        id="${this.settings.index}_autoSelect"
-        class="auto-complete-div"
-      >
-        ${$.map(this.settings.enums, (option: any) => {
-          return `
-            <div
-              data-output="${option.output}"
-              class="auto-complete-option-div ${this.settings.index}_autoSelect"
-              ${
-                kvm.coalesce(option.requires_value, "") != ""
-                  ? 'requires="' + option.requires_value + '"'
-                  : ""
-              }
-              style="display: none"
-              onclick="
-                document.getElementById('${this.settings.index}').value = '${
-            option.value
-          }';
-                document.getElementById('${
-                  this.settings.index
-                }_autoSelectOutput').value = '${option.output}';
-                document.getElementById('${
-                  this.settings.index
-                }_autoSelect').style.display = 'none';
-              "
-            >${option.output}</div>
-          `;
-        }).join("")}
-      </div>
-    `);
-  }
-
-  // get(key) {
-  //  return this.settings[key];
-  // }
-
-  setValue(val) {
-    //console.log('SelectFormField.setValue with value: ' + val);
-    if (kvm.coalesce(val, "") == "" && this.settings.default) {
-      val = this.settings.default;
+        div.appendChild(this.inputField);
     }
-    this.element.val(val == "null" ? "" : val);
-    const matchingOptions = (<any>this.settings.enums).filter((e) => {
-      return e.value == val;
-    });
-    $(`#${this.settings.index}_autoSelectOutput`).val(
-      matchingOptions.length > 0 ? matchingOptions[0].output : ""
-    );
-  }
 
-  getValue(action = "") {
-    //console.log('SelectFormField.getValue');
-    const val = this.element.val();
-    if (typeof val === "undefined" || val == "") {
-      return null;
+    setValue(val: any) {
+        console.error("SelectFormField.setValue with value: " + val);
+        if (kvm.coalesce(val, "") == "" && this.settings.default) {
+            val = this.settings.default;
+        }
+        // this.element.val(val == "null" ? "" : val);
+        const matchingOptions = this.filteredOptions.filter((e) => {
+            return e === val || e.value == val;
+        });
+
+        if (matchingOptions.length === 1) {
+            if (this.inputField instanceof HTMLSelectElement) {
+                this.inputField.value = matchingOptions[0].value;
+            } else {
+                this.inputField.querySelector("input").value = matchingOptions[0].output;
+            }
+            this.val = matchingOptions[0].value;
+        } else {
+            if (this.inputField instanceof HTMLSelectElement) {
+                this.inputField.value = "";
+            } else {
+                this.inputField.querySelector("input").value = "";
+            }
+            this.val = "";
+        }
     }
-    return val;
-  }
 
-  filter_by_required(attribute: Attribute, value: any) {
-    //console.log('filter_by_requiered attribute %s with %s="%s"', this.get("name"), attribute, value);
-    // required SelectAutoFormField options werden im mit bindEvents gebundenen input event gefiltert
-    // ToDo:
-    // Wenn sich der Wert in einem übergeordneten Feld geändert hat, muss der Wert hier gelöscht werden
-    // wenn er nicht in der Liste mit dem entsprechenden value in required vorkommt.
-    const fieldIdx = this.settings.index;
-    $(`${fieldIdx}, #${fieldIdx}_autoSelectOutput`).val("");
-    $(`#${fieldIdx}_autoSelect`).hide();
-  }
-
-  bindEvents() {
-    console.log("SelectAutoFormField.bindEvents");
-    const fieldIdx = this.settings.index;
-    $(`#featureFormular input[id=${fieldIdx}_autoSelectOutput]`).on(
-      "input",
-      (evt) => {
-        const val = $(evt.target).val();
-        $(`.${fieldIdx}_autoSelect`).hide();
-        if (val != "") {
-          let selector = `div[data-output*="${val}"]`;
-          const element = this.element[0];
-          if (element.hasAttribute("requires")) {
-            const requiresIdx =
-              kvm.activeLayer.attribute_index[element.getAttribute("requires")];
-            const requiresAttr = <any>kvm.activeLayer.attributes[requiresIdx];
-            const requiresValue = requiresAttr.formField.getValue();
-            selector += `[requires="${requiresValue}"]`;
-          }
-          const matchingOptions = $(selector);
-          if (matchingOptions.length == 0) {
-            $(`#${fieldIdx}_autoSelect`).hide();
-          } else {
-            $(`#${fieldIdx}_autoSelect`).show();
-            matchingOptions.show();
-          }
+    getValue(action = "") {
+        //console.log('SelectFormField.getValue');
+        const val = this.val;
+        if (typeof val === "undefined" || val == "") {
+            return null;
         }
-      }
-    );
+        return val;
+    }
 
-    $("#featureFormular input[id=" + this.settings.index + "]").on(
-      "change",
-      function (evt) {
-        if (!$("#saveFeatureButton").hasClass("active-button")) {
-          $("#saveFeatureButton").toggleClass("active-button inactive-button");
+    filter_by_required(requiresAttName: string, requiresValue: any) {
+        //console.log('filter_by_requiered attribute %s with %s="%s"', this.get("name"), attribute, value);
+        // required SelectAutoFormField options werden im mit bindEvents gebundenen input event gefiltert
+        // ToDo:
+        // Wenn sich der Wert in einem übergeordneten Feld geändert hat, muss der Wert hier gelöscht werden
+        // wenn er nicht in der Liste mit dem entsprechenden value in required vorkommt.
+        // const fieldIdx = this.settings.index;
+        // $(`${fieldIdx}, #${fieldIdx}_autoSelectOutput`).val("");
+        // $(`#${fieldIdx}_autoSelect`).hide();
+
+        this.filteredOptions = this.options.filter((value) => {
+            return value.requires_value == requiresValue;
+        });
+
+        if (this.filteredOptions.length < 50) {
+            const inputField = this.createSelectField(this.filteredOptions);
+            this.setInputField(inputField);
+        } else {
+            if (this.inputField !== this.autoSelectField) {
+                if (!this.autoSelectField) {
+                    this.autoSelectField = this.createAutoSelectField();
+                }
+                this.setInputField(this.autoSelectField);
+            }
         }
-        // let elm = evt.target;
-        // if (elm.hasAttribute("required_by")) {
-        //   const requiredByIdx =
-        //     kvm.activeLayer.attribute_index[this.getAttribute("required_by")];
-        //   const requiredByAttr = (<any>(
-        //     kvm.activeLayer.attributes[requiredByIdx].formField
-        //   )).filter_by_required(elm.getAttribute("name"), $(elm).val());
-        //   console.log(
-        //     "AutoSelectField %s hat abhängiges Feld %s",
-        //     (<HTMLInputElement>this).name,
-        //     this.getAttribute("required_by")
-        //   );
-        // }
-      }
-    );
-    // $(
-    //   "#featureFormular input[id=" + this.settings.index + "_autoSelectOutput]"
-    // ).on("keyup", function (evt) {
-    //   let elm = $(evt.target);
-    //   let val: string = String(elm.val());
-    //   let selectField = $(`#featureFormular select[id="${elm.attr("id")}]`);
-    //   if (val.length > 2) {
-    //     selectField.show();
-    //     console.log("Key up event on select auto field value: %s", elm.val());
-    //   }
-    // });
-  }
+
+        console.error(`filter_by_required ${requiresAttName}=${requiresValue} => Anzahl=${this.filteredOptions.length}`);
+        this.setValue(this.val);
+    }
+
+    setInputField(inputField: HTMLElement) {
+        this.inputField.replaceWith(inputField);
+        this.inputField = inputField;
+    }
+
+    createSelectField(options: OptionsAttributtes[]) {
+        const selectField = document.createElement("select");
+
+        for (let i = 0; i < options.length; i++) {
+            const opt = document.createElement("option");
+            opt.value = options[i].value;
+            opt.text = options[i].output;
+            selectField.add(opt);
+        }
+        selectField.addEventListener("change", (ev) => {
+            this.setValue(selectField.value);
+        });
+        return selectField;
+    }
+
+    createAutoSelectField() {
+        // const inputField = (this.txtInputField = createHtmlElement("input", div));
+        const wrapper = document.createElement("div");
+        const inputField = createHtmlElement("input", wrapper);
+        inputField.id = `${this.settings.index}_autoSelectOutput`;
+        inputField.name = `${this.settings.name}`;
+        inputField.type = "text";
+        inputField.disabled = this.settings.privilege === "0";
+        inputField.style.float = "left";
+
+        const optionsPane = (this.optionsPane = createHtmlElement("div", null, "auto-complete-div"));
+        optionsPane.id = "${this.settings.index}_autoSelect";
+
+        const closeBttn = createHtmlElement("i", wrapper, "fa fa-times-circle");
+        closeBttn.style.marginLeft = "-26px";
+        closeBttn.ariaHidden = "true";
+        closeBttn.style.marginTop = "10px";
+        closeBttn.style.color = "gray";
+        closeBttn.style.float = "left";
+        closeBttn.addEventListener("click", () => {
+            // hiddenInput.value = "";
+            inputField.value = "";
+            optionsPane.style.display = "none";
+        });
+
+        inputField.addEventListener("click", (evt) => {
+            this.showOptionPane();
+            inputField.value = "";
+        });
+        inputField.addEventListener("keyup", (evt) => {
+            this.filterOptionPane(inputField.value);
+        });
+
+        return wrapper;
+        // this.inputField = inputField;
+    }
+
+    _set(value: OptionsAttributtes) {
+        console.error("_set", value);
+        this.setValue(value);
+    }
+
+    showOptionPane() {
+        this.optionsPane.innerHTML = "";
+        for (let i = 0; i < this.filteredOptions.length; i++) {
+            const option = this.filteredOptions[i];
+            const optionHtmlEle = createHtmlElement("div", this.optionsPane, "auto-complete-option-div");
+            optionHtmlEle.innerHTML = option.output;
+            optionHtmlEle.addEventListener("click", () => {
+                this._set(option);
+                this.optionsPane.remove();
+            });
+        }
+        this.element.appendChild(this.optionsPane);
+    }
+
+    filterOptionPane(txt: string) {
+        this.optionsPane.querySelectorAll("div").forEach((el) => {
+            el.style.display = el.innerHTML.indexOf(txt) >= 0 ? "" : "none";
+        });
+    }
+
+    bindEvents() {
+        console.log("SelectAutoFormField.bindEvents");
+
+        // this.txtInputField.addEventListener("click", (evt) => {
+        //     this.showOptionPane();
+        //     this.txtInputField.value = "";
+        // });
+        // this.txtInputField.addEventListener("keyup", (evt) => {
+        //     this.filterOptionPane(this.txtInputField.value);
+        // });
+
+        // this.inputField.addEventListener("input", (evt) => {
+        //     const val = $(evt.target).val();
+        //     $(`.${fieldIdx}_autoSelect`).hide();
+        //     if (val != "") {
+        //         let selector = `div[data-output*="${val}"]`;
+        //         const element = this.element[0];
+        //         if (element.hasAttribute("requires")) {
+        //             const requiresIdx = kvm.activeLayer.attribute_index[element.getAttribute("requires")];
+        //             const requiresAttr = <any>kvm.activeLayer.attributes[requiresIdx];
+        //             const requiresValue = requiresAttr.formField.getValue();
+        //             selector += `[requires="${requiresValue}"]`;
+        //         }
+        //         const matchingOptions = $(selector);
+        //         if (matchingOptions.length == 0) {
+        //             $(`#${fieldIdx}_autoSelect`).hide();
+        //         } else {
+        //             $(`#${fieldIdx}_autoSelect`).show();
+        //             matchingOptions.show();
+        //         }
+        //     }
+        // });
+
+        // this.hiddenInput.addEventListener("change", function (evt) {
+        //     if (!$("#saveFeatureButton").hasClass("active-button")) {
+        //         $("#saveFeatureButton").toggleClass("active-button inactive-button");
+        //     }
+        // });
+
+        // $("#featureFormular input[id=" + this.settings.index + "]").on("change", function (evt) {
+        //     if (!$("#saveFeatureButton").hasClass("active-button")) {
+        //         $("#saveFeatureButton").toggleClass("active-button inactive-button");
+        //     }
+        // });
+    }
 }
