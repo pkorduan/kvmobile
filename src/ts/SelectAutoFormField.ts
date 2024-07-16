@@ -86,6 +86,7 @@ export class SelectAutoFormField implements Field {
     filteredOptions: OptionsAttributtes[];
 
     val: any;
+    txtField: HTMLInputElement;
 
     constructor(formId: string, settings: AttributeSetting) {
         this.settings = settings;
@@ -94,7 +95,7 @@ export class SelectAutoFormField implements Field {
         this.filteredOptions = this.options;
 
         const div = (this.element = createHtmlElement("div"));
-        div.id = "${this.settings.index}";
+        div.id = `${this.settings.index}`;
 
         if (this.options.length < 50) {
             this.inputField = this.createSelectField(this.options);
@@ -193,7 +194,7 @@ export class SelectAutoFormField implements Field {
     createAutoSelectField() {
         // const inputField = (this.txtInputField = createHtmlElement("input", div));
         const wrapper = document.createElement("div");
-        const inputField = createHtmlElement("input", wrapper);
+        const inputField = (this.txtField = createHtmlElement("input", wrapper));
         inputField.id = `${this.settings.index}_autoSelectOutput`;
         inputField.name = `${this.settings.name}`;
         inputField.type = "text";
@@ -201,7 +202,7 @@ export class SelectAutoFormField implements Field {
         inputField.style.float = "left";
 
         const optionsPane = (this.optionsPane = createHtmlElement("div", null, "auto-complete-div"));
-        optionsPane.id = "${this.settings.index}_autoSelect";
+        // optionsPane.id = "${this.settings.index}_autoSelect";
 
         const closeBttn = createHtmlElement("i", wrapper, "fa fa-times-circle");
         closeBttn.style.marginLeft = "-26px";
@@ -212,7 +213,7 @@ export class SelectAutoFormField implements Field {
         closeBttn.addEventListener("click", () => {
             // hiddenInput.value = "";
             inputField.value = "";
-            optionsPane.style.display = "none";
+            this.removeOptionPane();
         });
 
         inputField.addEventListener("click", (evt) => {
@@ -232,18 +233,33 @@ export class SelectAutoFormField implements Field {
         this.setValue(value);
     }
 
+    removeOptionPane() {
+        if (this.optionsPane?.parentElement) {
+            this.optionsPane.remove();
+        }
+    }
+
     showOptionPane() {
         this.optionsPane.innerHTML = "";
+        const f = (evt: Event) => {
+            console.error("showOptionPane clicked", evt);
+            if (evt.target !== this.txtField) {
+                document.removeEventListener("click", f);
+                this.removeOptionPane();
+            }
+        };
         for (let i = 0; i < this.filteredOptions.length; i++) {
             const option = this.filteredOptions[i];
             const optionHtmlEle = createHtmlElement("div", this.optionsPane, "auto-complete-option-div");
             optionHtmlEle.innerHTML = option.output;
-            optionHtmlEle.addEventListener("click", () => {
+            optionHtmlEle.addEventListener("click", (evt) => {
                 this._set(option);
                 this.optionsPane.remove();
+                document.removeEventListener("click", f);
             });
         }
         this.element.appendChild(this.optionsPane);
+        document.addEventListener("click", f);
     }
 
     filterOptionPane(txt: string) {
