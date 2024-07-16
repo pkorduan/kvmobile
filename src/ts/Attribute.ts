@@ -175,7 +175,7 @@ export class Attribute {
                 if (this.settings.enums.length > 100) {
                     field = new SelectAutoFormField("featureFormular", this.settings);
                 } else {
-                    field = new SelectFormField("featureFormular", this.settings);
+                    field = new SelectAutoFormField("featureFormular", this.settings);
                 }
                 break;
             case "Autovervollständigungsfeld":
