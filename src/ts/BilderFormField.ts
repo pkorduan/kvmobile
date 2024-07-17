@@ -4,7 +4,7 @@
 import { getWebviewUrl, kvm } from "./app";
 import { AttributeSetting } from "./Attribute";
 import { Field } from "./Field";
-import { listFiles } from "./Util";
+import { fileExists } from "./Util";
 
 export class BilderFormField implements Field {
     settings: AttributeSetting;
@@ -307,15 +307,20 @@ export class BilderFormField implements Field {
         navigator.camera.getPicture(
             (fileURL) => {
                 kvm.log("this.addImage(" + fileURL + ");", 4);
+                const ffileURL = "file://" + fileURL;
+                kvm.log("this.addImage(" + fileURL + ");", 4);
+                fileExists(fileURL).then((exists) => {
+                    console.error("File 1" + ffileURL + "  exist => " + exists);
 
-                if (kvm.hasFilePath(fileURL, kvm.config.localImgPath)) {
-                    this.addImgNameToVal(kvm.localToServerPath(fileURL));
-                    getWebviewUrl(fileURL).then((webviewUrl) => this.addImage(webviewUrl));
-                } else {
-                    this.moveFile(fileURL, kvm.config.localImgPath);
-                }
+                    if (kvm.hasFilePath(ffileURL, kvm.config.localImgPath)) {
+                        this.addImgNameToVal(kvm.localToServerPath(ffileURL));
+                        getWebviewUrl(ffileURL).then((webviewUrl) => this.addImage(webviewUrl));
+                    } else {
+                        this.moveFile(ffileURL, kvm.config.localImgPath);
+                    }
 
-                $("#featureFormular input[name=bilder_updated_at]").val(kvm.now("T", "")).show();
+                    $("#featureFormular input[name=bilder_updated_at]").val(kvm.now("T", "")).show();
+                });
             },
             (message) => {
                 kvm.msg("Keine Aufnahme gemacht! " + message);
@@ -337,8 +342,8 @@ export class BilderFormField implements Field {
     moveFile(srcFile: string, dstDir: string) {
         const dstFile = dstDir + srcFile.substring(srcFile.lastIndexOf("/") + 1);
 
-        listFiles(dstDir);
-        listFiles(srcFile.substring(0, srcFile.lastIndexOf("/") + 1));
+        // listFiles(dstDir);
+        // listFiles(srcFile.substring(0, srcFile.lastIndexOf("/") + 1));
 
         kvm.log("moveFile " + srcFile + " nach " + dstDir, 4);
         // console.log("moveFile(" + srcFile + ", " + dstDir + ")");
