@@ -4,7 +4,7 @@ export function listFiles(dir: string) {
   window.resolveLocalFileSystemURL(
     dir,
     function (entry) {
-      console.error("listFiles: " + dir);
+      console.log("listFiles: " + dir);
       if (entry.isDirectory) {
         (<DirectoryEntry>entry).createReader().readEntries(
           (fileSystemEntries) => {
@@ -14,7 +14,7 @@ export function listFiles(dir: string) {
               const typ = fEntry.isDirectory ? "d" : "f";
               s += "\n" + typ + "  " + fileSystemEntries[i].name;
             }
-            console.error(s);
+            console.log(s);
           },
           (err) => {
             console.error("Error in Listfiles.readEntries", err);

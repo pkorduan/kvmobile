@@ -47,7 +47,7 @@ export class SelectAutoFormField implements Field {
   }
 
   setValue(val: any) {
-    console.error("SelectFormField.setValue with value: " + val);
+    // console.log("SelectFormField.setValue with value: " + val);
     if (kvm.coalesce(val, "") == "" && this.settings.default) {
       val = this.settings.default;
     }
@@ -110,9 +110,9 @@ export class SelectAutoFormField implements Field {
       }
     }
 
-    console.error(
-      `filter_by_required ${requiresAttName}=${requiresValue} => Anzahl=${this.filteredOptions.length}`
-    );
+    // console.log(
+    //   `filter_by_required ${requiresAttName}=${requiresValue} => Anzahl=${this.filteredOptions.length}`
+    // );
     this.setValue(this.val);
   }
 
@@ -184,7 +184,7 @@ export class SelectAutoFormField implements Field {
    * @param value
    */
   private internalSet(value: string) {
-    console.error("_set", value);
+    // console.log("_set", value);
     this.setValue(value);
     if (!$("#saveFeatureButton").hasClass("active-button")) {
       $("#saveFeatureButton").toggleClass("active-button inactive-button");
