@@ -4,7 +4,7 @@ export function listFiles(dir: string) {
   window.resolveLocalFileSystemURL(
     dir,
     function (entry) {
-      console.log("listFiles: " + dir);
+      console.error("listFiles: " + dir);
       if (entry.isDirectory) {
         (<DirectoryEntry>entry).createReader().readEntries(
           (fileSystemEntries) => {
@@ -39,6 +39,21 @@ export async function executeSQL(
       params,
       (results) => resove(results),
       (err) => reject(err)
+    );
+  });
+}
+
+export async function fileExists(url: string): Promise<boolean> {
+  return new Promise<boolean>((resolve, reject) => {
+    window.resolveLocalFileSystemURL(
+      url,
+      (fileEntry: Entry) => {
+        resolve(true);
+      },
+      (e: FileError) => {
+        resolve(false);
+        console.log("could not resolve: " + url, e);
+      }
     );
   });
 }
