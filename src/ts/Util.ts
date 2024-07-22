@@ -33,11 +33,11 @@ export async function executeSQL(
   statement: string,
   params?: any[]
 ): Promise<SQLitePlugin.Results> {
-  return new Promise<SQLitePlugin.Results>((resove, reject) => {
+  return new Promise<SQLitePlugin.Results>((resolve, reject) => {
     db.executeSql(
       statement,
       params,
-      (results) => resove(results),
+      (results) => resolve(results),
       (err) => reject(err)
     );
   });

@@ -69,7 +69,7 @@ export class DataViewField implements Field {
         const images = kvm.removeBrackes(val).split(",");
 
         for (let i = 0; i < images.length; i++) {
-          const remoteFile = images[i];
+          const remoteFile = kvm.removeQuotas(images[i]);
           const localFile = kvm.removeOriginalName(
             kvm.serverToLocalPath(remoteFile)
           );

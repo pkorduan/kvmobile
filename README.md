@@ -16,6 +16,14 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 
 # Change log
 
+## 1.15.0
+
+- Bugfix
+  - Fix Image sync
+  - Fix Delete feature bug
+- Features
+  - Image selection from galery
+
 ## 1.14.1
 
 - Bugfix

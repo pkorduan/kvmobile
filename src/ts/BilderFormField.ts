@@ -263,13 +263,17 @@ export class BilderFormField implements Field {
     );
 
     if (this.settings.privilege === "1") {
-      $("#takePictureButton_" + this.settings.index).on(
+      $(`#takePictureButton_${this.settings.index}`).on(
         "click",
         { context: this },
         (ev) => this.takePicture(ev)
       );
     }
-    // $("#loadPictureFromPhotolibrary_" + this.settings.index).on("click", { context: this }, (ev) => this.loadPictureFromPhotolibrary(ev));
+    $(`#loadPictureFromPhotolibrary_${this.settings.index}`).on(
+      "click",
+      { context: this },
+      (ev) => this.loadPictureFromPhotolibrary(ev)
+    );
     /*
     $('#selectPictureButton_1').bind(
       'click',

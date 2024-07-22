@@ -536,7 +536,12 @@ export class Attribute {
           <i
             id="takePictureButton_${this.get("index")}"
             class="fa fa-camera fa-2x"
-            style="color: rgb(38, 50, 134)"
+            style="color: rgb(38, 50, 134); margin: 5px 10px 15px 0px"
+          ></i>
+          <i
+            id="loadPictureFromPhotolibrary_${this.get("index")}"
+            class="fa fa-image fa-2x"
+            style="color: rgb(38, 50, 134); margin: 0px 0px 14px 9px"
           ></i>
           <i
             id="dropAllPictureButton_${this.get("index")}"
