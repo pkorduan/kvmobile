@@ -16,6 +16,11 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 
 # Change log
 
+## 1.15.1
+
+- Bugfix
+  - Fix error handling in kvm.writeLog()
+
 ## 1.15.0
 
 - Bugfix
