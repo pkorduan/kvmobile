@@ -389,8 +389,14 @@ class Kvm {
    */
   writeLog(log) {
     log = `[${kvm.now(" ", "", ":")}] ${log}` + "\n";
-    let dataObj = new Blob([log], { type: "text/plain" });
-    FileUtils.writeFile(kvm.logFileEntry, dataObj, true);
+    const dataObj = new Blob([log], { type: "text/plain" });
+    try {
+      FileUtils.writeFile(kvm.logFileEntry, dataObj, true);
+    } catch (ex) {
+      console.error(
+        `Fehler beim Schreiben in das Logfile ${kvm.logFileEntry.nativeURL}`
+      );
+    }
   }
 
   async onDeviceReady() {
