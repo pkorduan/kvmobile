@@ -18,28 +18,31 @@ export const FileUtils = {
 
     writeFile: function (fileEntry: FileEntry, dataObj: Blob | string | ArrayBuffer, isAppend: boolean) {
         // Create a FileWriter object for our FileEntry (log.txt).
+        console.error(`writeFile nativeURL=${fileEntry.nativeURL} fullPath=${fileEntry.fullPath} toInternalURL=${fileEntry.toInternalURL()}`, fileEntry);
+        return new Promise<FileEntry>((resolve, reject) => {
+            (<FileEntry>fileEntry).createWriter(function (fileWriter) {
+                fileWriter.onwriteend = function () {
+                    console.log(`Successful written file ${fileEntry.fullPath} `);
+                    // kvm.controller.files.readFile(fileEntry);
+                };
 
-        (<FileEntry>fileEntry).createWriter(function (fileWriter) {
-            fileWriter.onwriteend = function () {
-                console.log("Successful file write...");
-                // kvm.controller.files.readFile(fileEntry);
-            };
+                fileWriter.onerror = function (e) {
+                    const msg = `onerror aufgerufen in writeFiles in files.ty: ${JSON.stringify(e)}`;
+                    console.error(msg, e);
+                    reject({ message: `Fehler in writeFile fullPath: ${fileEntry.fullPath} `, errror: e });
+                };
 
-            fileWriter.onerror = function (e) {
-                let msg = `onerror aufgerufen in writeFiles in files.ty: ${JSON.stringify(e)}`;
-                console.log(msg);
-            };
-
-            // If we are appending data to file, go to the end of the file.
-            if (isAppend) {
-                try {
-                    fileWriter.seek(fileWriter.length);
-                } catch (e) {
-                    let msg = `Logdatei existiert nicht!`;
-                    console.error(msg);
+                // If we are appending data to file, go to the end of the file.
+                if (isAppend) {
+                    try {
+                        fileWriter.seek(fileWriter.length);
+                    } catch (e) {
+                        let msg = `Logdatei existiert nicht!`;
+                        console.error(msg);
+                    }
                 }
-            }
-            fileWriter.write(dataObj);
+                fileWriter.write(dataObj);
+            });
         });
     },
 
