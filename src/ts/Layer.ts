@@ -1100,58 +1100,55 @@ export class Layer {
             console.log(this.get("title") + ": Response: %o", response);
 
             if (response.version !== this.get("version")) {
-                const msg = `Die Version des Layers ${this.get("title")} hat sich auf ${response.version} geändert. Alle Layer der Stelle werden komplett neu geladen. Beachten Sie dass sich dadurch die Formulare und Kartenstyles geändert haben können.`;
-                console.log(msg);
-                kvm.msg(msg, "Layeränderung");
-                await kvm.activeStelle.requestLayers();
-            } else {
-                this.numExecutedDeltas = 0;
-                this.numReturnedDeltas = response.deltas.length;
-
-                console.log(this.get("title") + ": numReturendDeltas: %s", this.numReturnedDeltas);
-
-                if (this.numReturnedDeltas > 0) {
-                    const msg = `${this.numReturnedDeltas} Änderungen von Daten auf dem Server gefunden. Die Datenbank wurde gesichert und die Änderungen in die lokale Datenbank eingespielt.`;
-                    kvm.writeLog(msg);
-                    kvm.msg(msg, "Datenänderung");
-                    kvm.backupDatabase();
-                    if (
-                        response.deltas.every((value) => {
-                            return kvm.coalesce(value.sql, "") == "";
-                        })
-                    ) {
-                        this.readData($("#limit").val(), $("#offset").val());
-                    } else {
-                        response.deltas.forEach((value) => {
-                            if (kvm.coalesce(value.sql, "") != "") {
-                                this.execSql(
-                                    this.pointToUnderlineName(value.sql, this.get("schema_name"), this.get("table_name")),
-                                    this.execServerDeltaSuccessFunc.bind({
-                                        context: this,
-                                        response: response,
-                                        numReturnedDeltas: this.numReturnedDeltas,
-                                    })
-                                );
-                            }
-                        });
-                    }
-                } else {
-                    if (response.syncData.length > 0) {
-                        console.log("upload: Setze LayerSettings syncVersion auf Wert in push_to_version aus den Response");
-                        this.set("syncVersion", parseInt(response.syncData[response.syncData.length - 1].push_to_version));
-                        this.runningSyncVersion = this.get("syncVersion");
-                        this.saveToStore();
-                        //kvm.msg("Keine Änderungen vom Server bekommen! Die aktuelle Version ist: " + this.get("syncVersion"), this.get('title'));
-                        await this.clearDeltas("sql");
-                    }
-                    this.readData($("#limit").val(), $("#offset").val());
+                if (!kvm.dataModelChanges) {
+                    kvm.dataModelChanges = [];
                 }
+                kvm.dataModelChanges.push({ layer: this, new_version: response.version });
+            }
+            this.numExecutedDeltas = 0;
+            this.numReturnedDeltas = response.deltas.length;
+
+            console.log(this.get("title") + ": numReturendDeltas: %s", this.numReturnedDeltas);
+
+            if (this.numReturnedDeltas > 0) {
+                const msg = `${this.numReturnedDeltas} Änderungen von Daten auf dem Server gefunden. Die Datenbank wurde gesichert und die Änderungen in die lokale Datenbank eingespielt.`;
+                kvm.writeLog(msg);
+                kvm.msg(msg, "Datenänderung");
+                // TODO
+                kvm.backupDatabase();
+                if (
+                    response.deltas.every((value) => {
+                        return kvm.coalesce(value.sql, "") == "";
+                    })
+                ) {
+                    this.readData($("#limit").val(), $("#offset").val());
+                } else {
+                    response.deltas.forEach((value) => {
+                        if (kvm.coalesce(value.sql, "") != "") {
+                            this.execSql(
+                                this.pointToUnderlineName(value.sql, this.get("schema_name"), this.get("table_name")),
+                                this.execServerDeltaSuccessFunc.bind({
+                                    context: this,
+                                    response: response,
+                                    numReturnedDeltas: this.numReturnedDeltas,
+                                })
+                            );
+                        }
+                    });
+                }
+            } else {
+                if (response.syncData.length > 0) {
+                    console.log("upload: Setze LayerSettings syncVersion auf Wert in push_to_version aus den Response");
+                    this.set("syncVersion", parseInt(response.syncData[response.syncData.length - 1].push_to_version));
+                    this.runningSyncVersion = this.get("syncVersion");
+                    this.saveToStore();
+                    //kvm.msg("Keine Änderungen vom Server bekommen! Die aktuelle Version ist: " + this.get("syncVersion"), this.get('title'));
+                    await this.clearDeltas("sql");
+                }
+                this.readData($("#limit").val(), $("#offset").val());
             }
         } else {
-            if ($("#syncLayerIcon_" + this.getGlobalId()).hasClass("fa-spinner")) {
-                $("#syncLayerIcon_" + this.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
-            }
-            kvm.closeSperrDiv(`Sync-Fehler Layer ${this.title}:<br>&nbsp;&nbsp;${response.msg}`);
+            throw Error(`Sync-Fehler Layer ${this.title}:<br>&nbsp;&nbsp;${response.msg}`);
         }
     }
 
@@ -3492,7 +3489,7 @@ export class Layer {
         try {
             const index = kvm.activeStelle.getLayerDrawingIndex(this);
             if (index == 0) {
-                $("#layer_list").prepend(this.getListItem());
+                // $("#layer_list").prepend(this.getListItem());
                 // document.getElementById("layer_list").insertAdjacentHTML("afterbegin", this.getListItem());
                 document.getElementById("layer_list").append(this.getLayerListItem());
                 console.error("appendToApp append getListItem " + this.getGlobalId());
@@ -3561,21 +3558,9 @@ export class Layer {
                         if (buttonIndex == 1) {
                             $("#syncImageIcon_" + layer.getGlobalId()).toggleClass("fa-upload fa-spinner fa-spin");
                             $("#sperr_div").show();
-                            const layers = kvm.getLayersSortedByUpdateOrder();
-                            for (let i = 0; i < layers.length; i++) {
-                                const layer = layers[i];
-                                try {
-                                    console.info(`Starte Synchronisieren des Layers: "${layer.title}"`);
-                                    await layer.syncImages();
-                                    console.error(`Bilder des Layers ${layer.title} wurden synchronisiert,`);
-                                    await layer.syncData();
-                                    console.error(`Daten des Layers ${layer.title} wurden synchronisiert,`);
-                                } catch (ex) {
-                                    console.error(`Fehler beim Synchronisieren des Layers: "${layer.title}".`, ex);
-                                    const fehler = ex.message || JSON.stringify(ex);
-                                    navigator.notification.alert(`Fehler beim Synchronisieren des Layers: "${layer.title}". Ursache:  ${fehler}`, () => {}, "Synchronisationsfehler");
-                                }
-                            }
+
+                            await kvm.syncLayers();
+
                             $("#sperr_div").hide();
                             $("#syncLayerIcon_" + layer.getGlobalId()).toggleClass("fa-upload fa-spinner fa-spin");
                         } else {
@@ -4011,6 +3996,7 @@ export class Layer {
     }
 
     getLayerListItem() {
+        console.error(`### getLayerListItem ${this.title}`);
         const div = createHtmlElement("div", null, "layer-list-div");
         div.id = `layer_${this.getGlobalId()}`;
         const radioInput = createHtmlElement("input", div);
@@ -4044,6 +4030,7 @@ export class Layer {
     }
 
     getListItem() {
+        debugger;
         console.log("getListItem for layerId: ", this.getGlobalId());
         const customStyleClass = this.get("useCustomStyle") ? "visible" : "hidden";
         const html = `

@@ -129,6 +129,8 @@ class Kvm {
     layerParams: any = {};
     logFileEntry: FileEntry;
 
+    dataModelChanges: { layer: Layer; new_version: string }[];
+
     // showItem: <(p:any)=>void>undefined,
     // log: <(p:any)=>void>undefined,
 
@@ -137,7 +139,7 @@ class Kvm {
     }
 
     getLayer(layerId: string) {
-        console.error(`xxx getLayer ${layerId} exists:${this._layers.has(layerId)}`);
+        // console.error(`xxx getLayer ${layerId} exists:${this._layers.has(layerId)}`);
         return this._layers.get(layerId);
     }
 
@@ -222,6 +224,31 @@ class Kvm {
     }
     removeLayer(layer: Layer | MapLibreLayer) {
         this._layers.delete(layer.getGlobalId());
+    }
+
+    async syncLayers() {
+        const layers = kvm.getLayersSortedByUpdateOrder();
+        for (let i = 0; i < layers.length; i++) {
+            const layer = layers[i];
+            try {
+                console.info(`Starte Synchronisieren des Layers: "${layer.title}"`);
+                await layer.syncImages();
+                console.error(`Bilder des Layers ${layer.title} wurden synchronisiert,`);
+                await layer.syncData();
+                console.error(`Daten des Layers ${layer.title} wurden synchronisiert,`);
+            } catch (ex) {
+                console.error(`Fehler beim Synchronisieren des Layers: "${layer.title}".`, ex);
+                const fehler = ex.message || JSON.stringify(ex);
+                navigator.notification.alert(`Fehler beim Synchronisieren des Layers: "${layer.title}". Ursache:  ${fehler}`, () => {}, "Synchronisationsfehler");
+            }
+        }
+        if (this.dataModelChanges?.length > 0) {
+            let msg = "Datenmodell-Änderungen:\n";
+            for (let i = 0; i < this.dataModelChanges.length; i++) {
+                msg += ` ${this.dataModelChanges[i].layer.title} neue Version: ${this.dataModelChanges[i].new_version}`;
+            }
+            alert(msg);
+        }
     }
 
     // loadHeadFile(filename, filetype) {
@@ -527,23 +554,23 @@ class Kvm {
     startApplication() {
         let activeView = ["settings", "map", "featurelist"].includes(kvm.store.getItem("activeView")) ? kvm.store.getItem("activeView") : "featurelist";
 
-        const layerList = document.getElementById("layer_list");
-        if (layerList) {
-            console.error("addMutationObserver");
-            const callback = (mutations: MutationRecord[], observer: MutationObserver) => {
-                for (const mutation of mutations) {
-                    if (mutation.type === "childList" && mutation.addedNodes?.length > 0) {
-                        console.error("xxx Node(s) added", mutation.addedNodes);
-                    } else if (mutation.type === "attributes") {
-                        console.info(`The ${mutation.attributeName} attribute was modified.`, mutation);
-                    }
-                }
-            };
+        // const layerList = document.getElementById("layer_list");
+        // if (layerList) {
+        //     console.error("addMutationObserver");
+        //     const callback = (mutations: MutationRecord[], observer: MutationObserver) => {
+        //         for (const mutation of mutations) {
+        //             if (mutation.type === "childList" && mutation.addedNodes?.length > 0) {
+        //                 console.error("xxx Node(s) added", mutation.addedNodes);
+        //             } else if (mutation.type === "attributes") {
+        //                 console.info(`The ${mutation.attributeName} attribute was modified.`, mutation);
+        //             }
+        //         }
+        //     };
 
-            // Create an observer instance linked to the callback function
-            const observer = new MutationObserver(callback);
-            observer.observe(layerList, { attributes: true, childList: true, subtree: true });
-        }
+        //     // Create an observer instance linked to the callback function
+        //     const observer = new MutationObserver(callback);
+        //     observer.observe(layerList, { attributes: true, childList: true, subtree: true });
+        // }
 
         try {
             kvm.store.getItem("activeView") || "featurelist";
@@ -1335,6 +1362,7 @@ class Kvm {
             // wenn andere Stellen ausgewählt werden sollen müssen die vorher noch mal vom Server geholt werden.
             const stelle = new Stelle(stelleSettings);
             stelle.saveToStore();
+            // TODO Fehler
             if (kvm.activeLayer) {
                 kvm.activeLayer["stelle"] = stelle;
             }
