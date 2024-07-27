@@ -158,7 +158,7 @@ class Kvm {
 
     getLayersSortedByUpdateOrder() {
         const layers = Array.from(this._layers.values());
-        const tree: { id: string; childs: string[] }[] = [];
+        const tree: { id: string; childs: string[]; parent: string[] }[] = [];
         for (let i = 0; i < layers.length; i++) {
             const layer = layers[i];
             const attributes = layer.attributes;
@@ -171,7 +171,20 @@ class Kvm {
                     subLayerIds.push(attr.getGlobalSubLayerId());
                 }
             }
-            tree.push({ id: layer.getGlobalId(), childs: subLayerIds });
+            tree.push({ id: layer.getGlobalId(), childs: subLayerIds, parent: [] });
+        }
+
+        for (let i = 0; i < tree.length; i++) {
+            if (tree[i].childs?.length > 0) {
+                for (let chNr = 0; chNr < tree[i].childs.length; chNr++) {
+                    const chTreeEntry = tree.find((el) => tree[i].childs[chNr] === el.id);
+                    chTreeEntry.parent.push(tree[i].id);
+                }
+            }
+        }
+
+        for (let i = 0; i < tree.length; i++) {
+            console.info(tree[i].id + " " + tree[i].parent);
         }
 
         const emptyFct = (array: any[]) => {
@@ -186,13 +199,13 @@ class Kvm {
         while (!emptyFct(tree)) {
             for (let i = 0; i < tree.length; i++) {
                 if (tree[i]) {
-                    if (tree[i]?.childs.length === 0) {
+                    if (tree[i]?.parent.length === 0) {
                         sorted.push(tree[i].id);
                         tree[i] = null;
                     } else {
                         let inList = true;
-                        for (let chNr = 0; chNr < tree[i].childs.length; chNr++) {
-                            if (!sorted.includes(tree[i].childs[chNr])) {
+                        for (let chNr = 0; chNr < tree[i].parent.length; chNr++) {
+                            if (!sorted.includes(tree[i].parent[chNr])) {
                                 inList = false;
                             }
                         }
@@ -209,7 +222,7 @@ class Kvm {
             console.info(sorted[i]);
         }
 
-        return sorted.map((id) => this.getLayer(id)).reverse();
+        return sorted.map((id) => this.getLayer(id));
     }
 
     /*
@@ -682,6 +695,8 @@ class Kvm {
                 }
                 if (layerIds.length > 0) {
                     stelle.sortOverlays();
+                } else {
+                    this.closeSperrDiv();
                 }
             } else {
                 kvm.msg("Laden Sie die Stellen und Layer vom Server.");

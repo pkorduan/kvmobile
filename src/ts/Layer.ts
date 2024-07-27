@@ -4030,7 +4030,7 @@ export class Layer {
     }
 
     getListItem() {
-        debugger;
+        // debugger;
         console.log("getListItem for layerId: ", this.getGlobalId());
         const customStyleClass = this.get("useCustomStyle") ? "visible" : "hidden";
         const html = `

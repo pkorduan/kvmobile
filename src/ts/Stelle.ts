@@ -475,7 +475,7 @@ export class Stelle {
                         kvm.tick(`&nbsp;&nbsp;-&nbsp;${kvm.getLayer(globalId).title}`);
                     }
                 });
-                debugger;
+                // debugger;
                 for (let i = 0; i < layerIds.length; i++) {
                     const id = layerIds[i];
                     const globalId = kvm.activeStelle.get("id") + "_" + id;
