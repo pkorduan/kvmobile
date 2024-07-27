@@ -58,7 +58,8 @@ export class Feature {
     //console.log('Create Feature with data: %o and options: %o', data, options);
     this.data = typeof data == "string" ? JSON.parse(data) : data;
     this.layer = layer;
-    this.id = this.data[this.layer.settings.id_attribute];
+    this.id = this.getFeatureId();
+    //this.data[this.layer.settings.id_attribute];
     // this.layerId = null; // Leaflet Layer id des Layers (z.B. circleMarkers) in dem das Feature gezeichnet ist
     this.globalLayerId = this.layer.getGlobalId(); // Id des Layers zu dem das Feature gehört
     /*kvm
@@ -150,7 +151,7 @@ export class Feature {
   }
 
   getFeatureId() {
-    return this.getDataValue(this.layer.settings.id_attribute);
+    return String(this.getDataValue(this.layer.settings.id_attribute));
   }
 
   findParentFeature() {
@@ -636,7 +637,7 @@ export class Feature {
     return (
       '\
       <div class="feature-item" id="' +
-      this.getFeatureId() +
+      this.id +
       '" style="background-color: ' +
       markerStyles[markerStyleIndex].fillColor +
       '">' +
@@ -697,8 +698,8 @@ export class Feature {
       this.getDataValue("status") < numStyles
         ? this.getDataValue("status")
         : 0;
-    $("#" + this.getFeatureId()).html(this.getLabelValue());
-    $("#" + this.getFeatureId()).css(
+    $("#" + this.id).html(this.getLabelValue());
+    $("#" + this.id).css(
       "background-color",
       markerStyles[markerStyleIndex].fillColor
     );

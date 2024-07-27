@@ -16,6 +16,13 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 
 # Change log
 
+## 1.16.0
+
+- Maintainance
+  check tableExists befor readData
+- Features
+  - Filter by layer_params
+
 ## 1.15.1
 
 - Bugfix

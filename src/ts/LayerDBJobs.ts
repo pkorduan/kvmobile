@@ -308,7 +308,7 @@ async function writeDelta(
       FROM
         ${layer.getSqliteTableName()}_deltas
       WHERE
-        INSTR(delta, '${layer.activeFeature.getFeatureId()}') > 0 AND
+        INSTR(delta, '${layer.activeFeature.id}') > 0 AND
         type = 'sql' AND
         (
           (change = 'insert' AND '${delta.change} ' = 'delete') OR
