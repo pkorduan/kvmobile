@@ -1111,80 +1111,82 @@ export class Layer {
 
   async applyDeltas(response: SendDeltasResponse) {
     console.log(`applyDeltas Layer: ${this.title}`);
+    return new Promise<string>(async (resolve, reject) => {
+      // const response = JSON.parse(fileUploadResult.response);
 
-    // const response = JSON.parse(fileUploadResult.response);
+      if (response.success) {
+        kvm.writeLog(`Synchronisierung des Layer ${this.get("title")} erfolgreich.`);
+        console.log(this.get("title") + ": Response: %o", response);
 
-    if (response.success) {
-      kvm.writeLog(`Synchronisierung des Layer ${this.get("title")} erfolgreich.`);
-      console.log(this.get("title") + ": Response: %o", response);
-
-      if (response.version !== this.get("version")) {
-        if (!kvm.dataModelChanges) {
-          kvm.dataModelChanges = [];
-        }
-        console.log(`Trage dataModelChanges für Layer ${this.settings.title} ein.`);
-        kvm.dataModelChanges.push({ layer: this, new_version: response.version });
-      }
-      this.numExecutedDeltas = 0;
-      this.numReturnedDeltas = response.deltas.length;
-
-      console.log(this.get("title") + ": numReturendDeltas: %s", this.numReturnedDeltas);
-
-      if (this.numReturnedDeltas > 0) {
-        const msg = `${this.numReturnedDeltas} Änderungen von Daten auf dem Server gefunden. Die Datenbank wurde gesichert und die Änderungen in die lokale Datenbank eingespielt.`;
-        kvm.writeLog(msg);
-        kvm.msg(msg, "Datenänderung");
-        // TODO backupDatabase auch nur ein mal machen wenn irgend ein Delta gekommen ist (Weiß man aber vorher nicht ob irgend ein layer ein Delta bekommen wird.)
-        // Wenn ein mal ein backDatabase gemacht wurde bei den anderen layern in der gleichen syncLayers Runde nicht mehr ausführen.
-        kvm.backupDatabase();
-        if (
-          response.deltas.every((value) => {
-            return kvm.coalesce(value.sql, "") == "";
-          })
-        ) {
-          this.readData($("#limit").val(), $("#offset").val());
-        } else {
-          try {
-            response.deltas.forEach(async (value) => {
-              if (kvm.coalesce(value.sql, "") != "") {
-                await Util.executeSQL(kvm.db, this.pointToUnderlineName(value.sql, this.get("schema_name"), this.get("table_name")));
-                // this.execSql(
-                //   this.pointToUnderlineName(value.sql, this.get("schema_name"), this.get("table_name")),
-                //   this.execServerDeltaSuccessFunc.bind({
-                //     context: this,
-                //     response: response,
-                //     numReturnedDeltas: this.numReturnedDeltas,
-                //   })
-                // );
-              }
-            });
-          } catch (ex) {
-            throw new Error(`Fehler beim Schreiben der Deltas in die DB - Layer ${this.title}:<br>&nbsp;&nbsp;${ex}`, { cause: ex });
+        if (response.version !== this.get("version")) {
+          if (!kvm.dataModelChanges) {
+            kvm.dataModelChanges = [];
           }
+          console.log(`Trage dataModelChanges für Layer ${this.settings.title} ein.`);
+          kvm.dataModelChanges.push({ layer: this, new_version: response.version });
+        }
+        this.numExecutedDeltas = 0;
+        this.numReturnedDeltas = response.deltas.length;
 
-          const newVersion = parseInt(this.response.syncData[this.response.syncData.length - 1].push_to_version);
-          this.set("syncVersion", newVersion);
-          this.saveToStore();
-          this.clearDeltas("sql");
-          console.log(this.get("title") + ": call readData at the end of execServerDeltaSuccessFunc");
-          kvm.writeLog(`Layer ${this.get("title")}: ${this.numExecutedDeltas} Deltas vom Server auf Client ausgeführt.`);
-          this.context.readData($("#limit").val(), $("#offset").val());
+        console.log(this.get("title") + ": numReturendDeltas: %s", this.numReturnedDeltas);
+
+        if (this.numReturnedDeltas > 0) {
+          const msg = `${this.numReturnedDeltas} Änderungen von Daten auf dem Server gefunden. Die Datenbank wurde gesichert und die Änderungen in die lokale Datenbank eingespielt.`;
+          kvm.writeLog(msg);
+          kvm.msg(msg, "Datenänderung");
+          // TODO backupDatabase auch nur ein mal machen wenn irgend ein Delta gekommen ist (Weiß man aber vorher nicht ob irgend ein layer ein Delta bekommen wird.)
+          // Wenn ein mal ein backDatabase gemacht wurde bei den anderen layern in der gleichen syncLayers Runde nicht mehr ausführen.
+          kvm.backupDatabase();
+          if (
+            response.deltas.every((value) => {
+              return kvm.coalesce(value.sql, "") == "";
+            })
+          ) {
+            this.readData($("#limit").val(), $("#offset").val());
+          } else {
+            try {
+              response.deltas.forEach(async (value) => {
+                if (kvm.coalesce(value.sql, "") != "") {
+                  await Util.executeSQL(kvm.db, this.pointToUnderlineName(value.sql, this.get("schema_name"), this.get("table_name")));
+                  // this.execSql(
+                  //   this.pointToUnderlineName(value.sql, this.get("schema_name"), this.get("table_name")),
+                  //   this.execServerDeltaSuccessFunc.bind({
+                  //     context: this,
+                  //     response: response,
+                  //     numReturnedDeltas: this.numReturnedDeltas,
+                  //   })
+                  // );
+                }
+              });
+            } catch (ex) {
+              // throw new Error(`Fehler beim Schreiben der Deltas in die DB - Layer ${this.title}:<br>&nbsp;&nbsp;${ex}`, { cause: ex });
+              reject({ message: `Fehler beim Schreiben der Deltas in die DB - Layer ${this.title}:<br>&nbsp;&nbsp;${ex}`, cause: ex });
+            }
+
+            const newVersion = parseInt(this.response.syncData[this.response.syncData.length - 1].push_to_version);
+            this.set("syncVersion", newVersion);
+            this.saveToStore();
+            this.clearDeltas("sql");
+            console.log(this.get("title") + ": call readData at the end of execServerDeltaSuccessFunc");
+            kvm.writeLog(`Layer ${this.get("title")}: ${this.numExecutedDeltas} Deltas vom Server auf Client ausgeführt.`);
+            this.context.readData($("#limit").val(), $("#offset").val());
+          }
+        } else {
+          if (response.syncData.length > 0) {
+            console.log("upload: Setze LayerSettings syncVersion auf Wert in push_to_version aus den Response");
+            this.set("syncVersion", parseInt(response.syncData[response.syncData.length - 1].push_to_version));
+            this.runningSyncVersion = this.get("syncVersion");
+            this.saveToStore();
+            if (this.hasEditPrivilege) {
+              await this.clearDeltas("sql");
+            }
+          }
+          this.readData($("#limit").val(), $("#offset").val());
         }
       } else {
-        if (response.syncData.length > 0) {
-          console.log("upload: Setze LayerSettings syncVersion auf Wert in push_to_version aus den Response");
-          this.set("syncVersion", parseInt(response.syncData[response.syncData.length - 1].push_to_version));
-          this.runningSyncVersion = this.get("syncVersion");
-          this.saveToStore();
-          if (this.hasEditPrivilege) {
-            await this.clearDeltas("sql");
-          }
-        }
-        this.readData($("#limit").val(), $("#offset").val());
+        throw Error(`Sync-Fehler Layer ${this.title}:<br>&nbsp;&nbsp;${response.msg}`);
       }
-    } else {
-      throw Error(`Sync-Fehler Layer ${this.title}:<br>&nbsp;&nbsp;${response.msg}`);
-    }
+    });
   }
 
   /*
