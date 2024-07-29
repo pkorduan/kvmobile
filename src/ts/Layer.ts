@@ -3477,8 +3477,10 @@ export class Layer {
       [],
       successFunc.bind(this),
       function (error) {
+        const msg = "Fehler bei der Speicherung der Änderungen aus dem Formular!\nFehlercode: " + error.code + "\nMeldung: " + error.message;
+        kvm.log(msg);
         navigator.notification.confirm(
-          "Fehler bei der Speicherung der Änderungen aus dem Formular!\nFehlercode: " + error.code + "\nMeldung: " + error.message,
+          msg,
           function (buttonIndex) {
             // ToDo handling choices after error
           },

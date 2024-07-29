@@ -265,16 +265,11 @@ class Kvm {
   bttnSyncLayersClicked(evt: MouseEvent) {
     console.info(`bttnSyncLayersClicked`);
     const layer = kvm.activeLayer;
-    let target = $(evt.target);
-
-    if (target.hasClass("fa")) {
-      target = target.parent();
-    }
 
     $("#sperr_div_content").html("");
 
     // Sichere Datenbank
-    if (target.hasClass("inactive-button")) {
+    if ((<HTMLButtonElement>evt.currentTarget).classList.contains("inactive-button")) {
       this.msg("Keine Internetverbindung! Kann Layer jetzt nicht synchronisieren.");
     } else {
       $("#syncLayerIcon_" + layer.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
@@ -2102,6 +2097,8 @@ class Kvm {
         );
       });
     }
+
+    document.getElementById("syncLayerButton").addEventListener("click", (evt) => this.bttnSyncLayersClicked(evt));
 
     $("#featurelistHeading").on("click", (evt) => {
       if (kvm.activeLayer.hasActiveFeature()) {
