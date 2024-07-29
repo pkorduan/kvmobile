@@ -1159,7 +1159,7 @@ export class Layer {
                 }
               });
             } catch (ex) {
-              // throw new Error(`Fehler beim Schreiben der Deltas in die DB - Layer ${this.title}:<br>&nbsp;&nbsp;${ex}`, { cause: ex });
+              throw new Error(`Fehler beim Schreiben der Deltas in die DB - Layer ${this.title}:<br>&nbsp;&nbsp;${ex}`, { cause: ex });
               reject({ message: `Fehler beim Schreiben der Deltas in die DB - Layer ${this.title}:<br>&nbsp;&nbsp;${ex}`, cause: ex });
             }
 

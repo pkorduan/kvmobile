@@ -1,21 +1,22 @@
 {
-    "$schema": "https://json.schemastore.org/tsconfig",
-    "compilerOptions": {
-        "rootDir": "src/ts",
-        "outDir": "www/js/",
-        "strict": false,
-        "removeComments": false,
-        "module": "CommonJS",
-        "moduleResolution": "node",
-        "inlineSourceMap": false,
-        "sourceMap": false,
-        "experimentalDecorators": true,
-        "target": "ES2017",
-        "allowJs": true,
-        "allowUmdGlobalAccess": true,
-        "esModuleInterop": true
-    },
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "rootDir": "src/ts",
+    "outDir": "www/js/",
+    "strict": false,
+    "removeComments": false,
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "inlineSourceMap": false,
+    "sourceMap": false,
+    "experimentalDecorators": true,
+    "target": "es2019",
+    "lib": ["es2019", "es2022.error", "dom"],
+    "allowJs": true,
+    "allowUmdGlobalAccess": true,
+    "esModuleInterop": true
+  },
 
-    "include": ["src/ts/app.ts", "node_modules/cordova*/**/*.d.ts"],
-    "exclude": ["node_modules/**"]
+  "include": ["src/ts/app.ts", "node_modules/cordova*/**/*.d.ts"],
+  "exclude": ["node_modules/**"]
 }
