@@ -1144,18 +1144,31 @@ export class Layer {
         ) {
           this.readData($("#limit").val(), $("#offset").val());
         } else {
-          response.deltas.forEach((value) => {
-            if (kvm.coalesce(value.sql, "") != "") {
-              this.execSql(
-                this.pointToUnderlineName(value.sql, this.get("schema_name"), this.get("table_name")),
-                this.execServerDeltaSuccessFunc.bind({
-                  context: this,
-                  response: response,
-                  numReturnedDeltas: this.numReturnedDeltas,
-                })
-              );
-            }
-          });
+          try {
+            response.deltas.forEach(async (value) => {
+              if (kvm.coalesce(value.sql, "") != "") {
+                await Util.executeSQL(kvm.db, this.pointToUnderlineName(value.sql, this.get("schema_name"), this.get("table_name")));
+                // this.execSql(
+                //   this.pointToUnderlineName(value.sql, this.get("schema_name"), this.get("table_name")),
+                //   this.execServerDeltaSuccessFunc.bind({
+                //     context: this,
+                //     response: response,
+                //     numReturnedDeltas: this.numReturnedDeltas,
+                //   })
+                // );
+              }
+            });
+          } catch (ex) {
+            throw new Error(`Fehler beim Schreiben der Deltas in die DB - Layer ${this.title}:<br>&nbsp;&nbsp;${ex}`, { cause: ex });
+          }
+
+          const newVersion = parseInt(this.response.syncData[this.response.syncData.length - 1].push_to_version);
+          this.set("syncVersion", newVersion);
+          this.saveToStore();
+          this.clearDeltas("sql");
+          console.log(this.get("title") + ": call readData at the end of execServerDeltaSuccessFunc");
+          kvm.writeLog(`Layer ${this.get("title")}: ${this.numExecutedDeltas} Deltas vom Server auf Client ausgeführt.`);
+          this.context.readData($("#limit").val(), $("#offset").val());
         }
       } else {
         if (response.syncData.length > 0) {
