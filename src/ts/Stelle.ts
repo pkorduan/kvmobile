@@ -98,13 +98,23 @@ export class Stelle {
   }
 
   activate() {
-    // kvm.log("Stelle.js activate", 4);
+    console.log("Activate Stelle");
     kvm.activeStelle = this;
     kvm.store.setItem("activeStelleId", this.get("id"));
     $("#activeStelleBezeichnungDiv").html(this.get("bezeichnung")).show();
     let layerParams = [];
-    if (kvm.store.getItem(`layerParams`)) {
-      layerParams = JSON.parse(kvm.store.getItem("layerParams"));
+    if (kvm.store.getItem(`layerParams_${this.get("id")}`)) {
+      layerParams = JSON.parse(kvm.store.getItem(`layerParams_${this.get("id")}`));
+      console.log("Get layerParams from store: ", layerParams);
+    } else {
+      layerParams = Object.keys(this.settings.layer_params).map((name) => {
+        let layerParam: Map<string, string> = new Map();
+        layerParam[name] = this.settings.layer_params[name].default_value;
+        return layerParam;
+      });
+      console.log("Get layerParams from stelle settings: ", layerParams);
+      console.log("Set layerParams to store.");
+      kvm.store.setItem(`layerParams_${this.get("id")}`, JSON.stringify(layerParams));
     }
     kvm.loadLayerParams(this.settings.layer_params, layerParams);
   }
@@ -144,7 +154,9 @@ export class Stelle {
 
                     $("#kvwmapServerStelleSelectField").find("option").remove();
                     kvm.store.setItem("userId", resultObj.user_id);
+                    kvm.userId = String(resultObj.user_id);
                     kvm.store.setItem("userName", resultObj.user_name);
+                    kvm.userName = String(resultObj.user_name);
                     $.each(resultObj.stellen, function (index, stelle) {
                       $("#kvwmapServerStelleSelectField").append('<option value="' + stelle.ID + '">' + stelle.Bezeichnung + "</option>");
                     });
@@ -202,7 +214,7 @@ export class Stelle {
   }
 
   finishLayerLoading(layer) {
-    console.log("finishLayerReading: readAllLayers= %s, numLayersLoaded=%s, numLayers=%s", this.readAllLayers, this.numLayersLoaded, this.numLayers);
+    // console.log("finishLayerReading: readAllLayers= %s, numLayersLoaded=%s, numLayers=%s", this.readAllLayers, this.numLayersLoaded, this.numLayers);
     if (this.loadAllLayers) {
       if (this.numLayersLoaded < this.numLayers - 1) {
         this.numLayersLoaded += 1;
@@ -223,7 +235,7 @@ export class Stelle {
   }
 
   finishLayerReading(layer) {
-    console.log("finishLayerReading: readAllLayers= %s, numLayersRead=%s, numLayers=%s", this.readAllLayers, this.numLayersRead, this.numLayers);
+    // console.log("finishLayerReading: readAllLayers= %s, numLayersRead=%s, numLayers=%s", this.readAllLayers, this.numLayersRead, this.numLayers);
     if (this.readAllLayers) {
       if (this.numLayersRead < this.numLayers - 1) {
         this.numLayersRead += 1;
@@ -252,7 +264,7 @@ export class Stelle {
       kvm.showActiveItem();
       kvm.closeSperrDiv();
     }
-    console.log("activeLayer after finishLayerReading: ", kvm.activeLayer ? kvm.activeLayer.get("id") : "keiner aktiv");
+    // console.log("activeLayer after finishLayerReading: ", kvm.activeLayer ? kvm.activeLayer.get("id") : "keiner aktiv");
   }
 
   /*
@@ -475,7 +487,7 @@ export class Stelle {
             kvm.tick(`&nbsp;&nbsp;-&nbsp;${kvm.getLayer(globalId).title}`);
           }
         });
-
+        // debugger;
         for (let i = 0; i < layerIds.length; i++) {
           const id = layerIds[i];
           const globalId = kvm.activeStelle.get("id") + "_" + id;

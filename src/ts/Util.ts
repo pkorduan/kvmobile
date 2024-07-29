@@ -102,7 +102,7 @@ export async function writeData(dir: string, file: string, dataObj: Blob | strin
             (fileWriter) => {
               fileWriter.onwriteend = () => {
                 // console.log("Successful file write...");
-                console.error(`Datei "${file}" wurde erfolgreich in das Verzeichnis "${dir}" geschrieben."`);
+                // console.log(`Datei "${file}" wurde erfolgreich in das Verzeichnis "${dir}" geschrieben."`);
                 resolve(fileEntry);
               };
               fileWriter.onerror = (e) => {

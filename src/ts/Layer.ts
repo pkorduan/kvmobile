@@ -60,6 +60,7 @@ export interface LayerSetting {
   table_name: string;
   schema_name: string;
   query?: string;
+  filter?: string;
   document_path?: string;
   vector_tile_url?: string;
   privileg?: string;
@@ -301,24 +302,16 @@ export class Layer {
     const fkAttribute: String = attribute.getFKAttribute();
     const vorschauOption: String = attribute.getVorschauOption();
     const subLayer: Layer = kvm.getLayer(subLayerId);
-    const filter = [`${subLayer.settings.table_alias}.${fkAttribute} = '${featureId}'`];
+    const where: string[] = [`${subLayer.settings.table_alias}.${fkAttribute} = '${featureId}'`];
+    const filter: string = kvm.replaceParams(this.settings.filter);
 
     if ($("#historyFilter").is(":checked")) {
-      filter.push(`${subLayer.settings.table_alias}.endet IS NOT NULL`);
+      where.push(`${subLayer.settings.table_alias}.endet IS NOT NULL`);
     } else {
-      filter.push(`${subLayer.settings.table_alias}.endet IS NULL`);
+      where.push(`${subLayer.settings.table_alias}.endet IS NULL`);
     }
 
-    // let sql = `
-    // 	SELECT
-    // 		*
-    // 	FROM
-    // 		${subLayer.getSqliteTableName()}
-    // 	WHERE
-    // 	  ${filter.join(' AND ')}
-    // `;
-
-    const sql = this.extentSql(subLayer.settings.query, filter);
+    const sql = this.extentSql(subLayer.settings.query, where, "", "", "", filter);
 
     // Das folgende geht noch nicht weil die Tabellen nicht so benannt sind  wie in sqlite
     //let sql = `${this.settings.query} AND ${filter.join(' AND ')}`;
@@ -391,11 +384,13 @@ export class Layer {
     kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Lese Daten aus Datenbank.`);
     //  order = (this.get('name_attribute') != '' ? this.get('name_attribute') : this.get('id_attribute'));
 
-    // var filter = [],
+    // var where = [],
     //     order = $('#anzeigeSortSelect').val(),
     //     sql = '';
 
-    let filter = [];
+    let where: string[] = [];
+    let filter: string = kvm.replaceParams(this.settings.filter);
+
     // console.log("readdata", this);
     // let sql: string;
 
@@ -404,7 +399,7 @@ export class Layer {
     if (this.isActive) {
       order = $("#anzeigeSortSelect").val();
 
-      filter = $(".filter-view-field")
+      where = $(".filter-view-field")
         .filter(function (i, field) {
           const value = $(field).find(".filter-view-value-field").val();
           return value !== undefined && value != "";
@@ -421,9 +416,9 @@ export class Layer {
     }
 */
     if ($("#historyFilter").is(":checked")) {
-      filter.push(`${this.settings.table_alias}.endet IS NOT NULL`);
+      where.push(`${this.settings.table_alias}.endet IS NOT NULL`);
     } else {
-      filter.push(`${this.settings.table_alias}.endet IS NULL`);
+      where.push(`${this.settings.table_alias}.endet IS NULL`);
     }
 
     // sql = `
@@ -435,13 +430,17 @@ export class Layer {
     //   ${(order != "" ? "ORDER BY " + order + "" : "")}
     //   ${(limit == 0 && offset == 0 ? "" : "LIMIT " + limit + " OFFSET " + offset)}
     // `;
+    let regExp: RegExp;
     this.stelle.tableNames.forEach((table) => {
-      this.settings.query = this.settings.query.replace(table, table.replace(".", "_"));
+      regExp = new RegExp(table, "g");
+      this.settings.query = this.settings.query.replace(regExp, table.replace(".", "_"));
     });
 
-    const sql = this.extentSql(this.settings.query, filter, order, limit, offset);
+    let query = kvm.replaceParams(this.settings.query);
 
-    // console.log(`Lese Daten mit ${sql} aus der Datenbank`);
+    const sql = this.extentSql(query, where, order, limit, offset, filter);
+
+    console.log(`Lese Daten von Layer ${this.title} mit sql: "${sql}"`);
     Util.executeSQL(kvm.db, sql)
       .then((rs) => {
         try {
@@ -454,9 +453,9 @@ export class Layer {
           this._features = new Map();
           //console.log("id_attribute: %o", this.get("id_attribute"));
           if (numRows == 0) {
-            if (filter.length > 0) {
-              console.log("filter %o", filter);
-              kvm.msg("Keine Daten gefunden. Filter anpassen um Daten anzuzeigen.", "Datenfilter");
+            if (where.length > 0) {
+              console.log("filter %o", where);
+              kvm.msg(`Keine Daten in Layer ${this.settings.title} gefunden. Filter anpassen um Daten anzuzeigen.`, "Datenfilter");
             } else {
               kvm.msg("Tabelle ist leer. Unter Einstellungen des Layers können Daten synchronisiert werden.", "Datenbank");
             }
@@ -497,13 +496,13 @@ export class Layer {
                 kvm.msg("Fehler beim Leeren der Layergruppe im Layer id: " + this.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
               }
             }
-            console.log("%s: readData > drawFeatures", this.title);
+            // console.log("%s: readData > drawFeatures", this.title);
             this.drawFeatures();
-            console.log("drawFeature beendet in Layer id: " + this.getGlobalId());
+            // console.log("drawFeature beendet in Layer id: " + this.getGlobalId());
           }
 
           try {
-            console.log("finishLayerReading of Layer id: " + this.getGlobalId());
+            // console.log("finishLayerReading of Layer id: " + this.getGlobalId());
             kvm.activeStelle.finishLayerReading(this);
           } catch ({ name, message }) {
             kvm.msg("Fehler beim Beenden des Ladens des Layers id: " + this.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
@@ -992,7 +991,7 @@ export class Layer {
         const dstFile = "delta_layer_" + this.getGlobalId() + ".json";
 
         const fileEntry = await Util.writeData(dstDir, dstFile, dataObj);
-        console.info(`Successful written deltas of layer "${this.title}" into File.`);
+        // console.log(`Successful written deltas of layer "${this.title}" into File.`);
         const fileUploadResult = await this._upload(fileEntry);
 
         const response = <SendDeltasResponse>JSON.parse(fileUploadResult.response);
@@ -1111,7 +1110,7 @@ export class Layer {
   }
 
   async applyDeltas(response: SendDeltasResponse) {
-    console.error(`applyDeltas Layer: ${this.title}`);
+    console.log(`applyDeltas Layer: ${this.title}`);
 
     // const response = JSON.parse(fileUploadResult.response);
 
@@ -1120,58 +1119,58 @@ export class Layer {
       console.log(this.get("title") + ": Response: %o", response);
 
       if (response.version !== this.get("version")) {
-        const msg = `Die Version des Layers ${this.get("title")} hat sich auf ${response.version} geändert. Alle Layer der Stelle werden komplett neu geladen. Beachten Sie dass sich dadurch die Formulare und Kartenstyles geändert haben können.`;
-        console.log(msg);
-        kvm.msg(msg, "Layeränderung");
-        await kvm.activeStelle.requestLayers();
-      } else {
-        this.numExecutedDeltas = 0;
-        this.numReturnedDeltas = response.deltas.length;
+        if (!kvm.dataModelChanges) {
+          kvm.dataModelChanges = [];
+        }
+        console.log(`Trage dataModelChanges für Layer ${this.settings.title} ein.`);
+        kvm.dataModelChanges.push({ layer: this, new_version: response.version });
+      }
+      this.numExecutedDeltas = 0;
+      this.numReturnedDeltas = response.deltas.length;
 
-        console.log(this.get("title") + ": numReturendDeltas: %s", this.numReturnedDeltas);
+      console.log(this.get("title") + ": numReturendDeltas: %s", this.numReturnedDeltas);
 
-        if (this.numReturnedDeltas > 0) {
-          const msg = `${this.numReturnedDeltas} Änderungen von Daten auf dem Server gefunden. Die Datenbank wurde gesichert und die Änderungen in die lokale Datenbank eingespielt.`;
-          kvm.writeLog(msg);
-          kvm.msg(msg, "Datenänderung");
-          kvm.backupDatabase();
-          if (
-            response.deltas.every((value) => {
-              return kvm.coalesce(value.sql, "") == "";
-            })
-          ) {
-            this.readData($("#limit").val(), $("#offset").val());
-          } else {
-            response.deltas.forEach((value) => {
-              if (kvm.coalesce(value.sql, "") != "") {
-                this.execSql(
-                  this.pointToUnderlineName(value.sql, this.get("schema_name"), this.get("table_name")),
-                  this.execServerDeltaSuccessFunc.bind({
-                    context: this,
-                    response: response,
-                    numReturnedDeltas: this.numReturnedDeltas,
-                  })
-                );
-              }
-            });
-          }
+      if (this.numReturnedDeltas > 0) {
+        const msg = `${this.numReturnedDeltas} Änderungen von Daten auf dem Server gefunden. Die Datenbank wurde gesichert und die Änderungen in die lokale Datenbank eingespielt.`;
+        kvm.writeLog(msg);
+        kvm.msg(msg, "Datenänderung");
+        // TODO backupDatabase auch nur ein mal machen wenn irgend ein Delta gekommen ist (Weiß man aber vorher nicht ob irgend ein layer ein Delta bekommen wird.)
+        // Wenn ein mal ein backDatabase gemacht wurde bei den anderen layern in der gleichen syncLayers Runde nicht mehr ausführen.
+        kvm.backupDatabase();
+        if (
+          response.deltas.every((value) => {
+            return kvm.coalesce(value.sql, "") == "";
+          })
+        ) {
+          this.readData($("#limit").val(), $("#offset").val());
         } else {
-          if (response.syncData.length > 0) {
-            console.log("upload: Setze LayerSettings syncVersion auf Wert in push_to_version aus den Response");
-            this.set("syncVersion", parseInt(response.syncData[response.syncData.length - 1].push_to_version));
-            this.runningSyncVersion = this.get("syncVersion");
-            this.saveToStore();
-            //kvm.msg("Keine Änderungen vom Server bekommen! Die aktuelle Version ist: " + this.get("syncVersion"), this.get('title'));
+          response.deltas.forEach((value) => {
+            if (kvm.coalesce(value.sql, "") != "") {
+              this.execSql(
+                this.pointToUnderlineName(value.sql, this.get("schema_name"), this.get("table_name")),
+                this.execServerDeltaSuccessFunc.bind({
+                  context: this,
+                  response: response,
+                  numReturnedDeltas: this.numReturnedDeltas,
+                })
+              );
+            }
+          });
+        }
+      } else {
+        if (response.syncData.length > 0) {
+          console.log("upload: Setze LayerSettings syncVersion auf Wert in push_to_version aus den Response");
+          this.set("syncVersion", parseInt(response.syncData[response.syncData.length - 1].push_to_version));
+          this.runningSyncVersion = this.get("syncVersion");
+          this.saveToStore();
+          if (this.hasEditPrivilege) {
             await this.clearDeltas("sql");
           }
-          this.readData($("#limit").val(), $("#offset").val());
         }
+        this.readData($("#limit").val(), $("#offset").val());
       }
     } else {
-      if ($("#syncLayerIcon_" + this.getGlobalId()).hasClass("fa-spinner")) {
-        $("#syncLayerIcon_" + this.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
-      }
-      kvm.closeSperrDiv(`Sync-Fehler Layer ${this.title}:<br>&nbsp;&nbsp;${response.msg}`);
+      throw Error(`Sync-Fehler Layer ${this.title}:<br>&nbsp;&nbsp;${response.msg}`);
     }
   }
 
@@ -1191,7 +1190,7 @@ export class Layer {
    *
    */
   async syncImages() {
-    console.error(`syncImages Layer: ${this.title}`);
+    console.log(`syncImages Layer: ${this.title}`);
     if (this.hasEditPrivilege) {
       //kvm.log("Layer.syncImages", 4);
       kvm.tick(`${this.title}:<br>&nbsp;&nbsp; Starte Synchronisation der Bilder mit dem Server.`, false);
@@ -1242,7 +1241,7 @@ export class Layer {
 
   async sendNewImage(img: string) {
     //kvm.log("Layer.sendNewImage", 4);
-    console.error(`sendNewImage ${img} (Layer: ${this.title})`);
+    console.log(`sendNewImage ${img} (Layer: ${this.title})`);
     kvm.log("Bild " + img + " wird hochgeladen.", 3);
     const icon = $("#syncImagesIcon_" + this.getGlobalId());
     const ft = new FileTransfer();
@@ -1278,7 +1277,7 @@ export class Layer {
       Connection: "close",
     };
 
-    console.error("upload to url: " + server);
+    console.log("upload to url: " + server);
     console.log("Upload img to url: " + server + " with options: " + JSON.stringify(options).replace((<any>options.params).passwort, "secret"));
     try {
       const fileUploadResult = await Util.upload(fileURL, encodeURI(server), options);
@@ -1393,7 +1392,7 @@ export class Layer {
    *     - Zeige Fehlermeldung an
    */
   async syncData() {
-    console.error(`syncData Layer: ${this.title}`);
+    // console.log(`syncData Layer: ${this.title}`);
     return new Promise<void>(async (resolve, reject) => {
       try {
         kvm.tick(`${this.title}:<br>&nbsp;&nbsp; Starte Synchronisation der Daten mit dem Server.`);
@@ -1473,7 +1472,7 @@ export class Layer {
    */
   async clearData() {
     //kvm.log("Layer.clearData", 4);
-    console.error("clearData");
+    console.log("clearData");
     const sql = `DELETE FROM ${this.getSqliteTableName()}`;
 
     try {
@@ -1525,7 +1524,7 @@ export class Layer {
       Util.executeSQL(kvm.db, sql)
         .then((rs: SQLitePlugin.Results) => {
           resolve();
-          console.error("TODO: update GUI");
+          // console.error("TODO: update GUI");
           /*
                     // kvm.log("Deltas von Layer " + this.layer.get("title") + " erfolgreich gelöscht.", 3);
                     let icon = $("#clearLayerIcon_" + this.getGlobalId());
@@ -3201,7 +3200,8 @@ export class Layer {
       const layer = <Layer>this.context;
       const id_attribute = layer.get("id_attribute");
       const featureId = layer.activeFeature.id;
-      const sql = layer.extentSql(layer.settings.query, [`${layer.settings.table_alias}.${id_attribute} = '${featureId}'`, `${layer.settings.table_alias}.endet IS NULL`]);
+      const filter: string = kvm.replaceParams(this.settings.filter);
+      const sql = layer.extentSql(layer.settings.query, [`${layer.settings.table_alias}.${id_attribute} = '${featureId}'`, `${layer.settings.table_alias}.endet IS NULL`], "", "", "", filter);
       console.log("SQL zum lesen des Datensatzes: ", sql);
 
       // let sql = `
@@ -3520,14 +3520,15 @@ export class Layer {
    * Do not read data for listing and mapping
    */
   appendToApp() {
-    // console.error(`xxx appendoApp ${this.getGlobalId()} ${this.title}`);
+    // console.log(`xxx appendoApp ${this.getGlobalId()} ${this.title}`);
     kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Füge Layer zur App hinzu.`);
     try {
       const index = kvm.activeStelle.getLayerDrawingIndex(this);
       if (index == 0) {
+        // $("#layer_list").prepend(this.getListItem());
         // document.getElementById("layer_list").insertAdjacentHTML("afterbegin", this.getListItem());
         document.getElementById("layer_list").append(this.getLayerListItem());
-        // console.error("appendToApp append getListItem " + this.getGlobalId());
+        // console.log("appendToApp append getListItem " + this.getGlobalId());
       } else {
         //ToDo hier die Funktion einbauen, die an Hand des index die richtige Layer id findet.
         // rtr
@@ -3535,12 +3536,9 @@ export class Layer {
         // $("#layer_list").append(this.getListItem());
         // document.getElementById("layer_list").insertAdjacentHTML("beforeend", this.getListItem());
         document.getElementById("layer_list").append(this.getLayerListItem());
-        // console.error("appendToApp append getListItem " + this.getGlobalId());
+        // console.log("appendToApp append getListItem " + this.getGlobalId());
       }
-      // console.error(
-      //   "xxx layer_list childCount=" +
-      //     document.getElementById("layer_list").childNodes.length
-      // );
+      // console.log("xxx layer_list childCount=" + document.getElementById("layer_list").childNodes.length);
       window.setTimeout(() => {
         this.bindLayerEvents(this.getGlobalId());
       }, 500);
@@ -3556,74 +3554,6 @@ export class Layer {
     }
   }
 
-  bttnSyncLayerClicked(evt: MouseEvent) {
-    console.info(`bttnSyncLayerClicked`);
-    const layer = kvm.activeLayer;
-    let target = $(evt.target);
-
-    if (target.hasClass("fa")) {
-      target = target.parent();
-    }
-
-    $("#sperr_div_content").html("");
-
-    // Sichere Datenbank
-    if (target.hasClass("inactive-button")) {
-      kvm.msg("Keine Internetverbindung! Kann Layer jetzt nicht synchronisieren.");
-    } else {
-      $("#syncLayerIcon_" + layer.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
-      $("#sperr_div").show();
-
-      if (layer.runningSyncVersion == 0) {
-        navigator.notification.confirm(
-          "Daten vom Server holen. Danach können eigene Änderungen synchronisiert werden.",
-          function (buttonIndex) {
-            if (buttonIndex == 1) {
-              // ja
-              layer.requestData();
-            } else {
-              $("#syncLayerIcon_" + layer.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
-              kvm.closeSperrDiv();
-            }
-          },
-          "Layer mit Server synchronisieren",
-          ["ja", "nein"]
-        );
-      } else {
-        navigator.notification.confirm(
-          "Jetzt lokale Änderungen Daten und Bilder, falls vorhanden, zum Server schicken, Änderungen vom Server holen und lokal einspielen? Wenn Änderungen vom Server kommen wird die lokale Datenbank vorher automatisch gesichert.",
-          async (buttonIndex) => {
-            if (buttonIndex == 1) {
-              $("#syncImageIcon_" + layer.getGlobalId()).toggleClass("fa-upload fa-spinner fa-spin");
-              $("#sperr_div").show();
-              const layers = kvm.getLayersSortedByUpdateOrder();
-              for (let i = 0; i < layers.length; i++) {
-                const layer = layers[i];
-                try {
-                  console.info(`Starte Synchronisieren des Layers: "${layer.title}"`);
-                  await layer.syncImages();
-                  console.error(`Bilder des Layers ${layer.title} wurden synchronisiert,`);
-                  await layer.syncData();
-                  console.error(`Daten des Layers ${layer.title} wurden synchronisiert,`);
-                } catch (ex) {
-                  console.error(`Fehler beim Synchronisieren des Layers: "${layer.title}".`, ex);
-                  const fehler = ex.message || JSON.stringify(ex);
-                  navigator.notification.alert(`Fehler beim Synchronisieren des Layers: "${layer.title}". Ursache:  ${fehler}`, () => {}, "Synchronisationsfehler");
-                }
-              }
-              $("#sperr_div").hide();
-              $("#syncLayerIcon_" + layer.getGlobalId()).toggleClass("fa-upload fa-spinner fa-spin");
-            } else {
-              $("#syncLayerIcon_" + layer.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
-              kvm.closeSperrDiv();
-            }
-          },
-          "Layer mit Server synchronisieren",
-          ["ja", "nein"]
-        );
-      }
-    }
-  }
   bttnSyncImagesLayerClicked(evt: MouseEvent) {
     console.info(`bttnSyncImagesLayerClicked`);
     if ((<HTMLElement>evt.currentTarget).classList.contains("inactive-button")) {
@@ -3724,7 +3654,7 @@ export class Layer {
    */
   // TODO
   bindLayerEvents(layerGlobalId: any) {
-    console.error(`xxx bindLayerEvents ${layerGlobalId}`, this.getGlobalId());
+    // console.log(`xxx bindLayerEvents ${layerGlobalId}`, this.getGlobalId());
     // console.log("bindLayerEvents for layerGlobalId: %s", layerGlobalId);
     // Schaltet alle layer function button events zunächst aus.
     $(".layer-function-button").off();
@@ -3768,7 +3698,7 @@ export class Layer {
     // rtr
     // Daten Synchronisieren
     document.getElementById("syncLayerButton_" + layerGlobalId).addEventListener("click", (evt) => {
-      console.error(`sync-layer-button.clicked  (syncLayerButton_${layerGlobalId}`, evt, this);
+      // console.log(`sync-layer-button.clicked  (syncLayerButton_${layerGlobalId}`, evt, this);
       const layer = kvm.activeLayer;
       let target = $(evt.target);
 
@@ -3813,9 +3743,9 @@ export class Layer {
                   try {
                     console.info(`Starte Synchronisieren des Layers: "${layer.title}"`);
                     await layer.syncImages();
-                    console.error(`Bilder des Layers ${layer.title} wurden synchronisiert,`);
+                    console.log(`Bilder des Layers ${layer.title} wurden synchronisiert,`);
                     await layer.syncData();
-                    console.error(`Daten des Layers ${layer.title} wurden synchronisiert,`);
+                    console.log(`Daten des Layers ${layer.title} wurden synchronisiert,`);
                   } catch (ex) {
                     console.error(`Fehler beim Synchronisieren des Layers: "${layer.title}".`, ex);
                     const fehler = ex.message || JSON.stringify(ex);
@@ -3838,7 +3768,7 @@ export class Layer {
 
     // Bilder Synchronisieren
     document.getElementById("syncImagesButton_" + layerGlobalId).addEventListener("click", (evt) => {
-      console.error(`syncImagesButton.clicked ${this.getGlobalId()}`);
+      console.log(`syncImagesButton.clicked ${this.getGlobalId()}`);
       // const layer = kvm.activeLayer;
       // let target = $(evt.target);
 
@@ -4057,6 +3987,7 @@ export class Layer {
   }
 
   getLayerListItem() {
+    console.log(`### getLayerListItem ${this.title}`);
     const div = createHtmlElement("div", null, "layer-list-div");
     div.id = `layer_${this.getGlobalId()}`;
     const radioInput = createHtmlElement("input", div);
@@ -4071,10 +4002,10 @@ export class Layer {
     menuBttn.id = `layer-functions-button_${this.getGlobalId()}`;
     menuBttn.ariaHidden = "true";
 
-    div.append(this.createLayerListItemFunction("Daten Synchronisieren", "syncLayer", "sync-layer-button", "fa fa-refresh", (ev) => this.bttnSyncLayerClicked(ev)));
-    if (this.hasDocumentAttribute) {
-      div.append(this.createLayerListItemFunction("Bilder synchronisieren", "syncImages", "sync-images-button", "fa fa-upload", (ev) => this.bttnSyncImagesLayerClicked(ev)));
-    }
+    // div.append(this.createLayerListItemFunction("Daten Synchronisieren", "syncLayer", "sync-layer-button", "fa fa-refresh", (ev) => this.bttnSyncLayerClicked(ev)));
+    // if (this.hasDocumentAttribute) {
+    //   div.append(this.createLayerListItemFunction("Bilder synchronisieren", "syncImages", "sync-images-button", "fa fa-upload", (ev) => this.bttnSyncImagesLayerClicked(ev)));
+    // }
     div.append(this.createLayerListItemFunction("Lokale Daten löschen", "clearLayer", "clear-layer-button", "fa fa-ban", (ev) => this.bttnClearLayerClicked(ev)));
     div.append(this.createLayerListItemFunction("Layer neu laden", "reloadLayer", "reload-layer-button", "fa fa-window-restore", (ev) => this.bttnReloadLayerClicked(ev)));
 
@@ -4090,6 +4021,7 @@ export class Layer {
   }
 
   getListItem() {
+    // debugger;
     console.log("getListItem for layerId: ", this.getGlobalId());
     const customStyleClass = this.get("useCustomStyle") ? "visible" : "hidden";
     const html = `
@@ -4238,7 +4170,7 @@ export class Layer {
 
     if (this.runningSyncVersion == 0) {
       // get all data as new base for deltas
-      url += "&go=Daten_Export_Exportieren&export_format=GeoJSONPlus&all=1&epsg=4326";
+      url += "&go=Daten_Export_Exportieren&without_filter=1&export_format=GeoJSONPlus&all=1&epsg=4326";
       console.log(this.get("title") + ": Hole initial alle Daten mit Url: %s", url);
     } else {
       // sync deltas
@@ -4257,7 +4189,7 @@ export class Layer {
     url += file + "Stelle_ID=" + this.stelle.get("Stelle_ID") + "&" + "login_name=" + this.stelle.get("login_name") + "&" + "selected_layer_id=" + this.get("id") + "&" + "passwort=" + encodeURIComponent(this.stelle.get("passwort"));
 
     // get all data as new base for deltas
-    url += "&go=Daten_Export_Exportieren&export_format=GeoJSONPlus&all=1&epsg=4326";
+    url += "&go=Daten_Export_Exportieren&without_filter=1&export_format=GeoJSONPlus&all=1&epsg=4326";
     console.log(this.get("title") + ": Hole initial alle Daten mit Url: %s", url);
     return url;
   }
@@ -4638,15 +4570,17 @@ export class Layer {
   }
 
   /**
-   * Function append or insert expressions for where, order, limit and/or offset in sql.
+   * Function append or insert expressions for where, order, limit and/or offset in sql
+   * and wrap it in a subquery with a filter if exists.
    * @param sql string
    * @param where string[]
    * @param order string
    * @param limit string
    * @param offset string
+   * @param filter string
    * @returns
    */
-  extentSql(sql: string, where: string[], order = "", limit = "", offset = "") {
+  extentSql(sql: string, where: string[], order = "", limit = "", offset = "", filter: string = "") {
     let whereIndex = sql.toLowerCase().indexOf("where");
     let orderByIndex = sql.toLowerCase().indexOf("order by");
     let limitIndex = sql.toLowerCase().indexOf("limit ");
@@ -4698,6 +4632,10 @@ export class Layer {
       } else {
         sql += ` ${whereExpression}`;
       }
+    }
+
+    if (filter.length > 0) {
+      sql = `SELECT * FROM (${sql}) AS query WHERE ${filter}`;
     }
 
     return sql;

@@ -62,7 +62,7 @@ declare var FingerprintAuth: typeof FingerprintAuthT;
  * @returns
  */
 export async function getWebviewUrl(filePath: string): Promise<string> {
-  console.error("getFileUrl: ", filePath);
+  // console.log("getFileUrl: ", filePath);
 
   //   listFiles(filePath.substring(0, filePath.lastIndexOf("/")));
   let path = filePath.startsWith("file") ? filePath : "file://" + filePath;
@@ -128,6 +128,10 @@ class Kvm {
   versionNumber: String;
   layerParams: any = {};
   logFileEntry: FileEntry;
+  userId: string;
+  userName: string;
+
+  dataModelChanges: { layer: Layer; new_version: string }[];
 
   // showItem: <(p:any)=>void>undefined,
   // log: <(p:any)=>void>undefined,
@@ -177,7 +181,7 @@ class Kvm {
 
   getLayersSortedByUpdateOrder() {
     const layers = Array.from(this._layers.values());
-    const tree: { id: string; childs: string[] }[] = [];
+    const tree: { id: string; childs: string[]; parent: string[] }[] = [];
     for (let i = 0; i < layers.length; i++) {
       const layer = layers[i];
       const attributes = layer.attributes;
@@ -190,7 +194,20 @@ class Kvm {
           subLayerIds.push(attr.getGlobalSubLayerId());
         }
       }
-      tree.push({ id: layer.getGlobalId(), childs: subLayerIds });
+      tree.push({ id: layer.getGlobalId(), childs: subLayerIds, parent: [] });
+    }
+
+    for (let i = 0; i < tree.length; i++) {
+      if (tree[i].childs?.length > 0) {
+        for (let chNr = 0; chNr < tree[i].childs.length; chNr++) {
+          const chTreeEntry = tree.find((el) => tree[i].childs[chNr] === el.id);
+          chTreeEntry.parent.push(tree[i].id);
+        }
+      }
+    }
+
+    for (let i = 0; i < tree.length; i++) {
+      console.info(tree[i].id + " " + tree[i].parent);
     }
 
     const emptyFct = (array: any[]) => {
@@ -205,13 +222,13 @@ class Kvm {
     while (!emptyFct(tree)) {
       for (let i = 0; i < tree.length; i++) {
         if (tree[i]) {
-          if (tree[i]?.childs.length === 0) {
+          if (tree[i]?.parent.length === 0) {
             sorted.push(tree[i].id);
             tree[i] = null;
           } else {
             let inList = true;
-            for (let chNr = 0; chNr < tree[i].childs.length; chNr++) {
-              if (!sorted.includes(tree[i].childs[chNr])) {
+            for (let chNr = 0; chNr < tree[i].parent.length; chNr++) {
+              if (!sorted.includes(tree[i].parent[chNr])) {
                 inList = false;
               }
             }
@@ -228,7 +245,7 @@ class Kvm {
       console.info(sorted[i]);
     }
 
-    return sorted.map((id) => this.getLayer(id)).reverse();
+    return sorted.map((id) => this.getLayer(id));
   }
 
   /*
@@ -243,6 +260,73 @@ class Kvm {
   }
   removeLayer(layer: Layer | MapLibreLayer) {
     this._layers.delete(layer.getGlobalId());
+  }
+
+  bttnSyncLayersClicked(evt: MouseEvent) {
+    console.info(`bttnSyncLayersClicked`);
+    const layer = kvm.activeLayer;
+    let target = $(evt.target);
+
+    if (target.hasClass("fa")) {
+      target = target.parent();
+    }
+
+    $("#sperr_div_content").html("");
+
+    // Sichere Datenbank
+    if (target.hasClass("inactive-button")) {
+      this.msg("Keine Internetverbindung! Kann Layer jetzt nicht synchronisieren.");
+    } else {
+      $("#syncLayerIcon_" + layer.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
+      $("#sperr_div").show();
+      navigator.notification.confirm(
+        "Jetzt lokale Änderungen Daten und Bilder, falls vorhanden, zum Server schicken, Änderungen vom Server holen und lokal einspielen? Wenn Änderungen vom Server kommen wird die lokale Datenbank vorher automatisch gesichert.",
+        async (buttonIndex) => {
+          if (buttonIndex == 1) {
+            $("#syncImageIcon_" + layer.getGlobalId()).toggleClass("fa-upload fa-spinner fa-spin");
+            $("#sperr_div").show();
+
+            await kvm.syncLayers();
+
+            $("#sperr_div").hide();
+            $("#syncLayerIcon_" + layer.getGlobalId()).toggleClass("fa-upload fa-spinner fa-spin");
+          } else {
+            $("#syncLayerIcon_" + layer.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
+            kvm.closeSperrDiv();
+          }
+        },
+        "Layer mit Server synchronisieren",
+        ["ja", "nein"]
+      );
+    }
+  }
+
+  async syncLayers() {
+    const layers = kvm.getLayersSortedByUpdateOrder();
+    for (let i = 0; i < layers.length; i++) {
+      const layer = layers[i];
+      try {
+        console.log(`Starte Synchronisieren des Layers: "${layer.title}"`);
+        await layer.syncImages();
+        // console.error(`Bilder des Layers ${layer.title} wurden synchronisiert`);
+        await layer.syncData();
+        // console.error(`Daten des Layers ${layer.title} wurden synchronisiert`);
+      } catch (ex) {
+        console.error(`Fehler beim Synchronisieren des Layers: "${layer.title}".`, ex);
+        const fehler = ex.message || JSON.stringify(ex);
+        navigator.notification.alert(`Fehler beim Synchronisieren des Layers: "${layer.title}". Ursache:  ${fehler}`, () => {}, "Synchronisierungsfehler");
+      }
+    }
+    if (this.dataModelChanges?.length > 0) {
+      let msg = "Datenmodell-Änderungen:\n";
+      for (let i = 0; i < this.dataModelChanges.length; i++) {
+        msg += `Neue Version ${this.dataModelChanges[i].new_version} für Layer ${this.dataModelChanges[i].layer.title} gefunden.\n`;
+      }
+      msg += `Alle Layer der Stelle werden komplett neu geladen. Beachten Sie dass sich dadurch die Formulare und Kartenstyles geändert haben können.`;
+      console.log(msg);
+      kvm.msg(msg, "Layeränderung");
+      kvm.activeStelle.requestLayers();
+    }
   }
 
   // loadHeadFile(filename, filetype) {
@@ -548,14 +632,28 @@ class Kvm {
    */
   startApplication() {
     let activeView = ["settings", "map", "featurelist"].includes(kvm.store.getItem("activeView")) ? kvm.store.getItem("activeView") : "featurelist";
+    kvm.userId = kvm.store.getItem("userId");
+    kvm.userName = kvm.store.getItem("userName");
 
+    // const layerList = document.getElementById("layer_list");
+    // if (layerList) {
+    //     console.error("addMutationObserver");
+    //     const callback = (mutations: MutationRecord[], observer: MutationObserver) => {
+    //         for (const mutation of mutations) {
+    //             if (mutation.type === "childList" && mutation.addedNodes?.length > 0) {
+    //                 console.error("xxx Node(s) added", mutation.addedNodes);
+    //             } else if (mutation.type === "attributes") {
+    //                 console.info(`The ${mutation.attributeName} attribute was modified.`, mutation);
+    //             }
+    //         }
+    //     };
     const layerList = document.getElementById("layer_list");
     if (layerList) {
-      console.error("addMutationObserver");
+      // console.log("addMutationObserver");
       const callback = (mutations: MutationRecord[], observer: MutationObserver) => {
         for (const mutation of mutations) {
           if (mutation.type === "childList" && mutation.addedNodes?.length > 0) {
-            // console.error("xxx Node(s) added", mutation.addedNodes);
+            // console.log("xxx Node(s) added", mutation.addedNodes);
           } else if (mutation.type === "attributes") {
             // console.info(
             //   `The ${mutation.attributeName} attribute was modified.`,
@@ -565,6 +663,10 @@ class Kvm {
         }
       };
 
+      //     // Create an observer instance linked to the callback function
+      //     const observer = new MutationObserver(callback);
+      //     observer.observe(layerList, { attributes: true, childList: true, subtree: true });
+      // }
       // Create an observer instance linked to the callback function
       const observer = new MutationObserver(callback);
       observer.observe(layerList, { attributes: true, childList: true, subtree: true });
@@ -680,6 +782,8 @@ class Kvm {
         }
         if (layerIds.length > 0) {
           stelle.sortOverlays();
+        } else {
+          this.closeSperrDiv();
         }
       } else {
         kvm.msg("Laden Sie die Stellen und Layer vom Server.");
@@ -891,16 +995,16 @@ class Kvm {
     }).addTo(map);
     const ReloadLayers = Control.extend({
       onAdd: function (map: LMap) {
-        console.log("Add leaflet control reloadLayers %o to Map: %o", this, map);
+        // console.log("Add leaflet control reloadLayers %o to Map: %o", this, map);
         this._div = DomUtil.create("div", "leaflet-bar leaflet-control-reloadlayers"); // create a div with a class "reloadlayers-control-div"
         this._div.innerHTML = '<a class="leaflet-control-reloadlayers-icon"><span><i class="fa fa-refresh" onclick="kvm.reloadFeatures()"></i></span></a>';
         return this._div;
       },
       onClick: function (evt) {
-        console.log("Click on leaflet control reloadLayers with event: %o", evt);
+        // console.log("Click on leaflet control reloadLayers with event: %o", evt);
       },
       onRemove: function (map) {
-        console.log("Remove leaflet control reloadLayers %o to Map: %o", this, map);
+        // console.log("Remove leaflet control reloadLayers %o to Map: %o", this, map);
       },
     });
     // (<any>L).Control.reloadLayers = function (opts) {
@@ -1099,34 +1203,34 @@ class Kvm {
   }
 
   initViewSettings() {
-    console.log("initViewSettings");
+    // console.log("initViewSettings");
     kvm.config.viewAfterCreate = (kvm.store.hasOwnProperty("viewAfterCreate") ? kvm.store.getItem("viewAfterCreate") : kvm.config.viewAfterCreate) || "last";
     kvm.store.setItem("viewAfterCreate", kvm.config.viewAfterCreate);
     $("#viewAfterCreate").val(kvm.config.viewAfterCreate);
-    console.log("viewAfterCreate = ", kvm.config.viewAfterCreate);
+    // console.log("viewAfterCreate = ", kvm.config.viewAfterCreate);
 
     kvm.config.viewAfterUpdate = (kvm.store.hasOwnProperty("viewAfterUpdate") ? kvm.store.getItem("viewAfterUpdate") : kvm.config.viewAfterUpdate) || "last";
     kvm.store.setItem("viewAfterUpdate", kvm.config.viewAfterUpdate);
     $("#viewAfterUpdate").val(kvm.config.viewAfterUpdate);
-    console.log("viewAfterUpdate = ", kvm.config.viewAfterUpdate);
+    // console.log("viewAfterUpdate = ", kvm.config.viewAfterUpdate);
 
     kvm.config.newAfterCreate = (kvm.store.hasOwnProperty("newAfterCreate") ? kvm.store.getItem("newAfterCreate") == "true" : kvm.config.newAfterCreate) || false;
     kvm.store.setItem("newAfterCreate", kvm.config.newAfterCreate);
     $(".newAfterCreate").prop("checked", kvm.config.newAfterCreate);
-    console.log("newAfterCreate = ", kvm.config.newAfterCreate);
+    // console.log("newAfterCreate = ", kvm.config.newAfterCreate);
   }
 
   initSecuritySettings() {
-    console.log("initSecuritySettings");
+    // console.log("initSecuritySettings");
     kvm.config.fingerprintAuth = (kvm.store.hasOwnProperty("fingerprintAuth") ? kvm.store.getItem("fingerprintAuth") == "true" : kvm.config.fingerprintAuth) || false;
     kvm.store.setItem("fingerprintAuth", kvm.config.fingerprintAuth);
     $("#fingerprintAuth").prop("checked", kvm.config.fingerprintAuth);
-    console.log("fingerprintAuth = ", kvm.config.fingerprintAuth);
+    // console.log("fingerprintAuth = ", kvm.config.fingerprintAuth);
 
     kvm.config.confirmSave = (kvm.store.hasOwnProperty("confirmSave") ? kvm.store.getItem("confirmSave") == "true" : kvm.config.confirmSave) || false;
     kvm.store.setItem("confirmSave", kvm.config.confirmSave);
     $("#confirmSave").prop("checked", kvm.config.confirmSave);
-    console.log("confirmSave = ", kvm.config.confirmSave);
+    // console.log("confirmSave = ", kvm.config.confirmSave);
   }
 
   saveMapSettings(mapSettings) {
@@ -1135,7 +1239,7 @@ class Kvm {
   }
 
   initBackgroundLayers() {
-    // console.error('initBackgroundLayers');
+    // console.log('initBackgroundLayers');
     try {
       this.saveBackgroundLayerSettings(kvm.store.backgroundLayerSettings ? JSON.parse(kvm.store.getItem("backgroundLayerSettings")) : kvm.config.backgroundLayerSettings);
       //this.saveBackgroundLayerSettings(kvm.config.backgroundLayerSettings);
@@ -1149,7 +1253,7 @@ class Kvm {
       this.backgroundLayers = [];
       // for (var i = 0; i < 2; ++i) {
       for (let i = 0; i < this.backgroundLayerSettings.length; ++i) {
-        console.log(this.backgroundLayerSettings[i]);
+        // console.log(this.backgroundLayerSettings[i]);
         this.backgroundLayers.push(new BackgroundLayer(this.backgroundLayerSettings[i]));
       }
     } catch (error) {
@@ -2236,9 +2340,9 @@ class Kvm {
 
   openLogFile() {
     window.resolveLocalFileSystemURL(kvm.store.getItem("localBackupPath") || kvm.config.localBackupPath, (dirEntry) => {
-      console.log(dirEntry);
+      // console.log(dirEntry);
       (<DirectoryEntry>dirEntry).getFile("kvmobile_logfile.txt", { create: true, exclusive: false }, (fileEntry) => {
-        console.log(fileEntry);
+        // console.log(fileEntry);
         kvm.logFileEntry = fileEntry;
       });
     });
@@ -2281,7 +2385,7 @@ class Kvm {
   }
 
   saveLayerParams(paramElement) {
-    console.log("saveLayerParams");
+    // console.log("saveLayerParams");
     // Set changed param to kvm Object
     kvm.layerParams[paramElement.name] = $(paramElement).val();
     // Save all params in store
@@ -2291,6 +2395,7 @@ class Kvm {
       layerParams[selectField.name] = $(selectField).val();
     });
     kvm.store.setItem(`layerParams_${kvm.activeStelle.get("id")}`, JSON.stringify(layerParams));
+    kvm.activeLayer.readData($("#limit").val(), $("#offset").val());
   }
 
   async loadDeviceData() {
@@ -2345,7 +2450,7 @@ class Kvm {
   }
 
   showNextItem(viewAfter, layer): void {
-    console.log(`showNextItem ${viewAfter}`);
+    // console.log(`showNextItem ${viewAfter}`);
     switch (viewAfter) {
       case "featurelist":
         {
@@ -2379,7 +2484,7 @@ class Kvm {
   }
 
   showItem(item): void {
-    console.log("showItem: %o", item);
+    // console.log("showItem: %o", item);
     // erstmal alle panels ausblenden
     $(".panel").hide();
     if (["map", "mapEdit"].indexOf(item) === -1) {
@@ -2563,6 +2668,26 @@ class Kvm {
         return s;
       }
     }
+  }
+
+  replaceParams(str: string) {
+    let replacedString = str;
+    let regExp: RegExp;
+    Object.keys(kvm.layerParams).forEach((layerParam) => {
+      // console.log(`Check if layerParam $${layerParam} is in Text: "${str}"`);
+      if (str.includes(`$${layerParam}`)) {
+        regExp = new RegExp(`\\$${layerParam}`, "g");
+        str = str.replace(regExp, $(`#${layerParam}`).val().toString());
+        // console.log(`LayerParameter $${layerParam} in Text ersetzt: "${str}"`);
+      }
+    });
+    // console.log(`Check if $USER_ID is in Text: "${str}"`);
+    if (str.includes("$USER_ID")) {
+      regExp = new RegExp(`\\$USER_ID`, "g");
+      str = str.replace(regExp, kvm.userId);
+      // console.log(`$USER_ID in Text ersetzt mit ${kvm.userId}: "${str}"`);
+    }
+    return str;
   }
 
   uuidv4() {
@@ -2896,16 +3021,16 @@ class Kvm {
    */
   showGeomStatus() {
     if (kvm.activeLayer && kvm.activeLayer.activeFeature) {
-      console.log("activeFeature.point %o", kvm.activeLayer.activeFeature.getDataValue("point"));
-      console.log("activeFeature.oldGeom %o", kvm.activeLayer.activeFeature.oldGeom);
-      console.log("activeFeature.geom %o", kvm.activeLayer.activeFeature.geom);
-      console.log("activeFeature.newGeom %o", kvm.activeLayer.activeFeature.newGeom);
-      console.log("form geom_wkt: %s", $("#geom_wkt").val());
+      // console.log("activeFeature.point %o", kvm.activeLayer.activeFeature.getDataValue("point"));
+      // console.log("activeFeature.oldGeom %o", kvm.activeLayer.activeFeature.oldGeom);
+      // console.log("activeFeature.geom %o", kvm.activeLayer.activeFeature.geom);
+      // console.log("activeFeature.newGeom %o", kvm.activeLayer.activeFeature.newGeom);
+      // console.log("form geom_wkt: %s", $("#geom_wkt").val());
       // TODO ???
-      console.log("form " + (<any>kvm.activeLayer).get("geometry_attribute") + ": %s", $('.form-field [name="' + kvm.activeLayer.get("geometry_attribute") + '"]').val());
+      // console.log("form " + (<any>kvm.activeLayer).get("geometry_attribute") + ": %s", $('.form-field [name="' + kvm.activeLayer.get("geometry_attribute") + '"]').val());
     }
     if (kvm.activeLayer.activeFeature.editableLayer) {
-      console.log("editableLayer: %o", kvm.activeLayer.activeFeature.editableLayer.getLatLng());
+      // console.log("editableLayer: %o", kvm.activeLayer.activeFeature.editableLayer.getLatLng());
     }
   }
 
