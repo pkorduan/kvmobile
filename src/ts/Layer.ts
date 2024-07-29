@@ -3645,7 +3645,7 @@ export class Layer {
     // const parent = (<HTMLElement>evt.currentTarget).parentElement.parentElement;
     // const infoPanel = parent.querySelector(".info-layer-div");
     if (infoPanel) {
-      infoPanel.style.display = infoPanel.style.display === "none" ? "" : "none";
+      infoPanel.style.display = infoPanel.style.display === "none" ? "block" : "none";
     }
   }
 
@@ -4014,7 +4014,7 @@ export class Layer {
     }
 
     const infoPanel = this.getLayerinfoPanel();
-    const infoListItem = this.createLayerListItemFunction("Layer Style", "infoLayer", "info-layer-button", "fa fa-info", (ev) => this.bttnShowLayerInfoClicked(infoPanel, ev));
+    const infoListItem = this.createLayerListItemFunction("Layer-Info", "infoLayer", "info-layer-button", "fa fa-info", (ev) => this.bttnShowLayerInfoClicked(infoPanel, ev));
     infoListItem.append(infoPanel);
     div.append(infoListItem);
     return div;

@@ -2671,21 +2671,23 @@ class Kvm {
   }
 
   replaceParams(str: string) {
-    let replacedString = str;
-    let regExp: RegExp;
-    Object.keys(kvm.layerParams).forEach((layerParam) => {
-      // console.log(`Check if layerParam $${layerParam} is in Text: "${str}"`);
-      if (str.includes(`$${layerParam}`)) {
-        regExp = new RegExp(`\\$${layerParam}`, "g");
-        str = str.replace(regExp, $(`#${layerParam}`).val().toString());
-        // console.log(`LayerParameter $${layerParam} in Text ersetzt: "${str}"`);
+    if (typeof str !== "undefined") {
+      let replacedString = str;
+      let regExp: RegExp;
+      Object.keys(kvm.layerParams).forEach((layerParam) => {
+        // console.log(`Check if layerParam $${layerParam} is in Text: "${str}"`);
+        if (str.includes(`$${layerParam}`)) {
+          regExp = new RegExp(`\\$${layerParam}`, "g");
+          str = str.replace(regExp, $(`#${layerParam}`).val().toString());
+          // console.log(`LayerParameter $${layerParam} in Text ersetzt: "${str}"`);
+        }
+      });
+      // console.log(`Check if $USER_ID is in Text: "${str}"`);
+      if (str.includes("$USER_ID")) {
+        regExp = new RegExp(`\\$USER_ID`, "g");
+        str = str.replace(regExp, kvm.userId);
+        // console.log(`$USER_ID in Text ersetzt mit ${kvm.userId}: "${str}"`);
       }
-    });
-    // console.log(`Check if $USER_ID is in Text: "${str}"`);
-    if (str.includes("$USER_ID")) {
-      regExp = new RegExp(`\\$USER_ID`, "g");
-      str = str.replace(regExp, kvm.userId);
-      // console.log(`$USER_ID in Text ersetzt mit ${kvm.userId}: "${str}"`);
     }
     return str;
   }
