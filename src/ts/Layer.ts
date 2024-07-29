@@ -1167,7 +1167,7 @@ export class Layer {
             this.set("syncVersion", newVersion);
             this.saveToStore();
             this.clearDeltas("sql");
-            console.log(this.get("title") + ": call readData at the end of execServerDeltaSuccessFunc");
+            console.log(this.get("title") + ": call readData after execDelta");
             kvm.writeLog(`Layer ${this.get("title")}: ${this.numExecutedDeltas} Deltas vom Server auf Client ausgeführt.`);
             this.context.readData($("#limit").val(), $("#offset").val());
           }
