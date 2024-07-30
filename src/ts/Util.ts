@@ -82,7 +82,7 @@ export async function fileExists(url: string): Promise<boolean> {
     window.resolveLocalFileSystemURL(
       url,
       (fileEntry: Entry) => {
-        resolve(true);
+        resolve(fileEntry.isFile || fileEntry.isDirectory);
       },
       (e: FileError) => {
         resolve(false);
@@ -109,7 +109,7 @@ export async function writeData(dir: string, file: string, dataObj: Blob | strin
                 console.error(`Fehler beim Schreiben der Datei "${file}" in das Verzeichnis "${dir}".`, e);
                 reject({
                   message: `Fehler beim Schreiben der Datei "${file}" in das Verzeichnis "${dir}".`,
-                  error: e,
+                  cause: e,
                 });
                 // console.log("Failed file write: " + e.toString());
                 // const msg =
@@ -129,7 +129,7 @@ export async function writeData(dir: string, file: string, dataObj: Blob | strin
             (fileError) => {
               reject({
                 message: `Fehler beim Erzeugen des FileWriter von Entry nativeUrl=${fileEntry.nativeURL} name=${fileEntry.name}`,
-                error: fileError,
+                cause: fileError,
               });
             }
           );
@@ -138,7 +138,7 @@ export async function writeData(dir: string, file: string, dataObj: Blob | strin
       (fileError) => {
         reject({
           message: `Fehler in resolveLocalFileSystemURL nativeUrl=${dir}`,
-          error: fileError,
+          cause: fileError,
         });
       }
     );
@@ -153,15 +153,15 @@ export async function readFileAsString(fileEntry: FileEntry, encoding?: string) 
         resolve(<string>reader.result);
       };
       reader.onerror = (ev) => {
-        reject({ msg: "Fehler beim Lesen des Blobs", error: ev });
+        reject({ message: "Fehler beim Lesen des Blobs", cause: ev });
       };
       reader.readAsText(file);
     };
 
     fileEntry.file(fileReadFct, (error) =>
       reject({
-        msg: `Fehler beim Laden der Datei: ${fileEntry.name}.`,
-        error: error,
+        message: `Fehler beim Laden der Datei: ${fileEntry.name}.`,
+        cause: error,
       })
     );
   });

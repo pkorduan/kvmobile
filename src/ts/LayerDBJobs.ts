@@ -2,10 +2,7 @@ import { Layer } from "./Layer";
 import { executeSQL } from "./Util";
 import { kvm } from "./app";
 
-export async function runInsert(
-  layer: Layer,
-  delta: { type: string; change: string; delta: string }
-) {
+export async function runInsert(layer: Layer, delta: { type: string; change: string; delta: string }) {
   console.log("LayerDBJobs.runInsert", layer, delta);
   // const strategy = {
   //     context: this,
@@ -40,10 +37,7 @@ export async function runInsert(
   });
 }
 
-export async function runDelete(
-  layer: Layer,
-  delta: { type: string; change: string; delta: string }
-) {
+export async function runDelete(layer: Layer, delta: { type: string; change: string; delta: string }) {
   console.log("LayerDBJobs.runDelete", layer);
   // const strategy = {
   //   context: this,
@@ -129,10 +123,7 @@ export async function runDelete(
  * @param delta
  * @returns
  */
-export async function runUpdate(
-  layer: Layer,
-  delta: { type: string; change: string; delta: string }
-) {
+export async function runUpdate(layer: Layer, delta: { type: string; change: string; delta: string }) {
   console.log("LayerDBJobs.runUpdate", layer, delta);
   // const strategy = {
   //     context: this,
@@ -274,10 +265,7 @@ async function backupDataset(layer: Layer) {
  * for delete delta if insert delta exists or
  * for insert delta if delte delta exists
  */
-async function writeDelta(
-  layer: Layer,
-  delta: { type: string; change: string; delta: string }
-) {
+async function writeDelta(layer: Layer, delta: { type: string; change: string; delta: string }) {
   try {
     // console.log("writeDelta: ", delta);
     // const layer = this.layer;
@@ -293,13 +281,7 @@ async function writeDelta(
   SELECT
     '${delta.type}' AS type,
     '${delta.change}' AS change,
-    '${layer
-      .underlineToPointName(
-        delta.delta,
-        layer.get("schema_name"),
-        layer.get("table_name")
-      )
-      .replace(/\'/g, "''")}' AS delta,
+    '${layer.underlineToPointName(delta.delta, layer.get("schema_name"), layer.get("table_name")).replace(/\'/g, "''")}' AS delta,
     '${kvm.now()}' AS created_at
   WHERE
     (
@@ -356,10 +338,7 @@ async function readDataset(layer: Layer) {
   // console.log("readDataset");
   const id_attribute = layer.get("id_attribute");
   const featureId = layer.activeFeature.getDataValue(id_attribute);
-  const sql = layer.extentSql(layer.settings.query, [
-    `${layer.settings.table_alias}.${id_attribute} = '${featureId}'`,
-    `${layer.settings.table_alias}.endet IS NULL`,
-  ]);
+  const sql = layer.extentSql(kvm.replaceParams(this.settings.query), [`${layer.settings.table_alias}.${id_attribute} = '${featureId}'`, `${layer.settings.table_alias}.endet IS NULL`]);
   console.log("LayerDBJobs->readDataset: ", sql);
   return executeSQL(kvm.db, sql);
 }
