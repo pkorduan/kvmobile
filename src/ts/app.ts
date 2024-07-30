@@ -506,6 +506,7 @@ class Kvm {
    * @returns
    */
   async writeLog(log: any) {
+    return;
     log = `[${kvm.now(" ", "", ":")}] ${log}` + "\n";
     const dataObj = new Blob([log], { type: "text/plain" });
     try {

@@ -455,7 +455,7 @@ export class Layer {
           if (numRows == 0) {
             if (where.length > 0) {
               console.log("filter %o", where);
-              kvm.msg(`Keine Daten in Layer ${this.settings.title} gefunden. Filter anpassen um Daten anzuzeigen.`, "Datenfilter");
+              // kvm.msg(`Keine Daten in Layer ${this.settings.title} gefunden. Filter anpassen um Daten anzuzeigen.`, "Datenfilter");
             } else {
               kvm.msg("Tabelle ist leer. Unter Einstellungen des Layers können Daten synchronisiert werden.", "Datenbank");
             }
@@ -1161,13 +1161,13 @@ export class Layer {
             throw new Error(`Fehler beim Schreiben der Deltas in die DB - Layer ${this.title}:<br>&nbsp;&nbsp;${ex}`, { cause: ex });
           }
 
-          const newVersion = parseInt(this.response.syncData[this.response.syncData.length - 1].push_to_version);
+          const newVersion = parseInt(response.syncData[response.syncData.length - 1].push_to_version);
           this.set("syncVersion", newVersion);
           this.saveToStore();
           this.clearDeltas("sql");
           console.log(this.get("title") + ": call readData after execDelta");
           kvm.writeLog(`Layer ${this.get("title")}: ${this.numExecutedDeltas} Deltas vom Server auf Client ausgeführt.`);
-          this.context.readData($("#limit").val(), $("#offset").val());
+          this.readData($("#limit").val(), $("#offset").val());
         }
       } else {
         if (response.syncData.length > 0) {
@@ -1524,7 +1524,11 @@ export class Layer {
    * @param delta
    */
   async clearDeltas(type: "sql" | "all" | "img", delta?: string) {
-    console.info(`clearDeltas(${type}, ${delta})`);
+    if (delta) {
+      console.info(`clearDeltas(${type}, ${delta})`);
+    } else {
+      console.info(`clearDeltas(${type})`);
+    }
     if (typeof delta === "undefined") delta = "";
     //kvm.log("Layer.clearDeltas", 4);
     let sql = `DELETE FROM ${this.getSqliteTableName()}_deltas`;
@@ -2673,6 +2677,7 @@ export class Layer {
           this.afterCreateDataset(rs);
         })
         .catch((reason) => {
+          console.error("Etwas ist schief gegangen: ", reason);
           kvm.msg("Etwas ist schief gegangen: " + JSON.stringify(reason));
         });
     }
