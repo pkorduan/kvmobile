@@ -455,7 +455,7 @@ export class Stelle {
    * 	requestData
    */
   async requestLayers() {
-    //console.log('Layer.requestLayers for stelle: %o', this);
+    console.error("Layer.requestLayers for stelle: %o", this);
 
     const filename = cordova.file.dataDirectory + "layers_stelle_" + this.get("id") + ".json";
 
@@ -481,12 +481,12 @@ export class Stelle {
       if ("layerIds_" + kvm.activeStelle.get("id") in kvm.store) {
         const layerIds = <string[]>JSON.parse(kvm.store["layerIds_" + kvm.activeStelle.get("id")]);
         kvm.tick("Lösche folgende Layer:");
-        layerIds.map((id) => {
-          let globalId = kvm.activeStelle.get("id") + "_" + id;
-          if (kvm.getLayer(globalId)) {
-            kvm.tick(`&nbsp;&nbsp;-&nbsp;${kvm.getLayer(globalId).title}`);
-          }
-        });
+        // layerIds.map((id) => {
+        //   let globalId = kvm.activeStelle.get("id") + "_" + id;
+        //   if (kvm.getLayer(globalId)) {
+        //     kvm.tick(`&nbsp;&nbsp;-&nbsp;${kvm.getLayer(globalId).title}`);
+        //   }
+        // });
         // debugger;
         for (let i = 0; i < layerIds.length; i++) {
           const id = layerIds[i];
@@ -504,9 +504,6 @@ export class Stelle {
 
       kvm.store.removeItem("activeLayerId");
 
-      $("#featurelistHeading").html("Noch kein Layer ausgewählt");
-      $("#featurelistBody").html('Wählen Sie unter Einstellungen in der Gruppe "Layer" einen Layer aus. Öffnen Sie dann das Optionen Menü und wählen die Funktion "Daten synchronisieren"!');
-      $("#showSearch").hide();
       this.loadAllLayers = true;
       this.numLayersLoaded = 0;
       this.readAllLayers = true;
@@ -516,10 +513,10 @@ export class Stelle {
       if (this.numLayers > 0) {
         kvm.tick("Lege Layer neu an.");
         // Sortiere Layer settings nach drawing order
-        resultObj.layers.sort((a, b) => (parseInt(a.drawingorder) > parseInt(b.drawingorder) ? 1 : -1));
+        resultObj.layers = resultObj.layers.sort((a, b) => (parseInt(a.drawingorder) > parseInt(b.drawingorder) ? 1 : -1));
         // add requested layers
         console.log("  requestLayers) Füge neu runtergeladene Layer zur Anwendung hinzu.");
-        resultObj.layers.forEach((layerSetting) => {
+        for (let layerSetting of resultObj.layers) {
           if (layerSetting.vector_tile_url) {
             console.log(`Erzeuge einen VectorTile Layer-Objekt für Layer ${layerSetting.title}`);
             const layer = new MapLibreLayer(layerSetting, true, this);
@@ -529,16 +526,19 @@ export class Stelle {
           } else {
             console.log(`Erzeuge einen normales Layer-Objekt für Layer ${layerSetting.title}`);
             const layer = new Layer(this, layerSetting);
-            layer.createTable();
+            await layer.createTable();
             layer.appendToApp();
             layer.saveToStore();
             layer.requestData(); // Das ist neu: Daten werden gleich geladen nach dem Anlegen in der Stelle
           }
-        });
+        }
       }
       kvm.setConnectionStatus();
       //console.log('Store after save layer: %o', kvm.store);
       $("#requestLayersButton").hide();
+      $("#featurelistHeading").html("Noch kein Layer ausgewählt");
+      $("#featurelistBody").html('Wählen Sie unter Einstellungen in der Gruppe "Layer" einen Layer aus. Öffnen Sie dann das Optionen Menü und wählen die Funktion "Daten synchronisieren"!');
+      $("#showSearch").hide();
       // hier nicht schließen, sonden am Ende von requestData kvm.closeSperrDiv();
     } else {
       kvm.log("Fehlerausgabe von parseLayerResult!", 4);

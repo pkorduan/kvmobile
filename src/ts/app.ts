@@ -263,8 +263,8 @@ class Kvm {
   }
 
   bttnSyncLayersClicked(evt: MouseEvent) {
-    console.info(`bttnSyncLayersClicked`);
-    const layer = kvm.activeLayer;
+    console.error(`bttnSyncLayersClicked`);
+    // const layer = kvm.activeLayer;
 
     $("#sperr_div_content").html("");
 
@@ -272,21 +272,21 @@ class Kvm {
     if ((<HTMLButtonElement>evt.currentTarget).classList.contains("inactive-button")) {
       this.msg("Keine Internetverbindung! Kann Layer jetzt nicht synchronisieren.");
     } else {
-      $("#syncLayerIcon_" + layer.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
+      // $("#syncLayerIcon_" + layer.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
       $("#sperr_div").show();
       navigator.notification.confirm(
         "Jetzt lokale Änderungen Daten und Bilder, falls vorhanden, zum Server schicken, Änderungen vom Server holen und lokal einspielen? Wenn Änderungen vom Server kommen wird die lokale Datenbank vorher automatisch gesichert.",
         async (buttonIndex) => {
           if (buttonIndex == 1) {
-            $("#syncImageIcon_" + layer.getGlobalId()).toggleClass("fa-upload fa-spinner fa-spin");
+            // $("#syncImageIcon_" + layer.getGlobalId()).toggleClass("fa-upload fa-spinner fa-spin");
             $("#sperr_div").show();
 
             await kvm.syncLayers();
 
             $("#sperr_div").hide();
-            $("#syncLayerIcon_" + layer.getGlobalId()).toggleClass("fa-upload fa-spinner fa-spin");
+            // $("#syncLayerIcon_" + layer.getGlobalId()).toggleClass("fa-upload fa-spinner fa-spin");
           } else {
-            $("#syncLayerIcon_" + layer.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
+            // $("#syncLayerIcon_" + layer.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
             kvm.closeSperrDiv();
           }
         },
@@ -811,6 +811,7 @@ class Kvm {
     this.activeStelle.readAllLayers = true;
     this.activeStelle.numLayersRead = 0;
     // TODO
+    console.error("app.reloadFeatures");
     this._layers.forEach((layer) => {
       layer.readData();
     });

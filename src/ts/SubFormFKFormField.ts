@@ -80,18 +80,32 @@ export class SubFormFKFormField implements Field {
         console.log("Übergeordneter Layer %s", pkLayer.title);
         // Abfragen der uuid des Features in das das aktive Feature fällt
         // aktuelle mit Within umgesetzt. Bei Polygonen könnte auch ein Intersects notwendig werden.
+        // 03
+        // const sqlx = `
+        //   SELECT
+        //     ${pkLayer.get("id_attribute")} AS id,
+        //     geom
+        //   FROM
+        //     ${pkLayer.getSqliteTableName()}
+        //   WHERE
+        //     ST_Within(
+        //       ST_GeomFromText('${this.attribute.layer.activeFeature.geom.toWkt()}', 4326),
+        //       ST_GeomFromEWKB(${pkLayer.get("geometry_attribute")})
+        //     ) > 0
+        // `;
         const sql = `
-          SELECT
-            ${pkLayer.get("id_attribute")} AS id,
-            geom
-          FROM
-            ${pkLayer.getSqliteTableName()}
-          WHERE
-            ST_Within(
-              ST_GeomFromText('${this.attribute.layer.activeFeature.geom.toWkt()}', 4326),
-              ST_GeomFromEWKB(${pkLayer.get("geometry_attribute")})
-            )
-        `;
+				SELECT
+          geom,
+					${pkLayer.get("id_attribute")} AS id,
+          geom
+				FROM
+					${pkLayer.getSqliteTableName()}
+				WHERE
+					ST_Within(
+						ST_GeomFromText('${this.attribute.layer.activeFeature.geom.toWkt()}', 4326),
+						GeomFromEWKB(${pkLayer.get("geometry_attribute")})
+					)
+			`;
         // eventuell ist diese Geometrie richtiger als die von ST_GeomFromText '${this.attribute.layer.activeFeature.wkxToEwkb(this.attribute.layer.activeFeature.geom)}'
         // Prüfen gegen welche Geometrie ST_Within testet, vielleicht liegt es auch an einer falschen geom in standorte
         console.log("Frage parent id mit sql ab: ", sql);
@@ -99,6 +113,9 @@ export class SubFormFKFormField implements Field {
           .then((rs) => {
             console.log("Resultset von räumlicher Abfrage", rs);
             let id = "";
+            if (rs.rows.length > 0) {
+              console.info("firstItem:", rs.rows.item(0), rs.rows.item(0).id);
+            }
             for (let i = 0; i < rs.rows.length; i++) {
               if (typeof rs.rows.item(i).geom != "undefined" && rs.rows.item(i).geom != "") {
                 id = rs.rows.item(i).id;

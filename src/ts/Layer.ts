@@ -382,6 +382,7 @@ export class Layer {
    */
   async readData(limit: any = 50000, offset: any = 0, order: any = "") {
     kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Lese Daten aus Datenbank.`);
+    console.error(`readData ${this.title}`);
     //  order = (this.get('name_attribute') != '' ? this.get('name_attribute') : this.get('id_attribute'));
 
     // var where = [],
@@ -556,8 +557,8 @@ export class Layer {
    * Will be called in requestData
    * @param items
    */
-  writeData(items) {
-    console.log("Layer %s: Schreibe %s Datensätze in die lokale Datebank.", this.title, items.length);
+  async writeData(items) {
+    console.error("Layer %s: Schreibe %s Datensätze in die lokale Datebank.", this.title, items.length);
     kvm.tick("Schreibe Layerdaten in Datenbank.");
     const keys = this.getTableColumns().join(", ");
     const values =
@@ -590,54 +591,52 @@ export class Layer {
 		`;
 
     //console.log("Schreibe Daten mit Sql: " + sql.substring(0, 1000));
-    kvm.db.executeSql(
-      sql,
-      [],
-      (rs) => {
-        kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Daten erfolgreich in Datenbank geschrieben.`);
-        this.isLoaded = true; // Layer successfully loaded. All other requestData calls will only sync
-        if (parseInt(this.get("sync"))) {
-          console.log("Setze layerSettings syncVersion auf Layer.runningSyncVersion: ", this.runningSyncVersion);
-          this.set("syncVersion", this.runningSyncVersion);
-          $("#syncVersionSpan_" + this.getGlobalId()).html(this.runningSyncVersion.toString());
-          this.set("syncLastLocalTimestamp", Date());
-        }
-        this.saveToStore();
-        console.log("Layer %s: readData in folge von writeData.", this.title);
-        if (this.stelle.loadAllLayers) {
-          // finishLayerLoading read data only after last layer is loaded.
-          this.stelle.finishLayerLoading(this);
-        } else {
-          this.readData();
-        }
-      },
-      (error) => {
-        this.set("syncVersion", 0);
-        $("#syncVersionSpan_" + this.getGlobalId()).html("0");
-        kvm.log("Fehler beim Zugriff auf die Datenbank: " + error.message, 1);
-        alert("Fehler beim Zugriff auf die Datenbank: " + error.message);
-      }
-    );
-  }
+    try {
+      await Util.executeSQL(kvm.db, sql);
+    } catch (ex) {
+      this.set("syncVersion", 0);
+      $("#syncVersionSpan_" + this.getGlobalId()).html("0");
+      kvm.log("Fehler beim Zugriff auf die Datenbank: " + ex, 1);
+      alert("Fehler beim Zugriff auf die Datenbank: " + ex.message);
+      throw { message: `Fehler beim Schreiben des Layers ${this.title}`, cause: ex };
+    }
 
-  createTables() {
-    //kvm.log("Layer.createTables", 3);
-    const layerIds = JSON.parse(kvm.store.getItem("layerIds_" + this.stelle.get("id")));
-
-    for (let i = 0; i < layerIds.length; i++) {
-      this.set("id", layerIds[i]);
-      this.settings = JSON.parse(kvm.store.getItem("layerSettings_" + this.getGlobalId()));
-      this.attributes = $.map(this.settings.attributes, (attribute) => {
-        return new Attribute(this, attribute);
-      });
-      this.createTable();
+    kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Daten erfolgreich in Datenbank geschrieben.`);
+    this.isLoaded = true; // Layer successfully loaded. All other requestData calls will only sync
+    if (parseInt(this.get("sync"))) {
+      console.log("Setze layerSettings syncVersion auf Layer.runningSyncVersion: ", this.runningSyncVersion);
+      this.set("syncVersion", this.runningSyncVersion);
+      $("#syncVersionSpan_" + this.getGlobalId()).html(this.runningSyncVersion.toString());
+      this.set("syncLastLocalTimestamp", Date());
+    }
+    this.saveToStore();
+    console.log("Layer %s: readData in folge von writeData.", this.title);
+    if (this.stelle.loadAllLayers) {
+      // finishLayerLoading read data only after last layer is loaded.
+      this.stelle.finishLayerLoading(this);
+    } else {
+      await this.readData();
     }
   }
+
+  // createTables() {
+  //   //kvm.log("Layer.createTables", 3);
+  //   const layerIds = JSON.parse(kvm.store.getItem("layerIds_" + this.stelle.get("id")));
+
+  //   for (let i = 0; i < layerIds.length; i++) {
+  //     this.set("id", layerIds[i]);
+  //     this.settings = JSON.parse(kvm.store.getItem("layerSettings_" + this.getGlobalId()));
+  //     this.attributes = $.map(this.settings.attributes, (attribute) => {
+  //       return new Attribute(this, attribute);
+  //     });
+  //     this.createTable();
+  //   }
+  // }
 
   /**
    * Create the table for layer data and the deltas
    */
-  createTable() {
+  createTableOrg() {
     const sql = this.getCreateTableSql();
     const layer = this;
     try {
@@ -686,6 +685,39 @@ export class Layer {
       console.error(`Fehler in Funktion createTable: ${name} Message: ${message}`);
       kvm.msg(`Fehler beim Anlegen der Tabelle mit sql: ${sql} Fehler: ${name} Message: ${message}`, "Datenbank");
     }
+  }
+
+  createTable() {
+    const sql = this.getCreateTableSql();
+    const layer = this;
+
+    return new Promise<void>((resolve, reject) => {
+      kvm.log("Erzeuge Tabelle mit sql: " + sql, 3);
+      Util.executeSQL(kvm.db, sql)
+        .then(() => {
+          kvm.log("Tabelle " + layer.getSqliteTableName() + " erfolgreich angelegt.", 3);
+          if (layer.hasEditPrivilege) {
+            const tableName = layer.getSqliteTableName() + "_deltas";
+            const tableColumnDefinitions = ["version INTEGER PRIMARY KEY", "type text", "change text", "delta text", "created_at text"];
+            const sqlCreateDeltaTbl = "CREATE TABLE IF NOT EXISTS " + tableName + " (" + tableColumnDefinitions.join(", ") + ")";
+            Util.executeSQL(kvm.db, sqlCreateDeltaTbl)
+              .then(() => {
+                kvm.log(`Deltas Tabelle für Layer ${layer.title} erfolgreich angelegt.`, 3);
+                resolve();
+              })
+              .catch((err) => {
+                kvm.log(`Deltas Tabelle für Layer ${layer.title} konnte nicht angelegt werden.`, 3);
+                reject({ message: `Deltas Tabelle für Layer ${layer.title} konnte nicht angelegt werden.`, cause: err });
+              });
+          } else {
+            resolve();
+          }
+        })
+        .catch((err) => {
+          kvm.log(`Tabelle für Layer ${layer.title} konnte nicht angelegt werden.`, 3);
+          reject({ message: `Tabelle für Layer ${layer.title} konnte nicht angelegt werden.`, cause: err });
+        });
+    });
   }
 
   /**
@@ -873,7 +905,7 @@ export class Layer {
    * - updateTable has success
    * - layer sync has been started registered in bindLayerEvents for .sync-layer-button
    */
-  requestData() {
+  async requestData() {
     console.log("Layer %s: requestData", this.title);
     // ToDo Ab hier in einem Fenster den Fortschritt des Ladevorganges anzeigen.
     //kvm.log("Frage Daten vom Server ab.<br>Das kann je nach Datenmenge und<br>Internetverbindung einige Minuten dauern.");
@@ -883,89 +915,114 @@ export class Layer {
     const url = this.isLoaded ? this.getSyncUrl() : this.getDataUrl();
 
     kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Frage Layerdaten ab mit URL: ${url}`);
+
+    const fileEntry = await Util.download(url, cordova.file.dataDirectory + filename);
+    const txt = await Util.readFileAsString(fileEntry);
+
+    let collection: any;
+
+    console.log("Download Ergebnis (Head 1000): %s", txt?.substring(0, 1000));
+
+    collection = JSON.parse(txt);
+
+    if (("success" in collection && !collection.success) || ("type" in collection && collection.type != "FeatureCollection")) {
+      kvm.msg(collection.msg, `Fehler beim Laden des Layers ${this.title} vom Server.`);
+      return 0;
+    }
+    console.log("Layer %s: Anzahl empfangene Datensätze: %s", this.title, collection.features.length);
+    console.log("Layer " + this.get("title") + ": Version in Response: " + collection.lastDeltaVersion);
+    kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Empfangene Datensätze ${collection.features.length}`);
+    if ("lastDeltaVersion" in collection) {
+      console.log("Setze runningSyncVersion auf collection.lastDeltaVersion: ", collection.lastDeltaVersion);
+      this.runningSyncVersion = collection.lastDeltaVersion;
+    }
+    console.log("Layer " + this.get("title") + ": Version der Daten (runningSyncVersion): " + this.runningSyncVersion);
+    // if (collection.features.length > 0) {
+    await this.writeData(collection.features);
+
     //    this.activate();
-    fileTransfer.download(
-      url,
-      cordova.file.dataDirectory + filename,
-      (fileEntry) => {
-        fileEntry.file(
-          (file) => {
-            const reader = new FileReader();
+    // fileTransfer.download(
+    //   url,
+    //   cordova.file.dataDirectory + filename,
+    //   (fileEntry) => {
+    //     fileEntry.file(
+    //       (file) => {
+    //         const reader = new FileReader();
 
-            reader.onloadend = (evt) => {
-              console.log("Layer %s: Download der Daten ist abgeschlossen.", this.title);
-              kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Layerdaten erfolgreich runtergeladen.`);
-              let collection: any;
+    //         reader.onloadend = (evt) => {
+    //           console.log("Layer %s: Download der Daten ist abgeschlossen.", this.title);
+    //           kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Layerdaten erfolgreich runtergeladen.`);
+    //           let collection: any;
 
-              console.log("Download Ergebnis (Head 1000): %s", evt.target.result.toString().substring(0, 1000));
-              try {
-                collection = JSON.parse(<string>evt.target.result);
-              } catch (error) {
-                const err_msg = "Fehler beim Runterladen der Layerdaten.";
-                console.error("%s Fehler: %o Response: %o", error, err_msg, evt.target.result);
-                kvm.log(err_msg + " error: " + JSON.stringify(error));
-                kvm.msg(err_msg + "Kann Antwort vom Server nicht parsen: " + JSON.stringify(evt.target.result) + " Wenden Sie sich an den Admin des Servers.");
-                return false;
-              }
-              if (("success" in collection && !collection.success) || ("type" in collection && collection.type != "FeatureCollection")) {
-                kvm.msg(collection.msg, `Fehler beim Laden des Layers ${this.title} vom Server.`);
-                return 0;
-              }
-              console.log("Layer %s: Anzahl empfangene Datensätze: %s", this.title, collection.features.length);
-              console.log("Layer " + this.get("title") + ": Version in Response: " + collection.lastDeltaVersion);
-              kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Empfangene Datensätze ${collection.features.length}`);
-              if ("lastDeltaVersion" in collection) {
-                console.log("Setze runningSyncVersion auf collection.lastDeltaVersion: ", collection.lastDeltaVersion);
-                this.runningSyncVersion = collection.lastDeltaVersion;
-              }
-              console.log("Layer " + this.get("title") + ": Version der Daten (runningSyncVersion): " + this.runningSyncVersion);
-              // if (collection.features.length > 0) {
-              this.writeData(collection.features);
-              // }
-              // else {
-              //   kvm.msg(
-              //     "Für Layer '" +
-              //       this.title +
-              //       "' sind keine Daten zum Download vorhanden. Änderungen können später synchronisiert werden.",
-              //     "Hinweis"
-              //   );
-              //   console.log(
-              //     "requestData: Setze LayerSettings syncVersion auf Layer.runningSyncVerison: ",
-              //     this.runningSyncVersion
-              //   );
-              //   this.set("syncVersion", this.runningSyncVersion);
-              //   $("#syncVersionSpan_" + this.getGlobalId()).html(
-              //     this.runningSyncVersion.toString()
-              //   );
-              //   this.set("syncLastLocalTimestamp", Date());
-              //   if (
-              //     $("#syncLayerIcon_" + this.getGlobalId()).hasClass(
-              //       "fa-spinner"
-              //     )
-              //   ) {
-              //     $("#syncLayerIcon_" + this.getGlobalId()).toggleClass(
-              //       "fa-refresh fa-spinner fa-spin"
-              //     );
-              //   }
-              //   this.refresh();
-              //   // TODO: Prüfen ob hier SperrDiv geschlossen werden muss
-              //   //kvm.closeSperrDiv(this.title + ': Abfrage der Daten beendet.');
-              // }
-            };
+    //           console.log("Download Ergebnis (Head 1000): %s", evt.target.result.toString().substring(0, 1000));
+    //           try {
+    //             collection = JSON.parse(<string>evt.target.result);
+    //           } catch (error) {
+    //             const err_msg = "Fehler beim Runterladen der Layerdaten.";
+    //             console.error("%s Fehler: %o Response: %o", error, err_msg, evt.target.result);
+    //             kvm.log(err_msg + " error: " + JSON.stringify(error));
+    //             kvm.msg(err_msg + "Kann Antwort vom Server nicht parsen: " + JSON.stringify(evt.target.result) + " Wenden Sie sich an den Admin des Servers.");
+    //             return false;
+    //           }
+    //           if (("success" in collection && !collection.success) || ("type" in collection && collection.type != "FeatureCollection")) {
+    //             kvm.msg(collection.msg, `Fehler beim Laden des Layers ${this.title} vom Server.`);
+    //             return 0;
+    //           }
+    //           console.log("Layer %s: Anzahl empfangene Datensätze: %s", this.title, collection.features.length);
+    //           console.log("Layer " + this.get("title") + ": Version in Response: " + collection.lastDeltaVersion);
+    //           kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Empfangene Datensätze ${collection.features.length}`);
+    //           if ("lastDeltaVersion" in collection) {
+    //             console.log("Setze runningSyncVersion auf collection.lastDeltaVersion: ", collection.lastDeltaVersion);
+    //             this.runningSyncVersion = collection.lastDeltaVersion;
+    //           }
+    //           console.log("Layer " + this.get("title") + ": Version der Daten (runningSyncVersion): " + this.runningSyncVersion);
+    //           // if (collection.features.length > 0) {
+    //           this.writeData(collection.features);
+    //           // }
+    //           // else {
+    //           //   kvm.msg(
+    //           //     "Für Layer '" +
+    //           //       this.title +
+    //           //       "' sind keine Daten zum Download vorhanden. Änderungen können später synchronisiert werden.",
+    //           //     "Hinweis"
+    //           //   );
+    //           //   console.log(
+    //           //     "requestData: Setze LayerSettings syncVersion auf Layer.runningSyncVerison: ",
+    //           //     this.runningSyncVersion
+    //           //   );
+    //           //   this.set("syncVersion", this.runningSyncVersion);
+    //           //   $("#syncVersionSpan_" + this.getGlobalId()).html(
+    //           //     this.runningSyncVersion.toString()
+    //           //   );
+    //           //   this.set("syncLastLocalTimestamp", Date());
+    //           //   if (
+    //           //     $("#syncLayerIcon_" + this.getGlobalId()).hasClass(
+    //           //       "fa-spinner"
+    //           //     )
+    //           //   ) {
+    //           //     $("#syncLayerIcon_" + this.getGlobalId()).toggleClass(
+    //           //       "fa-refresh fa-spinner fa-spin"
+    //           //     );
+    //           //   }
+    //           //   this.refresh();
+    //           //   // TODO: Prüfen ob hier SperrDiv geschlossen werden muss
+    //           //   //kvm.closeSperrDiv(this.title + ': Abfrage der Daten beendet.');
+    //           // }
+    //         };
 
-            reader.readAsText(file);
-          },
-          function (error) {
-            alert("Fehler beim Einlesen der heruntergeladenen Datei. Prüfen Sie die URL und Parameter, die für die Synchronisation verwendet werden.");
-            const msg = "Fehler beim lesen der Datei: " + error.code;
-            kvm.log(msg, 1);
-            kvm.closeSperrDiv(msg);
-          }
-        );
-      },
-      this.downloadError,
-      true
-    );
+    //         reader.readAsText(file);
+    //       },
+    //       function (error) {
+    //         alert("Fehler beim Einlesen der heruntergeladenen Datei. Prüfen Sie die URL und Parameter, die für die Synchronisation verwendet werden.");
+    //         const msg = "Fehler beim lesen der Datei: " + error.code;
+    //         kvm.log(msg, 1);
+    //         kvm.closeSperrDiv(msg);
+    //       }
+    //     );
+    //   },
+    //   this.downloadError,
+    //   true
+    // );
   }
 
   /**
@@ -1110,7 +1167,7 @@ export class Layer {
   }
 
   async applyDeltas(response: SendDeltasResponse) {
-    console.log(`applyDeltas Layer: ${this.title}`);
+    console.error(`applyDeltas Layer: ${this.title}`);
     // const response = JSON.parse(fileUploadResult.response);
 
     if (response.success) {
@@ -1141,12 +1198,12 @@ export class Layer {
             return kvm.coalesce(value.sql, "") == "";
           })
         ) {
-          this.readData($("#limit").val(), $("#offset").val());
+          await this.readData($("#limit").val(), $("#offset").val());
         } else {
           try {
-            response.deltas.forEach(async (value) => {
-              if (kvm.coalesce(value.sql, "") != "") {
-                await Util.executeSQL(kvm.db, this.pointToUnderlineName(value.sql, this.get("schema_name"), this.get("table_name")));
+            for (let delta of response.deltas) {
+              if (kvm.coalesce(delta.sql, "") != "") {
+                await Util.executeSQL(kvm.db, this.pointToUnderlineName(delta.sql, this.get("schema_name"), this.get("table_name")));
                 // this.execSql(
                 //   this.pointToUnderlineName(value.sql, this.get("schema_name"), this.get("table_name")),
                 //   this.execServerDeltaSuccessFunc.bind({
@@ -1156,7 +1213,7 @@ export class Layer {
                 //   })
                 // );
               }
-            });
+            }
           } catch (ex) {
             throw new Error(`Fehler beim Schreiben der Deltas in die DB - Layer ${this.title}:<br>&nbsp;&nbsp;${ex}`, { cause: ex });
           }
@@ -1164,10 +1221,10 @@ export class Layer {
           const newVersion = parseInt(response.syncData[response.syncData.length - 1].push_to_version);
           this.set("syncVersion", newVersion);
           this.saveToStore();
-          this.clearDeltas("sql");
+          await this.clearDeltas("sql");
           console.log(this.get("title") + ": call readData after execDelta");
           kvm.writeLog(`Layer ${this.get("title")}: ${this.numExecutedDeltas} Deltas vom Server auf Client ausgeführt.`);
-          this.readData($("#limit").val(), $("#offset").val());
+          await this.readData($("#limit").val(), $("#offset").val());
         }
       } else {
         if (response.syncData.length > 0) {
@@ -1179,7 +1236,7 @@ export class Layer {
             await this.clearDeltas("sql");
           }
         }
-        this.readData($("#limit").val(), $("#offset").val());
+        await this.readData($("#limit").val(), $("#offset").val());
       }
     } else {
       throw Error(`Sync-Fehler Layer ${this.title}:<br>&nbsp;&nbsp;${response.msg}`);
@@ -1202,7 +1259,7 @@ export class Layer {
    *
    */
   async syncImages() {
-    console.log(`syncImages Layer: ${this.title}`);
+    console.error(`syncImages Layer: ${this.title}`);
     if (this.hasEditPrivilege) {
       //kvm.log("Layer.syncImages", 4);
       kvm.tick(`${this.title}:<br>&nbsp;&nbsp; Starte Synchronisation der Bilder mit dem Server.`, false);
@@ -1404,7 +1461,7 @@ export class Layer {
    *     - Zeige Fehlermeldung an
    */
   async syncData() {
-    // console.log(`syncData Layer: ${this.title}`);
+    console.error(`syncData Layer: ${this.title}`);
     return new Promise<void>(async (resolve, reject) => {
       try {
         kvm.tick(`${this.title}:<br>&nbsp;&nbsp; Starte Synchronisation der Daten mit dem Server.`);
@@ -3511,21 +3568,21 @@ export class Layer {
     );
   }
 
-  execServerDeltaSuccessFunc(rs) {
-    console.log(this.context.get("title") + ": execServerDeltaSuccessFunc");
-    this.context.numExecutedDeltas++;
-    if (this.context.numExecutedDeltas == this.context.numReturnedDeltas) {
-      var newVersion = parseInt(this.response.syncData[this.response.syncData.length - 1].push_to_version);
-      this.context.set("syncVersion", newVersion);
-      this.context.saveToStore();
-      this.context.clearDeltas("sql");
-      console.log(this.context.get("title") + ": call readData at the end of execServerDeltaSuccessFunc");
-      kvm.writeLog(`Layer ${this.context.get("title")}: ${this.context.numExecutedDeltas} Deltas vom Server auf Client ausgeführt.`);
-      this.context.readData($("#limit").val(), $("#offset").val());
-    } else {
-      //console.log(this.context.numExecutedDeltas + '. Delta ausgeführt! Weiter ...');
-    }
-  }
+  // execServerDeltaSuccessFunc(rs) {
+  //   console.log(this.context.get("title") + ": execServerDeltaSuccessFunc");
+  //   this.context.numExecutedDeltas++;
+  //   if (this.context.numExecutedDeltas == this.context.numReturnedDeltas) {
+  //     var newVersion = parseInt(this.response.syncData[this.response.syncData.length - 1].push_to_version);
+  //     this.context.set("syncVersion", newVersion);
+  //     this.context.saveToStore();
+  //     this.context.clearDeltas("sql");
+  //     console.log(this.context.get("title") + ": call readData at the end of execServerDeltaSuccessFunc");
+  //     kvm.writeLog(`Layer ${this.context.get("title")}: ${this.context.numExecutedDeltas} Deltas vom Server auf Client ausgeführt.`);
+  //     this.context.readData($("#limit").val(), $("#offset").val());
+  //   } else {
+  //     //console.log(this.context.numExecutedDeltas + '. Delta ausgeführt! Weiter ...');
+  //   }
+  // }
 
   // ToDo getInsertDelta schreiben und ggf. auch in createDelta verwenden.
   // Prüfen ob values auch so wie in collectChanges erzeugt werden können oder dort wieder verwendet werden kann.
