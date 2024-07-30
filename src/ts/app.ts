@@ -505,15 +505,13 @@ class Kvm {
    * @param str
    * @returns
    */
-  writeLog(log) {
+  async writeLog(log: any) {
     log = `[${kvm.now(" ", "", ":")}] ${log}` + "\n";
     const dataObj = new Blob([log], { type: "text/plain" });
     try {
-      FileUtils.writeFile(kvm.logFileEntry, dataObj, true).catch((error) => {
-        console.error(`Fehler beim Schreiben in das Logfile ${kvm.logFileEntry.nativeURL} `, error);
-      });
+      await FileUtils.writeFile(kvm.logFileEntry, dataObj, true);
     } catch (ex) {
-      console.error(`Fehler beim Schreiben in das Logfile ${kvm.logFileEntry.nativeURL} `);
+      console.error(`Fehler beim Schreiben in das Logfile ${kvm.logFileEntry.nativeURL} `, ex);
     }
   }
 
@@ -2335,12 +2333,17 @@ class Kvm {
     $("#logLevel").val(logLevel);
   }
 
-  openLogFile() {
+  async openLogFile() {
     window.resolveLocalFileSystemURL(kvm.store.getItem("localBackupPath") || kvm.config.localBackupPath, (dirEntry) => {
+      // window.resolveLocalFileSystemURL(cordova.file.externalCacheDirectory, (dirEntry) => {
       // console.log(dirEntry);
       (<DirectoryEntry>dirEntry).getFile("kvmobile_logfile.txt", { create: true, exclusive: false }, (fileEntry) => {
-        // console.log(fileEntry);
         kvm.logFileEntry = fileEntry;
+
+        kvm
+          .writeLog("Logfile initialisert")
+          .then(() => console.info(`LogFile ${fileEntry.nativeURL} initialisiert`, fileEntry))
+          .catch(() => console.info(`LogFile ${fileEntry.nativeURL} konnte nicht initialisiert (geschrieben) werden`, fileEntry));
       });
     });
   }

@@ -21,12 +21,12 @@ export const FileUtils = {
     // console.log(`writeFile nativeURL=${fileEntry.nativeURL} fullPath=${fileEntry.fullPath} toInternalURL=${fileEntry.toInternalURL()}`, fileEntry);
     return new Promise<FileEntry>((resolve, reject) => {
       (<FileEntry>fileEntry).createWriter(function (fileWriter) {
-        fileWriter.onwriteend = function () {
+        fileWriter.onwrite = function (ev: ProgressEvent) {
           console.log(`Successful written file ${fileEntry.fullPath} `);
           // kvm.controller.files.readFile(fileEntry);
         };
 
-        fileWriter.onerror = function (e) {
+        fileWriter.onerror = function (e: ProgressEvent) {
           const msg = `onerror aufgerufen in writeFiles in files.ty: ${JSON.stringify(e)}`;
           console.error(msg, e);
           reject({ message: `Fehler in writeFile fullPath: ${fileEntry.fullPath} `, errror: e });
