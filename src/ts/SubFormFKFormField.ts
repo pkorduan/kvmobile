@@ -1,6 +1,7 @@
 import { kvm } from "./app";
 import { Attribute, AttributeSetting } from "./Attribute";
 import { Field } from "./Field";
+import { executeSQL } from "./Util";
 
 /**
  * SubFormFK Attribute sind keine Autoattribute
@@ -65,12 +66,7 @@ export class SubFormFKFormField implements Field {
   }
 
   setValue(val) {
-    console.log(
-      "Attribute: %s, SubFormFKFormField.setValue options: %o, value: %s",
-      this.get("name"),
-      this.get("options"),
-      val
-    );
+    console.log("Attribute: %s, SubFormFKFormField.setValue options: %o, value: %s", this.get("name"), this.get("options"), val);
     // ToDo: Prüfen warum hier noch mal default gesetzt wird. Das wird auch schon in getNewData gemacht.
     if (kvm.coalesce(val, "") == "" && this.get("default")) {
       val = this.get("default");
@@ -79,66 +75,47 @@ export class SubFormFKFormField implements Field {
     // ToDo: Das darf nur gemacht werden wenn der Layer Geometrie hat und der übergeordnete auch.
     if (kvm.activeLayer.hasGeometry && kvm.activeLayer.activeFeature.new) {
       // Abfragen des übergeordneten Layers
-      const pkLayer = kvm.getLayer(
-        `${this.get("stelleId")}_${this.get("options").split(",")[0]}`
-      );
+      const pkLayer = kvm.getLayer(`${this.get("stelleId")}_${this.get("options").split(",")[0]}`);
       if (pkLayer.hasGeometry) {
         console.log("Übergeordneter Layer %s", pkLayer.title);
         // Abfragen der uuid des Features in das das aktive Feature fällt
         // aktuelle mit Within umgesetzt. Bei Polygonen könnte auch ein Intersects notwendig werden.
         const sql = `
-          SELECT spatialite_version();
-				`;
-        //   SELECT
-        //   ${pkLayer.get("id_attribute")} AS id,
-        //   geom
-        // FROM
-        //   ${pkLayer.getSqliteTableName()}
-        // WHERE
-        //   ST_Within(
-        //     ST_GeomFromText('${this.attribute.layer.activeFeature.geom.toWkt()}', 4326),
-        //     ST_GeomFromEWKB(${pkLayer.get("geometry_attribute")})
-        //   )
-
+          SELECT
+            ${pkLayer.get("id_attribute")} AS id,
+            geom
+          FROM
+            ${pkLayer.getSqliteTableName()}
+          WHERE
+            ST_Within(
+              ST_GeomFromText('${this.attribute.layer.activeFeature.geom.toWkt()}', 4326),
+              ST_GeomFromEWKB(${pkLayer.get("geometry_attribute")})
+            )
+        `;
+        // eventuell ist diese Geometrie richtiger als die von ST_GeomFromText '${this.attribute.layer.activeFeature.wkxToEwkb(this.attribute.layer.activeFeature.geom)}'
+        // Prüfen gegen welche Geometrie ST_Within testet, vielleicht liegt es auch an einer falschen geom in standorte
         console.log("Frage parent id mit sql ab: ", sql);
-        kvm.db.executeSql(
-          sql,
-          [],
-          (rs) => {
+        executeSQL(kvm.db, sql)
+          .then((rs) => {
+            console.log("Resultset von räumlicher Abfrage", rs);
             let id = "";
             for (let i = 0; i < rs.rows.length; i++) {
-              if (
-                typeof rs.rows.item(i).geom != "undefined" &&
-                rs.rows.item(i).geom != ""
-              ) {
+              if (typeof rs.rows.item(i).geom != "undefined" && rs.rows.item(i).geom != "") {
                 id = rs.rows.item(i).id;
-                kvm.mapHint(
-                  `Übergeordnetes Objekt ${pkLayer
-                    .getFeature(id)
-                    .getDataValue(pkLayer.get("name_attribute"))} aus Layer ${
-                    pkLayer.title
-                  } über Markerposition ermittelt.`,
-                  5000
-                );
+                kvm.mapHint(`Übergeordnetes Objekt ${pkLayer.getFeature(id).getDataValue(pkLayer.get("name_attribute"))} aus Layer ${pkLayer.title} über Markerposition ermittelt.`, 5000);
                 this.element.val(id);
                 break;
               }
             }
             if (id == "") {
-              kvm.mapHint(
-                `Der Marker liegt nicht im räumlichen Bereich eines Objektes vom Layers ${pkLayer.title}.`,
-                5000
-              );
+              kvm.mapHint(`Der Marker liegt nicht im räumlichen Bereich eines Objektes vom Layers ${pkLayer.title}.`, 5000);
               this.element.val(this.get("default"));
             }
-          },
-          (err) => {
-            kvm.msg(
-              `Fehler bei der räumlichen Suche eines Objektes in Layer ${pkLayer.title} zu dem dieses Objekt räumlich gehören könnte. Fehler: ${err["message"]}`,
-              "Editiervorgabe"
-            );
-          }
-        );
+          })
+          .catch((err) => {
+            console.error(`Fehler bei der räumlichen Suche eines Objektes im Layer ${pkLayer.title}`, err);
+            kvm.msg(`Fehler bei der räumlichen Suche eines Objektes in Layer ${pkLayer.title} zu dem dieses Objekt räumlich gehören könnte. Fehler: ${err["message"]}`, "Editiervorgabe");
+          });
       }
     } else {
       this.element.val(val == null || val == "null" ? "" : val);
