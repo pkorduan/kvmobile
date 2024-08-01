@@ -36,8 +36,9 @@ export class OverlayX {
       this.attributes = this.settings.attributes.map((attribute) => {
         return new Attribute(<any>this, attribute);
       });
-      this.attribute_index = this.attributes.reduce((hash, elem) => {
-        hash[elem.settings.name] = Object.keys(hash).length;
+      this.attribute_index = this.attributes.reduce((hash, elem: Attribute) => {
+        let key: any = elem.settings.name;
+        hash[key] = Object.keys(hash).length;
         return hash;
       }, <{ [key: string]: number }>{});
     }
@@ -84,7 +85,7 @@ export class OverlayX {
     if (kvm.store.getItem(overlayIdsItem) === null) {
       kvm.store.setItem(overlayIdsItem, "[]");
     }
-    let overlayIds = JSON.parse(kvm.store.getItem(overlayIdsItem));
+    let overlayIds = JSON.parse(<any>kvm.store.getItem(overlayIdsItem));
     if (!overlayIds.includes(this.globalId)) {
       overlayIds.push(this.globalId);
       kvm.store.setItem(overlayIdsItem, JSON.stringify(overlayIds));
@@ -212,10 +213,10 @@ export class OverlayX {
    */
   loadData = function () {
     console.log("loadData Load Features from store to overlay %s", this.globalId);
-    this.features = JSON.parse(kvm.store.getItem("overlayFeatures_" + this.globalId));
+    this.features = JSON.parse(<any>kvm.store.getItem("overlayFeatures_" + this.globalId));
     console.log("Add " + this.features.length + " Features to the overlay");
     this.drawFeatures(this.features);
-    kvm.overlays[this.globalId] = this;
+    kvm.overlays[<string>this.globalId] = this;
   };
 
   /*
@@ -249,7 +250,7 @@ export class OverlayX {
 
               //console.log('Download Ergebnis von Overlay ' + this_.get('id') + ' (Head 1000): %s', this.result.substring(0, 1000));
               //const result = (<string>evt.target.result).replace("\n", "\\\n");
-              const result = <string>evt.target.result;
+              const result = <string>evt.target?.result;
               try {
                 collection = JSON.parse(result);
               } catch (e) {
@@ -268,7 +269,7 @@ export class OverlayX {
                 kvm.msg(errMsg, "Fehler");
                 kvm.log(errMsg, 1);
               }
-              kvm.overlays[globalId] = this_;
+              kvm.overlays[<string>globalId] = this_;
               kvm.store.setItem("overlayFeatures_" + this_.globalId, JSON.stringify(this_.features));
               if ($("#syncOverlayIcon_" + this_.globalId).hasClass("fa-spinner")) {
                 $("#syncOverlayIcon_" + this_.globalId).toggleClass("fa-refresh fa-spinner fa-spin");

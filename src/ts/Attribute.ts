@@ -27,6 +27,8 @@ export type AttributeSetting = {
   index?: number;
   name?: string;
   real_name?: string;
+  table_name: string;
+  schema_name: string;
   alias?: string;
   group?: string;
   tooltip?: string;
@@ -56,7 +58,7 @@ export class Attribute {
   formField: Field;
   viewField: DataViewField;
 
-  constructor(layer: Layer, settings = {}) {
+  constructor(layer: Layer, settings: AttributeSetting) {
     //console.log('Erzeuge Attributeobjekt with settings %o', settings);
     this.layer = layer;
     this.settings = settings;
@@ -83,9 +85,7 @@ export class Attribute {
    */
   getSuccessor() {
     const index = this.layer.attribute_index[this.get("name")];
-    return index < Object.keys(this.layer.attribute_index).length
-      ? this.layer.attributes[index + 1]
-      : null;
+    return index < Object.keys(this.layer.attribute_index).length ? this.layer.attributes[index + 1] : null;
   }
 
   /**
@@ -95,10 +95,7 @@ export class Attribute {
    */
   getArrangementStyle() {
     const succesor = this.getSuccessor();
-    if (
-      (succesor && succesor.get("arrangement") == "1") ||
-      this.get("arrangement") == "1"
-    ) {
+    if ((succesor && succesor.get("arrangement") == "1") || this.get("arrangement") == "1") {
       return 'style="float: left"';
     } else {
       return "";
@@ -112,9 +109,7 @@ export class Attribute {
    * @return string: ID of sublayer
    */
   getGlobalSubLayerId() {
-    return `${this.settings.stelleId}_${
-      this.settings.options.split(";")[0].split(",")[0]
-    }`;
+    return `${this.settings.stelleId}_${this.settings.options.split(";")[0].split(",")[0]}`;
   }
 
   /**
@@ -139,10 +134,7 @@ export class Attribute {
    * @return string
    */
   getPKAttribute() {
-    const key_names = this.settings.options
-      .split(";")[0]
-      .split(",")[1]
-      .split(":");
+    const key_names = this.settings.options.split(";")[0].split(",")[1].split(":");
     if (this.get("form_element_type") == "SubFormFK") {
       return key_names.length == 1 ? key_names[0] : key_names[1];
     } else {
@@ -158,10 +150,7 @@ export class Attribute {
    * @return string
    */
   getFKAttribute() {
-    const key_names = this.settings.options
-      .split(";")[0]
-      .split(",")[1]
-      .split(":");
+    const key_names = this.settings.options.split(";")[0].split(",")[1].split(":");
     if (this.get("form_element_type") == "SubFormFK") {
       return key_names[0];
     } else {
@@ -203,10 +192,7 @@ export class Attribute {
           field = new DateTimeFormField("featureFormular", this.settings);
         } else if (this.get("type") == "date") {
           field = new DateFormField("featureFormular", this.settings);
-        } else if (
-          this.get("type").substr(0, 3) == "int" ||
-          this.get("type") == "numeric"
-        ) {
+        } else if (this.get("type").substr(0, 3) == "int" || this.get("type") == "numeric") {
           field = new ZahlFormField("featureFormular", this.settings);
         } else {
           field = new TextFormField("featureFormular", this.settings);
@@ -254,22 +240,10 @@ export class Attribute {
     let slType = "";
 
     switch (true) {
-      case $.inArray(pgType, [
-        "character varying",
-        "text",
-        "character",
-        "bool",
-      ]) > -1:
+      case $.inArray(pgType, ["character varying", "text", "character", "bool"]) > -1:
         slType = "TEXT";
         break;
-      case $.inArray(pgType, [
-        "int4",
-        "int2",
-        "int8",
-        "int16",
-        "bigint",
-        "integer",
-      ]) > -1:
+      case $.inArray(pgType, ["int4", "int2", "int8", "int16", "bigint", "integer"]) > -1:
         slType = "INTEGER";
         break;
       case $.inArray(pgType, ["double precision"]) > -1:
@@ -333,16 +307,7 @@ export class Attribute {
     kvm.log('options ist leer? ' + (this.get('options') == ''), 4);
     kvm.log('action == options? ' + (action == this.get('options').toLowerCase()), 4);
     */
-    const answer =
-      ["SubFormFK"].includes(this.get("form_element_type")) ||
-      ((["user_name", "updated_at_client", "created_at"].includes(
-        this.get("name")
-      ) ||
-        ["User", "UserID", "Time"].includes(this.get("form_element_type"))) &&
-        this.get("name") != "updated_at_server" &&
-        (action == "" ||
-          this.get("options") == "" ||
-          action == this.get("options").toLowerCase()));
+    const answer = ["SubFormFK"].includes(this.get("form_element_type")) || ((["user_name", "updated_at_client", "created_at"].includes(this.get("name")) || ["User", "UserID", "Time"].includes(this.get("form_element_type"))) && this.get("name") != "updated_at_server" && (action == "" || this.get("options") == "" || action == this.get("options").toLowerCase()));
     //kvm.log("Attribute " + this.get("name") + " is Autoattribute" + (action ? " for action " + action : "") + "? " + answer, 4);
     return answer;
   }
@@ -380,11 +345,7 @@ export class Attribute {
         if (this.layer.get("geometry_type") == "Point") {
           slValue =
             "'" +
-            wkx.Geometry.parse(
-              "SRID=4326;POINT(" +
-                pgValue.coordinates.toString().replace(",", " ") +
-                ")"
-            )
+            wkx.Geometry.parse("SRID=4326;POINT(" + pgValue.coordinates.toString().replace(",", " ") + ")")
               .toEwkb()
               .toString("hex", 0, maxByte)
               .match(/.{2}/g)
@@ -436,14 +397,7 @@ export class Attribute {
               })
               .join(", ") +
             "))";
-          slValue =
-            "'" +
-            wkx.Geometry.parse(wkxText)
-              .toEwkb()
-              .toString("hex", 0, maxByte)
-              .match(/.{2}/g)
-              .join("") +
-            "'";
+          slValue = "'" + wkx.Geometry.parse(wkxText).toEwkb().toString("hex", 0, maxByte).match(/.{2}/g).join("") + "'";
         }
         if (pgValue.type == "MultiPolygon") {
           let wkxText =
@@ -470,14 +424,7 @@ export class Attribute {
               })
               .join(", ") +
             ")";
-          slValue =
-            "'" +
-            wkx.Geometry.parse(wkxText)
-              .toEwkb()
-              .toString("hex", 0, maxByte)
-              .match(/.{2}/g)
-              .join("") +
-            "'";
+          slValue = "'" + wkx.Geometry.parse(wkxText).toEwkb().toString("hex", 0, maxByte).match(/.{2}/g).join("") + "'";
         }
         break;
       case this.isArrayType():
@@ -501,13 +448,7 @@ export class Attribute {
   }
 
   withLabel() {
-    let labelDiv = $(
-      '<label for="' + this.formField.settings.name + '">'
-    ).append(
-      this.formField.settings.alias
-        ? this.formField.settings.alias
-        : this.formField.settings.name
-    );
+    let labelDiv = $('<label for="' + this.formField.settings.name + '">').append(this.formField.settings.alias ? this.formField.settings.alias : this.formField.settings.name);
     let valueDiv = $('<div class="form-value">');
 
     if (this.get("form_element_type") == "Geometrie") {
@@ -559,21 +500,12 @@ export class Attribute {
     }
 
     if (this.formField.settings.tooltip) {
-      labelDiv.append(
-        '&nbsp;<i class="fa fa-exclamation-circle" style="color: #f57802" onclick="kvm.msg(\'' +
-          this.formField.settings.tooltip +
-          "');\"></i>"
-      );
+      labelDiv.append('&nbsp;<i class="fa fa-exclamation-circle" style="color: #f57802" onclick="kvm.msg(\'' + this.formField.settings.tooltip + "');\"></i>");
     }
 
     const formField = <any>this.formField;
-    if (
-      this.get("form_element_type") == "SubFormEmbeddedPK" &&
-      this.get("privilege") > "0"
-    ) {
-      return $(
-        `<div id="formFieldDiv_${this.get("index")}" class="form-field-rows">`
-      )
+    if (this.get("form_element_type") == "SubFormEmbeddedPK" && this.get("privilege") > "0") {
+      return $(`<div id="formFieldDiv_${this.get("index")}" class="form-field-rows">`)
         .append(
           $('<div class="form-label">').append(labelDiv).append(`
 						<input
@@ -587,11 +519,7 @@ export class Attribute {
         )
         .append(valueDiv.append(formField.element));
     } else {
-      return $(
-        `<div id="formFieldDiv_${this.get(
-          "index"
-        )}" class="form-field-rows" ${this.getArrangementStyle()}>`
-      )
+      return $(`<div id="formFieldDiv_${this.get("index")}" class="form-field-rows" ${this.getArrangementStyle()}>`)
         .append("linkElement" in formField ? formField.linkElement : "")
         .append($('<div class="form-label">').append(labelDiv))
         .append(valueDiv.append(formField.element));
@@ -599,8 +527,6 @@ export class Attribute {
   }
 
   isEmpty(value): boolean {
-    return (
-      typeof value == "undefined" || value == null || value == "" || value == 0
-    );
+    return typeof value == "undefined" || value == null || value == "" || value == 0;
   }
 }
