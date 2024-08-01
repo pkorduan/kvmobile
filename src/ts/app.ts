@@ -124,8 +124,8 @@ class Kvm {
   isActive: boolean;
   GpsIsOn: boolean = false;
   inputNextDataset: boolean = false;
-  lastMapOrListView: String = "featureList";
-  versionNumber: String;
+  lastMapOrListView: string = "featureList";
+  versionNumber: string;
   layerParams: any = {};
   logFileEntry: FileEntry;
   userId: string;
@@ -297,7 +297,10 @@ class Kvm {
   }
 
   async syncLayers() {
+    console.error(`syncLayers activeLayer="${this.activeLayer?.title}"`);
+
     const layers = kvm.getLayersSortedByUpdateOrder();
+    const activeLayerId = this.activeLayer.getGlobalId();
     for (let i = 0; i < layers.length; i++) {
       const layer = layers[i];
       try {
@@ -312,6 +315,14 @@ class Kvm {
         navigator.notification.alert(`Fehler beim Synchronisieren des Layers: "${layer.title}". Ursache:  ${fehler}`, () => {}, "Synchronisierungsfehler");
       }
     }
+
+    const activeLayerEntry = Array.from(this._layers).find((entry) => entry[1].getGlobalId() === activeLayerId);
+    if (activeLayerEntry) {
+      const activeLayer = activeLayerEntry[1];
+      console.error(`aktiviere Layer ${activeLayer.title} ${activeLayer.getGlobalId()}`);
+      activeLayer.activate();
+    }
+
     if (this.dataModelChanges?.length > 0) {
       let msg = "Datenmodell-Änderungen:\n";
       for (let i = 0; i < this.dataModelChanges.length; i++) {
@@ -1358,9 +1369,9 @@ class Kvm {
     // });
 
     $(".h2-div").on("click", function (evt) {
-      const h2 = $(evt.target),
-        h2div = h2.parent(),
-        collapsed = h2.hasClass("b-collapsed");
+      const h2 = $(evt.target);
+      const h2div = h2.parent();
+      const collapsed = h2.hasClass("b-collapsed");
 
       kvm.collapseAllSettingsDiv();
       if (collapsed) {
@@ -2468,7 +2479,7 @@ class Kvm {
     return this.showItem(["settings", "map", "featurelist"].includes(kvm.store.getItem("activeView")) ? kvm.store.getItem("activeView") : "featurelist");
   }
 
-  showNextItem(viewAfter, layer): void {
+  showNextItem(viewAfter: string, layer: Layer): void {
     // console.log(`showNextItem ${viewAfter}`);
     switch (viewAfter) {
       case "featurelist":
@@ -2502,7 +2513,7 @@ class Kvm {
     }
   }
 
-  showItem(item): void {
+  showItem(item: string): void {
     // console.log("showItem: %o", item);
     // erstmal alle panels ausblenden
     $(".panel").hide();
