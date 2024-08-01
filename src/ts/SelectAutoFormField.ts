@@ -60,8 +60,7 @@ export class SelectAutoFormField implements Field {
       if (this.inputField instanceof HTMLSelectElement) {
         this.inputField.value = matchingOptions[0].value;
       } else {
-        this.inputField.querySelector("input").value =
-          matchingOptions[0].output;
+        this.inputField.querySelector("input").value = matchingOptions[0].output;
       }
       this.val = matchingOptions[0].value;
     } else {
@@ -77,10 +76,16 @@ export class SelectAutoFormField implements Field {
 
   getValue(action = "") {
     //console.log('SelectFormField.getValue');
-    const val = this.val;
-    if (typeof val === "undefined" || val === "") {
+    let val = this.val;
+
+    if (typeof val === "undefined" || val == "") {
       return null;
     }
+
+    if (val && this.isArrayType()) {
+      return `{${val.toString()}}`;
+    }
+
     return this.val;
   }
 
@@ -123,6 +128,7 @@ export class SelectAutoFormField implements Field {
 
   createSelectField(options: OptionsAttributtes[]) {
     const selectField = document.createElement("select");
+    selectField.multiple = this.isArrayType();
 
     for (let i = 0; i < options.length; i++) {
       const opt = document.createElement("option");
@@ -136,6 +142,10 @@ export class SelectAutoFormField implements Field {
     return selectField;
   }
 
+  isArrayType() {
+    return this.settings.type.substring(0, 1) == "_";
+  }
+
   createAutoSelectField() {
     // const inputField = (this.txtInputField = createHtmlElement("input", div));
     const wrapper = document.createElement("div");
@@ -146,11 +156,7 @@ export class SelectAutoFormField implements Field {
     inputField.disabled = this.settings.privilege === "0";
     inputField.style.float = "left";
 
-    const optionsPane = (this.optionsPane = createHtmlElement(
-      "div",
-      null,
-      "auto-complete-div"
-    ));
+    const optionsPane = (this.optionsPane = createHtmlElement("div", null, "auto-complete-div"));
     // optionsPane.id = "${this.settings.index}_autoSelect";
 
     const closeBttn = createHtmlElement("i", wrapper, "fa fa-times-circle");
@@ -208,11 +214,7 @@ export class SelectAutoFormField implements Field {
     };
     for (let i = 0; i < this.filteredOptions.length; i++) {
       const option = this.filteredOptions[i];
-      const optionHtmlEle = createHtmlElement(
-        "div",
-        this.optionsPane,
-        "auto-complete-option-div"
-      );
+      const optionHtmlEle = createHtmlElement("div", this.optionsPane, "auto-complete-option-div");
       optionHtmlEle.innerHTML = option.output;
       optionHtmlEle.addEventListener("click", (evt) => {
         this.internalSet(option.value);
@@ -232,16 +234,9 @@ export class SelectAutoFormField implements Field {
 
   updateRequiredBy() {
     if (this.settings.required_by) {
-      const required_by_idx =
-        kvm.activeLayer.attribute_index[this.settings.required_by];
-      console.log(
-        "Select Feld %s hat abhängiges Auswahlfeld %s",
-        this.settings.name,
-        this.settings.required_by
-      );
-      (<any>(
-        kvm.activeLayer.attributes[required_by_idx].formField
-      )).filter_by_required(this.settings.name, this.getValue());
+      const required_by_idx = kvm.activeLayer.attribute_index[this.settings.required_by];
+      console.log("Select Feld %s hat abhängiges Auswahlfeld %s", this.settings.name, this.settings.required_by);
+      (<any>kvm.activeLayer.attributes[required_by_idx].formField).filter_by_required(this.settings.name, this.getValue());
     }
   }
 

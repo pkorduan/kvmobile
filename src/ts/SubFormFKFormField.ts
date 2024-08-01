@@ -65,7 +65,7 @@ export class SubFormFKFormField implements Field {
     return this.attribute.settings[key];
   }
 
-  setValue(val) {
+  async setValue(val) {
     console.log("Attribute: %s, SubFormFKFormField.setValue options: %o, value: %s", this.get("name"), this.get("options"), val);
     // ToDo: Prüfen warum hier noch mal default gesetzt wird. Das wird auch schon in getNewData gemacht.
     if (kvm.coalesce(val, "") == "" && this.get("default")) {
@@ -94,45 +94,44 @@ export class SubFormFKFormField implements Field {
         //     ) > 0
         // `;
         const sql = `
-				SELECT
-          geom,
-					${pkLayer.get("id_attribute")} AS id,
-          geom
-				FROM
-					${pkLayer.getSqliteTableName()}
-				WHERE
-					ST_Within(
-						ST_GeomFromText('${this.attribute.layer.activeFeature.geom.toWkt()}', 4326),
-						GeomFromEWKB(${pkLayer.get("geometry_attribute")})
-					)
-			`;
+          SELECT
+            geom,
+            ${pkLayer.get("id_attribute")} AS id,
+            geom
+          FROM
+            ${pkLayer.getSqliteTableName()}
+          WHERE
+            ST_Within(
+              ST_GeomFromText('${this.attribute.layer.activeFeature.newGeom.toWkt()}', 4326),
+              GeomFromEWKB(${pkLayer.get("geometry_attribute")})
+            )
+        `;
         // eventuell ist diese Geometrie richtiger als die von ST_GeomFromText '${this.attribute.layer.activeFeature.wkxToEwkb(this.attribute.layer.activeFeature.geom)}'
         // Prüfen gegen welche Geometrie ST_Within testet, vielleicht liegt es auch an einer falschen geom in standorte
         console.log("Frage parent id mit sql ab: ", sql);
-        executeSQL(kvm.db, sql)
-          .then((rs) => {
-            console.log("Resultset von räumlicher Abfrage", rs);
-            let id = "";
-            if (rs.rows.length > 0) {
-              console.info("firstItem:", rs.rows.item(0), rs.rows.item(0).id);
+        try {
+          const rs = await executeSQL(kvm.db, sql);
+          console.log("Resultset von räumlicher Abfrage", rs);
+          let id = "";
+          if (rs.rows.length > 0) {
+            console.info("firstItem:", rs.rows.item(0), rs.rows.item(0).id);
+          }
+          for (let i = 0; i < rs.rows.length; i++) {
+            if (typeof rs.rows.item(i).geom != "undefined" && rs.rows.item(i).geom != "") {
+              id = rs.rows.item(i).id;
+              kvm.mapHint(`Übergeordnetes Objekt ${pkLayer.getFeature(id).getDataValue(pkLayer.get("name_attribute"))} aus Layer ${pkLayer.title} über Markerposition ermittelt.`, 5000);
+              this.element.val(id);
+              break;
             }
-            for (let i = 0; i < rs.rows.length; i++) {
-              if (typeof rs.rows.item(i).geom != "undefined" && rs.rows.item(i).geom != "") {
-                id = rs.rows.item(i).id;
-                kvm.mapHint(`Übergeordnetes Objekt ${pkLayer.getFeature(id).getDataValue(pkLayer.get("name_attribute"))} aus Layer ${pkLayer.title} über Markerposition ermittelt.`, 5000);
-                this.element.val(id);
-                break;
-              }
-            }
-            if (id == "") {
-              kvm.mapHint(`Der Marker liegt nicht im räumlichen Bereich eines Objektes vom Layers ${pkLayer.title}.`, 5000);
-              this.element.val(this.get("default"));
-            }
-          })
-          .catch((err) => {
-            console.error(`Fehler bei der räumlichen Suche eines Objektes im Layer ${pkLayer.title}`, err);
-            kvm.msg(`Fehler bei der räumlichen Suche eines Objektes in Layer ${pkLayer.title} zu dem dieses Objekt räumlich gehören könnte. Fehler: ${err["message"]}`, "Editiervorgabe");
-          });
+          }
+          if (id == "") {
+            kvm.mapHint(`Der Marker liegt nicht im räumlichen Bereich eines Objektes vom Layers ${pkLayer.title}.`, 5000);
+            this.element.val(this.get("default"));
+          }
+        } catch (err) {
+          console.error(`Fehler bei der räumlichen Suche eines Objektes im Layer ${pkLayer.title}`, err);
+          kvm.msg(`Fehler bei der räumlichen Suche eines Objektes in Layer ${pkLayer.title} zu dem dieses Objekt räumlich gehören könnte. Fehler: ${err["message"]}`, "Editiervorgabe");
+        }
       }
     } else {
       this.element.val(val == null || val == "null" ? "" : val);

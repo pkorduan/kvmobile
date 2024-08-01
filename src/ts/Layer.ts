@@ -311,8 +311,9 @@ export class Layer {
       where.push(`${subLayer.settings.table_alias}.endet IS NULL`);
     }
 
-    const sql = this.extentSql(subLayer.settings.query, where, "", "", "", filter);
+    const sql = this.extentSql(kvm.replaceParams(subLayer.settings.query), where, "", "", "", filter);
 
+    console.log(`Read Vorschaudatensätze für Layer ${subLayer.title} with sql ${sql}`);
     // Das folgende geht noch nicht weil die Tabellen nicht so benannt sind  wie in sqlite
     //let sql = `${this.settings.query} AND ${filter.join(' AND ')}`;
     vorschauElement.empty();
@@ -4637,14 +4638,42 @@ export class Layer {
   }
 
   notNullValid() {
-    var errMsg = "";
+    let errMsg = this.attributes
+      .filter((attribute) => {
+        return !attribute.isAutoAttribute("") && !attribute.isPseudoAttribute() && attribute.get("nullable") == 0 && attribute.formField.getValue() == null;
+      })
+      .map((attribute) => {
+        return `Das Feld "${attribute.settings.alias ?? attribute.settings.name}" benötigt eine Eingabe!`;
+      })
+      .join("\n\n");
+    return errMsg;
+  }
 
-    $.each(kvm.activeLayer.attributes, function (i, v) {
-      if (!v.isAutoAttribute("") && !v.isPseudoAttribute() && v.get("nullable") == 0 && v.formField.getValue() == null) {
-        errMsg += "Das Feld " + v.get("alias") + " benötigt eine Eingabe! ";
-      }
-    });
+  /**
+   * Function return an empty string if one attribute of this layer with form_element_type SubFormFK
+   * has a falsy value in its form field
+   * It will be used to avoid missing integrity between client dataset and it' parent dataset
+   * An error message will be created for each found attribut separated by comma and space
+   * @returns string
+   */
+  notFKValid() {
+    let errMsg = this.attributes
+      .filter((attribute) => {
+        return attribute.settings.form_element_type === "SubFormFK" && !attribute.formField.getValue();
+      })
+      .map((attribute) => {
+        return `Das Feld "${attribute.settings.alias ?? attribute.settings.name}" erfordert eine Eingabe!\nWenn das Feld nicht editierbar ist aber über eine übergeordnete Geometrie zugeordnet werden kann, verschieben Sie das Objekt in den räumlichen Bereich der übergeordneten Geometrie!`;
+      })
+      .join("\n\n");
+    return errMsg;
+  }
 
+  notGeomValid() {
+    // Check again for validity
+    let errMsg = kvm.activeLayer.notFKValid();
+    if (this.hasGeometry && !$("#featureFormular input[name=" + this.get("geometry_attribute") + "]").val()) {
+      errMsg = `Sie haben noch keine Koordinaten erfasst!`;
+    }
     return errMsg;
   }
 

@@ -1813,16 +1813,33 @@ class Kvm {
       }
     });
 
-    $("#saveFeatureButton").on("click", function (evt) {
-      let notNullErrMsg = kvm.activeLayer.notNullValid();
+    $("#saveFeatureButton").on("click", async (evt) => {
+      let validationErrMsg: string = "";
 
-      if (notNullErrMsg != "") {
-        kvm.msg(notNullErrMsg, "Formular");
-        return false;
+      const notNullErrMsg: string = kvm.activeLayer.notNullValid();
+      if (notNullErrMsg) {
+        validationErrMsg += notNullErrMsg;
+      }
+      // Versuche FK-Attribute die fehlen mit setValue() automatisch zu setzen
+      // in setValue() wird der übergeordnete Datensatz über ST_Within() gesucht
+      for (let attribute of this.activeLayer.attributes) {
+        if (attribute.settings.form_element_type === "SubFormFK" && !attribute.formField.getValue()) {
+          await attribute.formField.setValue("");
+        }
       }
 
-      if (kvm.activeLayer.hasGeometry && !$("#featureFormular input[name=" + kvm.activeLayer.get("geometry_attribute") + "]").val()) {
-        kvm.msg("Sie haben noch keine Koordinaten erfasst!", "Formular");
+      const notFKValidErrMsg: string = kvm.activeLayer.notFKValid();
+      if (notFKValidErrMsg) {
+        validationErrMsg += `\n\n${notFKValidErrMsg}`;
+      }
+
+      const notGeomValid: string = kvm.activeLayer.notGeomValid();
+      if (notGeomValid) {
+        validationErrMsg += `\n\nSie haben noch keine Koordinaten erfasst!`;
+      }
+
+      if (validationErrMsg) {
+        kvm.msg(validationErrMsg, "Formular");
         return false;
       }
 

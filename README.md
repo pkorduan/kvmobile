@@ -18,10 +18,17 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 
 ## 1.16.0
 
+- Bugfix
+  - Fix SelectAutoFormField to return correct multivalues.
+  - Correct replaceParams.
+  - Enable multi select.
+  - Fix within test.
 - Maintainance
-  check tableExists befor readData
+  - Check tableExists befor readData.
+  - Remove backupDatasets before Insert and Delete.
 - Features
   - Filter by layer_params
+  - FK-Validierung
 
 ## 1.15.1
 

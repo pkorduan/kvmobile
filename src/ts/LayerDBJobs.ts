@@ -23,7 +23,7 @@ export async function runInsert(layer: Layer, delta: { type: string; change: str
   // };
   return new Promise<SQLitePlugin.Results>(async (resolve, reject) => {
     try {
-      const rsBackupDS = await backupDataset(layer);
+      // const rsBackupDS = await backupDataset(layer);
       const sql = delta.delta;
       console.log("SQL zum Anlegen eines neuen Datensatzes: ", sql);
       const rsUpdate = await executeSQL(kvm.db, sql);
@@ -60,7 +60,7 @@ export async function runDelete(layer: Layer, delta: { type: string; change: str
   // };
   return new Promise<SQLitePlugin.Results>(async (resolve, reject) => {
     try {
-      const rsBackupDS = await backupDataset(layer);
+      // const rsBackupDS = await backupDataset(layer);
 
       // ToDo pk: Delete all sub featues
       // layer.attributes
