@@ -835,6 +835,13 @@ export class Layer {
     return tableColumnDefinitions;
   }
 
+  getMainTableAttributes() {
+    const maintableAttributes = this.attributes.filter((attr) => {
+      return (attr.layer.hasEditPrivilege && attr.get("saveable") == "1") || !attr.layer.hasEditPrivilege;
+    });
+    return maintableAttributes;
+  }
+
   getTableColumns() {
     //kvm.log("getTableColumns", 4);
     // console.log("getTableC");

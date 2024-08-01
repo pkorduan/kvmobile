@@ -129,6 +129,7 @@ export class SelectAutoFormField implements Field {
   createSelectField(options: OptionsAttributtes[]) {
     const selectField = document.createElement("select");
     selectField.multiple = this.isArrayType();
+    selectField.disabled = this.settings.privilege == "0";
 
     for (let i = 0; i < options.length; i++) {
       const opt = document.createElement("option");
