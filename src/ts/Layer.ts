@@ -443,83 +443,84 @@ export class Layer {
     const sql = this.extentSql(query, where, order, limit, offset, filter);
 
     console.log(`Lese Daten von Layer ${this.title} mit sql: "${sql}"`);
-    Util.executeSQL(kvm.db, sql)
-      .then((rs) => {
-        try {
-          //console.log("Layer.readData result: " + JSON.stringify(rs));
-          const numRows = rs.rows.length;
 
-          //console.log("  readData) " + numRows + " Datensätze gelesen, erzeuge Featureliste neu...");
-          this.numFeatures = numRows;
+    try {
+      const rs = await Util.executeSQL(kvm.db, sql);
 
-          this._features = new Map();
-          //console.log("id_attribute: %o", this.get("id_attribute"));
-          if (numRows == 0) {
-            if (where.length > 0) {
-              console.log("filter %o", where);
-              // kvm.msg(`Keine Daten in Layer ${this.settings.title} gefunden. Filter anpassen um Daten anzuzeigen.`, "Datenfilter");
-            } else {
-              kvm.msg("Tabelle ist leer. Unter Einstellungen des Layers können Daten synchronisiert werden.", "Datenbank");
-            }
+      try {
+        //console.log("Layer.readData result: " + JSON.stringify(rs));
+        const numRows = rs.rows.length;
+
+        //console.log("  readData) " + numRows + " Datensätze gelesen, erzeuge Featureliste neu...");
+        this.numFeatures = numRows;
+
+        this._features = new Map();
+        //console.log("id_attribute: %o", this.get("id_attribute"));
+        if (numRows == 0) {
+          if (where.length > 0) {
+            console.log("filter %o", where);
+            // kvm.msg(`Keine Daten in Layer ${this.settings.title} gefunden. Filter anpassen um Daten anzuzeigen.`, "Datenfilter");
+          } else {
+            kvm.msg("Tabelle ist leer. Unter Einstellungen des Layers können Daten synchronisiert werden.", "Datenbank");
           }
-
-          console.log("Layer %s: Create %s features for layer", this.title, numRows);
-          for (let i = 0; i < numRows; i++) {
-            const item = rs.rows.item(i);
-            try {
-              // console.log("Item " + i + ": %o", item);
-              // console.log("Erzeuge Feature %s: ", i);
-              // console.log("Erzeuge Feature von item %o", item);
-
-              // TODO !!!!
-              this.addFeature(new Feature(item, this, false));
-              //console.log('Feature ' + i + ': %o', this.features.get(item[this.get('id_attribute')]));
-            } catch (e) {
-              console.error(e);
-              kvm.msg("Fehler beim Erzeugen des Feature mit id: " + item[this.get("id_attribute")] + "! Fehlertyp: " + e.name + " Fehlermeldung: " + e.message);
-            }
-          }
-          kvm.tick(`${this.title}:<br>&nbsp;&nbsp;${this._features.size} Features erzeugt.`);
-
-          //console.log("Check if syncLayerIcon exists");
-          if ($("#syncLayerIcon_" + this.getGlobalId()) && $("#syncLayerIcon_" + this.getGlobalId()).hasClass("fa-spinner")) {
-            $("#syncLayerIcon_" + this.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
-          }
-          //console.log("Set connectionstatus in Layer: " + this.getGlobalId());
-          kvm.setConnectionStatus();
-
-          if (this.hasGeometry) {
-            // draw the features in map
-            if (this.layerGroup) {
-              try {
-                console.log("clearLayers of layerGroup");
-                this.layerGroup.clearLayers();
-              } catch ({ name, message }) {
-                kvm.msg("Fehler beim Leeren der Layergruppe im Layer id: " + this.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
-              }
-            }
-            // console.log("%s: readData > drawFeatures", this.title);
-            this.drawFeatures();
-            // console.log("drawFeature beendet in Layer id: " + this.getGlobalId());
-          }
-
-          try {
-            // console.log("finishLayerReading of Layer id: " + this.getGlobalId());
-            kvm.activeStelle.finishLayerReading(this);
-          } catch ({ name, message }) {
-            kvm.msg("Fehler beim Beenden des Ladens des Layers id: " + this.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
-          }
-        } catch (ex) {
-          console.error("Error in readData", ex);
         }
-      })
-      .catch((sqlerror) => {
-        console.error(sqlerror, this);
-        console.error(sql);
-        const msg = `Fehler bei der Abfrage der Daten für den Layer ${this.title} aus lokaler Datenbank. Fehler: ${sqlerror.message}`;
-        kvm.log(msg);
-        kvm.closeSperrDiv(msg);
-      });
+
+        console.log("Layer %s: Create %s features for layer", this.title, numRows);
+        for (let i = 0; i < numRows; i++) {
+          const item = rs.rows.item(i);
+          try {
+            // console.log("Item " + i + ": %o", item);
+            // console.log("Erzeuge Feature %s: ", i);
+            // console.log("Erzeuge Feature von item %o", item);
+
+            // TODO !!!!
+            this.addFeature(new Feature(item, this, false));
+            //console.log('Feature ' + i + ': %o', this.features.get(item[this.get('id_attribute')]));
+          } catch (e) {
+            console.error(e);
+            kvm.msg("Fehler beim Erzeugen des Feature mit id: " + item[this.get("id_attribute")] + "! Fehlertyp: " + e.name + " Fehlermeldung: " + e.message);
+          }
+        }
+        kvm.tick(`${this.title}:<br>&nbsp;&nbsp;${this._features.size} Features erzeugt.`);
+
+        //console.log("Check if syncLayerIcon exists");
+        if ($("#syncLayerIcon_" + this.getGlobalId()) && $("#syncLayerIcon_" + this.getGlobalId()).hasClass("fa-spinner")) {
+          $("#syncLayerIcon_" + this.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
+        }
+        //console.log("Set connectionstatus in Layer: " + this.getGlobalId());
+        kvm.setConnectionStatus();
+
+        if (this.hasGeometry) {
+          // draw the features in map
+          if (this.layerGroup) {
+            try {
+              console.log("clearLayers of layerGroup");
+              this.layerGroup.clearLayers();
+            } catch ({ name, message }) {
+              kvm.msg("Fehler beim Leeren der Layergruppe im Layer id: " + this.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
+            }
+          }
+          // console.log("%s: readData > drawFeatures", this.title);
+          this.drawFeatures();
+          // console.log("drawFeature beendet in Layer id: " + this.getGlobalId());
+        }
+
+        try {
+          // console.log("finishLayerReading of Layer id: " + this.getGlobalId());
+          kvm.activeStelle.finishLayerReading(this);
+        } catch ({ name, message }) {
+          kvm.msg("Fehler beim Beenden des Ladens des Layers id: " + this.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
+        }
+      } catch (ex) {
+        console.error("Error in readData", ex);
+      }
+    } catch (sqlerror) {
+      console.error(sqlerror, this);
+      console.error(sql);
+      const msg = `Fehler bei der Abfrage der Daten für den Layer ${this.title} aus lokaler Datenbank. Fehler: ${sqlerror.message}`;
+      kvm.log(msg);
+      kvm.closeSperrDiv(msg);
+    }
   }
 
   /**

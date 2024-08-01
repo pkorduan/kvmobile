@@ -234,8 +234,9 @@ export class Stelle {
     }
   }
 
-  finishLayerReading(layer) {
+  finishLayerReading(layer: Layer | MapLibreLayer) {
     // console.log("finishLayerReading: readAllLayers= %s, numLayersRead=%s, numLayers=%s", this.readAllLayers, this.numLayersRead, this.numLayers);
+    console.error(`finishLayerReading ${layer.title}`);
     if (this.readAllLayers) {
       if (this.numLayersRead < this.numLayers - 1) {
         this.numLayersRead += 1;
@@ -262,15 +263,16 @@ export class Stelle {
       layer.activate();
       this.tableNames = this.getTableNames();
       kvm.showActiveItem();
-      kvm.closeSperrDiv();
+      // kvm.closeSperrDiv();
     }
     // console.log("activeLayer after finishLayerReading: ", kvm.activeLayer ? kvm.activeLayer.get("id") : "keiner aktiv");
+    console.error(`finishLayerReading ${layer.title} done`);
   }
 
   /*
    * get missing parts to url when server.de, server.de/ oder server.de/index.php
    */
-  getUrlFile(url) {
+  getUrlFile(url: string) {
     var file = "";
 
     if (url.slice(-3) == ".de") file = "/index.php?";
@@ -282,22 +284,22 @@ export class Stelle {
   }
 
   getTableNames() {
-    let stelleId = this.get("id");
+    const stelleId = this.get("id");
     if (typeof stelleId == "undefined") return [];
 
-    let layerIdsText = kvm.store.getItem(`layerIds_${this.get("id")}`);
+    const layerIdsText = kvm.store.getItem(`layerIds_${this.get("id")}`);
     if (layerIdsText == null) return [];
 
-    let layerIds = JSON.parse(layerIdsText);
+    const layerIds = JSON.parse(layerIdsText);
     if (!Array.isArray(layerIds)) return [];
 
     return layerIds
       .map((layerId) => {
         try {
-          let layerSettings = JSON.parse(kvm.store.getItem(`layerSettings_${stelleId}_${layerId}`));
+          const layerSettings = JSON.parse(kvm.store.getItem(`layerSettings_${stelleId}_${layerId}`));
           return `${layerSettings.schema_name}.${layerSettings.table_name}`;
         } catch ({ name, message }) {
-          let msg = `Fehler beim Parsen der layerSettings ${stelleId}_${layerId}, Einstellungen des Layers können nicht aus dem Store geladen werden. TypeError: ${name}, Message: ${message}`;
+          const msg = `Fehler beim Parsen der layerSettings ${stelleId}_${layerId}, Einstellungen des Layers können nicht aus dem Store geladen werden. TypeError: ${name}, Message: ${message}`;
           console.error(msg);
           kvm.msg(msg, "Fehler");
         }
@@ -529,7 +531,7 @@ export class Stelle {
             await layer.createTable();
             layer.appendToApp();
             layer.saveToStore();
-            layer.requestData(); // Das ist neu: Daten werden gleich geladen nach dem Anlegen in der Stelle
+            await layer.requestData(); // Das ist neu: Daten werden gleich geladen nach dem Anlegen in der Stelle
           }
         }
       }
