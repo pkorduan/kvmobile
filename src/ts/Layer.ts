@@ -3752,6 +3752,8 @@ export class Layer {
     // Die Featureliste und Kartenelemente werden falls vorhanden aus der Datenbank geladen.
     //
     $("input[name=activeLayerId]" + (layerGlobalId ? "[value='" + layerGlobalId + "']" : "")).on("change", function (evt) {
+      // TODO RTR
+      return;
       const globalId = (<any>evt.target).value;
       const layer = kvm.getLayer(globalId);
 
@@ -4067,11 +4069,17 @@ export class Layer {
   layerSelectionClicked(evt: Event) {
     // unselect activeLayer
     // unselect activeFeature
-    kvm.map.closePopup();
-    kvm.store.setItem("layerFilter", "");
-    kvm.store.setItem("sortAttribute", "");
-    kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Setze Layer aktiv.`);
-    this.activate(); // include loading filter, sort, data view, form and readData
+    console.error(`layerSelectionClicked`);
+    $("#sperr_div").show();
+    window.setTimeout(() => {
+      kvm.map.closePopup();
+      kvm.store.setItem("layerFilter", "");
+      kvm.store.setItem("sortAttribute", "");
+      kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Setze Layer aktiv.`);
+      this.activate();
+      $("#sperr_div").hide();
+      // include loading filter, sort, data view, form and readData
+    }, 50);
   }
 
   getLayerListItem() {
@@ -4363,6 +4371,7 @@ export class Layer {
    * - Wenn dieser Layer gesynct wurde und aktiv ist
    */
   activate() {
+    console.error(`activate ${this.title}`);
     console.log("Setze Layer " + this.get("title") + " (" + (this.get("alias") ? this.get("alias") : "kein Aliasname") + ") aktiv.");
     try {
       if (kvm.activeLayer) {
