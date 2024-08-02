@@ -23,6 +23,7 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
   - Correct replaceParams.
   - Enable multi select.
   - Fix within test.
+  - Sort layer list and activate first in legendorder after request Layers
 - Maintainance
   - Check tableExists befor readData.
   - Remove backupDatasets before Insert and Delete.
