@@ -65,6 +65,7 @@ export interface LayerSetting {
   vector_tile_url?: string;
   privileg?: string;
   drawingorder?: string;
+  legendorder?: string;
   sync?: string;
   version?: string;
   attributes?: AttributeSetting[];

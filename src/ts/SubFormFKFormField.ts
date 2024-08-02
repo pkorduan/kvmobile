@@ -93,38 +93,53 @@ export class SubFormFKFormField implements Field {
         //       ST_GeomFromEWKB(${pkLayer.get("geometry_attribute")})
         //     ) > 0
         // `;
-        const sql = `
-          SELECT
-            geom,
-            ${pkLayer.get("id_attribute")} AS id,
-            geom
-          FROM
-            ${pkLayer.getSqliteTableName()}
-          WHERE
-            ST_Within(
+
+        // let sql = `
+        //   SELECT
+        //     geom,
+
+        //     ${pkLayer.get("id_attribute")} AS id,
+        //     geom
+        //   FROM
+        //     ${pkLayer.getSqliteTableName()}
+        //   WHERE
+        //     ST_Within(
+        //       ST_GeomFromText('${this.attribute.layer.activeFeature.newGeom.toWkt()}', 4326),
+        //       GeomFromEWKB(${pkLayer.get("geometry_attribute")})
+        //     )
+        // `;
+
+        let query = kvm.replaceParams(pkLayer.settings.query);
+        let filter: string = kvm.replaceParams(pkLayer.settings.filter);
+        let where: string[] = [
+          `
+          ST_Within(
               ST_GeomFromText('${this.attribute.layer.activeFeature.newGeom.toWkt()}', 4326),
               GeomFromEWKB(${pkLayer.get("geometry_attribute")})
             )
-        `;
+        `,
+        ];
+        let sql = pkLayer.extentSql(query, where, "", "", "", filter);
+
         // eventuell ist diese Geometrie richtiger als die von ST_GeomFromText '${this.attribute.layer.activeFeature.wkxToEwkb(this.attribute.layer.activeFeature.geom)}'
         // Prüfen gegen welche Geometrie ST_Within testet, vielleicht liegt es auch an einer falschen geom in standorte
         console.log("Frage parent id mit sql ab: ", sql);
         try {
           const rs = await executeSQL(kvm.db, sql);
           console.log("Resultset von räumlicher Abfrage", rs);
-          let id = "";
+          let featureId: string = "";
           if (rs.rows.length > 0) {
             console.info("firstItem:", rs.rows.item(0), rs.rows.item(0).id);
           }
           for (let i = 0; i < rs.rows.length; i++) {
             if (typeof rs.rows.item(i).geom != "undefined" && rs.rows.item(i).geom != "") {
-              id = rs.rows.item(i).id;
-              kvm.mapHint(`Übergeordnetes Objekt ${pkLayer.getFeature(id).getDataValue(pkLayer.get("name_attribute"))} aus Layer ${pkLayer.title} über Markerposition ermittelt.`, 5000);
-              this.element.val(id);
+              featureId = rs.rows.item(i)[pkLayer.get("id_attribute")];
+              kvm.mapHint(`Übergeordnetes Objekt ${pkLayer.getFeature(featureId).getDataValue(pkLayer.get("name_attribute"))} aus Layer ${pkLayer.title} über Markerposition ermittelt.`, 5000);
+              this.element.val(featureId);
               break;
             }
           }
-          if (id == "") {
+          if (featureId == "") {
             kvm.mapHint(`Der Marker liegt nicht im räumlichen Bereich eines Objektes vom Layers ${pkLayer.title}.`, 5000);
             this.element.val(this.get("default"));
           }

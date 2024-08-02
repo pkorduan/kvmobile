@@ -331,7 +331,15 @@ class Kvm {
       msg += `Alle Layer der Stelle werden komplett neu geladen. Beachten Sie dass sich dadurch die Formulare und Kartenstyles geändert haben können.`;
       console.log(msg);
       kvm.msg(msg, "Layeränderung");
-      kvm.activeStelle.requestLayers();
+      kvm.activeStelle
+        .requestLayers()
+        .catch((reason) => {
+          console.error(`Fehler beim Laden der Layerdaten`, reason);
+        })
+        .finally(() => {
+          kvm.activeStelle.getFirstLayer().activate();
+          kvm.closeSperrDiv();
+        });
     }
   }
 
@@ -635,7 +643,7 @@ class Kvm {
    *  - Wenn kein Netz ist
    *    - Anzeigen, dass layer nicht synchronisiert werden können
    */
-  startApplication() {
+  async startApplication() {
     let activeView = ["settings", "map", "featurelist"].includes(kvm.store.getItem("activeView")) ? kvm.store.getItem("activeView") : "featurelist";
     kvm.userId = kvm.store.getItem("userId");
     kvm.userName = kvm.store.getItem("userName");
@@ -780,13 +788,14 @@ class Kvm {
                 }
               } else {
                 console.log("Layer " + layer.title + ": Only read data from local database.");
-                layer.readData(); // include drawFeatures
+                await layer.readData(); // include drawFeatures
               }
             }
           }
         }
         if (layerIds.length > 0) {
           stelle.sortOverlays();
+          stelle.sortLayers();
         } else {
           this.closeSperrDiv();
         }
@@ -1446,6 +1455,8 @@ class Kvm {
             console.error(`Fehler beim Laden der Layerdaten`, reason);
           })
           .finally(() => {
+            kvm.activeStelle.sortLayers("legendorder");
+            kvm.activeStelle.getFirstLayer().activate();
             kvm.closeSperrDiv();
           });
       } else {
@@ -2744,6 +2755,11 @@ class Kvm {
     } else {
       $("#sperr_div_content").html(msg);
     }
+  }
+
+  activateFirstLayer() {
+    let firstLayerListDiv = document.getElementById("layer_list").firstChild;
+    kvm._layers.get($("#layer_list").children[0].val()).activate();
   }
 
   closeSperrDiv(msg = "") {

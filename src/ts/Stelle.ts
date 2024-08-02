@@ -558,6 +558,47 @@ export class Stelle {
       });
   }
 
+  /**
+   * This function returns the comparator function to sort a layer div array by the settings parameter orderBy.
+   * @param {string} orderBy - The name of the layersettings parameter which will be used for comparision.
+   * @returns {function} - The comparator function that can be used to sort a layer div array
+   */
+  orderComparatorFunction(orderBy) {
+    return function (a, b) {
+      if (parseInt(kvm._layers.get(a.firstChild.value).settings[orderBy]) < parseInt(kvm._layers.get(b.firstChild.value).settings[orderBy])) return -1;
+      if (a.dataset.subject > b.dataset.subject) return 1;
+      return 0;
+    };
+  }
+
+  /**
+   * This function sort the layer list div by layer setting order by.
+   * @param orderBy
+   */
+  sortLayers(orderBy: string = "legendorder") {
+    let layerDivs = document.querySelectorAll(".layer-list-div");
+    var layerDivsArray = Array.from(layerDivs);
+    let sorted = layerDivsArray.sort(this.orderComparatorFunction(orderBy));
+    sorted.forEach((e) => document.querySelector("#layer_list").appendChild(e));
+  }
+
+  /**
+   * Function returns the layer with the lowest value in settings element specified in param orderBy.
+   * The comparision is based on integer values.
+   * A layer with settings.legendorder = 100 is lower than settings.legendorder = 200.
+   * @param {string} orderBy - Optional name of a numeric layersetting that will be used for comparition. eg. id, drawingorder. legendorder is default.
+   * @returns {Layer} - The layer with the lowest order is the first and will be returned.
+   */
+  getFirstLayer(orderBy: string = "legendorder") {
+    return kvm.getLayers().reduce((lowerLayer, currentLayer) => {
+      if (lowerLayer && parseInt(lowerLayer.settings[orderBy]) < parseInt(currentLayer.settings[orderBy])) {
+        return lowerLayer;
+      } else {
+        return currentLayer;
+      }
+    });
+  }
+
   getLayerUrl(options = { hidePassword: false }) {
     //kvm.log("Stelle.getLayerUrl", 4);
     let url = this.get("url");
