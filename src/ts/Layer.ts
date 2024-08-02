@@ -569,9 +569,10 @@ export class Layer {
         //console.log('item.geometry %', item.geometry);
         //					if (item.geometry) {
         return $.map(
-          this.attributes.filter((attr) => {
-            return (attr.layer.hasEditPrivilege && attr.get("saveable") == "1") || !attr.layer.hasEditPrivilege;
-          }),
+          // this.attributes.filter((attr) => {
+          //   return (attr.layer.hasEditPrivilege && attr.get("saveable") == "1") || !attr.layer.hasEditPrivilege;
+          // })
+          this.getMainTableAttributes(),
           (attr) => {
             const type = attr.get("type");
             const value = type == "geometry" ? item.geometry : item.properties[attr.get("name")];
@@ -824,9 +825,10 @@ export class Layer {
    */
   getTableColumnDefinitions() {
     const tableColumnDefinitions = $.map(
-      this.attributes.filter(function (attr) {
-        return (attr.layer.hasEditPrivilege && attr.get("saveable") == "1") || !attr.layer.hasEditPrivilege;
-      }),
+      // this.attributes.filter(function (attr) {
+      //   return (attr.layer.hasEditPrivilege && attr.get("saveable") == "1") || !attr.layer.hasEditPrivilege;
+      // })
+      this.getMainTableAttributes(),
       function (attr) {
         const excludeDefaultWords = ["gdi_conditional_val", "gdi_conditional_nextval", "gdi_current_date", "nextval"];
         const excludeWordExists = excludeDefaultWords.some((word) => attr.get("default").includes(word));
@@ -836,33 +838,28 @@ export class Layer {
     return tableColumnDefinitions;
   }
 
+  /**
+   * Function returns an array with attributes of the layer
+   * When the layer has edit privileges it returns only
+   * - saveable, an those that belongs to the maintable of the layer
+   * Wenn the layer has no edit privilege
+   * - it returns all attributes
+   * @returns
+   */
   getMainTableAttributes() {
+    // Bevor 2024-08-01 this logic has been used (attr.layer.hasEditPrivilege && attr.get("saveable") == "1") || !attr.layer.hasEditPrivilege;
     const maintableAttributes = this.attributes.filter((attr) => {
-      return (attr.layer.hasEditPrivilege && attr.get("saveable") == "1") || !attr.layer.hasEditPrivilege;
+      if (attr.layer.hasEditPrivilege) {
+        return attr.get("saveable") == "1" && attr.settings.table_name === attr.layer.settings.table_name && attr.settings.schema_name === attr.layer.settings.schema_name;
+      } else {
+        return true;
+      }
     });
     return maintableAttributes;
   }
 
   getTableColumns() {
-    //kvm.log("getTableColumns", 4);
-    // console.log("getTableC");
-    // const tableColumns = $.map(
-    //     this.attributes.filter(function (attr) {
-    //         return (attr.layer.hasEditPrivilege && attr.get("saveable") == "1") || !attr.layer.hasEditPrivilege;
-    //     }),
-    //     function (attr) {
-    //         return attr.settings.name;
-    //     }
-    // );
-
-    const tableColumns = this.attributes
-      .filter((attr) => {
-        return (attr.layer.hasEditPrivilege && attr.get("saveable") == "1") || !attr.layer.hasEditPrivilege;
-      })
-      .map((attr) => attr.settings.name);
-
-    //console.log('Return tableColumns: %o', tableColumns);
-    return tableColumns;
+    return this.getMainTableAttributes().map((attr) => attr.settings.name);
   }
 
   getColumnValues() {

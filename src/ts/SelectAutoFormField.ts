@@ -78,7 +78,7 @@ export class SelectAutoFormField implements Field {
     //console.log('SelectFormField.getValue');
     let val = this.val;
 
-    if (typeof val === "undefined" || val == "") {
+    if (typeof val === "undefined" || val === "") {
       return null;
     }
 
