@@ -1,6 +1,7 @@
 import { AttributeSetting, OptionsAttributtes } from "./Attribute";
 import { Field } from "./Field";
-import { createHtmlElement, kvm } from "./app";
+import { kvm } from "./app";
+import { createHtmlElement } from "./Util";
 
 /*
  * create a select form field in the structure
@@ -138,7 +139,19 @@ export class SelectAutoFormField implements Field {
       selectField.add(opt);
     }
     selectField.addEventListener("change", (ev) => {
-      this.internalSet(selectField.value);
+      const result: string[] = [];
+      for (let i = 0, iLen = selectField.options.length; i < iLen; i++) {
+        if (selectField.options.item(i).selected) {
+          result.push(selectField.options.item(i).value);
+        }
+      }
+      let value: string | string[] = result;
+      if (result.length === 0) {
+        value = "";
+      } else if (result.length === 1) {
+        value = result[0];
+      }
+      this.internalSet(value);
     });
     return selectField;
   }
@@ -190,7 +203,7 @@ export class SelectAutoFormField implements Field {
    * Zum programatischen Ändern des Wertes setValue verwenden.
    * @param value
    */
-  private internalSet(value: string) {
+  private internalSet(value: string | string[]) {
     // console.log("_set", value);
     this.setValue(value);
     if (!$("#saveFeatureButton").hasClass("active-button")) {
@@ -243,47 +256,5 @@ export class SelectAutoFormField implements Field {
 
   bindEvents() {
     console.log("SelectAutoFormField.bindEvents");
-
-    // this.txtInputField.addEventListener("click", (evt) => {
-    //     this.showOptionPane();
-    //     this.txtInputField.value = "";
-    // });
-    // this.txtInputField.addEventListener("keyup", (evt) => {
-    //     this.filterOptionPane(this.txtInputField.value);
-    // });
-
-    // this.inputField.addEventListener("input", (evt) => {
-    //     const val = $(evt.target).val();
-    //     $(`.${fieldIdx}_autoSelect`).hide();
-    //     if (val != "") {
-    //         let selector = `div[data-output*="${val}"]`;
-    //         const element = this.element[0];
-    //         if (element.hasAttribute("requires")) {
-    //             const requiresIdx = kvm.activeLayer.attribute_index[element.getAttribute("requires")];
-    //             const requiresAttr = <any>kvm.activeLayer.attributes[requiresIdx];
-    //             const requiresValue = requiresAttr.formField.getValue();
-    //             selector += `[requires="${requiresValue}"]`;
-    //         }
-    //         const matchingOptions = $(selector);
-    //         if (matchingOptions.length == 0) {
-    //             $(`#${fieldIdx}_autoSelect`).hide();
-    //         } else {
-    //             $(`#${fieldIdx}_autoSelect`).show();
-    //             matchingOptions.show();
-    //         }
-    //     }
-    // });
-
-    // this.hiddenInput.addEventListener("change", function (evt) {
-    //     if (!$("#saveFeatureButton").hasClass("active-button")) {
-    //         $("#saveFeatureButton").toggleClass("active-button inactive-button");
-    //     }
-    // });
-
-    // $("#featureFormular input[id=" + this.settings.index + "]").on("change", function (evt) {
-    //     if (!$("#saveFeatureButton").hasClass("active-button")) {
-    //         $("#saveFeatureButton").toggleClass("active-button inactive-button");
-    //     }
-    // });
   }
 }
