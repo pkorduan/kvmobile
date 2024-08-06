@@ -1,7 +1,7 @@
 import { AttributeSetting, OptionsAttributtes } from "./Attribute";
 import { Field } from "./Field";
 import { kvm } from "./app";
-import { createHtmlElement } from "./Util";
+import { createHtmlElement } from "./app";
 
 /*
  * create a select form field in the structure
