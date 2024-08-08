@@ -384,7 +384,7 @@ export class Layer {
    */
   async readData(limit: any = 50000, offset: any = 0, order: any = "") {
     kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Lese Daten aus Datenbank.`);
-    console.error(`readData ${this.title}`);
+    // console.log(`readData ${this.title}`);
     //  order = (this.get('name_attribute') != '' ? this.get('name_attribute') : this.get('id_attribute'));
 
     // var where = [],
@@ -561,7 +561,7 @@ export class Layer {
    * @param items
    */
   async writeData(items) {
-    console.error("Layer %s: Schreibe %s Datensätze in die lokale Datebank.", this.title, items.length);
+    // console.log("Layer %s: Schreibe %s Datensätze in die lokale Datebank.", this.title, items.length);
     kvm.tick("Schreibe Layerdaten in Datenbank.");
     const keys = this.getTableColumns().join(", ");
     const values =
@@ -1174,7 +1174,7 @@ export class Layer {
   }
 
   async applyDeltas(response: SendDeltasResponse) {
-    console.error(`applyDeltas Layer: ${this.title}`);
+    // console.log(`applyDeltas Layer: ${this.title}`);
     // const response = JSON.parse(fileUploadResult.response);
 
     if (response.success) {
@@ -1266,7 +1266,7 @@ export class Layer {
    *
    */
   async syncImages() {
-    console.error(`syncImages Layer: ${this.title}`);
+    // console.log(`syncImages Layer: ${this.title}`);
     if (this.hasEditPrivilege) {
       //kvm.log("Layer.syncImages", 4);
       kvm.tick(`${this.title}:<br>&nbsp;&nbsp; Starte Synchronisation der Bilder mit dem Server.`, false);
@@ -1468,7 +1468,7 @@ export class Layer {
    *     - Zeige Fehlermeldung an
    */
   async syncData() {
-    console.error(`syncData Layer: ${this.title}`);
+    // console.log(`syncData Layer: ${this.title}`);
     return new Promise<void>(async (resolve, reject) => {
       try {
         kvm.tick(`${this.title}:<br>&nbsp;&nbsp; Starte Synchronisation der Daten mit dem Server.`);
@@ -3749,21 +3749,21 @@ export class Layer {
     // Die Einstellungen des Layers werden aus dem Store geladen
     // Die Featureliste und Kartenelemente werden falls vorhanden aus der Datenbank geladen.
     //
-    $("input[name=activeLayerId]" + (layerGlobalId ? "[value='" + layerGlobalId + "']" : "")).on("change", function (evt) {
-      // TODO RTR
-      return;
-      const globalId = (<any>evt.target).value;
-      const layer = kvm.getLayer(globalId);
+    // $("input[name=activeLayerId]" + (layerGlobalId ? "[value='" + layerGlobalId + "']" : "")).on("change", function (evt) {
+    //   // TODO RTR
+    //   return;
+    //   const globalId = (<any>evt.target).value;
+    //   const layer = kvm.getLayer(globalId);
 
-      // unselect activeLayer
-      // unselect activeFeature
-      kvm.map.closePopup();
-      kvm.store.setItem("layerFilter", "");
-      kvm.store.setItem("sortAttribute", "");
-      kvm.tick(`${layer.title}:<br>&nbsp;&nbsp;Setze Layer aktiv.`);
-      layer.activate(); // include loading filter, sort, data view, form and readData
-      // kvm.showItem('featurelist');
-    });
+    //   // unselect activeLayer
+    //   // unselect activeFeature
+    //   kvm.map.closePopup();
+    //   kvm.store.setItem("layerFilter", "");
+    //   kvm.store.setItem("sortAttribute", "");
+    //   kvm.tick(`${layer.title}:<br>&nbsp;&nbsp;Setze Layer aktiv.`);
+    //   layer.activate(); // include loading filter, sort, data view, form and readData
+    //   // kvm.showItem('featurelist');
+    // });
 
     $("#layer-functions-button_" + layerGlobalId).on("click", (evt) => {
       const target = $(evt.target);
@@ -4067,7 +4067,7 @@ export class Layer {
   layerSelectionClicked(evt: Event) {
     // unselect activeLayer
     // unselect activeFeature
-    console.error(`layerSelectionClicked`);
+    // console.log(`layerSelectionClicked`);
     $("#sperr_div").show();
     window.setTimeout(() => {
       kvm.map.closePopup();
@@ -4369,7 +4369,7 @@ export class Layer {
    * - Wenn dieser Layer gesynct wurde und aktiv ist
    */
   activate() {
-    console.error(`activate ${this.title}`);
+    // console.log(`activate ${this.title}`);
     console.log("Setze Layer " + this.get("title") + " (" + (this.get("alias") ? this.get("alias") : "kein Aliasname") + ") aktiv.");
     try {
       if (kvm.activeLayer) {

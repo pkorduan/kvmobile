@@ -448,7 +448,9 @@ export class Attribute {
   }
 
   withLabel() {
-    let labelDiv = $('<label for="' + this.formField.settings.name + '">').append(this.formField.settings.alias ? this.formField.settings.alias : this.formField.settings.name);
+    let labelDiv = $('<label for="' + this.formField.settings.name + '">')
+      .append(this.formField.settings.alias ? this.formField.settings.alias : this.formField.settings.name)
+      .append(this.settings.nullable == 0 ? "*" : "");
     let valueDiv = $('<div class="form-value">');
 
     if (this.get("form_element_type") == "Geometrie") {

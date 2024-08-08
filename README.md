@@ -20,6 +20,7 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 
 - Bugfix
   - Fix writeDeta for delete case.
+  - Reload all Layer when change layerparameter
 
 ## 1.16.2
 

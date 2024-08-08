@@ -2436,7 +2436,10 @@ class Kvm {
       layerParams[selectField.name] = $(selectField).val();
     });
     kvm.store.setItem(`layerParams_${kvm.activeStelle.get("id")}`, JSON.stringify(layerParams));
-    kvm.activeLayer.readData($("#limit").val(), $("#offset").val());
+    kvm._layers.forEach((layer) => {
+      layer.readData($("#limit").val(), $("#offset").val());
+    });
+    // kvm.activeLayer.readData($("#limit").val(), $("#offset").val());
   }
 
   async loadDeviceData() {
