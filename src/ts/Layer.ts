@@ -3191,7 +3191,7 @@ export class Layer {
             INSTR(delta, '${layer.activeFeature.id}') > 0 AND
             type = 'sql' AND
             (
-              (change = 'insert' AND '${delta.change} ' = 'delete') OR
+              (change = 'insert' AND '${delta.change}' = 'delete') OR
               (change = 'delete' AND '${delta.change}' = 'insert')
             )
         ) = 0
