@@ -16,6 +16,11 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 
 # Change log
 
+## 1.16.2
+
+- Bugfix
+  - Fix storage of multiple selectFormField
+
 ## 1.16.1
 
 - Bugfix
