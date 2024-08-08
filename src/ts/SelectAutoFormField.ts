@@ -1,7 +1,7 @@
 import { AttributeSetting, OptionsAttributtes } from "./Attribute";
 import { Field } from "./Field";
 import { kvm } from "./app";
-import { createHtmlElement } from "./Util";
+import { createHtmlElement } from "./app";
 
 /*
  * create a select form field in the structure
@@ -47,17 +47,50 @@ export class SelectAutoFormField implements Field {
     div.appendChild(this.inputField);
   }
 
+  /**
+   * Function check the value, prepare it to fit for the form element type and
+   * set value or values in html element related to the type of value and type of element.
+   * @param any val
+   */
   setValue(val: any) {
     // console.log("SelectFormField.setValue with value: " + val);
     if (kvm.coalesce(val, "") == "" && this.settings.default) {
       val = this.settings.default;
     }
+
+    if (typeof val === "string" && this.isArrayType()) {
+      val = val.replace(/[{}]+/g, "").split(",");
+    }
+
     // this.element.val(val == "null" ? "" : val);
     const matchingOptions = this.filteredOptions.filter((e) => {
-      return e.value == val;
+      if (Array.isArray(val)) {
+        return val.find((element) => element == e.value);
+      } else {
+        return e.value == val;
+      }
     });
 
-    if (matchingOptions.length === 1) {
+    if (matchingOptions.length > 1 || this.isArrayType()) {
+      const selectedOptionIds = matchingOptions.map((elm) => {
+        return elm.value;
+      });
+      if (this.inputField instanceof HTMLSelectElement) {
+        for (let i = 0, iLen = this.inputField.options.length; i < iLen; i++) {
+          this.inputField.options.item(i).selected = selectedOptionIds.map((elm) => String(elm)).includes(this.inputField.options.item(i).value);
+        }
+      } else {
+        this.inputField.querySelector("input").value =
+          matchingOptions.length === 0
+            ? ""
+            : matchingOptions
+                .map((option) => {
+                  return option.output;
+                })
+                .join(", ");
+      }
+      this.val = selectedOptionIds;
+    } else if (matchingOptions.length === 1) {
       if (this.inputField instanceof HTMLSelectElement) {
         this.inputField.value = matchingOptions[0].value;
       } else {
@@ -72,6 +105,7 @@ export class SelectAutoFormField implements Field {
       }
       this.val = null;
     }
+
     this.updateRequiredBy();
   }
 
