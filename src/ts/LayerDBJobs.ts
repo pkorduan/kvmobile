@@ -1,5 +1,5 @@
 import { Layer } from "./Layer";
-import { executeSQL } from "./Util";
+import { executeSQL, underlineToPointName } from "./Util";
 import { kvm } from "./app";
 
 export async function runInsert(layer: Layer, delta: { type: string; change: string; delta: string }) {
@@ -281,7 +281,7 @@ async function writeDelta(layer: Layer, delta: { type: string; change: string; d
   SELECT
     '${delta.type}' AS type,
     '${delta.change}' AS change,
-    '${layer.underlineToPointName(delta.delta, layer.get("schema_name"), layer.get("table_name")).replace(/\'/g, "''")}' AS delta,
+    '${underlineToPointName(delta.delta, layer.get("schema_name"), layer.get("table_name")).replace(/\'/g, "''")}' AS delta,
     '${kvm.now()}' AS created_at
   WHERE
     (
