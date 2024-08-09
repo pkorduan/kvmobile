@@ -54,7 +54,7 @@ export type AttributeSetting = {
 
 export class Attribute {
   settings: AttributeSetting;
-  layer: any;
+  layer: Layer;
   formField: Field;
   viewField: DataViewField;
 

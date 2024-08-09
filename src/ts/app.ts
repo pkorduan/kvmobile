@@ -5,31 +5,19 @@
 /// <reference types="cordova-plugin-file"/>
 /// <reference types="cordova-plugin-android-fingerprint-auth"/>
 /// <reference types="@types/cordova-sqlite-storage"/>
-// <reference types="@types/leaflet"/>
 /// <reference types="@types/leaflet.locatecontrol"/>
 /// <reference types="@types/proj4leaflet"/>
-// try {
-//     window.open = <any>cordova.InAppBrowser.open; // oder casten mit window.open = cordova['InAppBrowser'].open;
-// } catch ({ name, message }) {
-//     console.error(`TypeError: ${name} Message: ${message}`);
-//     alert(`Die App muss ein mal geschlossen und neu gestartet werden!`);
-// }
 
 // import "cordova-plugin-dialogs";
 // import "cordova-plugin-device";
 
 import * as idb from "idb";
-import { configurations } from "./configurations";
+import { Configuration, configurations } from "./configurations";
 import { BackgroundGeolocation, BackgroundGeolocationConfig, BackgroundGeolocationEvents, BackgroundGeolocationResponse } from "@awesome-cordova-plugins/background-geolocation/ngx";
 import { GpsStatus } from "./gpsStatus";
-import { SyncStatus } from "./syncStatus";
 import { Stelle } from "./Stelle";
 import { BackgroundLayerSetting, Layer, LayerSetting } from "./Layer";
 import { BackgroundLayer, prepareBackgrounLayer } from "./BackgroundLayer";
-import { Feature } from "./Feature";
-import { Klasse } from "./Klasse";
-// import { Overlay } from "./Overlay";
-// import { maplibreStyleObj } from "./mapLibreStyles";
 import { NetworkStatus } from "./networkStatus";
 import { FileUtils } from "./controller/files";
 import { Mapper } from "./controller/mapper";
@@ -38,6 +26,10 @@ import type { FingerprintAuth as FingerprintAuthT } from "cordova-plugin-android
 import "process";
 import { MapLibreLayer } from "./MapLibreLayer";
 import { Control, DomUtil, ErrorEvent as LErrorEvent, Map as LMap, Point as LPoint, Renderer, SVG } from "leaflet";
+import { sperrBildschirm } from "./SperrBildschirm";
+
+import { PanelAnzeigeFilter } from "./PanelAnzeigeFilter";
+
 require("leaflet");
 require("leaflet.locatecontrol");
 require("leaflet-betterscale");
@@ -45,10 +37,10 @@ require("leaflet-easybutton");
 require("leaflet-editable");
 require("leaflet-bing-layer");
 import type from "leaflet-easybutton";
-import { LatLng, LatLngExpression, LeafletMouseEvent, latLng } from "leaflet";
-import { LocationEvent } from "leaflet";
-import { executeSQL, listFiles } from "./Util";
-import { Attribute } from "./Attribute";
+import { LatLng, LatLngExpression } from "leaflet";
+
+import { executeSQL, getValueOfElement, tableExists } from "./Util";
+
 require("proj4leaflet");
 
 require("@maplibre/maplibre-gl-leaflet");
@@ -87,11 +79,11 @@ export async function getWebviewUrl(filePath: string): Promise<string> {
   });
 }
 
-type LayerEntry = {
-  [index: string]: Layer;
-};
+// type LayerEntry = {
+//   [index: string]: Layer;
+// };
 
-class Kvm {
+export class Kvm {
   // Buffer: require("buffer").Buffer,
   // wkx: require("wkx"),
   controls: any = {};
@@ -110,14 +102,14 @@ class Kvm {
   store: Storage;
   map: LMap;
   activeStelle: Stelle;
-  activeLayer: Layer;
+  private activeLayer: Layer;
   myRenderer: Renderer;
   db: SQLitePlugin.Database;
   saveTile: (key: IDBValidKey, val: any) => Promise<IDBValidKey>;
   readTile: (key: IDBValidKey) => Promise<any>;
   orgTileUrl: any;
   debug: any;
-  config: any;
+  config: Configuration;
   backgroundLayers: BackgroundLayer[] = [];
   backgroundLayerSettings: BackgroundLayerSetting[];
   backgroundGeolocation: BackgroundGeolocation;
@@ -130,8 +122,9 @@ class Kvm {
   logFileEntry: FileEntry;
   userId: string;
   userName: string;
+  panelAnzeigeFilter: PanelAnzeigeFilter;
 
-  dataModelChanges: { layer: Layer; new_version: string }[];
+  // dataModelChanges: { layer: Layer; new_version: string }[];
 
   // showItem: <(p:any)=>void>undefined,
   // log: <(p:any)=>void>undefined,
@@ -141,12 +134,15 @@ class Kvm {
   }
 
   getLayer(layerId: string) {
-    // console.error(
-    //   `xxx getLayer ${layerId} exists:${this._layers.has(layerId)}`
-    // );
     return this._layers.get(layerId);
   }
 
+  getActiveLayer() {
+    return this.activeLayer;
+  }
+  setActiveLayer(layer: Layer) {
+    this.activeLayer = layer;
+  }
   /**
    *
    ** @returns shallow copy of the Layers
@@ -266,29 +262,22 @@ class Kvm {
     console.error(`bttnSyncLayersClicked`);
     // const layer = kvm.activeLayer;
 
-    $("#sperr_div_content").html("");
+    sperrBildschirm.clear();
 
     // Sichere Datenbank
     if ((<HTMLButtonElement>evt.currentTarget).classList.contains("inactive-button")) {
       this.msg("Keine Internetverbindung! Kann Layer jetzt nicht synchronisieren.");
     } else {
-      // $("#syncLayerIcon_" + layer.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
-      $("#sperr_div").show();
+      sperrBildschirm.show();
       navigator.notification.confirm(
         "Jetzt lokale Änderungen Daten und Bilder, falls vorhanden, zum Server schicken, Änderungen vom Server holen und lokal einspielen? Wenn Änderungen vom Server kommen wird die lokale Datenbank vorher automatisch gesichert.",
         async (buttonIndex) => {
           if (buttonIndex == 1) {
-            // $("#syncImageIcon_" + layer.getGlobalId()).toggleClass("fa-upload fa-spinner fa-spin");
-            $("#sperr_div").show();
-
+            sperrBildschirm.show();
             await kvm.syncLayers();
-
-            $("#sperr_div").hide();
-            // $("#syncLayerIcon_" + layer.getGlobalId()).toggleClass("fa-upload fa-spinner fa-spin");
-          } else {
-            // $("#syncLayerIcon_" + layer.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
-            kvm.closeSperrDiv();
+            sperrBildschirm.close();
           }
+          sperrBildschirm.close();
         },
         "Layer mit Server synchronisieren",
         ["ja", "nein"]
@@ -307,7 +296,7 @@ class Kvm {
         console.log(`Starte Synchronisieren des Layers: "${layer.title}"`);
         await layer.syncImages();
         // console.error(`Bilder des Layers ${layer.title} wurden synchronisiert`);
-        await layer.syncData();
+        // await layer.syncData();
         // console.error(`Daten des Layers ${layer.title} wurden synchronisiert`);
       } catch (ex) {
         console.error(`Fehler beim Synchronisieren des Layers: "${layer.title}".`, ex);
@@ -316,6 +305,8 @@ class Kvm {
       }
     }
 
+    await this.activeStelle.syncData();
+
     const activeLayerEntry = Array.from(this._layers).find((entry) => entry[1].getGlobalId() === activeLayerId);
     if (activeLayerEntry) {
       const activeLayer = activeLayerEntry[1];
@@ -323,24 +314,26 @@ class Kvm {
       activeLayer.activate();
     }
 
-    if (this.dataModelChanges?.length > 0) {
-      let msg = "Datenmodell-Änderungen:\n";
-      for (let i = 0; i < this.dataModelChanges.length; i++) {
-        msg += `Neue Version ${this.dataModelChanges[i].new_version} für Layer ${this.dataModelChanges[i].layer.title} gefunden.\n`;
-      }
-      msg += `Alle Layer der Stelle werden komplett neu geladen. Beachten Sie dass sich dadurch die Formulare und Kartenstyles geändert haben können.`;
-      console.log(msg);
-      kvm.msg(msg, "Layeränderung");
-      kvm.activeStelle
-        .requestLayers()
-        .catch((reason) => {
-          console.error(`Fehler beim Laden der Layerdaten`, reason);
-        })
-        .finally(() => {
-          kvm.activeStelle.getFirstLayer().activate();
-          kvm.closeSperrDiv();
-        });
-    }
+    // TODO DataModelChnges
+    // if (this.dataModelChanges) {
+    //   let msg = "Datenmodell-Änderungen:\n";
+    //   for (let i = 0; i < this.dataModelChanges.length; i++) {
+    //     msg += `Neue Version ${this.dataModelChanges[i].new_version} für Layer ${this.dataModelChanges[i].layer.title} gefunden.\n`;
+    //   }
+    //   msg += `Alle Layer der Stelle werden komplett neu geladen. Beachten Sie dass sich dadurch die Formulare und Kartenstyles geändert haben können.`;
+    //   console.log(msg);
+    //   kvm.msg(msg, "Layeränderung");
+    //   kvm.activeStelle
+    //     .requestLayers()
+    //     .catch((reason) => {
+    //       console.error(`Fehler beim Laden der Layerdaten`, reason);
+    //     })
+    //     .finally(() => {
+    //       kvm.activeStelle.getFirstLayer().activate();
+    //       sperrBildschirm.close();
+    //     });
+    // }
+    // TODO DataModelChnges
   }
 
   // loadHeadFile(filename, filetype) {
@@ -503,7 +496,8 @@ class Kvm {
   }
 
   init() {
-    document.addEventListener("deviceready", this.onDeviceReady.bind(this), false);
+    console.info(cordova);
+    document.addEventListener("deviceready", () => this.onDeviceReady());
     /**
      * if maplibre sees an url like custum:// it will call customProtocolHandler
      *
@@ -525,13 +519,26 @@ class Kvm {
    * @returns
    */
   async writeLog(log: any) {
-    return;
     log = `[${kvm.now(" ", "", ":")}] ${log}` + "\n";
     const dataObj = new Blob([log], { type: "text/plain" });
     try {
+      console.info("writeLog", kvm.logFileEntry);
       await FileUtils.writeFile(kvm.logFileEntry, dataObj, true);
     } catch (ex) {
-      console.error(`Fehler beim Schreiben in das Logfile ${kvm.logFileEntry.nativeURL} `, ex);
+      throw new Error(`Fehler beim Schreiben in das Logfile ${kvm.logFileEntry.nativeURL} `, ex);
+    }
+  }
+
+  async _initDB(db: SQLitePlugin.Database) {
+    try {
+      const tblExists = await tableExists(db, "deltas");
+      if (!tblExists) {
+        const tableColumnDefinitions = ["version INTEGER PRIMARY KEY", "type text", "change text", "delta text", "created_at text"];
+        const sqlCreateDeltaTbl = "CREATE TABLE IF NOT EXISTS deltas (" + tableColumnDefinitions.join(", ") + ")";
+        await executeSQL(kvm.db, sqlCreateDeltaTbl);
+      }
+    } catch (ex) {
+      throw new Error("Initialisierung der Datenbank ist fehlgeschlagen.", ex);
     }
   }
 
@@ -560,10 +567,13 @@ class Kvm {
         location: "default",
         androidDatabaseImplementation: 2,
       },
-      function (db) {
+      (db) => {
         //kvm.log('Lokale Datenbank geöffnet.', 3);
-        $("#dbnameText").html(kvm.config.dbname + ".db");
+        document.getElementById("dbnameText").innerHTML = kvm.config.dbname + ".db";
         kvm.initSecuritySettings();
+
+        this._initDB(db);
+
         if (kvm.store.getItem("fingerprintAuth") == "true") {
           FingerprintAuth.isAvailable(
             function (result: any) {
@@ -650,40 +660,28 @@ class Kvm {
 
     // const layerList = document.getElementById("layer_list");
     // if (layerList) {
-    //     console.error("addMutationObserver");
-    //     const callback = (mutations: MutationRecord[], observer: MutationObserver) => {
-    //         for (const mutation of mutations) {
-    //             if (mutation.type === "childList" && mutation.addedNodes?.length > 0) {
-    //                 console.error("xxx Node(s) added", mutation.addedNodes);
-    //             } else if (mutation.type === "attributes") {
-    //                 console.info(`The ${mutation.attributeName} attribute was modified.`, mutation);
-    //             }
-    //         }
-    //     };
-    const layerList = document.getElementById("layer_list");
-    if (layerList) {
-      // console.log("addMutationObserver");
-      const callback = (mutations: MutationRecord[], observer: MutationObserver) => {
-        for (const mutation of mutations) {
-          if (mutation.type === "childList" && mutation.addedNodes?.length > 0) {
-            // console.log("xxx Node(s) added", mutation.addedNodes);
-          } else if (mutation.type === "attributes") {
-            // console.info(
-            //   `The ${mutation.attributeName} attribute was modified.`,
-            //   mutation
-            // );
-          }
-        }
-      };
+    //   // console.log("addMutationObserver");
+    //   const callback = (mutations: MutationRecord[], observer: MutationObserver) => {
+    //     for (const mutation of mutations) {
+    //       if (mutation.type === "childList" && mutation.addedNodes?.length > 0) {
+    //         // console.log("xxx Node(s) added", mutation.addedNodes);
+    //       } else if (mutation.type === "attributes") {
+    //         // console.info(
+    //         //   `The ${mutation.attributeName} attribute was modified.`,
+    //         //   mutation
+    //         // );
+    //       }
+    //     }
+    //   };
 
-      //     // Create an observer instance linked to the callback function
-      //     const observer = new MutationObserver(callback);
-      //     observer.observe(layerList, { attributes: true, childList: true, subtree: true });
-      // }
-      // Create an observer instance linked to the callback function
-      const observer = new MutationObserver(callback);
-      observer.observe(layerList, { attributes: true, childList: true, subtree: true });
-    }
+    //   //     // Create an observer instance linked to the callback function
+    //   //     const observer = new MutationObserver(callback);
+    //   //     observer.observe(layerList, { attributes: true, childList: true, subtree: true });
+    //   // }
+    //   // Create an observer instance linked to the callback function
+    //   const observer = new MutationObserver(callback);
+    //   observer.observe(layerList, { attributes: true, childList: true, subtree: true });
+    // }
 
     try {
       kvm.store.getItem("activeView") || "featurelist";
@@ -745,7 +743,7 @@ class Kvm {
         stelle.readAllLayers = true;
         stelle.numLayersRead = 0;
         stelle.numLayers = layerIds.length;
-        kvm.openSperrDiv("Lade Layerdaten.");
+        sperrBildschirm.show("Lade Layerdaten.");
         for (let layerId of layerIds) {
           //console.log('Lade Layersettings for layerId: %s', layerId);
           const layerSettings = this.store.getItem("layerSettings_" + activeStelleId + "_" + layerId);
@@ -768,7 +766,8 @@ class Kvm {
                 if (layer.hasEditPrivilege) {
                   try {
                     console.log("Layer " + layer.title + ": SyncData with local deltas if exists.");
-                    layer.syncData();
+                    // TODO Deltas
+                    // layer.syncData();
                   } catch ({ name, message }) {
                     kvm.msg("Fehler beim synchronisieren des Layers id: " + layer.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
                   }
@@ -781,7 +780,8 @@ class Kvm {
                 } else {
                   console.log("Layer " + layer.title + ": Only get deltas from server.");
                   try {
-                    layer.sendDeltas({ rows: [] });
+                    // TODO Deltas
+                    // layer.sendDeltas({ rows: [] });
                   } catch ({ name, message }) {
                     kvm.msg("Fehler beim senden der Deltas des Layers id: " + layer.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
                   }
@@ -797,7 +797,7 @@ class Kvm {
           stelle.sortOverlays();
           stelle.sortLayers();
         } else {
-          this.closeSperrDiv();
+          sperrBildschirm.close();
         }
       } else {
         kvm.msg("Laden Sie die Stellen und Layer vom Server.");
@@ -1230,7 +1230,7 @@ class Kvm {
     // console.log("viewAfterUpdate = ", kvm.config.viewAfterUpdate);
 
     kvm.config.newAfterCreate = (kvm.store.hasOwnProperty("newAfterCreate") ? kvm.store.getItem("newAfterCreate") == "true" : kvm.config.newAfterCreate) || false;
-    kvm.store.setItem("newAfterCreate", kvm.config.newAfterCreate);
+    kvm.store.setItem("newAfterCreate", <string>(<any>kvm.config.newAfterCreate));
     $(".newAfterCreate").prop("checked", kvm.config.newAfterCreate);
     // console.log("newAfterCreate = ", kvm.config.newAfterCreate);
   }
@@ -1238,7 +1238,7 @@ class Kvm {
   initSecuritySettings() {
     // console.log("initSecuritySettings");
     kvm.config.fingerprintAuth = (kvm.store.hasOwnProperty("fingerprintAuth") ? kvm.store.getItem("fingerprintAuth") == "true" : kvm.config.fingerprintAuth) || false;
-    kvm.store.setItem("fingerprintAuth", kvm.config.fingerprintAuth);
+    kvm.store.setItem("fingerprintAuth", <string>(<any>kvm.config.fingerprintAuth));
     $("#fingerprintAuth").prop("checked", kvm.config.fingerprintAuth);
     // console.log("fingerprintAuth = ", kvm.config.fingerprintAuth);
 
@@ -1329,7 +1329,7 @@ class Kvm {
 
     markerStyles[index].fillColor = elm.value;
     kvm.store.setItem("markerStyles", JSON.stringify(markerStyles));
-    if (kvm.activeLayer) kvm.activeLayer.readData($("#limit").val(), $("#offset").val());
+    if (kvm.activeLayer) kvm.activeLayer.readData(getValueOfElement("limit"), getValueOfElement("offset"));
   }
 
   bindEvents() {
@@ -1366,7 +1366,7 @@ class Kvm {
       "dataLoaded",
       function () {
         if (kvm.featureListLoaded && kvm.layerDataLoaded) {
-          kvm.closeSperrDiv("Event dataLoaded ausgelößt.");
+          sperrBildschirm.close("Event dataLoaded ausgelößt.");
         }
       },
       false
@@ -1411,16 +1411,17 @@ class Kvm {
           if (buttonIndex == 1) {
             // ja
             if (navigator.onLine) {
-              if ($("#kvwmapServerUrlField").val() != "" && $("#kvwmapServerLoginNameField").val() != "" && $("#kvwmapServerPasswortField").val() != "") {
-                kvm.openSperrDiv("Frage Stellen ab");
+              if (getValueOfElement("kvwmapServerUrlField") && getValueOfElement("kvwmapServerLoginNameField") && getValueOfElement("kvwmapServerPasswortField")) {
+                sperrBildschirm.show("Frage Stellen ab");
                 $("#activeStelleBezeichnungDiv").hide();
                 const stelle = new Stelle({
-                  url: $("#kvwmapServerUrlField").val(),
-                  login_name: $("#kvwmapServerLoginNameField").val(),
-                  passwort: $("#kvwmapServerPasswortField").val(),
+                  url: getValueOfElement("kvwmapServerUrlField"),
+                  login_name: getValueOfElement("kvwmapServerLoginNameField"),
+                  passwort: getValueOfElement("kvwmapServerPasswortField"),
                 });
                 console.log("Stellenobjekt erzeugt um Stellen abfragen zu können: " + JSON.stringify(stelle));
                 //kvm.log("Stellenobjekt erzeugt um Stellen abfragen zu können: " + JSON.stringify(stelle), 4);
+                stelle.reloadLayer;
                 stelle.requestStellen();
               } else {
                 kvm.msg("Sie müssen erst die Server URL, Nutzername und Password angeben!");
@@ -1439,7 +1440,7 @@ class Kvm {
       );
     });
 
-    $("#kvwmapServerStelleSelectField").on("change", function () {
+    $("#kvwmapServerStelleSelectField").on("change", () => {
       if ($("#saveServerSettingsButton").hasClass("settings-button")) {
         $("#saveServerSettingsButton").toggleClass("settings-button settings-button-active");
       }
@@ -1448,7 +1449,7 @@ class Kvm {
 
     $("#requestLayersButton").on("click", () => {
       if (navigator.onLine) {
-        kvm.openSperrDiv("Lade Layerdaten.");
+        sperrBildschirm.show("Lade Layerdaten.");
         kvm.activeStelle
           .requestLayers()
           .catch((reason) => {
@@ -1457,24 +1458,24 @@ class Kvm {
           .finally(() => {
             kvm.activeStelle.sortLayers("legendorder");
             kvm.activeStelle.getFirstLayer().activate();
-            kvm.closeSperrDiv();
+            sperrBildschirm.close();
           });
       } else {
         NetworkStatus.noNetMsg("Netzverbindung");
       }
     });
 
-    $("#saveServerSettingsButton").on("click", function () {
-      const stellen = String($("#kvwmapServerStellenField").val());
-      const selectedStelleId = $("#kvwmapServerStelleSelectField").val();
+    $("#saveServerSettingsButton").on("click", () => {
+      const stellen = getValueOfElement("kvwmapServerStellenField");
+      const selectedStelleId = getValueOfElement("kvwmapServerStelleSelectField");
       const stelleSettings = JSON.parse(stellen).find((stelle) => {
         return stelle.ID == selectedStelleId;
       });
-      stelleSettings["id"] = $("#kvwmapServerIdField").val();
-      stelleSettings["name"] = $("#kvwmapServerNameField").val();
+      stelleSettings["id"] = getValueOfElement("kvwmapServerIdField");
+      stelleSettings["name"] = getValueOfElement("kvwmapServerNameField");
       stelleSettings["bezeichnung"] = $("#kvwmapServerStelleSelectField option:selected").text();
       stelleSettings["url"] = $("#kvwmapServerUrlField").val();
-      stelleSettings["login_name"] = $("#kvwmapServerLoginNameField").val();
+      stelleSettings["login_name"] = (<HTMLInputElement>document.getElementById("kvwmapServerLoginNameField")).value.trim();
       stelleSettings["passwort"] = $("#kvwmapServerPasswortField").val();
       stelleSettings["Stelle_ID"] = $("#kvwmapServerStelleSelectField").val();
       // stelleSettings['stellen'] = $("#kvwmapServerStellenField").val(); Das brauchen wir hier nicht, denn für die eine Stelle wurde alles hinterlegt.
@@ -1572,19 +1573,19 @@ class Kvm {
     });
 
     $("#viewAfterCreate").on("change", function () {
-      kvm.config.viewAfterCreate = $("#viewAfterCreate").val();
+      kvm.config.viewAfterCreate = <string>$("#viewAfterCreate").val();
       console.log("Set viewAfterCreate to ", kvm.config.viewAfterCreate);
       kvm.store.setItem("viewAfterCreate", kvm.config.viewAfterCreate.toString());
     });
 
     $("#viewAfterUpdate").on("change", function () {
-      kvm.config.viewAfterUpdate = $("#viewAfterUpdate").val();
+      kvm.config.viewAfterUpdate = <string>$("#viewAfterUpdate").val();
       console.log("Set viewAfterUpdate to ", kvm.config.viewAfterUpdate);
       kvm.store.setItem("viewAfterUpdate", kvm.config.viewAfterUpdate.toString());
     });
 
     $("#logLevel").on("change", function () {
-      kvm.config.logLevel = $("#logLevel").val();
+      kvm.config.logLevel = <string>$("#logLevel").val();
       kvm.store.setItem("logLevel", kvm.config.logLevel);
       kvm.msg("Protokollierungsstufe geändert!", "Protokollierung");
     });
@@ -1654,7 +1655,7 @@ class Kvm {
     });
 
     $("#saveImagesButton").on("click", function () {
-      let destDir = $("#localBackupPath").val() || kvm.store.getItem("localBackupPath") || kvm.config.localBackupPath;
+      let destDir = <string>$("#localBackupPath").val() || kvm.store.getItem("localBackupPath") || kvm.config.localBackupPath;
 
       navigator.notification.confirm(
         `Sollen die Bilddaten nach ${destDir} gesichert werden? Gleichnamige Dateien im Zielverzeichnis werden überschrieben!`,
@@ -1671,7 +1672,7 @@ class Kvm {
       );
     });
 
-    $("#showDeltasButton").on("click", () => {
+    $("#showDeltasButton").on("click", async () => {
       //kvm.log("Delta anzeigen.", 3);
       if (kvm.activeLayer.hasEditPrivilege) {
         let sql = `
@@ -1683,32 +1684,28 @@ class Kvm {
 
         $("#showDeltasButton").hide();
         $("#showDeltasWaiting").show();
-        kvm.db.executeSql(
-          sql,
-          [],
-          (rs) => {
-            const numRows = rs.rows.length;
-            if (numRows > 0) {
-              $("#showDeltasDiv").html("<b>Deltas</b>");
-              for (let i = 0; i < numRows; i++) {
-                const item = rs.rows.item(i);
-                $("#showDeltasDiv").append("<br>" + item.version + ": " + (item.type == "sql" ? item.delta : item.change + " " + item.delta));
-              }
-              $("#showDeltasDiv").show();
-              $("#hideDeltasButton").show();
-            } else {
-              kvm.msg("Keine Änderungen vorhanden");
-              $("#showDeltasButton").show();
+        const rs = await executeSQL(kvm.db, sql);
+        try {
+          const numRows = rs.rows.length;
+          if (numRows > 0) {
+            $("#showDeltasDiv").html("<b>Deltas</b>");
+            for (let i = 0; i < numRows; i++) {
+              const item = rs.rows.item(i);
+              $("#showDeltasDiv").append("<br>" + item.version + ": " + (item.type == "sql" ? item.delta : item.change + " " + item.delta));
             }
-            $("#showDeltasWaiting").hide();
-          },
-          (error) => {
-            const msg = `Fehler in bei Abfrage der Deltas mit sql: ${sql} Fehler: ${error.message} code: ${(<any>error).code}`;
-            console.error(msg);
-            kvm.log(msg, 1);
-            kvm.msg(msg, "Datenbank");
+            $("#showDeltasDiv").show();
+            $("#hideDeltasButton").show();
+          } else {
+            kvm.msg("Keine Änderungen vorhanden");
+            $("#showDeltasButton").show();
           }
-        );
+          $("#showDeltasWaiting").hide();
+        } catch (error) {
+          const msg = `Fehler in bei Abfrage der Deltas mit sql: ${sql} Fehler: ${error.message} code: ${(<any>error).code}`;
+          console.error(msg);
+          kvm.log(msg, 1);
+          kvm.msg(msg, "Datenbank");
+        }
       } else {
         kvm.msg(`Der Layer ${kvm.activeLayer.title} hat keine Änderungen weil auf dem Server keine Rechte zum Ändern von Datensätzen des Layers eingestellt wurden.`, "Datenbank");
       }
@@ -1735,9 +1732,9 @@ class Kvm {
       kvm.showItem("loggings");
     });
 
-    $("#showSperrDivButton").on("click", function () {
-      $("#sperr_div").show();
-    });
+    // $("#showSperrDivButton").on("click", function () {
+    //   $("#sperr_div").show();
+    // });
 
     /*
      * Bricht Änderungen im Formular ab,
@@ -1775,25 +1772,28 @@ class Kvm {
       }
     });
 
-    $("#statusFilterSelect").on("change", function (evt) {
-      kvm.store.setItem("statusFilter", $("#statusFilterSelect").val().toString());
-      kvm.activeLayer.readData($("#limit").val(), $("#offset").val());
-    });
+    // $("#statusFilterSelect").on("change", function (evt) {
+    //   kvm.store.setItem("statusFilter", $("#statusFilterSelect").val().toString());
+    //   kvm.activeLayer.readData(getValueOfElement("limit"), getValueOfElement("offset"));
+    // });
 
-    $("#toggleFilterDivButton").on("click", function () {
-      $("#filterDiv").toggle();
-      $("#toggleFilterDivButton").val($("#toggleFilterDivButton").val() == "mehr" ? "weniger" : "mehr");
-    });
+    // rtr
+    // $("#toggleFilterDivButton").on("click", function () {
+    //   $("#filterDiv").toggle();
+    //   $("#toggleFilterDivButton").val($("#toggleFilterDivButton").val() == "mehr" ? "weniger" : "mehr");
+    // });
 
-    $("#runFilterButton").on("click", function () {
-      kvm.store.setItem("layerFilter", JSON.stringify(kvm.composeLayerFilter()));
-      kvm.activeLayer.readData($("#limit").val(), $("#offset").val());
-    });
+    // $("#runFilterButton").on("click", function () {
+    //   kvm.store.setItem("layerFilter", JSON.stringify(kvm.composeLayerFilter()));
+    //   kvm.activeLayer.readData(getValueOfElement("limit"), getValueOfElement("offset"));
+    // });
+
+    this.panelAnzeigeFilter = new PanelAnzeigeFilter(this, this.activeLayer);
 
     $("#anzeigeSortSelect").on("change", function (evt) {
       kvm.store.setItem("sortAttribute", $("#anzeigeSortSelect").val().toString());
       kvm.activeStelle.readAllLayers = false;
-      kvm.activeLayer.readData($("#limit").val(), $("#offset").val());
+      kvm.activeLayer.readData(getValueOfElement("limit"), getValueOfElement("offset"));
     });
 
     $("#deleteFeatureButton").on("click", function (evt) {
@@ -1948,20 +1948,20 @@ class Kvm {
       layer.editFeature(layer.activeFeature.id);
     });
 
-    $("#restoreFeatureButton").on("click", function () {
+    $("#restoreFeatureButton").on("click", () => {
       navigator.notification.confirm(
         "Wollen Sie den Datensatz wiederherstellen? Ein vorhandener mit der gleichen uuid wird dabei überschrieben!",
-        function (buttonIndex) {
+        (buttonIndex) => {
           if (buttonIndex == 1) {
             // ja
-            $("#sperr_div_content").html("Wiederherstellung von Datensätzen ist noch nicht implementiert!");
+            sperrBildschirm.setContent("Wiederherstellung von Datensätzen ist noch nicht implementiert!");
             kvm.activeLayer.runRestoreStrategy();
-            $("#sperr_div").show();
+            sperrBildschirm.show();
             setTimeout(function () {
-              kvm.closeSperrDiv();
+              sperrBildschirm.close();
             }, 3000);
           } else {
-            kvm.closeSperrDiv();
+            sperrBildschirm.close();
           }
         },
         "Datensatz wiederherstellen",
@@ -2064,9 +2064,8 @@ class Kvm {
               if (navigator.onLine) {
                 // ja
                 //kvm.msg("Ich beginne mit dem Download der Kacheln.", "Kartenverwaltung");
-                document.getElementById("sperr_div").style.display = "block";
-                let sperrDivContent = document.getElementById("sperr_div_content");
-                sperrDivContent.innerHTML = '<b>Kartenverwaltung</b><br><br>Download der Kacheln:<br><br><div id="sperr_div_progress_div"></div>';
+                // document.getElementById("sperr_div").style.display = "block";
+                sperrBildschirm.setContent('<b>Kartenverwaltung</b><br><br>Download der Kacheln:<br><br><div id="sperr_div_progress_div"></div>');
                 let sperrDivProgressDiv = document.getElementById("sperr_div_progress_div");
                 // hide the button and show a progress div
                 // find p1, p2 and zoom levels to fetch data in layer configuration
@@ -2116,8 +2115,7 @@ class Kvm {
                       });
                   } else {
                     console.info("downloaded " + i + " von " + iSoll);
-                    document.getElementById("sperr_div_content").innerHTML = "";
-                    document.getElementById("sperr_div").style.display = "none";
+                    sperrBildschirm.close();
                     kvm.msg("Download abgeschlossen!", "Kartenverwaltung");
                   }
                 }
@@ -2145,26 +2143,6 @@ class Kvm {
       }
     });
 
-    // siehe auch function closeSperrDiv()
-    $("#sperr_div").on("dblclick", function (evt) {
-      navigator.notification.confirm(
-        "Sperrbildschirm aufheben?",
-        function (buttonIndex) {
-          if (buttonIndex == 1) {
-            // ja
-            $("#sperr_div").hide();
-          }
-          if (buttonIndex == 2) {
-            // nein
-            // Do nothing
-            $("#sperr_dev").show();
-          }
-        },
-        "",
-        ["ja", "nein"]
-      );
-    });
-
     console.log("Register click event on .toggle-settings-div");
     $(".toggle-settings-div").on("click", () => {
       console.log("clicked on toggle-settings-div");
@@ -2172,14 +2150,15 @@ class Kvm {
     });
   }
 
-  bindFeatureItemClickEvents() {
-    //kvm.log("bindFeatureItemClickEvents", 4);
-    $(".feature-item").on("click", kvm.featureItemClickEventFunction);
-  }
+  // bindFeatureItemClickEvents() {
+  //   //kvm.log("bindFeatureItemClickEvents", 4);
+  //   $(".feature-item").on("click", kvm.featureItemClickEventFunction);
+  // }
 
-  featureItemClickEventFunction(evt) {
-    console.log("featureItemClickEvent on feature id: %o", evt.target.id);
-    const feature = kvm.activeLayer.getFeature(evt.target.id);
+  featureItemClickEventFunction(evt: PointerEvent) {
+    const id = (<HTMLElement>evt.currentTarget).dataset.id;
+    console.log("featureItemClickEvent on feature id: %o", id);
+    const feature = kvm.activeLayer.getFeature(id);
     kvm.showItem(kvm.activeLayer.hasGeometry && feature.getDataValue(kvm.activeLayer.get("geometry_attribute")) != "null" ? "map" : "dataView");
     kvm.activeLayer.activateFeature(feature, true);
   }
@@ -2375,12 +2354,16 @@ class Kvm {
   }
 
   async openLogFile() {
+    console.info("openLogFile " + kvm.store.getItem("localBackupPath"));
+    console.info("openLogFile " + cordova.file.applicationStorageDirectory);
+
     window.resolveLocalFileSystemURL(kvm.store.getItem("localBackupPath") || kvm.config.localBackupPath, (dirEntry) => {
       // window.resolveLocalFileSystemURL(cordova.file.externalCacheDirectory, (dirEntry) => {
       // console.log(dirEntry);
       (<DirectoryEntry>dirEntry).getFile("kvmobile_logfile.txt", { create: true, exclusive: false }, (fileEntry) => {
         kvm.logFileEntry = fileEntry;
-
+        console.info(dirEntry);
+        console.info(fileEntry);
         kvm
           .writeLog("Logfile initialisert")
           .then(() => console.info(`LogFile ${fileEntry.nativeURL} initialisiert`, fileEntry))
@@ -2436,7 +2419,7 @@ class Kvm {
       layerParams[selectField.name] = $(selectField).val();
     });
     kvm.store.setItem(`layerParams_${kvm.activeStelle.get("id")}`, JSON.stringify(layerParams));
-    kvm.activeLayer.readData($("#limit").val(), $("#offset").val());
+    kvm.activeLayer.readData(getValueOfElement("limit"), getValueOfElement("offset"));
   }
 
   async loadDeviceData() {
@@ -2525,6 +2508,7 @@ class Kvm {
   }
 
   showItem(item: string): void {
+    console.error(`showItem(${item})`);
     // console.log("showItem: %o", item);
     // erstmal alle panels ausblenden
     $(".panel").hide();
@@ -2741,42 +2725,9 @@ class Kvm {
     });
   }
 
-  openSperrDiv(msg = "") {
-    $("#sperr_div").show();
-    if (msg) {
-      this.tick(`<b>${msg}</b>`, false);
-    }
-  }
-
-  tick(msg, append = true) {
-    msg = this.replacePassword(msg);
-    if (append) {
-      $("#sperr_div_content").append("<br>" + msg);
-    } else {
-      $("#sperr_div_content").html(msg);
-    }
-  }
-
   activateFirstLayer() {
     let firstLayerListDiv = document.getElementById("layer_list").firstChild;
     kvm._layers.get($("#layer_list").children[0].val()).activate();
-  }
-
-  closeSperrDiv(msg = "") {
-    if (msg) {
-      navigator.notification.confirm(
-        msg,
-        function (buttonIndex) {
-          if (buttonIndex == 1) {
-            $("#sperr_div").hide();
-          }
-        },
-        "Laden",
-        ["OK"]
-      );
-    } else {
-      $("#sperr_div").hide();
-    }
   }
 
   log(msg: any, level = 3, show_in_sperr_div: boolean = false, append: boolean = false) {
@@ -2788,12 +2739,8 @@ class Kvm {
       setTimeout(function () {
         $("#logText").append(`<br>${kvm.now(" ", "", ":")}: ${msg}`);
         if (show_in_sperr_div) {
-          $("#sperr_div").show();
-          if (append) {
-            $("#sperr_div_content").append("<br>" + msg);
-          } else {
-            $("#sperr_div_content").html(msg);
-          }
+          sperrBildschirm.show();
+          sperrBildschirm.setContent(msg, append);
         }
       });
     }
@@ -2831,7 +2778,7 @@ class Kvm {
       setTimeout(function () {
         $("#logText").append("<br>" + msg);
         if (show_in_sperr_div) {
-          $("#sperr_div_content").html(msg);
+          sperrBildschirm.setContent(msg);
         }
       });
     }
@@ -3097,22 +3044,6 @@ class Kvm {
 
 export const kvm = new Kvm();
 window["kvm"] = kvm;
-
-export function createHtmlElement<K extends keyof HTMLElementTagNameMap>(tag: K, parent?: HTMLElement, className?: string, mixin?: any): HTMLElementTagNameMap[K] {
-  const el = document.createElement(tag);
-  if (parent) {
-    parent.appendChild(el);
-  }
-  if (className) {
-    el.className = className;
-  }
-  if (mixin) {
-    for (const k in mixin) {
-      el[k] = mixin[k];
-    }
-  }
-  return el;
-}
 
 // class Test {
 //     static instance: Test;

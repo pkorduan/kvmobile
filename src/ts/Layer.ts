@@ -495,25 +495,26 @@ export class Layer {
    * create the list of features in list view at once
    */
   createFeatureList() {
+    console.error("createFeatureList");
     sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Erzeuge Featureliste.`);
     //console.log("createFeatureList for layer %s", this.get("title"));
     //kvm.log("Erzeuge die Liste der Datensätze neu.");
     $("#featurelistHeading").html(this.get("alias") ? this.get("alias") : this.get("title"));
-    $("#featurelistBody").html("");
-    let html = "";
+
+    const featurelistBody = document.getElementById("featurelistBody");
+    featurelistBody.innerHTML = "";
+    const doc = document.createDocumentFragment();
 
     this._features.forEach((feature) => {
-      //console.log("append feature: %o to list", feature);
-      const needle = $("#searchFeatureField").val().toString().toLowerCase();
-      const element = $(feature.listElement());
-      const haystack = element.html().toLowerCase();
-
-      html = html + feature.listElement();
+      const element = feature.getListElement();
+      doc.appendChild(element);
+      element.addEventListener("click", kvm.featureItemClickEventFunction);
+      // html = html + feature.listElement();
       //console.log("Feature " + feature.layer.settings.id_attribute + ": " + feature.id + " zur Liste hinzugefügt.");
       //console.log(html);
     });
-    $("#featurelistBody").append(html);
-    kvm.bindFeatureItemClickEvents();
+    featurelistBody.append(doc);
+    // kvm.bindFeatureItemClickEvents();
     if (this._features.size > 0) {
       //      kvm.showItem("featurelist");
       $("#numDatasetsText_" + this.getGlobalId()).html(`${this._features.size}`);
