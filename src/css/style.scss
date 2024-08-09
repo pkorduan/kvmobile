@@ -3,9 +3,15 @@
   padding: 0;
 }
 
+html,
 body {
+  width: 100%;
+  height: 100%;
+  margin: 0px;
+  padding: 0px;
+  overflow: hidden;
   font: 100.01% Verdana, Arial, Helvetica, sans-serif;
-  font-size: 20px;
+  font-size: 24px;
 }
 
 label {
@@ -107,7 +113,7 @@ label {
 .layer-list-element {
   margin-left: 6px;
   margin-bottom: 2px;
-  font-size: 23px;
+  font-size: 1em;
   max-width: 84%;
   display: inline-block;
   vertical-align: middle;
@@ -140,13 +146,19 @@ label {
 h1 {
   margin-top: 9px;
   margin-bottom: 7px;
-  font-size: 26px;
+  font-size: 1.1em;
 }
 
 h2 {
   margin-top: 10px;
   margin-bottom: 5px;
-  font-size: 22px;
+  font-size: 1.05em;
+}
+
+h3 {
+  margin-top: 10px;
+  margin-bottom: 5px;
+  font-size: 0.9em;
 }
 
 input[type="checkbox"] {
@@ -172,7 +184,7 @@ textarea {
   background-color: white;
   border-radius: 4px;
   box-sizing: border-box;
-  font-size: 20px;
+  font-size: 0.8em;
   padding: 5px;
 }
 
@@ -185,7 +197,7 @@ input[type="date"] {
   background-color: white;
   border-radius: 4px;
   box-sizing: border-box;
-  font-size: 20px;
+  font-size: 0.83em;
 }
 
 input:disabled {
@@ -200,7 +212,7 @@ input[type="number"] {
   border: 1px solid rgb(38, 50, 134);
   border-radius: 4px;
   box-sizing: border-box;
-  font-size: 20px;
+  font-size: 0.83 px;
   padding: 5px;
 }
 
@@ -232,7 +244,7 @@ button#gpsControlButton.kvm-gps-track {
 }
 
 .leaflet-popup {
-  font-size: 20px;
+  font-size: 0.83em;
 }
 
 .leaflet-popup-content {
@@ -252,7 +264,7 @@ button#gpsControlButton.kvm-gps-track {
 
 #formDiv {
   display: table;
-  font-size: 24px;
+  font-size: 1em;
   width: 100%;
 }
 
@@ -354,7 +366,7 @@ ul.subformlist {
 
 #filterViewDiv {
   display: table;
-  font-size: 24px;
+  font-size: 1em;
   width: 100%;
 }
 
@@ -414,7 +426,7 @@ ul.subformlist {
 
 #dataViewDiv {
   display: table;
-  font-size: 24px;
+  font-size: 1em;
   width: 100%;
 }
 
@@ -482,11 +494,11 @@ ul.subformlist {
 .subFormEmbeddedPKFormField-list {
   color: firebrick;
   font-weight: bold;
-  font-size: 24px;
+  font-size: 1em;
 }
 
 .feature-item {
-  font-size: 24px;
+  font-size: 1em;
   color: #263286;
   background-color: #f4ffde;
   margin-left: 5px;
@@ -541,7 +553,7 @@ ul.subformlist {
   color: #263286;
   background: #e6ffb2;
   margin-bottom: 5px;
-  font-size: 18px;
+  font-size: 0.75em;
 }
 
 .settings-button-active {
@@ -553,7 +565,7 @@ ul.subformlist {
   color: #263286;
   background: #ffc8d0;
   margin-bottom: 5px;
-  font-size: 18px;
+  font-size: 0.75em;
 }
 
 .menu-button {
@@ -581,7 +593,7 @@ ul.subformlist {
 }
 
 .text-button {
-  font-size: 30px;
+  font-size: 1.25em;
   border: 2px solid #263286;
   padding-left: 10px;
   padding-right: 10px;
@@ -664,12 +676,12 @@ ul.subformlist {
   color: white;
   text-align: center;
   vertical-align: middle;
-  font-size: 30px;
+  font-size: 1.25em;
   padding-top: 55px;
 }
 
 .sperr-div-content {
-  font-size: 18px;
+  font-size: 0.75em;
   margin-left: 18px;
   text-align: left;
   overflow: auto;
@@ -721,7 +733,7 @@ ul.subformlist {
 }
 
 #short_password_label {
-  font-size: 17px;
+  font-size: 0.71em;
 }
 
 #short_password_field {
@@ -776,7 +788,7 @@ ul.subformlist {
 #password_ok_button {
   display: none;
   padding: 3px;
-  font-size: 17px;
+  font-size: 0.71em;
   margin-left: 7px;
   box-shadow: 5px 5px 5px 0px rgb(0 0 0 / 30%);
 }
@@ -794,7 +806,7 @@ ul.subformlist {
   /* Fallback color */
   color: black;
   text-align: left;
-  font-size: 20px;
+  font-size: 0.83em;
   padding-top: 5px;
 }
 
@@ -981,7 +993,7 @@ ul.subformlist {
 }
 
 .fa-2x {
-  font-size: 30px;
+  font-size: 1.25em;
 }
 
 .no-popup-functions {
@@ -989,14 +1001,14 @@ ul.subformlist {
 }
 
 .leaflet-control-reloadlayers-icon {
-  font-size: 24px;
+  font-size: 1em;
 }
 
 .leaflet-control-zoomLevel {
   background-color: #ffffff66;
   padding: 0px 3px 0px 3px;
   font-weight: bold;
-  font-size: 19px;
+  font-size: 0.791em;
   top: -119px;
   left: 44px;
 }
@@ -1014,7 +1026,7 @@ li.pointer:hover {
 }
 
 .highlighted {
-  font-size: 25px;
+  font-size: 1.04em;
   font-weight: bold;
   color: #263286;
   background-color: white;
@@ -1025,7 +1037,7 @@ li.pointer:hover {
   position: absolute;
   z-index: 999;
   bottom: 0;
-  font-size: 14px;
+  font-size: 0.58em;
   padding: 3px;
   background-color: #ffffff80;
 }
@@ -1057,7 +1069,7 @@ li.pointer:hover {
 
 .multiple-options-list > li {
   color: #263286 !important;
-  font-size: 24px;
+  font-size: 1em;
   line-height: 24px;
   font-weight: normal !important;
 }

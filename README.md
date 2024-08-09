@@ -16,6 +16,11 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 
 # Change log
 
+## 1.17.0
+
+- Features
+  - Font Size Setting
+
 ## 1.16.3
 
 - Bugfix

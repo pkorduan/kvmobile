@@ -88,7 +88,7 @@ child-src * 'self' blob: http:
     <script src="js/teststyle.js"></script> -->
     <script type="module" src="app.js"></script>
   </head>
-  <body>
+  <body style="font-size: 24px">
     <div id="sperr_div" class="modal">
       <i class="fa fa-spinner fa-pulse fa-2x"></i>
       <div id="sperr_div_content" class="sperr-div-content"></div>
@@ -257,8 +257,25 @@ child-src * 'self' blob: http:
       </div>
       <hr>
 
-      <div class="h2-div"><h2 id="h2_farben" class="b-collapsed">Farben</h2></div>
-      <div id="colorSelectorDiv">
+
+      <div class="h2-div"><h2 id="h2_farben" class="b-collapsed">Style</h2></div>
+      <div id="styleSelectorDiv">
+        <h3>Textgröße</h3>
+        <div id="fontSizeSelectorDiv">
+          <span id="fontSizeProzent" style="margin-left: 10px">75 %</span>
+          <button class="sync-layer-button settings-button" id="fontSizeUpButton">
+            vergrößern <i class="fa fa-arrow-up fa-2x" aria-hidden="true" style="color: rgb(38, 50, 134);"></i>
+          </button>
+          <button class="sync-layer-button settings-button" id="fontSizeDownButton">
+            verkleinern <i class="fa fa-arrow-down fa-2x" aria-hidden="true" style="color: rgb(38, 50, 134);"></i>
+          </button>
+          <button class="sync-layer-button settings-button" id="fontSizeDefaultButton">
+            100% <i class="fa fa-refresh fa-2x" aria-hidden="true" style="color: rgb(38, 50, 134);"></i>
+          </button>
+        </div>
+        <h3>Farben</h3>
+        <div id="colorSelectorDiv">
+        </div>
       </div>
       <hr>
 

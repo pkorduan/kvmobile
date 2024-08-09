@@ -717,6 +717,7 @@ class Kvm {
       this.initMap();
       this.initViewSettings();
       this.initLoadOfflineMapsDiv();
+      this.initFontSize();
       this.initColorSelector();
       this.initStatusFilter();
       this.initLocalBackupPath();
@@ -1180,6 +1181,17 @@ class Kvm {
 				</div>
 			`);
     });
+  }
+
+  initFontSize() {
+    const sizePixel = parseFloat(kvm.store.getItem("fontSize") || kvm.config.fontSize || "24px");
+    const sizeDefault = parseFloat(kvm.config.fontSize);
+    const sizeProzent = Math.round((sizePixel / sizeDefault) * 100);
+    const fontSize = `${sizePixel}px`;
+    document.body.style.fontSize = fontSize;
+    document.getElementById("fontSizeProzent").innerHTML = `${sizeProzent} %`;
+    document.getElementById("fontSizeDefaultButton").style.display = sizeProzent == 100 ? "none" : "inline";
+    kvm.store.setItem("fontSize", fontSize);
   }
 
   initColorSelector() {
@@ -2054,6 +2066,12 @@ class Kvm {
       );
     });
 
+    document.getElementById("fontSizeUpButton").addEventListener("click", kvm.changeFontSize);
+
+    document.getElementById("fontSizeDownButton").addEventListener("click", kvm.changeFontSize);
+
+    document.getElementById("fontSizeDefaultButton").addEventListener("click", kvm.changeFontSize);
+
     if (document.getElementById("downloadBackgroundLayerButton")) {
       document.getElementById("downloadBackgroundLayerButton").addEventListener("click", (evt) => {
         const offlineLayerId = (<HTMLElement>evt.currentTarget).getAttribute("value");
@@ -2175,6 +2193,34 @@ class Kvm {
   bindFeatureItemClickEvents() {
     //kvm.log("bindFeatureItemClickEvents", 4);
     $(".feature-item").on("click", kvm.featureItemClickEventFunction);
+  }
+
+  changeFontSize(evt) {
+    let sizePixel: number;
+    let sizeProzent: number;
+    const sizeDefault = parseFloat(kvm.config.fontSize);
+    if (evt.target.id.toLowerCase().includes("default")) {
+      sizePixel = sizeDefault;
+      sizeProzent = 100;
+      document.getElementById("fontSizeDefaultButton").style.display = "none";
+    } else {
+      const step5Prozent: number = (Math.round((sizeDefault / 100) * 5 * 10) / 10) * (evt.target.id.toLowerCase().includes("up") ? 1 : -1);
+      sizePixel = parseFloat(document.body.style.fontSize) + step5Prozent;
+      sizeProzent = Math.round((sizePixel / sizeDefault) * 100);
+      if (sizeProzent < 30) {
+        kvm.msg("Kleiner geht nicht!", "Einstellung Textgröße");
+        return;
+      }
+      if (sizeProzent > 150) {
+        kvm.msg("Größer geht nicht!", "Einstellung Textgröße");
+        return;
+      }
+    }
+    const fontSize: string = `${sizePixel}px`;
+    document.body.style.fontSize = fontSize;
+    document.getElementById("fontSizeProzent").innerHTML = `${sizeProzent} %`;
+    document.getElementById("fontSizeDefaultButton").style.display = sizeProzent == 100 ? "none" : "inline";
+    kvm.store.setItem("fontSize", fontSize);
   }
 
   featureItemClickEventFunction(evt) {
