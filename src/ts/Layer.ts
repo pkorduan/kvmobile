@@ -833,7 +833,13 @@ export class Layer {
       function (attr) {
         const excludeDefaultWords = ["gdi_conditional_val", "gdi_conditional_nextval", "gdi_current_date", "nextval"];
         const excludeWordExists = excludeDefaultWords.some((word) => attr.get("default").includes(word));
-        return attr.get("name") + " " + attr.getSqliteType() + (attr.get("nullable") === "0" ? " NOT NULL" : "") + (attr.get("default") && !excludeWordExists ? " DEFAULT " + JSON.stringify(attr.get("default")).replace(/"/g, "'") : "");
+        let defaultValue: String = attr.get("default");
+        if (attr.get("default") && !excludeWordExists) {
+          defaultValue = JSON.stringify(attr.get("default")).replace(/"/g, "'").replace(/''/g, "'");
+        } else {
+          defaultValue = "";
+        }
+        return attr.get("name") + " " + attr.getSqliteType() + (attr.get("nullable") === "0" ? " NOT NULL" : "") + (defaultValue ? " DEFAULT " + defaultValue : "");
       }
     );
     return tableColumnDefinitions;
