@@ -1,8 +1,20 @@
 import { Layer, LayerSetting } from "./Layer";
 import { kvm } from "./app";
 import { MapLibreLayer } from "./MapLibreLayer";
-import { download, readFileAsString } from "./Util";
-import { Util } from "leaflet";
+import { createHtmlElement, download, executeSQL, hideElement, readFileAsString, removeOptions, setValueOfElement, showElement } from "./Util";
+import { sperrBildschirm } from "./SperrBildschirm";
+import * as Util from "./Util";
+
+type DeltaEntry = {
+  version: string;
+  sql: string;
+  schema: string;
+  table: string;
+};
+
+type Deltas = {
+  rows: DeltaEntry[];
+};
 
 type StelleSetting = {
   ID: string;
@@ -22,6 +34,58 @@ type StelleSetting = {
   login_name: string;
   passwort: string;
   Stelle_ID: string;
+};
+
+export type RequestStellenResponse = {
+  success: boolean;
+  user_id: string;
+  user_name: string;
+  stellen: {
+    ID: string;
+    Bezeichnung: string;
+    dbname: string;
+    west: number;
+    south: number;
+    east: number;
+    north: number;
+    startCenterLat: number;
+    startCenterLon: number;
+    layer_params: [];
+  }[];
+};
+
+type SendDeltasResponse = {
+  success: boolean;
+  syncData: {
+    id: string;
+    client_id: string;
+    username: string;
+    schema_name: string;
+    table_name: string;
+    client_time: string;
+    pull_from_version: string;
+    pull_to_version: string;
+    push_from_version: string;
+    push_to_version: string;
+  }[];
+  deltas: {
+    version: string;
+    sql: string;
+    schema: string;
+    table: string;
+    created_at: string;
+    username: string;
+  }[];
+  failedDeltas: {
+    version: string;
+    sql: string;
+    created_at: string;
+    username: string;
+  }[];
+  log: string;
+  version: string;
+  err_msg: string;
+  msg: string;
 };
 
 type LayerRequestResponse = {
@@ -55,7 +119,7 @@ export class Stelle {
   tableNames: string[] = [];
 
   constructor(settings = {}) {
-    this.settings = typeof settings == "string" ? JSON.parse(settings) : settings;
+    this.settings = typeof settings === "string" ? JSON.parse(settings) : settings;
     this.tableNames = this.getTableNames();
   }
 
@@ -68,30 +132,6 @@ export class Stelle {
     return this.settings[key];
   }
 
-  viewDefaultSettings() {
-    $("#kvwmapServerIdField").val(kvm.config.kvwmapServerId);
-    $("#kvwmapServerNameField").val(kvm.config.kvwmapServerName);
-    $("#kvwmapServerUrlField").val(kvm.config.kvwmapServerUrl);
-    $("#kvwmapServerLoginNameField").val(kvm.config.kvwmapServerLoginName);
-    $("#kvwmapServerPasswortField").val(kvm.config.kvwmapServerPasswort);
-  }
-
-  viewSettings() {
-    //kvm.log("ServerSettings.viewSettings", 4);
-    $("#kvwmapServerIdField").val(this.get("id"));
-    $("#kvwmapServerNameField").val(this.get("name"));
-    $("#kvwmapServerUrlField").val(this.get("url"));
-    $("#kvwmapServerLoginNameField").val(this.get("login_name"));
-    $("#kvwmapServerPasswortField").val(this.get("passwort"));
-
-    $("#kvwmapServerStelleSelectField").find("option").remove();
-    // $.each(JSON.parse(this.get("stellen")), function (index, stelle) {
-    // 	$("#kvwmapServerStelleSelectField").append('<option value="' + stelle.ID + '">' + stelle.Bezeichnung + "</option>");
-    // });
-    $("#kvwmapServerStelleSelectField").val(this.get("Stelle_ID"));
-    $("#kvwmapServerStellenField").val(this.get("stellen"));
-  }
-
   saveToStore() {
     //kvm.log("Speicher Stelleneinstellungen in lokalen Speicher: " + JSON.stringify(this.settings));
     kvm.store.setItem("stelleSettings_" + this.get("id"), JSON.stringify(this.settings));
@@ -99,7 +139,7 @@ export class Stelle {
 
   activate() {
     console.log("Activate Stelle");
-    kvm.activeStelle = this;
+    kvm.setActiveStelle(this);
     kvm.store.setItem("activeStelleId", this.get("id"));
     $("#activeStelleBezeichnungDiv").html(this.get("bezeichnung")).show();
     let layerParams = [];
@@ -122,117 +162,170 @@ export class Stelle {
   /*
    * Request all stellen from active serversetting
    */
-  requestStellen() {
+  async requestStellen() {
     //kvm.log('Stelle.requestStellen: "' + this.getStellenUrl() + '"');
-    var fileTransfer = new FileTransfer(),
-      filename = cordova.file.dataDirectory + "stellen.json",
-      url = this.getStellenUrl();
+    // const fileTransfer = new FileTransfer();
+    // const filename = cordova.file.dataDirectory + "stellen.json";
+    const url = this.getStellenUrl();
 
     kvm.log("Download Stellen von Url: " + url);
     //kvm.log("Speicher die Datei auf dem Gerät in Datei: " + filename);
 
-    fileTransfer.download(
-      url,
-      filename,
-      function (fileEntry) {
-        fileEntry.file(
-          function (file) {
-            var reader = new FileReader();
+    let response: Response;
+    try {
+      response = await fetch(url);
+    } catch (err) {
+      const errMsg = "Fehler beim Download der Stellendaten code: " + err.code + " status: " + err.http_status + " Prüfen Sie ob der Nutzer vom dem Gerät aus mit seiner IP auf die Stelle zugreifen darf und die Domain in config.xml eingetragen ist.";
+      console.error(err);
+      kvm.msg(errMsg);
+    }
+    let errMsg: string;
+    let resultObj: RequestStellenResponse;
+    if (response) {
+      const txt = await response.text();
+      if (txt.indexOf('form name="login"') === -1) {
+        try {
+          resultObj = JSON.parse(txt);
+        } catch (err) {
+          errMsg = "Fehler beim Abfragen der Stellendaten. Abfrage liefert keine korrekten Daten vom Server. Entweder sind keine auf dem Server vorhanden oder die URL der Anfrage ist nicht korrekt. Prüfen Sie die Parameter unter Einstellungen.";
+        }
+      } else {
+        errMsg = "Zugang zum Server verweigert! Prüfen Sie Ihre Zugangsdaten unter Einstellungen.";
+      }
+    }
 
-            reader.onloadend = function () {
-              //kvm.log("Download Result: " + this.result, 4);
-              var errMsg = "";
+    if (resultObj) {
+      console.log("Download erfolgreich. Antwortobjekt: %o", resultObj);
 
-              if (typeof this.result === "string" && this.result.indexOf('form name="login"') == -1) {
-                if (kvm.isValidJsonString(this.result)) {
-                  const resultObj = JSON.parse(this.result);
-                  if (resultObj.success) {
-                    // TODO notused
-                    const validResult = true;
-                    //kvm.log("Download der Stellendaten erfolgreich.", 3);
-                    console.log("Download erfolgreich. Antwortobjekt: %o", resultObj);
+      const selectField = <HTMLSelectElement>document.getElementById("kvwmapServerStelleSelectField");
+      removeOptions(selectField);
 
-                    $("#kvwmapServerStelleSelectField").find("option").remove();
-                    kvm.store.setItem("userId", resultObj.user_id);
-                    kvm.userId = String(resultObj.user_id);
-                    kvm.store.setItem("userName", resultObj.user_name);
-                    kvm.userName = String(resultObj.user_name);
-                    $.each(resultObj.stellen, function (index, stelle) {
-                      $("#kvwmapServerStelleSelectField").append('<option value="' + stelle.ID + '">' + stelle.Bezeichnung + "</option>");
-                    });
-                    $("#kvwmapServerStellenField").val(JSON.stringify(resultObj.stellen));
-                    $("#requestStellenButton").hide();
-                    if (resultObj.stellen.length == 1) {
-                      $("#kvwmapServerStelleSelectField").val(resultObj.stellen[0].ID);
-                      $("#saveServerSettingsButton").show();
-                    } else {
-                      $("#saveServerSettingsButton").hide();
-                    }
-                    $("#kvwmapServerStelleSelectField").show();
-                  } else {
-                    errMsg = "Fehler beim Abfragen der Stellendaten. " + (resultObj.err_msg ? resultObj.err_msg : "");
-                  }
-                } else {
-                  errMsg = "Fehler beim Abfragen der Stellendaten. Abfrage liefert keine korrekten Daten vom Server. Entweder sind keine auf dem Server vorhanden oder die URL der Anfrage ist nicht korrekt. Prüfen Sie die Parameter unter Einstellungen.";
-                }
-              } else {
-                errMsg = "Zugang zum Server verweigert! Prüfen Sie Ihre Zugangsdaten unter Einstellungen.";
-              }
-              if (errMsg != "") {
-                kvm.msg(errMsg);
-                kvm.log(errMsg, 1);
-              }
-              kvm.closeSperrDiv();
-            };
+      kvm.store.setItem("userId", resultObj.user_id);
+      kvm.userId = String(resultObj.user_id);
+      kvm.store.setItem("userName", resultObj.user_name);
+      kvm.userName = String(resultObj.user_name);
+      resultObj.stellen.forEach((stelle) => {
+        selectField.append(createHtmlElement("option", selectField, null, { value: stelle.ID, innerText: stelle.Bezeichnung }));
+      });
+      setValueOfElement("kvwmapServerStellenField", JSON.stringify(resultObj.stellen));
+      hideElement("requestStellenButton");
+      if (resultObj.stellen.length == 1) {
+        setValueOfElement("kvwmapServerStelleSelectField", resultObj.stellen[0].ID);
+        showElement("saveServerSettingsButton");
+      } else {
+        hideElement("saveServerSettingsButton");
+      }
+      showElement("kvwmapServerStelleSelectField");
+    }
 
-            reader.readAsText(file);
-          },
-          function (error) {
-            kvm.msg("Fehler beim Einlesen der heruntergeladenen Datei. Prüfen Sie die URL und Parameter, die für den Download verwendet werden.");
-            kvm.log("Fehler beim lesen der Datei: " + error.code);
-            kvm.closeSperrDiv();
-          }
-        );
-      },
-      function (err) {
-        var errMsg = "Fehler beim Download der Stellendaten code: " + err.code + " status: " + err.http_status + " Prüfen Sie ob der Nutzer vom dem Gerät aus mit seiner IP auf die Stelle zugreifen darf und die Domain in config.xml eingetragen ist.";
-        console.error(err);
-        kvm.msg(errMsg);
-        kvm.closeSperrDiv();
-      },
-      true
-    );
+    if (errMsg) {
+      kvm.msg(errMsg);
+      kvm.log(errMsg, 1);
+    }
+    sperrBildschirm.close();
+
+    // fileTransfer.download(
+    //   url,
+    //   filename,
+    //   function (fileEntry) {
+    //     fileEntry.file(
+    //       function (file) {
+    //         var reader = new FileReader();
+
+    //         reader.onloadend = function () {
+    //           //kvm.log("Download Result: " + this.result, 4);
+    //           var errMsg = "";
+
+    //           if (typeof this.result === "string" && this.result.indexOf('form name="login"') == -1) {
+    //             if (kvm.isValidJsonString(this.result)) {
+    //               const resultObj = JSON.parse(this.result);
+    //               if (resultObj.success) {
+    //                 // TODO notused
+    //                 const validResult = true;
+    //                 //kvm.log("Download der Stellendaten erfolgreich.", 3);
+    //                 console.log("Download erfolgreich. Antwortobjekt: %o", resultObj);
+
+    //                 $("#kvwmapServerStelleSelectField").find("option").remove();
+    //                 kvm.store.setItem("userId", resultObj.user_id);
+    //                 kvm.userId = String(resultObj.user_id);
+    //                 kvm.store.setItem("userName", resultObj.user_name);
+    //                 kvm.userName = String(resultObj.user_name);
+    //                 $.each(resultObj.stellen, function (index, stelle) {
+    //                   $("#kvwmapServerStelleSelectField").append('<option value="' + stelle.ID + '">' + stelle.Bezeichnung + "</option>");
+    //                 });
+    //                 $("#kvwmapServerStellenField").val(JSON.stringify(resultObj.stellen));
+    //                 $("#requestStellenButton").hide();
+    //                 if (resultObj.stellen.length == 1) {
+    //                   $("#kvwmapServerStelleSelectField").val(resultObj.stellen[0].ID);
+    //                   $("#saveServerSettingsButton").show();
+    //                 } else {
+    //                   $("#saveServerSettingsButton").hide();
+    //                 }
+    //                 $("#kvwmapServerStelleSelectField").show();
+    //               } else {
+    //                 errMsg = "Fehler beim Abfragen der Stellendaten. " + (resultObj.err_msg ? resultObj.err_msg : "");
+    //               }
+    //             } else {
+    //               errMsg = "Fehler beim Abfragen der Stellendaten. Abfrage liefert keine korrekten Daten vom Server. Entweder sind keine auf dem Server vorhanden oder die URL der Anfrage ist nicht korrekt. Prüfen Sie die Parameter unter Einstellungen.";
+    //             }
+    //           } else {
+    //             errMsg = "Zugang zum Server verweigert! Prüfen Sie Ihre Zugangsdaten unter Einstellungen.";
+    //           }
+    //           if (errMsg != "") {
+    //             kvm.msg(errMsg);
+    //             kvm.log(errMsg, 1);
+    //           }
+    //           sperrBildschirm.close();
+    //         };
+
+    //         reader.readAsText(file);
+    //       },
+    //       function (error) {
+    //         kvm.msg("Fehler beim Einlesen der heruntergeladenen Datei. Prüfen Sie die URL und Parameter, die für den Download verwendet werden.");
+    //         kvm.log("Fehler beim lesen der Datei: " + error.code);
+    //         sperrBildschirm.close();
+    //       }
+    //     );
+    //   },
+    //   function (err) {
+    //     var errMsg = "Fehler beim Download der Stellendaten code: " + err.code + " status: " + err.http_status + " Prüfen Sie ob der Nutzer vom dem Gerät aus mit seiner IP auf die Stelle zugreifen darf und die Domain in config.xml eingetragen ist.";
+    //     console.error(err);
+    //     kvm.msg(errMsg);
+    //     sperrBildschirm.close();
+    //   },
+    //   true
+    // );
   }
 
   getStellenUrl() {
     //kvm.log("Stellen.getStellenUrl", 4);
-    var url = this.get("url"),
-      file = this.getUrlFile(url);
+    let url = this.get("url");
+    const file = Stelle.getUrlFile(url);
 
     url += file + "go=mobile_get_stellen" + "&login_name=" + this.get("login_name") + "&passwort=" + encodeURIComponent(this.get("passwort")) + "&format=json";
     return url;
   }
 
-  finishLayerLoading(layer) {
-    // console.log("finishLayerReading: readAllLayers= %s, numLayersLoaded=%s, numLayers=%s", this.readAllLayers, this.numLayersLoaded, this.numLayers);
-    if (this.loadAllLayers) {
-      if (this.numLayersLoaded < this.numLayers - 1) {
-        this.numLayersLoaded += 1;
-        kvm.tick(`${layer.title}:<br>&nbsp;&nbsp;${this.numLayersLoaded} Layer geladen. Noch ${this.numLayers - this.numLayersLoaded} Layer zu laden.`);
-      } else {
-        kvm.tick(`${layer.title}:<br>&nbsp;&nbsp;Laden beeendet.`);
-        this.numLayersLoaded = 0;
-        this.loadAllLayers = false;
-        this.tableNames = this.getTableNames();
-        // read all layers
-        kvm.reloadFeatures();
-      }
-    } else {
-      // read only this layer
-      this.readAllLayers = false;
-      layer.readData();
-    }
-  }
+  // finishLayerLoading(layer) {
+  //   // console.log("finishLayerReading: readAllLayers= %s, numLayersLoaded=%s, numLayers=%s", this.readAllLayers, this.numLayersLoaded, this.numLayers);
+  //   if (this.loadAllLayers) {
+  //     if (this.numLayersLoaded < this.numLayers - 1) {
+  //       this.numLayersLoaded += 1;
+  //       sperrBildschirm.tick(`${layer.title}:<br>&nbsp;&nbsp;${this.numLayersLoaded} Layer geladen. Noch ${this.numLayers - this.numLayersLoaded} Layer zu laden.`);
+  //     } else {
+  //       sperrBildschirm.tick(`${layer.title}:<br>&nbsp;&nbsp;Laden beeendet.`);
+  //       this.numLayersLoaded = 0;
+  //       this.loadAllLayers = false;
+  //       this.tableNames = this.getTableNames();
+  //       // read all layers
+  //       kvm.reloadFeatures();
+  //     }
+  //   } else {
+  //     // read only this layer
+  //     this.readAllLayers = false;
+  //     layer.readData();
+  //   }
+  // }
 
   finishLayerReading(layer: Layer | MapLibreLayer) {
     // console.log("finishLayerReading: readAllLayers= %s, numLayersRead=%s, numLayers=%s", this.readAllLayers, this.numLayersRead, this.numLayers);
@@ -240,29 +333,29 @@ export class Stelle {
     if (this.readAllLayers) {
       if (this.numLayersRead < this.numLayers - 1) {
         this.numLayersRead += 1;
-        kvm.tick(`${layer.title}:<br>&nbsp;&nbsp;${this.numLayersRead} Layer geladen. Noch ${this.numLayers - this.numLayersRead} Layer zu laden.`);
+        sperrBildschirm.tick(`${layer.title}:<br>&nbsp;&nbsp;${this.numLayersRead} Layer geladen. Noch ${this.numLayers - this.numLayersRead} Layer zu laden.`);
       } else {
-        kvm.tick(`${layer.title}:<br>&nbsp;&nbsp;Laden beeendet.`);
+        sperrBildschirm.tick(`${layer.title}:<br>&nbsp;&nbsp;Laden beeendet.`);
         this.numLayersRead = 0;
         this.readAllLayers = false;
         const globalLayerId = `${kvm.store.getItem("activeStelleId")}_${kvm.store.getItem("activeLayerId")}`;
         const activeLayer = kvm.getLayer(globalLayerId);
-        if (activeLayer) {
-          activeLayer.activate(); // activate latest active
-        } else {
-          layer.activate(); // activate latest loaded
-        }
+        // if (activeLayer) {
+        //   activeLayer.activate(); // activate latest active
+        // } else {
+        //   layer.activate(); // activate latest loaded
+        // }
         this.tableNames = this.getTableNames();
-        kvm.showActiveItem();
+        // kvm.showActiveItem();
         // kvm.closeSperrDiv("Laden der Layer beendet. Schließe Sperr-Bildschirm.");
-        kvm.closeSperrDiv("");
+        sperrBildschirm.close("");
       }
     } else {
-      kvm.tick(layer.title + ": Laden beeendet.");
+      sperrBildschirm.tick(layer.title + ": Laden beeendet.");
       this.sortOverlays();
       layer.activate();
       this.tableNames = this.getTableNames();
-      kvm.showActiveItem();
+      // kvm.showActiveItem();
       // kvm.closeSperrDiv();
     }
     // console.log("activeLayer after finishLayerReading: ", kvm.activeLayer ? kvm.activeLayer.get("id") : "keiner aktiv");
@@ -272,8 +365,8 @@ export class Stelle {
   /*
    * get missing parts to url when server.de, server.de/ oder server.de/index.php
    */
-  getUrlFile(url: string) {
-    var file = "";
+  static getUrlFile(url: string) {
+    let file = "";
 
     if (url.slice(-3) == ".de") file = "/index.php?";
     if (url.slice(-1) == "/") file = "index.php?";
@@ -327,28 +420,29 @@ export class Stelle {
       const filename = cordova.file.dataDirectory + "layers_stelle_" + this.get("id") + ".json";
       //filename = 'temp_file.json',
       const url = this.getLayerUrl();
-      kvm.tick(`Download Layerdaten der Stelle.`);
+      sperrBildschirm.tick(`Download Layerdaten der Stelle.`);
       console.log("Download Layerdaten von Stelle mit url: %s", kvm.replacePassword(url));
       //kvm.log("Speicher die Datei auf dem Gerät in Datei: " + filename);
 
       const fileEntry = await download(url, filename);
-      kvm.tick("Download der Layerdaten abgeschlossen.");
+      sperrBildschirm.tick("Download der Layerdaten abgeschlossen.");
       const fileContent = await readFileAsString(fileEntry);
 
       const resultObj = <LayerRequestResponse>kvm.parseLayerResult(fileContent);
 
       if (resultObj.success) {
-        kvm.tick(`${kvm.activeLayer.title}:<br>&nbsp;&nbsp;Download erfolgreich.`);
+        sperrBildschirm.tick(`${kvm.getActiveLayer().title}:<br>&nbsp;&nbsp;Download erfolgreich.`);
         //console.log('resultObj: %o', resultObj);
         const layerSettings = resultObj.layers.find((layer) => {
           return layer["id"] == layerId;
         });
-        kvm.tick(`${kvm.activeLayer.title}:<br>&nbsp;&nbsp;Entferne Layer von App.`);
-        kvm.activeLayer.removeFromApp(); // includes removeFromStore()
+        sperrBildschirm.tick(`${kvm.getActiveLayer().title}:<br>&nbsp;&nbsp;Entferne Layer von App.`);
+        // kvm.getActiveLayer().removeFromMap(); // includes removeFromStore()
         //console.log("Erzeuge neuen Layer");
-        const layer = new Layer(kvm.activeStelle, layerSettings);
-        kvm.tick(`${layer.title}:<br>&nbsp;&nbsp;Lege Layer an.`);
+        const layer = new Layer(kvm.getActiveStelle(), layerSettings);
+        sperrBildschirm.tick(`${layer.title}:<br>&nbsp;&nbsp;Lege Layer an.`);
         layer.updateTable(); // includes DROP TABLE IF EXISTS, appendToApp(), activate(), this.sortOverlays(), saveToStore(), readData()
+        // TODO
       } else {
         kvm.log("Fehlerausgabe von parseLayerResult!", 4);
         kvm.msg(resultObj.errMsg, "2");
@@ -366,7 +460,7 @@ export class Stelle {
     //                 const reader = new FileReader();
 
     //                 reader.onloadend = function () {
-    //                     kvm.tick("Download abgeschlossen.");
+    //                     sperrBildschirm.tick("Download abgeschlossen.");
     //                     // let items = [];
     //                     // let validationResult = "";
 
@@ -374,16 +468,16 @@ export class Stelle {
     //                     const resultObj = <LayerRequestResponse>kvm.parseLayerResult(<string>reader.result);
 
     //                     if (resultObj.success) {
-    //                         kvm.tick(`${kvm.activeLayer.title}:<br>&nbsp;&nbsp;Download erfolgreich.`);
+    //                         sperrBildschirm.tick(`${kvm.activeLayer.title}:<br>&nbsp;&nbsp;Download erfolgreich.`);
     //                         //console.log('resultObj: %o', resultObj);
     //                         const layerSettings = resultObj.layers.filter((layer) => {
     //                             return layer["id"] == layerId;
     //                         })[0];
-    //                         kvm.tick(`${kvm.activeLayer.title}:<br>&nbsp;&nbsp;Entferne Layer von App.`);
+    //                         sperrBildschirm.tick(`${kvm.activeLayer.title}:<br>&nbsp;&nbsp;Entferne Layer von App.`);
     //                         kvm.activeLayer.removeFromApp(); // includes removeFromStore()
     //                         //console.log("Erzeuge neuen Layer");
     //                         const layer = new Layer(kvm.activeStelle, layerSettings);
-    //                         kvm.tick(`${layer.title}:<br>&nbsp;&nbsp;Lege Layer an.`);
+    //                         sperrBildschirm.tick(`${layer.title}:<br>&nbsp;&nbsp;Lege Layer an.`);
     //                         layer.updateTable(); // includes DROP TABLE IF EXISTS, appendToApp(), activate(), this.sortOverlays(), saveToStore(), readData()
     //                     } else {
     //                         kvm.log("Fehlerausgabe von parseLayerResult!", 4);
@@ -445,6 +539,33 @@ export class Stelle {
     throw new Error("Method not implemented.");
   }
 
+  // async removeLayers() {
+  //   document.getElementById("layer_list").innerHTML = "";
+  //   if ("layerIds_" + kvm.activeStelle.get("id") in kvm.store) {
+  //     const layerIds = <string[]>JSON.parse(kvm.store["layerIds_" + kvm.activeStelle.get("id")]);
+  //     sperrBildschirm.tick("Lösche folgende Layer:");
+  //     // layerIds.map((id) => {
+  //     //   let globalId = kvm.activeStelle.get("id") + "_" + id;
+  //     //   if (kvm.getLayer(globalId)) {
+  //     //     sperrBildschirm.tick(`&nbsp;&nbsp;-&nbsp;${kvm.getLayer(globalId).title}`);
+  //     //   }
+  //     // });
+  //     // debugger;
+  //     for (let i = 0; i < layerIds.length; i++) {
+  //       const id = layerIds[i];
+  //       const globalId = kvm.activeStelle.get("id") + "_" + id;
+  //       const layer = kvm.getLayer(globalId);
+  //       if (layer) {
+  //         if (layer.get("vector_tile_url") == "") {
+  //           await layer.dropDataTable();
+  //           await layer.dropDeltasTable();
+  //         }
+  //         layer.removeFromMap();
+  //       }
+  //     }
+  //   }
+  // }
+
   /*
    * Remove existing layer of stelle with sequential function calls
    * 	dropDataTable
@@ -458,53 +579,22 @@ export class Stelle {
    */
   async requestLayers() {
     console.error("Layer.requestLayers for stelle: %o", this);
+    sperrBildschirm.tick("Starte Download der Layerdaten der Stelle");
 
     const filename = cordova.file.dataDirectory + "layers_stelle_" + this.get("id") + ".json";
-
     const url = this.getLayerUrl();
-
-    kvm.tick("Starte Download der Layerdaten der Stelle");
     console.log("Download Layerdaten der Stelle mit url: ", kvm.replacePassword(url));
-
     const fileEntry = await download(url, filename);
-    kvm.tick("Download der Layerdaten abgeschlossen.");
+
+    sperrBildschirm.tick("Download der Layerdaten abgeschlossen.");
     const fileContent = await readFileAsString(fileEntry);
     const resultObj = <LayerRequestResponse>kvm.parseLayerResult(fileContent);
 
     if (resultObj.success) {
-      kvm.tick("Downloadergebnis ist fehlerfrei.");
-      //console.log('resultObj: %o', resultObj);
+      sperrBildschirm.tick("Downloadergebnis ist fehlerfrei.");
+      sperrBildschirm.tick("Entferne existierende Layer aus der Anwendung.");
 
-      // remove existing layers
-      // ToDo Hier prüfen was genau gelöscht werden soll, auch die Tabellen?
-      kvm.tick("Entferne existierende Layer aus der Anwendung.");
-
-      document.getElementById("layer_list").innerHTML = "";
-      if ("layerIds_" + kvm.activeStelle.get("id") in kvm.store) {
-        const layerIds = <string[]>JSON.parse(kvm.store["layerIds_" + kvm.activeStelle.get("id")]);
-        kvm.tick("Lösche folgende Layer:");
-        // layerIds.map((id) => {
-        //   let globalId = kvm.activeStelle.get("id") + "_" + id;
-        //   if (kvm.getLayer(globalId)) {
-        //     kvm.tick(`&nbsp;&nbsp;-&nbsp;${kvm.getLayer(globalId).title}`);
-        //   }
-        // });
-        // debugger;
-        for (let i = 0; i < layerIds.length; i++) {
-          const id = layerIds[i];
-          const globalId = kvm.activeStelle.get("id") + "_" + id;
-          const layer = kvm.getLayer(globalId);
-          if (layer) {
-            if (layer.get("vector_tile_url") == "") {
-              await layer.dropDataTable();
-              await layer.dropDeltasTable();
-            }
-            layer.removeFromApp();
-          }
-        }
-      }
-
-      kvm.store.removeItem("activeLayerId");
+      await kvm.clearLayers();
 
       this.loadAllLayers = true;
       this.numLayersLoaded = 0;
@@ -513,7 +603,7 @@ export class Stelle {
       this.numLayers = resultObj.layers.length;
 
       if (this.numLayers > 0) {
-        kvm.tick("Lege Layer neu an.");
+        sperrBildschirm.tick("Lege Layer neu an.");
         // Sortiere Layer settings nach drawing order
         resultObj.layers = resultObj.layers.sort((a, b) => (parseInt(a.drawingorder) > parseInt(b.drawingorder) ? 1 : -1));
         // add requested layers
@@ -529,23 +619,267 @@ export class Stelle {
             console.log(`Erzeuge einen normales Layer-Objekt für Layer ${layerSetting.title}`);
             const layer = new Layer(this, layerSetting);
             await layer.createTable();
-            layer.appendToApp();
-            layer.saveToStore();
             await layer.requestData(); // Das ist neu: Daten werden gleich geladen nach dem Anlegen in der Stelle
+            await layer.readData();
+            kvm.addLayer(layer);
+            // layer.saveToStore();
           }
         }
       }
-      kvm.setConnectionStatus();
+      // kvm.setConnectionStatus();
       //console.log('Store after save layer: %o', kvm.store);
       $("#requestLayersButton").hide();
-      $("#featurelistHeading").html("Noch kein Layer ausgewählt");
-      $("#featurelistBody").html('Wählen Sie unter Einstellungen in der Gruppe "Layer" einen Layer aus. Öffnen Sie dann das Optionen Menü und wählen die Funktion "Daten synchronisieren"!');
-      $("#showSearch").hide();
+
       // hier nicht schließen, sonden am Ende von requestData kvm.closeSperrDiv();
     } else {
       kvm.log("Fehlerausgabe von parseLayerResult!", 4);
       kvm.msg(resultObj.errMsg, "Downloadfehler");
     }
+  }
+
+  /**
+   * Write deltas to local file, request deltas from server, update local, readData and
+   * activate if it`s active
+   * @param deltas
+   * function chain: writeFile  > upload > for each feature execServerDeltaSuccessFunc
+   * > saveToStore, clearDeltas, readData
+   */
+  async sendDeltas(deltas: Deltas) {
+    return new Promise<SendDeltasResponse>(async (resolve, reject) => {
+      try {
+        if (deltas.rows.length > 0) {
+          sperrBildschirm.tick(`Sende Änderungen zum Server und frage Änderungen ab.`);
+        } else {
+          sperrBildschirm.tick(`Frage Änderungen vom Server ab.`);
+        }
+
+        const dataObj = new Blob([JSON.stringify(deltas)], {
+          type: "application/json",
+        });
+        const dstDir = cordova.file.externalCacheDirectory;
+        const dstFile = "deltas.json";
+
+        const fileEntry = await Util.writeData(dstDir, dstFile, dataObj);
+        // console.log(`Successful written deltas of layer "${this.title}" into File.`);
+        const fileUploadResult = await this._upload(fileEntry);
+
+        const response = <SendDeltasResponse>JSON.parse(fileUploadResult.response);
+        resolve(response);
+      } catch (ex) {
+        console.error(`Fehler beim Erstellen oder Senden der Deltas.`, ex);
+        reject({
+          message: `Fehler beim Erstellen oder Senden der Deltas.`,
+          cause: ex,
+        });
+      }
+    });
+  }
+
+  async syncData() {
+    console.error(`syncData`);
+    return new Promise<void>(async (resolve, reject) => {
+      try {
+        sperrBildschirm.tick(`Starte Synchronisation der Daten mit dem Server.`);
+
+        sperrBildschirm.tick(`Starte Synchronisation mit Server.`);
+
+        const deltas: Deltas = {
+          rows: [],
+        };
+
+        const sql =
+          "\
+          SELECT\
+            * \
+          FROM\
+            deltas\
+          WHERE\
+            type = 'sql'\
+        ";
+
+        const rs = await executeSQL(kvm.db, sql);
+
+        const numRows = rs.rows.length;
+
+        for (let i = 0; i < numRows; i++) {
+          deltas.rows.push({
+            version: rs.rows.item(i).version,
+            sql: rs.rows.item(i).delta,
+            schema: rs.rows.item(i).schema,
+            table: rs.rows.item(i).table,
+          });
+        }
+
+        // Sende Anfrage auch mit leeren rows Array um Änderungen vom Server zu bekommen.
+        const sendDeltasResponse = await this.sendDeltas(deltas);
+
+        if (sendDeltasResponse.success) {
+          await this.applyDeltas(sendDeltasResponse);
+          resolve();
+        } else {
+          reject({
+            message: `Negative Antwort auf Upload der Deltas - ServerErrorMessage:"${sendDeltasResponse.err_msg}"`,
+            response: sendDeltasResponse,
+          });
+        }
+      } catch (ex) {
+        reject({
+          message: ``,
+          cause: ex,
+        });
+      }
+    });
+  }
+
+  async _upload(fileEntry: FileEntry): Promise<FileUploadResult> {
+    // const fileURL = fileEntry.toURL();
+    const fileURL = fileEntry.nativeURL;
+    console.log(`going to upload deltas fileURL: "${fileURL}"`);
+
+    // const failFct = (error: FileTransferError) => {
+    //     const msg = `Fehler beim Hochladen der Sync-Datei! Prüfe die Netzverbindung! Fehler Nr: ${error.code} body: ${error.body}`;
+    //     console.error("Fehler: %o", error);
+    //     if ($("#syncLayerIcon_" + this.getGlobalId()).hasClass("fa-spinner")) {
+    //         $("#syncLayerIcon_" + this.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
+    //     }
+    //     kvm.closeSperrDiv("Upload mit Fehler beendet. " + msg);
+    // };
+
+    // const layer = this,
+    //   stelle = layer.stelle,
+    const url = this.get("url");
+    const file = Stelle.getUrlFile(url);
+    const server = url + file;
+
+    const params = {
+      device_id: device.uuid,
+      Stelle_ID: this.get("Stelle_ID"),
+      login_name: this.get("login_name"),
+      passwort: this.get("passwort"),
+      // TODO DELTAS
+      // selected_layer_id: layer.get("id"),
+      // table_name: layer.get("table_name"),
+      client_time: new Date().toISOString(),
+      last_client_version: this.get("syncVersion"),
+      version: this.get("version"),
+      mime_type: "json",
+      format: "json_result",
+      go: "mobile_sync",
+    };
+
+    const options: FileUploadOptions = {
+      params: params,
+      fileKey: "client_deltas",
+      fileName: fileURL.substring(fileURL.lastIndexOf("/") + 1),
+      mimeType: "application/json",
+    };
+    // console.log(
+    //   this.title + ": Upload to server: %s with options: %s",
+    //   server,
+    //   JSON.stringify(options).replace(params.passwort, "secret")
+    // );
+    return Util.upload(fileURL, encodeURI(server), options);
+  }
+
+  async applyDeltas(response: SendDeltasResponse) {
+    console.error(`applyDeltas`);
+    // const response = JSON.parse(fileUploadResult.response);
+
+    if (response.success) {
+      kvm.writeLog(`Deltas wurden empfangen.`);
+      console.log(this.get("title") + ": Response: %o", response);
+
+      if (response.version !== this.get("version")) {
+        // TODO dataModelChange
+      } else {
+        let numExecutedDeltas = 0;
+        const numReturnedDeltas = response.deltas.length;
+
+        console.log("numReturendDeltas: %s", numReturnedDeltas);
+
+        if (numReturnedDeltas > 0) {
+          const msg = `${numReturnedDeltas} Änderungen von Daten auf dem Server gefunden. Die Datenbank wurde gesichert und die Änderungen in die lokale Datenbank eingespielt.`;
+          kvm.writeLog(msg);
+          kvm.msg(msg, "Datenänderung");
+          // TODO backupDatabase auch nur ein mal machen wenn irgend ein Delta gekommen ist (Weiß man aber vorher nicht ob irgend ein layer ein Delta bekommen wird.)
+          // Wenn ein mal ein backDatabase gemacht wurde bei den anderen layern in der gleichen syncLayers Runde nicht mehr ausführen.
+          kvm.backupDatabase();
+
+          // await this.readData($("#limit").val(), $("#offset").val());
+
+          try {
+            for (let delta of response.deltas) {
+              if (kvm.coalesce(delta.sql, "") != "") {
+                await Util.executeSQL(kvm.db, Util.pointToUnderlineName(delta.sql, delta.schema, delta.table));
+              }
+            }
+          } catch (ex) {
+            throw new Error(`Fehler beim Schreiben der Deltas in die DB:<br>&nbsp;&nbsp;${ex}`, { cause: ex });
+          }
+
+          const newVersion = parseInt(response.syncData[response.syncData.length - 1].push_to_version);
+          this.set("syncVersion", newVersion);
+          this.saveToStore();
+          await this.clearDeltas("sql");
+          console.log(this.get("title") + ": call readData after execDelta");
+          kvm.writeLog(`Layer ${this.get("title")}: ${numExecutedDeltas} Deltas vom Server auf Client ausgeführt.`);
+          await this.readData(Util.getValueOfElement("limit"), Util.getValueOfElement("offset"));
+        }
+        // } else {
+        //   if (response.syncData.length > 0) {
+        //     console.log("upload: Setze LayerSettings syncVersion auf Wert in push_to_version aus den Response");
+        //     this.set("syncVersion", parseInt(response.syncData[response.syncData.length - 1].push_to_version));
+        //     this.runningSyncVersion = this.get("syncVersion");
+        //     this.saveToStore();
+        //     if (this.hasEditPrivilege) {
+        //       await this.clearDeltas("sql");
+        //     }
+        //   }
+        await this.readData(Util.getValueOfElement("limit"), Util.getValueOfElement("offset"));
+      }
+    } else {
+      throw Error(`Sync-Fehler :<br>&nbsp;&nbsp;${response.msg}`);
+    }
+  }
+
+  async readData(limit: string | number, offset: string | number) {
+    for (let layer of kvm.getLayersSortedByDrawingOrder()) {
+      layer.readData(limit, offset);
+    }
+  }
+
+  /**
+   * Löscht Datensätze in Tabelle in der die lokalen Änderungen an Daten des Layers vorgenommen wurden.
+   * @param type Mit dem Wert sql werden nur die Änderungen der Sachdaten gelöscht. Mit dem Wert img werden die
+   * Änderungen über Bilder gelöscht. Mit dem Wert all werden alle Deltas des Layers gelöscht.
+   * @param delta
+   */
+  async clearDeltas(type: "sql" | "all" | "img", delta?: string) {
+    if (delta) {
+      console.info(`clearDeltas(${type}, ${delta})`);
+    } else {
+      console.info(`clearDeltas(${type})`);
+    }
+    if (typeof delta === "undefined") delta = "";
+    //kvm.log("Layer.clearDeltas", 4);
+    let sql = `DELETE FROM deltas`;
+    if (type != "all") {
+      sql += " WHERE type = '" + type + "'";
+      if (delta != "") {
+        sql += " AND delta = '" + delta + "'";
+      }
+    }
+
+    return new Promise<void>((resolve, reject) => {
+      Util.executeSQL(kvm.db, sql)
+        .then((rs: SQLitePlugin.Results) => {
+          resolve();
+        })
+        .catch((error: Error) => {
+          reject({ message: "Fehler beim Löschen der Deltas!", cause: error });
+          console.error("TODO: ErrorMsg and update GUI");
+        });
+    });
   }
 
   sortOverlays() {
@@ -576,9 +910,9 @@ export class Stelle {
    * @param orderBy
    */
   sortLayers(orderBy: string = "legendorder") {
-    let layerDivs = document.querySelectorAll(".layer-list-div");
-    var layerDivsArray = Array.from(layerDivs);
-    let sorted = layerDivsArray.sort(this.orderComparatorFunction(orderBy));
+    const layerDivs = document.querySelectorAll(".layer-list-div");
+    const layerDivsArray = Array.from(layerDivs);
+    const sorted = layerDivsArray.sort(this.orderComparatorFunction(orderBy));
     sorted.forEach((e) => document.querySelector("#layer_list").appendChild(e));
   }
 
@@ -602,7 +936,7 @@ export class Stelle {
   getLayerUrl(options = { hidePassword: false }) {
     //kvm.log("Stelle.getLayerUrl", 4);
     let url = this.get("url");
-    let file = this.getUrlFile(url);
+    const file = Stelle.getUrlFile(url);
 
     url += `${file}go=mobile_get_layers&login_name=${this.get("login_name")}&passwort=${options.hidePassword ? "*****" : encodeURIComponent(this.get("passwort"))}&Stelle_ID=${this.get("Stelle_ID")}&kvmobile_version=${kvm.versionNumber}&format=json`;
     return url;

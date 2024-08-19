@@ -1,12 +1,9 @@
 //import * as L from "leaflet";
 const L = require("leaflet");
 import { maplibreStyleObj } from "./mapLibreStyles";
-import { getWebviewUrl, kvm } from "./app";
-//import { Attribute } from "./Attribute";
-//import { Feature } from "./Feature";
+import { kvm } from "./app";
+import { getWebviewUrl } from "./Util";
 import { Stelle } from "./Stelle";
-import { Util } from "leaflet";
-//import { Klasse } from "./Klasse";
 
 export async function prepareBackgrounLayer() {
   const maplibreStyle = maplibreStyleObj[1];
@@ -32,14 +29,8 @@ export class BackgroundLayer {
   constructor(settings = {}) {
     //constructor(stelle, settings = {}) {
     //this.stelle = stelle;
-    this.settings =
-      typeof settings == "string" ? JSON.parse(settings) : settings;
-    this.title = kvm.coalempty(
-      this.get("alias"),
-      this.get("title"),
-      this.get("table_name"),
-      "overlay" + this.index
-    );
+    this.settings = typeof settings == "string" ? JSON.parse(settings) : settings;
+    this.title = kvm.coalempty(this.get("alias"), this.get("title"), this.get("table_name"), "overlay" + this.index);
     console.log("create BackgroundLayer " + this.get("type"));
 
     if (this.get("type") == "tile") {

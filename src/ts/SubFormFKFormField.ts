@@ -2,6 +2,7 @@ import { kvm } from "./app";
 import { Attribute, AttributeSetting } from "./Attribute";
 import { Field } from "./Field";
 import { executeSQL } from "./Util";
+import { createHtmlElement } from "./Util";
 
 /**
  * SubFormFK Attribute sind keine Autoattribute
@@ -73,7 +74,7 @@ export class SubFormFKFormField implements Field {
     }
 
     // ToDo: Das darf nur gemacht werden wenn der Layer Geometrie hat und der übergeordnete auch.
-    if (kvm.activeLayer.hasGeometry && kvm.activeLayer.activeFeature.new) {
+    if (kvm.getActiveLayer().hasGeometry && kvm.getActiveLayer().activeFeature.new) {
       // Abfragen des übergeordneten Layers
       const pkLayer = kvm.getLayer(`${this.get("stelleId")}_${this.get("options").split(",")[0]}`);
       if (pkLayer.hasGeometry) {

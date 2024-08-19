@@ -1,6 +1,7 @@
 import { Attribute, AttributeSetting } from "./Attribute";
 import { Field } from "./Field";
 import { kvm } from "./app";
+import { createHtmlElement } from "./Util";
 
 /*
  * create a select form field in the structure
@@ -28,16 +29,8 @@ export class SelectFormField implements Field {
 				name="${this.settings.name}"
         ${this.isArrayType() ? "multiple" : ""}
 				${this.settings.privilege == "0" ? " disabled" : ""}
-				${
-          kvm.coalesce(this.settings.required_by, "") != ""
-            ? ' required_by="' + this.settings.required_by + '"'
-            : ""
-        }
-				${
-          kvm.coalesce(this.settings.requires, "") != ""
-            ? ' requires="' + this.settings.requires + '"'
-            : ""
-        }
+				${kvm.coalesce(this.settings.required_by, "") != "" ? ' required_by="' + this.settings.required_by + '"' : ""}
+				${kvm.coalesce(this.settings.requires, "") != "" ? ' requires="' + this.settings.requires + '"' : ""}
 			>
         ${this.isArrayType() ? "" : '<option value="">Bitte wählen</option>'}
 				${$.map(this.settings.enums, function (option: any) {
@@ -45,11 +38,7 @@ export class SelectFormField implements Field {
           return `
         <option
           value="${option.value}"
-          ${
-            kvm.coalesce(option.requires_value, "") != ""
-              ? 'requires="' + option.requires_value + '"'
-              : ""
-          }
+          ${kvm.coalesce(option.requires_value, "") != "" ? 'requires="' + option.requires_value + '"' : ""}
         >${option.output}</option>
       `;
         }).join("\n")}
@@ -115,28 +104,18 @@ export class SelectFormField implements Field {
 
   bindEvents() {
     console.log("SelectFormField.bindEvents");
-    $("#featureFormular select[id=" + this.settings.index + "]").on(
-      "change",
-      function (evt) {
-        if (!$("#saveFeatureButton").hasClass("active-button")) {
-          $("#saveFeatureButton").toggleClass("active-button inactive-button");
-        }
-        const elm = evt.target;
-        if (elm.hasAttribute("required_by")) {
-          const required_by_idx =
-            kvm.activeLayer.attribute_index[this.getAttribute("required_by")];
-          console.log(
-            "Select Feld %s hat abhängiges Auswahlfeld %s",
-            (<HTMLInputElement>this).name,
-            this.getAttribute("required_by")
-          );
-          (<any>(
-            kvm.activeLayer.attributes[required_by_idx].formField
-          )).filter_by_required(elm.getAttribute("name"), $(elm).val());
-          // find attribute with the name in required_by
-          // apply the filter on the options, call filter_by_required
-        }
+    $("#featureFormular select[id=" + this.settings.index + "]").on("change", function (evt) {
+      if (!$("#saveFeatureButton").hasClass("active-button")) {
+        $("#saveFeatureButton").toggleClass("active-button inactive-button");
       }
-    );
+      const elm = evt.target;
+      if (elm.hasAttribute("required_by")) {
+        const required_by_idx = kvm.getActiveLayer().attribute_index[this.getAttribute("required_by")];
+        console.log("Select Feld %s hat abhängiges Auswahlfeld %s", (<HTMLInputElement>this).name, this.getAttribute("required_by"));
+        (<any>kvm.getActiveLayer().attributes[required_by_idx].formField).filter_by_required(elm.getAttribute("name"), $(elm).val());
+        // find attribute with the name in required_by
+        // apply the filter on the options, call filter_by_required
+      }
+    });
   }
 }

@@ -1,10 +1,11 @@
-import { createHtmlElement, getWebviewUrl, kvm } from "./app";
+import { kvm } from "./app";
+import { createHtmlElement, getWebviewUrl } from "./Util";
 import { Attribute } from "./Attribute";
 import { Field } from "./Field";
 
 export class DataViewField implements Field {
   settings: any;
-  element: JQuery<HTMLElement>;
+  element: HTMLElement;
   images_div_id: string;
   attribute: Attribute;
 
@@ -24,55 +25,34 @@ export class DataViewField implements Field {
     this.settings = attribute.settings;
     // this.selector = "#" + divId + " > #" + this.get("index");
     this.images_div_id = `images_${this.get("index")}`;
-    this.element = $(
-      `<div id="dataViewFieldValue_${this.get(
-        "index"
-      )}" class="data-view-value">`
-    );
+    this.element = createHtmlElement("div", null, "data-view-value");
+    this.element.id = "dataViewFieldValue_" + this.get("index");
   }
 
   get(key) {
     return this.attribute.settings[key];
   }
 
-  async setValue(val) {
-    // let images, localFile, remoteFile, i, imgDiv;
-    if (val == "null") {
-      val = null;
-    }
-    // const options = this.get("enums");
-
-    // console.log("DataViewField.setValue %s with value: %s", this.attribute.settings.name, val);
-    if (val && this.get("type") === "timestamp") {
-      const datetime = new Date(val);
-      val = datetime.toLocaleDateString() + " " + datetime.toLocaleTimeString();
-      this.element.html(kvm.coalesce(val, ""));
-    } else if (this.get("form_element_type") == "Dokument") {
-      //kvm.log("DataViewField.setValue for Document Attribute with value: " + val, 4);
+  async setDocumentValue(val) {
+    try {
       val = kvm.coalesce(val, "");
-      // let images;
-      //   localFile,
-      //   remoteFile,
-      //   i;
-
-      this.element.html("");
-      const imgPrevDiv = $('<div id="previews_' + this.get("index") + '">');
+      this.element.innerHTML = "";
+      const imgPrevDiv = createHtmlElement("div", this.element);
+      imgPrevDiv.id = "previews_" + this.get("index");
       this.element.append(imgPrevDiv);
 
       // create new images if exists
       if (val == "") {
-        imgPrevDiv.hide();
+        imgPrevDiv.style.display = "none";
       } else {
-        imgPrevDiv.show();
+        imgPrevDiv.style.display = "";
         //console.log("setValue add images to previews div: %s", val);
         // console.log(this);
         const images = kvm.removeBrackes(val).split(",");
 
         for (let i = 0; i < images.length; i++) {
           const remoteFile = kvm.removeQuotas(images[i]);
-          const localFile = kvm.removeOriginalName(
-            kvm.serverToLocalPath(remoteFile)
-          );
+          const localFile = kvm.removeOriginalName(kvm.serverToLocalPath(remoteFile));
           // const f = localFile.replace("file:///storage/emulated/0/", "");
 
           // window.requestFileSystem(
@@ -114,12 +94,7 @@ export class DataViewField implements Field {
           imgDiv.addEventListener("click", (evt) => {
             cordova.plugins.fileOpener2.open(localFile, "image/jpeg", {
               error: function (e) {
-                alert(
-                  "Fehler beim laden der Datei: " +
-                    e.message +
-                    " Status: " +
-                    e.status
-                );
+                alert("Fehler beim laden der Datei: " + e.message + " Status: " + e.status);
               },
               success: function () {
                 kvm.log("Datei " + localFile + " erfolgreich geöffnet.", 4);
@@ -146,21 +121,21 @@ export class DataViewField implements Field {
               //console.log("Datei " + this.localFile + " existiert nicht!");
               if (navigator.onLine) {
                 //console.log("Try to download file: %s", this.remoteFile);
-                kvm.activeLayer.downloadImage(this.localFile, this.remoteFile);
+                kvm.getActiveLayer().downloadImage(this.localFile, this.remoteFile);
               } else {
                 console.log("Kein Netz set src: img/no_image.png");
                 this.imgDiv.css("background-image", "img/no_image.png");
                 /*
-								let imgDiv = $(
-									'<div class="img" src="img/no_image.png" style="background-image: url(' +
-										this.localFile +
-										');" field_id="' +
-										this.context.get("index") +
-										'"name="preview_' +
-										this.localFile +
-										'"></div>'
-								);
-								*/
+              let imgDiv = $(
+                '<div class="img" src="img/no_image.png" style="background-image: url(' +
+                  this.localFile +
+                  ');" field_id="' +
+                  this.context.get("index") +
+                  '"name="preview_' +
+                  this.localFile +
+                  '"></div>'
+              );
+              */
               }
             }.bind({
               context: this,
@@ -171,67 +146,91 @@ export class DataViewField implements Field {
           );
         }
       }
+    } catch (ex) {
+      console.error("Error this.setDocumentValue", ex);
+    }
+  }
+
+  setSubFormFKValue(val) {
+    const globalParentLayerId = this.attribute.getGlobalParentLayerId();
+    // let parentLayer = kvm.layers.get(globalParentLayerId);
+    const vorschauOption = this.attribute.getVorschauOption();
+    const div = createHtmlElement("div", this.element);
+    div.addEventListener("click", () => {
+      kvm.activateFeature(globalParentLayerId, val);
+    });
+    const iBttn = createHtmlElement("div", div, "fa fa-arrow-left");
+    iBttn.ariaHidden = "true";
+    iBttn.style.cssText = "margin-right: 10px";
+    div.append(vorschauOption);
+  }
+
+  setAuswahlfeldValue(val) {
+    const options = this.get("enums");
+    let output = "";
+    if (val && options && Array.isArray(options)) {
+      // output options instead of values
+      let values = [];
+      let outputs = [];
+      if (this.attribute.isArrayType()) {
+        values = kvm.removeBrackes(val).split(",");
+      } else {
+        values.push(String(val));
+      }
+      outputs = options.filter((option) => {
+        return values.includes(String(option.value));
+      });
+      if (outputs.length > 1) {
+        output = `
+          <ul class="multiple-options-list">
+            <li>${outputs
+              .map((option) => {
+                return option.output;
+              })
+              .join("</li><li>")}</li>
+          </ul>
+        `;
+      } else if (outputs.length == 1) {
+        output = String(outputs[0].output);
+      } else {
+        output = "";
+      }
+    } else {
+      output = val ? String(val) : "";
+    }
+    if (this.attribute.get("name") == "alternanz_id") {
+      console.log(output);
+    }
+    this.element.innerHTML = output;
+    return output;
+  }
+
+  async setValue(val) {
+    if (val == "null") {
+      val = null;
+    }
+
+    if (val && this.get("type") === "timestamp") {
+      const datetime = new Date(val);
+      val = datetime.toLocaleDateString() + " " + datetime.toLocaleTimeString();
+      this.element.innerHTML = kvm.coalesce(val, "");
+    } else if (this.get("form_element_type") == "Dokument") {
+      this.setDocumentValue(val);
     } // end of document
     else if (this.get("form_element_type") == "SubFormFK") {
-      const globalParentLayerId = this.attribute.getGlobalParentLayerId();
-      // let parentLayer = kvm.layers.get(globalParentLayerId);
-      const vorschauOption = this.attribute.getVorschauOption();
-      this.element.html(
-        `<div onclick="kvm.activateFeature('${globalParentLayerId}', '${val}')"><i class="fa fa-arrow-left" aria-hidden="true" style="margin-right: 10px"></i> ${vorschauOption}</div>`
-      );
+      this.setSubFormFKValue(val);
     } else if (this.get("form_element_type") == "SubFormEmbeddedPK") {
       let feature = this.attribute.layer.activeFeature;
-      this.attribute.layer.readVorschauAttributes(
-        this.attribute,
-        feature.getDataValue(this.attribute.getPKAttribute()),
-        this.element,
-        "activateFeature"
-      );
+      this.attribute.layer.readVorschauAttributes(this.attribute, feature.getDataValue(this.attribute.getPKAttribute()), this.element, "activateFeature");
     } else if (this.get("form_element_type") == "Auswahlfeld") {
-      const options = this.get("enums");
-      let output = "";
-      if (val && options && Array.isArray(options)) {
-        // output options instead of values
-        let values = [];
-        let outputs = [];
-        if (this.attribute.isArrayType()) {
-          values = kvm.removeBrackes(val).split(",");
-        } else {
-          values.push(String(val));
-        }
-        outputs = options.filter((option) => {
-          return values.includes(String(option.value));
-        });
-        if (outputs.length > 1) {
-          output = `
-						<ul class="multiple-options-list">
-							<li>${outputs
-                .map((option) => {
-                  return option.output;
-                })
-                .join("</li><li>")}</li>
-						</ul>
-					`;
-        } else if (outputs.length == 1) {
-          output = String(outputs[0].output);
-        } else {
-          output = "";
-        }
-      } else {
-        output = val ? String(val) : "";
-      }
-      if (this.attribute.get("name") == "alternanz_id") {
-        console.log(output);
-      }
-      this.element.html(output);
-      return output;
+      this.setAuswahlfeldValue(val);
     } else if (this.get("form_element_type") == "Checkbox") {
       const output = val ? (val === "t" ? "ja" : "nein") : "";
-      this.element.html(output);
+      this.element.innerHTML = output;
     } else {
-      this.element.html(kvm.coalesce(val, ""));
+      this.element.innerHTML = kvm.coalesce(val, "");
     }
-    this.element.trigger("change");
+    // this.element.trigger("change");
     return val;
   }
 
@@ -251,12 +250,9 @@ export class DataViewField implements Field {
                 if (buttonIndex == 1) {
                   // ja
                   var remoteFile = target.attr("name"),
-                    localFile =
-                      kvm.activeLayer.attributes[
-                        fieldId
-                      ].formField.serverToLocalPath(remoteFile);
+                    localFile = kvm.getActiveLayer().attributes[fieldId].formField.serverToLocalPath(remoteFile);
 
-                  kvm.activeLayer.downloadImage(localFile, remoteFile);
+                  kvm.getActiveLayer().downloadImage(localFile, remoteFile);
                 }
                 if (buttonIndex == 2) {
                   // nein
@@ -270,12 +266,7 @@ export class DataViewField implements Field {
             kvm.log("Versuche das Bild zu öffnen: " + src, 4);
             cordova.plugins.fileOpener2.open(src, "image/jpeg", {
               error: function (e) {
-                alert(
-                  "Fehler beim laden der Datei: " +
-                    e.message +
-                    " Status: " +
-                    e.status
-                );
+                alert("Fehler beim laden der Datei: " + e.message + " Status: " + e.status);
               },
               success: function () {
                 kvm.log("Datei " + src + " erfolgreich geöffnet.", 4);
@@ -284,7 +275,7 @@ export class DataViewField implements Field {
                   function (buttonIndex) {
                     if (buttonIndex == 1) {
                       // ja
-                      var field = kvm.activeLayer.attributes[fieldId].formField;
+                      var field = kvm.getActiveLayer().attributes[fieldId].formField;
                       field.dropImage(target);
                     }
                     if (buttonIndex == 2) {
@@ -313,17 +304,7 @@ export class DataViewField implements Field {
     //console.log("DataViewField: Add Image with src: %s and name: %s", src, name);
     // console.log("DataViewField.addimage", src, name);
     name = name == "" ? src : name;
-    const imgDiv = $(
-      '<div class="img" src="' +
-        src +
-        '" style="background-image: url(' +
-        src +
-        ');" field_id="' +
-        this.get("index") +
-        '"name="' +
-        name +
-        '"></div>'
-    );
+    const imgDiv = $('<div class="img" src="' + src + '" style="background-image: url(' + src + ');" field_id="' + this.get("index") + '"name="' + name + '"></div>');
     $("#" + this.images_div_id)
       .append(imgDiv)
       .show();
@@ -341,12 +322,9 @@ export class DataViewField implements Field {
               if (buttonIndex == 1) {
                 // ja
                 var remoteFile = target.attr("name"),
-                  localFile =
-                    kvm.activeLayer.attributes[
-                      fieldId
-                    ].formField.serverToLocalPath(remoteFile);
+                  localFile = kvm.getActiveLayer().attributes[fieldId].formField.serverToLocalPath(remoteFile);
 
-                kvm.activeLayer.downloadImage(localFile, remoteFile);
+                kvm.getActiveLayer().downloadImage(localFile, remoteFile);
               }
               if (buttonIndex == 2) {
                 // nein
@@ -357,21 +335,13 @@ export class DataViewField implements Field {
             ["ja", "nein"]
           );
         } else {
-          kvm.msg(
-            "Kein Internet! Bild kann gerade nicht heruntergeladen werden.",
-            "Bilder Download"
-          );
+          kvm.msg("Kein Internet! Bild kann gerade nicht heruntergeladen werden.", "Bilder Download");
         }
       } else {
         kvm.log("Versuche das Bild zu öffnen: " + src, 4);
         cordova.plugins.fileOpener2.open(src, "image/jpeg", {
           error: function (e) {
-            alert(
-              "Fehler beim laden der Datei: " +
-                e.message +
-                " Status: " +
-                e.status
-            );
+            alert("Fehler beim laden der Datei: " + e.message + " Status: " + e.status);
           },
           success: function () {
             kvm.log("Datei " + src + " erfolgreich geöffnet.", 4);
@@ -380,7 +350,7 @@ export class DataViewField implements Field {
               function (buttonIndex) {
                 if (buttonIndex == 1) {
                   // ja
-                  var field = kvm.activeLayer.attributes[fieldId].formField;
+                  var field = kvm.getActiveLayer().attributes[fieldId].formField;
                   field.dropImage(target);
                 }
                 if (buttonIndex == 2) {
@@ -403,19 +373,27 @@ export class DataViewField implements Field {
     label.append(this.get("alias") ? this.get("alias") : this.get("name"));
 
     if (this.get("tooltip")) {
-      label.append(
-        '&nbsp;<i class="fa fa-exclamation-circle" style="color: #f57802" onclick="kvm.msg(\'' +
-          this.get("tooltip") +
-          "');\"></i>"
-      );
+      label.append('&nbsp;<i class="fa fa-exclamation-circle" style="color: #f57802" onclick="kvm.msg(\'' + this.get("tooltip") + "');\"></i>");
     }
 
-    return $(
-      `<div id="dataViewFieldDiv_${this.get(
-        "index"
-      )}" class="data-view-field" ${this.attribute.getArrangementStyle()}>`
-    )
+    return $(`<div id="dataViewFieldDiv_${this.get("index")}" class="data-view-field" ${this.attribute.getArrangementStyle()}>`)
       .append(label)
       .append(this.element);
+  }
+
+  getWithLabel(): HTMLElement {
+    const dom = createHtmlElement("div", null, "data-view-field");
+    dom.id = `dataViewFieldDiv_${this.get("index")}`;
+    const label = createHtmlElement("div", dom, "data-view-label");
+    label.append(this.get("alias") ? this.get("alias") : this.get("name"));
+    if (this.get("tooltip")) {
+      const tooTippBttn = createHtmlElement("i", label, "fa fa-exclamation-circle");
+      tooTippBttn.style.cssText = "color: #f57802";
+      tooTippBttn.addEventListener("click", () => {
+        kvm.msg(this.get("tooltip"));
+      });
+    }
+    dom.append(this.element);
+    return dom;
   }
 }

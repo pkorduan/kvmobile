@@ -3,6 +3,7 @@ import { LayerGroup, GeoJSON } from "leaflet";
 import { kvm } from "./app";
 import { Attribute } from "./Attribute";
 import { Stelle } from "./Stelle";
+import { sperrBildschirm } from "./SperrBildschirm";
 
 export class OverlayX {
   //var overlay_ = this;
@@ -280,7 +281,7 @@ export class OverlayX {
           function (error) {
             alert("Fehler beim Einlesen der heruntergeladenen Datei. Prüfen Sie die URL und Parameter, die für die Synchronisation verwendet werden.");
             kvm.log("Fehler beim lesen der Datei: " + error.code, 1);
-            $("sperr_div").hide();
+            sperrBildschirm.close();
           }
         );
       },
@@ -317,7 +318,7 @@ export class OverlayX {
 
       console.log("syncOverlayButton has id: %s", globalId);
 
-      $("#sperr_div_content").html("");
+      sperrBildschirm.clear();
 
       if (target.hasClass("inactive-button")) {
         kvm.msg("Keine Internetverbindung! Kann Overlay jetzt nicht synchronisieren.");

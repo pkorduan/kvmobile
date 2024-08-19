@@ -3,6 +3,7 @@ import { GeoJSON } from "leaflet";
 import { kvm } from "./app";
 import { Layer } from "./Layer";
 import { Klasse } from "./Klasse";
+import { createHtmlElement } from "./Util";
 
 /*
  * Klasse zum Vorhalten der Datenobjekte zur Laufzeit der Anwendung
@@ -38,12 +39,14 @@ export class Feature {
   layerId: number;
   globalLayerId: string;
   isEditable: boolean;
-  isActive: boolean;
+  private _isActive: boolean;
   editableLayer: any;
   newGeom: any;
   geom: any;
   startLatLng: number[];
   new: boolean;
+
+  listElement: HTMLElement;
 
   constructor(data: any = {}, layer: Layer, isNew?: boolean) {
     // this.options = {
@@ -68,8 +71,17 @@ export class Feature {
   */
     //console.log('Setze Feature auf im Moment nicht editierbar.');
     this.isEditable = false; // Feature ist gerade im Modus editierbar oder nicht
-    this.isActive = false; // Feature is aktuell gerade ausgewählt, Style in Karte gändert und evtl. Popup offen oder nicht
+    this._isActive = false; // Feature is aktuell gerade ausgewählt, Style in Karte gändert und evtl. Popup offen oder nicht
     this.setGeomFromData();
+  }
+
+  get isActive() {
+    return this._isActive;
+  }
+
+  setActive(active: boolean) {
+    console.error(`feature.setActiv(${active})`);
+    this._isActive = active;
   }
 
   // getId() {
@@ -78,10 +90,7 @@ export class Feature {
 
   getDataValue(attributeName: string) {
     // ToDo: value auf null nicht auf 'null' setzen wenn er undefined ist
-    return typeof this.data !== "undefined" &&
-      typeof this.data[attributeName] != "undefined"
-      ? this.data[attributeName]
-      : "null";
+    return typeof this.data !== "undefined" && typeof this.data[attributeName] != "undefined" ? this.data[attributeName] : "null";
   }
 
   setEditable(editable) {
@@ -100,9 +109,7 @@ export class Feature {
   setDefaultValuesForNonSaveables() {
     const layer = kvm.getLayer(this.globalLayerId);
     const nonSaveableAttributes = layer.attributes.filter((attribute) => {
-      return (
-        attribute.settings.saveable == "0" && attribute.settings.default != ""
-      );
+      return attribute.settings.saveable == "0" && attribute.settings.default != "";
     });
     nonSaveableAttributes.forEach((attribute) => {
       let value = null;
@@ -124,9 +131,7 @@ export class Feature {
         case attribute.settings.default.includes("gdi_current_date"):
           {
             const today = new Date();
-            value = `${today.getFullYear()}/${(today.getMonth() + 1)
-              .toString()
-              .padStart(2, "0")}/${today.getDate()}`;
+            value = `${today.getFullYear()}/${(today.getMonth() + 1).toString().padStart(2, "0")}/${today.getDate()}`;
           }
           break;
         default: {
@@ -156,19 +161,13 @@ export class Feature {
 
   findParentFeature() {
     const layer = kvm.getLayer(this.globalLayerId);
-    const subFormFKAttribute = layer.attributes.find(
-      (attr) => attr.settings.form_element_type === "SubFormFK"
-    );
+    const subFormFKAttribute = layer.attributes.find((attr) => attr.settings.form_element_type === "SubFormFK");
     if (subFormFKAttribute === undefined) {
       return false;
     } else {
-      const fkAttributeIndex =
-        layer.attribute_index[subFormFKAttribute.getFKAttribute()];
-      const parentFeatureId =
-        layer.attributes[fkAttributeIndex].formField.getValue();
-      const parentLayer = kvm.getLayer(
-        subFormFKAttribute.getGlobalParentLayerId()
-      );
+      const fkAttributeIndex = layer.attribute_index[subFormFKAttribute.getFKAttribute()];
+      const parentFeatureId = layer.attributes[fkAttributeIndex].formField.getValue();
+      const parentLayer = kvm.getLayer(subFormFKAttribute.getGlobalParentLayerId());
       return parentLayer.getFeature(parentFeatureId);
     }
   }
@@ -194,11 +193,7 @@ export class Feature {
    */
   setGeom(wkx: wkx.Geometry) {
     console.log("setGeom mit wkx: %o", wkx);
-    console.log(
-      "Überschreibe oldGeom: %o mit newGeom: %o",
-      this.oldGeom,
-      this.newGeom
-    );
+    console.log("Überschreibe oldGeom: %o mit newGeom: %o", this.oldGeom, this.newGeom);
     const oldGeom = this.newGeom;
     // console.log("Überschreibe newGeom mit wkx: %o", wkx);
     this.newGeom = wkx;
@@ -206,9 +201,7 @@ export class Feature {
 
     if (oldGeom != this.newGeom) {
       // console.log("Neuer Wert wurde gesetzt. Löse Trigger geomChanged mit exclude wkx aus.");
-      $(document).trigger("geomChanged", [
-        { geom: this.newGeom, exclude: "wkx" },
-      ]);
+      $(document).trigger("geomChanged", [{ geom: this.newGeom, exclude: "wkx" }]);
     }
   }
   oldGeom(arg0: string, oldGeom: any, newGeom: any) {
@@ -233,9 +226,7 @@ export class Feature {
         } else {
           this.editableLayer.setLatLngs(newLatLngs);
         }
-        $(document).trigger("geomChanged", [
-          { geom: geom, exclude: "latlngs" },
-        ]);
+        $(document).trigger("geomChanged", [{ geom: geom, exclude: "latlngs" }]);
       }
       // console.log("Neue latLngs für die Editable Geometry in der Karte: %o", newLatLngs);
     }
@@ -257,16 +248,8 @@ export class Feature {
     if (this.layer.settings.geometry_type == "Point") {
       // ToDo hier ggf. den Geometrietyp auch aus this.geometry_type auslesen und nicht aus der übergebenen geom
       // Problem dann, dass man die Funktion nur benutzen kann für den Geometrietype des activen Layer
-      const coordsLevelDeep =
-        kvm.controller.mapper.coordsLevelsDeep[
-          geom.toWkt().split("(")[0].toUpperCase()
-        ];
-      return coordsLevelDeep == 0
-        ? GeoJSON.coordsToLatLng(geom.toGeoJSON().coordinates)
-        : GeoJSON.coordsToLatLngs(
-            geom.toGeoJSON().coordinates,
-            coordsLevelDeep
-          );
+      const coordsLevelDeep = kvm.controller.mapper.coordsLevelsDeep[geom.toWkt().split("(")[0].toUpperCase()];
+      return coordsLevelDeep == 0 ? GeoJSON.coordsToLatLng(geom.toGeoJSON().coordinates) : GeoJSON.coordsToLatLngs(geom.toGeoJSON().coordinates, coordsLevelDeep);
     } else if (this.layer.settings.geometry_type == "Line") {
       if (geom.constructor.name === "LineString") {
         return geom.points.map(function (p) {
@@ -352,9 +335,7 @@ export class Feature {
     switch (this.layer.settings.geometry_type) {
       case "Point":
         {
-          result = wkx.Geometry.parse(
-            "SRID=4326;POINT(" + alatlngs[0].lng + " " + alatlngs[0].lat + ")"
-          );
+          result = wkx.Geometry.parse("SRID=4326;POINT(" + alatlngs[0].lng + " " + alatlngs[0].lat + ")");
         }
         break;
       case "MultiPoint":
@@ -449,9 +430,7 @@ export class Feature {
         );
         break;
       default:
-        result = wkx.Geometry.parse(
-          "SRID=4326;POINT(" + alatlngs.join(" ") + ")"
-        );
+        result = wkx.Geometry.parse("SRID=4326;POINT(" + alatlngs.join(" ") + ")");
     }
     return result;
   }
@@ -466,71 +445,19 @@ export class Feature {
   }
 
   /**
-   * Diese Funktion wird ja wohl sicher nicht mehr verwendet, denn die Tabelle haltestellen dürfte es nicht immer geben.
-  this.update = function () {
-    const sql = "\
-      SELECT\
-        *\
-      FROM\
-        haltestellen\
-      WHERE\
-        uuid = '" + this.get(this.layer.settings.id_attribute) + "'\
-    ";
-    console.log("Frage feature " + this.layer.settings.id_attribute + ": " + this.get(this.layer.settings.id_attribute) + " mit sql: " + sql + " ab.");
-    kvm.db.executeSql(
-      sql,
-      [],
-      function (rs) {
-        const kvmLayer = kvm.layers[this.globalLayerId];
-        console.log("Objekt aktualisiert.");
-        //console.log("Feature.update result: " + JSON.stringify(rs.rows.item(0)));
-        var data = rs.rows.item(0);
-        kvmLayer.activeFeature.data = typeof data == "string" ? JSON.parse(data) : data;
-
-        if (typeof kvmLayer.features.get(data.uuid) == "undefined") {
-          console.log("insert new feature name in feature list: " + kvmLayer.activeFeature.layer.settings.name);
-          $("#featurelistTable tr:first").before(kvmLayer.activeFeature.listElement);
-        } else {
-          console.log("replace old with new name in feature list: " + kvmLayer.activeFeature.layer.settings.name);
-          console.log("this in update of features %o", this);
-          $("#" + kvmLayer.activeFeature.layer.settings[this.layer.settings.id_attribute]).html(kvmLayer.activeFeature.layer.settings.name);
-        }
-      },
-      function (error) {
-        kvm.msg(
-          "Fehler bei der Abfrage des Features mit " +
-            this.layer.settings.id_attribute +
-            ": " +
-            this.get(this.layer.settings.id_attribute) +
-            " aus lokaler Datenbank: " +
-            error.message
-        );
-      }
-    );
-  };
-  */
+   */
 
   zoomTo(zoom: boolean, startLatLng?: L.LatLngExpression) {
     if (this.layerId) {
-      let layer = this.isEditable
-        ? this.editableLayer
-        : (<any>kvm.map)._layers[this.layerId];
+      let layer = this.isEditable ? this.editableLayer : (<any>kvm.map)._layers[this.layerId];
       if (this.layer.settings.geometry_type == "Point") {
         if (zoom) {
           kvm.map.setZoom(18);
         }
-        console.log(
-          "panTo %s %o",
-          this.isEditable ? "editableLayer: " : "feature latlng: ",
-          layer.getLatLng()
-        );
+        console.log("panTo %s %o", this.isEditable ? "editableLayer: " : "feature latlng: ", layer.getLatLng());
         kvm.map.panTo(layer.getLatLng());
       } else {
-        console.log(
-          "flyToBounds %s %o",
-          this.isEditable ? "editableLayer: " : "feature bounds: ",
-          layer.getBounds().getCenter()
-        );
+        console.log("flyToBounds %s %o", this.isEditable ? "editableLayer: " : "feature bounds: ", layer.getBounds().getCenter());
         let isVisible = $("#map").is(":visible");
         if (!isVisible) {
           $("#map").show();
@@ -562,20 +489,19 @@ export class Feature {
    * @param boolean zoom Wenn Feature eine Geometrie hat und zoom=true wird auch auf das Feature gezoomt.
    */
   activate(zoom: boolean) {
-    const kvmLayer = kvm.getLayer(this.globalLayerId);
-    if (!kvmLayer.isActive) {
-      kvmLayer.activate();
-    }
-    if (kvmLayer.activeFeature) {
-      kvmLayer.activeFeature.deactivate();
-    }
-    if (kvmLayer.hasGeometry) {
+    console.error(`zzz feature.activate ${this.layer?.title}`, this);
+    // if (!this.layer.isActive) {
+    //   this.layer.activate();
+    // }
+    // this.layer.setActiveFeature(this);
+
+    if (this.layer.hasGeometry) {
       let mapLayer = (<any>kvm.map)._layers[this.layerId];
       if (this.newGeom) {
         //console.log("Feature has newGeom");
-        console.log("Markiere Feature %s in Layer %s", this.id, kvmLayer.title);
-        mapLayer.setStyle(kvmLayer.getSelectedStyle(this.getStyle()));
-        mapLayer.bindPopup(kvmLayer.getPopup(this)).openPopup();
+        console.log("Markiere Feature %s in Layer %s", this.id, this.layer.title);
+        mapLayer.setStyle(this.layer.getSelectedStyle(this.getStyle()));
+        mapLayer.bindPopup(this.layer.getPopup(this)).openPopup();
         if (zoom) {
           this.zoomTo(zoom);
         }
@@ -586,7 +512,7 @@ export class Feature {
     }
     kvm.log("Select feature in list " + this.id, 4);
     $("#" + this.id).addClass("selected-feature-item");
-    this.isActive = true;
+    this.setActive(true);
     return this;
   }
 
@@ -598,6 +524,7 @@ export class Feature {
    */
   deactivate() {
     // Beende das Anlegen eines neuen Features
+    console.error(`zzz feature.deactivate ${this.layer?.title}`, this);
     if (this.editableLayer) {
       kvm.map.removeLayer(this.editableLayer);
     }
@@ -619,32 +546,35 @@ export class Feature {
       mapLayer.closePopup();
     }
     $(".feature-item").removeClass("selected-feature-item");
-    this.isActive = false;
+    this.setActive(false);
     return null;
   }
 
-  listElement() {
-    //console.log('Erzeuge Listenelement für Feature', this.get(this.layer.settings.id_attribute));
-    const markerStyles = JSON.parse(kvm.store.getItem("markerStyles")),
-      numStyles = Object.keys(markerStyles).length,
-      markerStyleIndex =
-        this.getDataValue("status") &&
-        this.getDataValue("status") >= 0 &&
-        this.getDataValue("status") < numStyles
-          ? this.getDataValue("status")
-          : 0;
+  getListElement(): HTMLElement {
+    if (!this.listElement) {
+      //console.log('Erzeuge Listenelement für Feature', this.get(this.layer.settings.id_attribute));
+      const markerStyles = kvm.getMarkerStyles();
+      const numStyles = Object.keys(markerStyles).length;
+      const markerStyleIndex = this.getDataValue("status") && this.getDataValue("status") >= 0 && this.getDataValue("status") < numStyles ? this.getDataValue("status") : 0;
 
-    return (
-      '\
-      <div class="feature-item" id="' +
-      this.id +
-      '" style="background-color: ' +
-      markerStyles[markerStyleIndex].fillColor +
-      '">' +
-      this.getLabelValue() +
-      "</div>\
-    "
-    );
+      const div = (this.listElement = createHtmlElement("div", null, "feature-item"));
+      div.style.backgroundColor = markerStyles[markerStyleIndex].fillColor;
+      div.innerHTML = this.getLabelValue();
+      div.dataset.id = this.id;
+      return div;
+    }
+    return this.listElement;
+    // return (
+    //   '\
+    //   <div class="feature-item" id="' +
+    //   this.id +
+    //   '" style="background-color: ' +
+    //   markerStyles[markerStyleIndex].fillColor +
+    //   '">' +
+    //   this.getLabelValue() +
+    //   "</div>\
+    // "
+    // );
   }
 
   getLabelValue() {
@@ -653,23 +583,18 @@ export class Feature {
     const label_attribute = kvmLayer.settings.name_attribute;
     let formField;
     if (kvmLayer.hasEditPrivilege) {
-      formField =
-        kvmLayer.attributes[kvmLayer.attribute_index[label_attribute]]
-          .formField;
+      formField = kvmLayer.attributes[kvmLayer.attribute_index[label_attribute]].formField;
     }
 
     if (this.getDataValue(label_attribute)) {
       if (formField && formField.getFormattedValue) {
-        label_value = formField.getFormattedValue(
-          this.getDataValue(label_attribute)
-        );
+        label_value = formField.getFormattedValue(this.getDataValue(label_attribute));
       } else {
         label_value = this.getDataValue(label_attribute);
       }
     }
     if (label_value == "" || label_value == "null") {
-      label_value =
-        "Datensatz " + this.getDataValue(this.layer.settings.id_attribute);
+      label_value = "Datensatz " + this.getDataValue(this.layer.settings.id_attribute);
     }
     return label_value;
   }
@@ -680,29 +605,22 @@ export class Feature {
   addListElement() {
     //kvm.log("Feature.addListElement", 4);
     //console.log('Add listelement: %o', this.listElement());
+    const htmlEl = this.getListElement();
+    htmlEl.addEventListener("click", kvm.featureItemClickEventFunction);
+    document.getElementById("featurelistBody").append(htmlEl);
 
-    $("#featurelistBody").prepend(this.listElement());
-    //kvm.log(this.id + " zur Liste hinzugefügt.", 4);
-
-    $("#" + this.id).on("click", kvm.featureItemClickEventFunction);
+    // $("#" + this.id).on("click", kvm.featureItemClickEventFunction);
     //kvm.log("Click Event an Listenelement registriert", 4);
   }
 
   updateListElement() {
     kvm.log("Feature.updateListElement", 4);
-    let markerStyles = JSON.parse(kvm.store.getItem("markerStyles"));
-    let numStyles = Object.keys(markerStyles).length;
-    let markerStyleIndex =
-      this.getDataValue("status") &&
-      this.getDataValue("status") >= 0 &&
-      this.getDataValue("status") < numStyles
-        ? this.getDataValue("status")
-        : 0;
-    $("#" + this.id).html(this.getLabelValue());
-    $("#" + this.id).css(
-      "background-color",
-      markerStyles[markerStyleIndex].fillColor
-    );
+    const markerStyles = JSON.parse(kvm.store.getItem("markerStyles"));
+    const numStyles = Object.keys(markerStyles).length;
+    const markerStyleIndex = this.getDataValue("status") && this.getDataValue("status") >= 0 && this.getDataValue("status") < numStyles ? this.getDataValue("status") : 0;
+    const listElement = this.getListElement();
+    listElement.innerHTML = this.getLabelValue();
+    listElement.style.backgroundColor = markerStyles[markerStyleIndex].fillColor;
   }
 
   /**
@@ -718,11 +636,8 @@ export class Feature {
     let style: any;
     const kvmLayer: Layer = kvm.getLayer(this.globalLayerId);
 
-    if (
-      typeof (matchingClass = kvmLayer.getClass(
-        this.getDataValue(kvmLayer.settings.classitem)
-      )) == "undefined"
-    ) {
+    // if (typeof (matchingClass = kvmLayer.getClass(this.getDataValue(kvmLayer.settings.classitem))) == "undefined") {
+    if (typeof (matchingClass = this.layer.getClass(this.getDataValue(this.layer.settings.classitem))) == "undefined") {
       style = kvmLayer.getDefaultPathOptions();
     } else {
       //console.log("%s: Use styles from matching class.", layer.title);
@@ -745,11 +660,7 @@ export class Feature {
     //console.log('getNormalPolylineStyle');
     const markerStyles = JSON.parse(kvm.store.getItem("markerStyles")),
       numStyles = Object.keys(markerStyles).length,
-      markerStyleIndex =
-        this.getDataValue("status") >= 0 &&
-        this.getDataValue("status") < numStyles
-          ? this.getDataValue("status")
-          : 0,
+      markerStyleIndex = this.getDataValue("status") >= 0 && this.getDataValue("status") < numStyles ? this.getDataValue("status") : 0,
       style = markerStyles[markerStyleIndex];
 
     style.color = style.fillColor;
@@ -764,11 +675,7 @@ export class Feature {
     //console.log('getNormalPolygonStyle');
     const markerStyles = JSON.parse(kvm.store.getItem("markerStyles")),
       numStyles = Object.keys(markerStyles).length,
-      markerStyleIndex =
-        this.getDataValue("status") >= 0 &&
-        this.getDataValue("status") < numStyles
-          ? this.getDataValue("status")
-          : 0,
+      markerStyleIndex = this.getDataValue("status") >= 0 && this.getDataValue("status") < numStyles ? this.getDataValue("status") : 0,
       style = markerStyles[markerStyleIndex];
 
     style.stroke = true;
@@ -782,11 +689,7 @@ export class Feature {
     //kvm.log('getNormalCircleMarkerStyle for status: ' + this.get('status'), 4);
     const markerStyles = JSON.parse(kvm.store.getItem("markerStyles")),
       numStyles = Object.keys(markerStyles).length,
-      markerStyleIndex =
-        this.getDataValue("status") >= 0 &&
-        this.getDataValue("status") < numStyles
-          ? this.getDataValue("status")
-          : 0;
+      markerStyleIndex = this.getDataValue("status") >= 0 && this.getDataValue("status") < numStyles ? this.getDataValue("status") : 0;
     return markerStyles[markerStyleIndex];
   }
 

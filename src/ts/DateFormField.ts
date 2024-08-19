@@ -1,6 +1,7 @@
 import { AttributeSetting } from "./Attribute";
 import { Field } from "./Field";
 import { kvm } from "./app";
+import { createHtmlElement } from "./Util";
 
 /*
  * create a date form field in the structure
@@ -40,13 +41,7 @@ export class DateFormField implements Field {
     if (this.isValidDate(val)) {
       val = this.toISO(val);
     }
-    kvm.log(
-      "DateFormField " +
-        this.settings.name +
-        " setValue with value: " +
-        JSON.stringify(val),
-      4
-    );
+    kvm.log("DateFormField " + this.settings.name + " setValue with value: " + JSON.stringify(val), 4);
     this.element.val(val);
   }
 
@@ -66,14 +61,11 @@ export class DateFormField implements Field {
 
   bindEvents() {
     //console.log('DateFormField.bindEvents');
-    $("#featureFormular input[id=" + this.settings.index + "]").on(
-      "change",
-      function () {
-        if (!$("#saveFeatureButton").hasClass("active-button")) {
-          $("#saveFeatureButton").toggleClass("active-button inactive-button");
-        }
+    $("#featureFormular input[id=" + this.settings.index + "]").on("change", function () {
+      if (!$("#saveFeatureButton").hasClass("active-button")) {
+        $("#saveFeatureButton").toggleClass("active-button inactive-button");
       }
-    );
+    });
   }
 
   toISO(date) {
@@ -82,9 +74,7 @@ export class DateFormField implements Field {
 
   fromISO(date) {
     kvm.log("konvert " + this.settings.name + " date: " + date, 4);
-    return typeof date == "string"
-      ? date.replace(/-/g, "/").replace("T", " ").replace("Z", "")
-      : null;
+    return typeof date == "string" ? date.replace(/-/g, "/").replace("T", " ").replace("Z", "") : null;
   }
 
   /*

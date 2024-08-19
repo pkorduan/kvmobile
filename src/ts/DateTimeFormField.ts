@@ -1,6 +1,7 @@
 import { AttributeSetting } from "./Attribute";
 import { Field } from "./Field";
 import { kvm } from "./app";
+import { createHtmlElement } from "./Util";
 
 /**
  * create a dateTime form field in the structure
@@ -68,14 +69,11 @@ export class DateTimeFormField implements Field {
 
   bindEvents() {
     //console.log('DateTimeFormField.bindEvents');
-    $("#featureFormular input[id=" + this.settings.index + "]").on(
-      "change",
-      function () {
-        if (!$("#saveFeatureButton").hasClass("active-button")) {
-          $("#saveFeatureButton").toggleClass("active-button inactive-button");
-        }
+    $("#featureFormular input[id=" + this.settings.index + "]").on("change", function () {
+      if (!$("#saveFeatureButton").hasClass("active-button")) {
+        $("#saveFeatureButton").toggleClass("active-button inactive-button");
       }
-    );
+    });
   }
 
   toISO(datetime) {
@@ -84,8 +82,6 @@ export class DateTimeFormField implements Field {
 
   fromISO(datetime) {
     // kvm.log("konvert " + this.get("name") + " datetime: " + datetime, 4);
-    return typeof datetime == "string"
-      ? datetime.replace(/-/g, "/").replace("T", " ").replace("Z", "")
-      : null;
+    return typeof datetime == "string" ? datetime.replace(/-/g, "/").replace("T", " ").replace("Z", "") : null;
   }
 }

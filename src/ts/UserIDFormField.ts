@@ -1,6 +1,7 @@
 import { AttributeSetting } from "./Attribute";
 import { Field } from "./Field";
 import { kvm } from "./app";
+import { createHtmlElement } from "./Util";
 
 /*
  * create a UserID form field in the structure

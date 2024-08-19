@@ -30,6 +30,37 @@ export function listFiles(dir: string) {
   );
 }
 
+/**
+ *
+ * @param filePath deviceFilePath oder FileUrl
+ * @returns
+ */
+export async function getWebviewUrl(filePath: string): Promise<string> {
+  // console.log("getFileUrl: ", filePath);
+
+  //   listFiles(filePath.substring(0, filePath.lastIndexOf("/")));
+  let path = filePath.startsWith("file") ? filePath : "file://" + filePath;
+  //   listFiles(path.substring(0, path.lastIndexOf("/")));
+  if (path.indexOf('"') > 0) {
+    path = path.substring(0, path.lastIndexOf('"'));
+  }
+
+  return new Promise((resolve, reject) => {
+    window.resolveLocalFileSystemURL(
+      path,
+      (fileEntry) => {
+        const fileEntryURL = fileEntry.toURL();
+        // console.log("getFileUrl(" + filePath + ")=>" + fileEntryURL);
+        resolve(fileEntryURL);
+      },
+      (err) => {
+        console.error("getFileUrl(" + filePath + ")=>error: ", err);
+        reject(new Error(`Fehler beim Auflösen der LocalFileSystemURL ${filePath}`, { cause: err }));
+      }
+    );
+  });
+}
+
 export async function executeSQL(db: SQLitePlugin.Database, statement: string, params?: any[]): Promise<SQLitePlugin.Results> {
   return new Promise<SQLitePlugin.Results>((resolve, reject) => {
     db.executeSql(
@@ -52,7 +83,7 @@ export async function tableExists(db: SQLitePlugin.Database, tablename: string):
       statement,
       [],
       (results) => {
-        console.log(`Tabelle ${tablename} existiert`);
+        console.log(`Tabelle ${tablename} existiert ${results.rows.length === 1}`);
         resolve(results.rows.length === 1);
       },
       (err) => {
@@ -225,3 +256,81 @@ export async function showAlert(message: string, title?: string, buttonName?: st
 //         _run(0, fcts, paramOfFirsFct, resolve);
 //     });
 // }
+
+export function createHtmlElement<K extends keyof HTMLElementTagNameMap>(tag: K, parent?: HTMLElement, className?: string, mixin?: any): HTMLElementTagNameMap[K] {
+  const el = document.createElement(tag);
+  if (parent) {
+    parent.appendChild(el);
+  }
+  if (className) {
+    el.className = className;
+  }
+  if (mixin) {
+    for (const k in mixin) {
+      el[k] = mixin[k];
+    }
+  }
+  return el;
+}
+
+export function getValueOfElement(id: string): string {
+  const el = document.getElementById(id);
+  if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement) {
+    return el.value;
+  }
+  return null;
+}
+
+export function setValueOfElement(id: string, value: string): void {
+  const el = document.getElementById(id);
+  if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement) {
+    el.value = value;
+  }
+}
+
+export function removeOptions(selectElement: HTMLSelectElement) {
+  for (let i = selectElement.options.length - 1; i >= 0; i--) {
+    selectElement.remove(i);
+  }
+}
+
+export function hideElement(id: string) {
+  const el = document.getElementById(id);
+  el.style.display = "none";
+}
+export function showElement(id: string) {
+  const el = document.getElementById(id);
+  el.style.display = "";
+}
+
+export function underlineToPointName(sql: string, schema: string, table: string) {
+  return sql.replace(schema + "_" + table, schema + "." + table);
+}
+
+export function pointToUnderlineName(sql: string, schema: string, table: string) {
+  return sql.replace(schema + "." + table, schema + "_" + table);
+}
+
+export async function getSpatialLiteVersion(db: SQLitePlugin.Database) {
+  try {
+    const rs = await executeSQL(this.db, "SELECT spatialite_version() as version");
+    return <string>rs.rows.item(0).version;
+  } catch (err) {
+    return "Kann nicht ermittelt werden. Fehler: " + err.message;
+  }
+}
+export async function getSqliteVersion(db: SQLitePlugin.Database) {
+  try {
+    const rs = await executeSQL(this.db, "SELECT sqlite_version() as version");
+    return <string>rs.rows.item(0).version;
+  } catch (err) {
+    return "Kann nicht ermittelt werden. Fehler: " + err.message;
+  }
+}
+/**
+ * wechselt die Sichtbarkeit (via display)
+ * @param el
+ */
+export function toggle(el: HTMLElement) {
+  el.style.display = el.style.display === "none" ? "" : "none";
+}

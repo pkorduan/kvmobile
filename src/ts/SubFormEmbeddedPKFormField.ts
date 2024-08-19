@@ -1,6 +1,7 @@
 import { kvm } from "./app";
 import { Attribute, AttributeSetting } from "./Attribute";
 import { Field } from "./Field";
+import { createHtmlElement } from "./Util";
 
 /*
  * create a SubFormEmbeddedPK form field in the structure
@@ -20,48 +21,48 @@ import { Field } from "./Field";
  *   </div>
  */
 export class SubFormEmbeddedPKFormField implements Field {
-    settings: AttributeSetting;
-    selector: string;
-    element: JQuery<HTMLElement>;
-    attribute: Attribute;
+  settings: AttributeSetting;
+  selector: string;
+  element: HTMLElement;
+  attribute: Attribute;
 
-    constructor(formId: string, attribute: Attribute) {
-        this.attribute = attribute;
-        this.settings = attribute.settings;
-        this.selector = "#" + formId + " input[id=" + attribute.settings.index + "]";
-        this.element = $("<div></div>");
+  constructor(formId: string, attribute: Attribute) {
+    this.attribute = attribute;
+    this.settings = attribute.settings;
+    this.selector = "#" + formId + " input[id=" + attribute.settings.index + "]";
+    this.element = createHtmlElement("div");
+  }
+
+  // get(key) {
+  //     return this.attribute.settings[key];
+  // }
+
+  /**
+   *
+   * @param val Der Wert ist leer weil in einem SubFormEmbedded die Werte erst abgefragt
+   * werden über die ID des Datensatzes der in id_attribut steht
+   */
+  setValue(val) {
+    const feature = this.attribute.layer.activeFeature;
+    console.log("setValue of SubFormEmbeddedPK FormField");
+    this.element.innerHTML = "";
+    if (feature.new) {
+      $("#new_sub_data_set").hide();
+      this.element.append("<span>Können erst angelegt werden wenn der neue Datensatz gespeichert ist.</span>");
+    } else {
+      $("#new_sub_data_set").show();
+      this.attribute.layer.readVorschauAttributes(this.attribute, feature.getDataValue(this.attribute.getPKAttribute()), this.element, "editFeature");
     }
+  }
 
-    // get(key) {
-    //     return this.attribute.settings[key];
-    // }
+  getValue(action = "") {}
 
-    /**
-     *
-     * @param val Der Wert ist leer weil in einem SubFormEmbedded die Werte erst abgefragt
-     * werden über die ID des Datensatzes der in id_attribut steht
-     */
-    setValue(val) {
-        const feature = this.attribute.layer.activeFeature;
-        console.log("setValue of SubFormEmbeddedPK FormField");
-        this.element.empty();
-        if (feature.new) {
-            $("#new_sub_data_set").hide();
-            this.element.append("<span>Können erst angelegt werden wenn der neue Datensatz gespeichert ist.</span>");
-        } else {
-            $("#new_sub_data_set").show();
-            this.attribute.layer.readVorschauAttributes(this.attribute, feature.getDataValue(this.attribute.getPKAttribute()), this.element, "editFeature");
-        }
-    }
-
-    getValue(action = "") {}
-
-    bindEvents() {
-        //console.log('TextfeldFormField.bindEvents');
-        /*        $("#featureFormular textarea[id=" + this.get("index") + "]").on("keyup", function () {
+  bindEvents() {
+    //console.log('TextfeldFormField.bindEvents');
+    /*        $("#featureFormular textarea[id=" + this.get("index") + "]").on("keyup", function () {
           if (!$("#saveFeatureButton").hasClass("active-button")) {
               $("#saveFeatureButton").toggleClass("active-button inactive-button");
           }
       });*/
-    }
+  }
 }

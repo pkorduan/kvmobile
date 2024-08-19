@@ -2,7 +2,7 @@
 /// <reference types="cordova-plugin-device" />
 
 import { Polygon, CircleMarker, LatLngExpression, LatLngTuple, LayerGroup, Polyline } from "leaflet";
-import { kvm } from "./app";
+import { Kvm, kvm } from "./app";
 import { Attribute } from "./Attribute";
 import { AttributeSetting } from "./Attribute";
 import { Feature } from "./Feature";
@@ -13,12 +13,19 @@ import { Icon } from "leaflet";
 import * as LayerDBJobs from "./LayerDBJobs";
 import * as Util from "./Util";
 import { sperrBildschirm } from "./SperrBildschirm";
+import { PropertyChangeEvent, PropertyChangeSupport } from "./Observable";
 
 export type AttributteDelta = {
   key: string;
   oldVal: any;
   newVal: any;
   type: string;
+};
+
+export type AttributFilter = {
+  attrName: string;
+  operator: string;
+  value: string;
 };
 
 export interface LayerSetting {
@@ -35,6 +42,8 @@ export interface LayerSetting {
   schema_name: string;
   query?: string;
   filter?: string;
+  attributeFilter?: AttributFilter[];
+  sortBy: string;
   document_path?: string;
   vector_tile_url?: string;
   privileg?: string;
@@ -50,21 +59,30 @@ export interface LayerSetting {
 }
 
 export interface BackgroundLayerSetting {
-  layer_id: string;
+  layer_id?: number;
   label: string;
   online: boolean;
   type: string;
-  url: string;
+  url?: string;
+  style?: any;
+  interactiv?: boolean;
   params: {
-    layers: string; // "de_basemapde_web_raster_farbe"
-    format: string; // "image/png"
-    attribution: string; // "Basemap DE dl-de/by-2-0"}
-    minZoom: number;
-    maxNativeZoom: number;
-    south: number;
-    north: number;
-    west: number;
-    east: number;
+    layers?: string; // "de_basemapde_web_raster_farbe"
+    format?: string; // "image/png"
+    attribution?: string; // "Basemap DE dl-de/by-2-0"}
+    transparent?: any;
+    maxZoom?: number;
+    minZoom?: number;
+    maxNativeZoom?: number;
+    south?: number;
+    north?: number;
+    west?: number;
+    east?: number;
+    bounds?: any;
+    rendererFactory?: any;
+    getFeatureId?: any;
+    vectorTileLayerStyles?: any;
+    BING_KEY?: string;
   };
 }
 
@@ -81,7 +99,14 @@ export interface BackgroundLayerSetting {
 //     options: any;
 // }
 
-export class Layer {
+export class Layer extends PropertyChangeSupport {
+  static EVENTS = {
+    FEATURE_CHANGED: "FEATURE_CHANGED",
+    FEATURE_ADDED: "FEATURE_ADDED",
+    FILTER_CHANGED: "FILTER_CHANGED",
+    SORTED_BY: "SORTED_BY",
+  };
+
   nr: number;
   stelle: Stelle;
   settings: LayerSetting;
@@ -92,7 +117,7 @@ export class Layer {
   attribute_index: { [key: string]: number };
   classes: Klasse[];
   _features: Map<string, Feature>;
-  activeFeature: Feature;
+  private _activeFeature: Feature;
   numFeatures: number;
   next: any;
   context: any;
@@ -116,7 +141,10 @@ export class Layer {
   parentLayerId: string;
   parentFeatureId: string;
 
+  layerFilter = new Map<string, { operator: string; value: string }>();
+
   constructor(stelle: Stelle, settings: LayerSetting | string) {
+    super();
     // const layer_ = this;
     this.stelle = stelle;
     this.settings = typeof settings === "string" ? JSON.parse(settings) : settings;
@@ -207,6 +235,19 @@ export class Layer {
     this._features = new Map();
   }
 
+  get activeFeature() {
+    return this._activeFeature;
+  }
+
+  setActiveFeature(feature: Feature) {
+    console.error(`layer.setActiveFeature ${this.title}`, feature);
+    if (this._activeFeature === feature) {
+      return;
+    }
+    this._activeFeature = feature;
+    kvm.setActiveFeature(feature);
+  }
+
   get(key: string) {
     return this.settings[key];
   }
@@ -273,7 +314,7 @@ export class Layer {
    * @param vorschauElement
    * @param clickFunction
    */
-  async readVorschauAttributes(attribute: Attribute, featureId: string, vorschauElement: JQuery<HTMLElement>, clickFunction = "activateFeature") {
+  async readVorschauAttributes(attribute: Attribute, featureId: string, vorschauElement: HTMLElement, clickFunction = "activateFeature") {
     const subLayerId = attribute.getGlobalSubLayerId();
     const fkAttribute: String = attribute.getFKAttribute();
     const vorschauOption: String = attribute.getVorschauOption();
@@ -292,7 +333,7 @@ export class Layer {
     console.log(`Read Vorschaudatensätze für Layer ${subLayer.title} with sql ${sql}`);
     // Das folgende geht noch nicht weil die Tabellen nicht so benannt sind  wie in sqlite
     //let sql = `${this.settings.query} AND ${filter.join(' AND ')}`;
-    vorschauElement.empty();
+    vorschauElement.innerHTML = "";
     try {
       const rs = await Util.executeSQL(kvm.db, sql);
       // console.log("Layer.readVorschauAttributes");
@@ -300,7 +341,7 @@ export class Layer {
 
       console.log(numRows + " Vorschaudatensätze gelesen.");
       if (numRows == 0) {
-        vorschauElement.html("keine");
+        vorschauElement.innerHTML = "keine";
       } else {
         // console.log('vorschauOption: ', vorschauOption);
         // const keys = Object.keys(rs.rows.item(0));
@@ -321,7 +362,7 @@ export class Layer {
           // vorschauList = vorschauList + `<li onclick="kvm.${clickFunction}('${subLayerId}', '${item[subLayer.get("id_attribute")]}')" class="pointer">${vorschauElements.join(' ')}<i class="fa fa-arrow-right" aria-hidden="true" style="margin-left: 10px"></i></li>`;
           vorschauList = `${vorschauList} <li onclick="kvm.${clickFunction}('${subLayerId}', '${item[subLayer.get("id_attribute")]}')" class="pointer">${vorschauElements.join(" ")}<i class="fa fa-arrow-right" aria-hidden="true" style="margin-left: 10px"></i></li>`;
         }
-        vorschauElement.html('<ul class="subFormEmbeddedPKFormField-list">' + vorschauList + "</ul>");
+        vorschauElement.innerHTML = '<ul class="subFormEmbeddedPKFormField-list">' + vorschauList + "</ul>";
       }
     } catch (error) {
       kvm.log(`Fehler bei der Abfrage der Vorschauattribute mit sql: ${sql} Fehler: ${error.message}`);
@@ -364,7 +405,7 @@ export class Layer {
     // console.log("readdata", this);
     // let sql: string;
 
-    this.activeFeature = null;
+    this._activeFeature = null;
 
     if (this.isActive) {
       order = Util.getValueOfElement("anzeigeSortSelect");
@@ -456,7 +497,7 @@ export class Layer {
           $("#syncLayerIcon_" + this.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
         }
         //console.log("Set connectionstatus in Layer: " + this.getGlobalId());
-        kvm.setConnectionStatus();
+        // kvm.setConnectionStatus();
 
         if (this.hasGeometry) {
           // draw the features in map
@@ -475,9 +516,9 @@ export class Layer {
 
         try {
           // console.log("finishLayerReading of Layer id: " + this.getGlobalId());
-          kvm.activeStelle.finishLayerReading(this);
-        } catch ({ name, message }) {
-          kvm.msg("Fehler beim Beenden des Ladens des Layers id: " + this.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
+          kvm.getActiveStelle().finishLayerReading(this);
+        } catch (ex) {
+          kvm.msg("Fehler beim Beenden des Ladens des Layers id: " + this.getGlobalId() + "! Fehlertyp: " + ex.name + " Fehlermeldung: " + ex.message, ex);
         }
       } catch (ex) {
         console.error("Error in readData", ex);
@@ -489,37 +530,67 @@ export class Layer {
       kvm.log(msg);
       sperrBildschirm.close(msg);
     }
+    this.fire(new PropertyChangeEvent(this, Layer.EVENTS.FEATURE_CHANGED, null, null));
+  }
+
+  /**
+   *
+   * @returns Feature sorted and filtered
+   */
+  getFeatures() {
+    const features = Array.from(this._features.values());
+    if (this.settings.sortBy) {
+      const sortBy = this.settings.sortBy;
+      features.sort((f1, f2) => {
+        return f1.getDataValue(sortBy) > f2.getDataValue(sortBy) ? 1 : -1;
+      });
+    }
+    return features;
   }
 
   /**
    * create the list of features in list view at once
    */
-  createFeatureList() {
-    console.error("createFeatureList");
-    sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Erzeuge Featureliste.`);
-    //console.log("createFeatureList for layer %s", this.get("title"));
-    //kvm.log("Erzeuge die Liste der Datensätze neu.");
-    $("#featurelistHeading").html(this.get("alias") ? this.get("alias") : this.get("title"));
+  // createFeatureList() {
+  //   console.error("createFeatureList");
+  //   sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Erzeuge Featureliste.`);
+  //   //console.log("createFeatureList for layer %s", this.get("title"));
+  //   //kvm.log("Erzeuge die Liste der Datensätze neu.");
+  //   $("#featurelistHeading").html(this.get("alias") ? this.get("alias") : this.get("title"));
 
-    const featurelistBody = document.getElementById("featurelistBody");
-    featurelistBody.innerHTML = "";
-    const doc = document.createDocumentFragment();
+  //   const featurelistBody = document.getElementById("featurelistBody");
+  //   featurelistBody.innerHTML = "";
+  //   const doc = document.createDocumentFragment();
 
-    this._features.forEach((feature) => {
-      const element = feature.getListElement();
-      doc.appendChild(element);
-      element.addEventListener("click", kvm.featureItemClickEventFunction);
-      // html = html + feature.listElement();
-      //console.log("Feature " + feature.layer.settings.id_attribute + ": " + feature.id + " zur Liste hinzugefügt.");
-      //console.log(html);
-    });
-    featurelistBody.append(doc);
-    // kvm.bindFeatureItemClickEvents();
-    if (this._features.size > 0) {
-      //      kvm.showItem("featurelist");
-      $("#numDatasetsText_" + this.getGlobalId()).html(`${this._features.size}`);
-    }
-    //console.log("createFeatureList abgeschlossen. in Layer id: " + this.getGlobalId());
+  //   this._features.forEach((feature) => {
+  //     const element = feature.getListElement();
+  //     doc.appendChild(element);
+  //     element.addEventListener("click", kvm.featureItemClickEventFunction);
+  //     // html = html + feature.listElement();
+  //     //console.log("Feature " + feature.layer.settings.id_attribute + ": " + feature.id + " zur Liste hinzugefügt.");
+  //     //console.log(html);
+  //   });
+  //   featurelistBody.append(doc);
+  //   // kvm.bindFeatureItemClickEvents();
+  //   if (this._features.size > 0) {
+  //     //      kvm.showItem("featurelist");
+  //     $("#numDatasetsText_" + this.getGlobalId()).html(`${this._features.size}`);
+  //   }
+  //   //console.log("createFeatureList abgeschlossen. in Layer id: " + this.getGlobalId());
+  // }
+
+  setSortAttribute(value: string) {
+    const oldValue = this.settings?.sortBy;
+    this.settings.sortBy = value;
+    this.fire(new PropertyChangeEvent(this, Layer.EVENTS.SORTED_BY, oldValue, value));
+    this.saveToStore();
+  }
+  setFilter(attrFilters: { attrName: string; operator: string; value: string }[]) {
+    const oldValue = this.settings?.attributeFilter;
+    this.settings.attributeFilter = attrFilters;
+    // this.fire(new PropertyChangeEvent(this, Layer.EVENTS.FILTER_CHANGED, oldValue, attrFilters));
+    this.readData();
+    this.saveToStore();
   }
 
   /**
@@ -564,10 +635,13 @@ export class Layer {
 
     //console.log("Schreibe Daten mit Sql: " + sql.substring(0, 1000));
     try {
+      const tblExists = await Util.tableExists(kvm.db, this.getSqliteTableName());
+      console.error(`writeData ${this.title} => ${this.getSqliteTableName()} tblExists: ${tblExists}`);
       await Util.executeSQL(kvm.db, sql);
     } catch (ex) {
       this.set("syncVersion", 0);
       $("#syncVersionSpan_" + this.getGlobalId()).html("0");
+      console.error(`writeData of layer ${this.title}`, ex);
       kvm.log("Fehler beim Zugriff auf die Datenbank: " + ex, 1);
       alert("Fehler beim Zugriff auf die Datenbank: " + ex.message);
       throw { message: `Fehler beim Schreiben des Layers ${this.title}`, cause: ex };
@@ -580,14 +654,6 @@ export class Layer {
       this.set("syncVersion", this.runningSyncVersion);
       $("#syncVersionSpan_" + this.getGlobalId()).html(this.runningSyncVersion.toString());
       this.set("syncLastLocalTimestamp", Date());
-    }
-    this.saveToStore();
-    console.log("Layer %s: readData in folge von writeData.", this.title);
-    if (this.stelle.loadAllLayers) {
-      // finishLayerLoading read data only after last layer is loaded.
-      this.stelle.finishLayerLoading(this);
-    } else {
-      await this.readData();
     }
   }
 
@@ -666,8 +732,11 @@ export class Layer {
     return new Promise<void>((resolve, reject) => {
       kvm.log("Erzeuge Tabelle mit sql: " + sql, 3);
       Util.executeSQL(kvm.db, sql)
-        .then(() => {
+        .then(async () => {
           kvm.log("Tabelle " + layer.getSqliteTableName() + " erfolgreich angelegt.", 3);
+          const tblExists = await Util.tableExists(kvm.db, layer.getSqliteTableName());
+          console.info(`Tabelle ${layer.getSqliteTableName()} angelegt ${tblExists}`);
+
           // if (layer.hasEditPrivilege) {
           //   const tableName = layer.getSqliteTableName() + "_deltas";
           //   const tableColumnDefinitions = ["version INTEGER PRIMARY KEY", "type text", "change text", "delta text", "created_at text"];
@@ -696,17 +765,21 @@ export class Layer {
    * Drop the table of layer data and the table for its deltas
    */
   async dropDataTable() {
+    const tblExists = await Util.tableExists(kvm.db, this.getSqliteTableName());
+    console.error(`dropDataTable ${this.title} => ${this.getSqliteTableName()} tblExists: ${tblExists}`);
     const tableName = this.getSqliteTableName();
     const sql = "DROP TABLE IF EXISTS " + tableName;
     return new Promise<void>((resolve, reject) => {
       kvm.log("Lösche Tabelle mit sql: " + sql, 3);
       Util.executeSQL(kvm.db, sql)
-        .then(() => {
-          kvm.log("Tabelle " + tableName + " gelöscht.", 3);
+        .then(async (result) => {
+          console.info("Tabelle " + tableName + " gelöscht.", result);
+          const tblExists = await Util.tableExists(kvm.db, this.getSqliteTableName());
+          console.error(`dropDataTable done ${this.title} => ${this.getSqliteTableName()} tblExists: ${tblExists}`);
           resolve();
         })
         .catch((error) => {
-          kvm.msg("Fehler beim Löschen der Tabelle: " + tableName + " " + error.message);
+          console.info("Fehler beim Löschen der Tabelle: " + tableName + " ", error.message);
           reject({
             message: `Fehler beim Löschen der Tabelle: ${tableName} ${error?.message}`,
             caause: error,
@@ -740,7 +813,7 @@ export class Layer {
   }
 
   updateTable() {
-    //console.log('updateTable');
+    console.error(`xxx updateTable "${this.title}`);
     kvm.db.transaction(
       (tx) => {
         const tableName = this.getSqliteTableName();
@@ -764,9 +837,9 @@ export class Layer {
                 // update layer name in layerlist for this layer
                 this.appendToApp();
                 //this.activate();
-                kvm.activeStelle.sortOverlays();
+                kvm.getActiveStelle().sortOverlays();
                 this.saveToStore();
-                kvm.setConnectionStatus();
+                // kvm.setConnectionStatus();
                 this.requestData();
               },
               (tx, error) => {
@@ -874,19 +947,11 @@ export class Layer {
   }
 
   /**
-   * Function request layer data from server
-   * writeData >
-   * Will be called when
-   * - updateTable has success
-   * - layer sync has been started registered in bindLayerEvents for .sync-layer-button
+   * Function request layer data from server and writes the data to database
    */
   async requestData() {
-    console.log("Layer %s: requestData", this.title);
-    // ToDo Ab hier in einem Fenster den Fortschritt des Ladevorganges anzeigen.
-    //kvm.log("Frage Daten vom Server ab.<br>Das kann je nach Datenmenge und<br>Internetverbindung einige Minuten dauern.");
-    const fileTransfer = new FileTransfer();
+    console.error("xxx Layer %s: requestData", this.title);
     const filename = "data_layer_" + this.getGlobalId() + ".json";
-
     const url = this.isLoaded ? this.getSyncUrl() : this.getDataUrl();
 
     sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Frage Layerdaten ab mit URL: ${url}`);
@@ -912,302 +977,9 @@ export class Layer {
       this.runningSyncVersion = collection.lastDeltaVersion;
     }
     console.log("Layer " + this.get("title") + ": Version der Daten (runningSyncVersion): " + this.runningSyncVersion);
-    // if (collection.features.length > 0) {
+
     await this.writeData(collection.features);
-
-    //    this.activate();
-    // fileTransfer.download(
-    //   url,
-    //   cordova.file.dataDirectory + filename,
-    //   (fileEntry) => {
-    //     fileEntry.file(
-    //       (file) => {
-    //         const reader = new FileReader();
-
-    //         reader.onloadend = (evt) => {
-    //           console.log("Layer %s: Download der Daten ist abgeschlossen.", this.title);
-    //           sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Layerdaten erfolgreich runtergeladen.`);
-    //           let collection: any;
-
-    //           console.log("Download Ergebnis (Head 1000): %s", evt.target.result.toString().substring(0, 1000));
-    //           try {
-    //             collection = JSON.parse(<string>evt.target.result);
-    //           } catch (error) {
-    //             const err_msg = "Fehler beim Runterladen der Layerdaten.";
-    //             console.error("%s Fehler: %o Response: %o", error, err_msg, evt.target.result);
-    //             kvm.log(err_msg + " error: " + JSON.stringify(error));
-    //             kvm.msg(err_msg + "Kann Antwort vom Server nicht parsen: " + JSON.stringify(evt.target.result) + " Wenden Sie sich an den Admin des Servers.");
-    //             return false;
-    //           }
-    //           if (("success" in collection && !collection.success) || ("type" in collection && collection.type != "FeatureCollection")) {
-    //             kvm.msg(collection.msg, `Fehler beim Laden des Layers ${this.title} vom Server.`);
-    //             return 0;
-    //           }
-    //           console.log("Layer %s: Anzahl empfangene Datensätze: %s", this.title, collection.features.length);
-    //           console.log("Layer " + this.get("title") + ": Version in Response: " + collection.lastDeltaVersion);
-    //           sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Empfangene Datensätze ${collection.features.length}`);
-    //           if ("lastDeltaVersion" in collection) {
-    //             console.log("Setze runningSyncVersion auf collection.lastDeltaVersion: ", collection.lastDeltaVersion);
-    //             this.runningSyncVersion = collection.lastDeltaVersion;
-    //           }
-    //           console.log("Layer " + this.get("title") + ": Version der Daten (runningSyncVersion): " + this.runningSyncVersion);
-    //           // if (collection.features.length > 0) {
-    //           this.writeData(collection.features);
-    //           // }
-    //           // else {
-    //           //   kvm.msg(
-    //           //     "Für Layer '" +
-    //           //       this.title +
-    //           //       "' sind keine Daten zum Download vorhanden. Änderungen können später synchronisiert werden.",
-    //           //     "Hinweis"
-    //           //   );
-    //           //   console.log(
-    //           //     "requestData: Setze LayerSettings syncVersion auf Layer.runningSyncVerison: ",
-    //           //     this.runningSyncVersion
-    //           //   );
-    //           //   this.set("syncVersion", this.runningSyncVersion);
-    //           //   $("#syncVersionSpan_" + this.getGlobalId()).html(
-    //           //     this.runningSyncVersion.toString()
-    //           //   );
-    //           //   this.set("syncLastLocalTimestamp", Date());
-    //           //   if (
-    //           //     $("#syncLayerIcon_" + this.getGlobalId()).hasClass(
-    //           //       "fa-spinner"
-    //           //     )
-    //           //   ) {
-    //           //     $("#syncLayerIcon_" + this.getGlobalId()).toggleClass(
-    //           //       "fa-refresh fa-spinner fa-spin"
-    //           //     );
-    //           //   }
-    //           //   this.refresh();
-    //           //   // TODO: Prüfen ob hier SperrDiv geschlossen werden muss
-    //           //   //kvm.closeSperrDiv(this.title + ': Abfrage der Daten beendet.');
-    //           // }
-    //         };
-
-    //         reader.readAsText(file);
-    //       },
-    //       function (error) {
-    //         alert("Fehler beim Einlesen der heruntergeladenen Datei. Prüfen Sie die URL und Parameter, die für die Synchronisation verwendet werden.");
-    //         const msg = "Fehler beim lesen der Datei: " + error.code;
-    //         kvm.log(msg, 1);
-    //         kvm.closeSperrDiv(msg);
-    //       }
-    //     );
-    //   },
-    //   this.downloadError,
-    //   true
-    // );
   }
-
-  // /**
-  //  * Write deltas to local file, request deltas from server, update local, readData and
-  //  * activate if it`s active
-  //  * @param deltas
-  //  * function chain: writeFile  > upload > for each feature execServerDeltaSuccessFunc
-  //  * > saveToStore, clearDeltas, readData
-  //  */
-  // async sendDeltasOld(deltas: { rows: { version: string; sql: string }[] }) {
-  //   return new Promise<SendDeltasResponse>(async (resolve, reject) => {
-  //     try {
-  //       if (deltas.rows.length > 0) {
-  //         sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Sende Änderungen zum Server.`);
-  //       } else {
-  //         sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Frage Änderungen vom Server ab.`);
-  //       }
-  //       // kvm.writeLog(`Syncronisiere Layer ${this.title} mit folgendem Delta: ${JSON.stringify(deltas)}`);
-  //       const dataObj = new Blob([JSON.stringify(deltas)], {
-  //         type: "application/json",
-  //       });
-  //       const dstDir = cordova.file.externalCacheDirectory;
-  //       const dstFile = "delta_layer_" + this.getGlobalId() + ".json";
-
-  //       const fileEntry = await Util.writeData(dstDir, dstFile, dataObj);
-  //       // console.log(`Successful written deltas of layer "${this.title}" into File.`);
-  //       const fileUploadResult = await this._upload(fileEntry);
-
-  //       const response = <SendDeltasResponse>JSON.parse(fileUploadResult.response);
-  //       resolve(response);
-  //     } catch (ex) {
-  //       console.error(`Fehler beim Erstellen oder Senden der Deltas für den Layer "${this.title}"`, ex);
-  //       reject({
-  //         message: `Fehler beim Erstellen oder Senden der Deltas für den Layer "${this.title}"`,
-  //         cause: ex,
-  //       });
-  //     }
-  //   });
-
-  // }
-
-  // writeFile(
-  //   fileEntry: FileEntry,
-  //   deltas: { rows: { version: string; sql: string }[] }
-  // ) {
-  //   console.log(
-  //     `${this.title}: writeFile with deltas: ${JSON.stringify(deltas)}`
-  //   );
-  //   let dataObj;
-  //   if (deltas.rows.length > 0) {
-  //     kvm.writeLog(
-  //       `Syncronisiere Layer ${
-  //         this.title
-  //       } mit folgendem Delta: ${JSON.stringify(deltas)}`
-  //     );
-  //     dataObj = new Blob([JSON.stringify(deltas)], {
-  //       type: "application/json",
-  //     });
-  //   } else {
-  //     dataObj = new Blob(["keine Deltas vorhanden"], {
-  //       type: "text/plain",
-  //     });
-  //   }
-
-  //   // Create a FileWriter object for our FileEntry (log.txt).
-  //   fileEntry.createWriter((fileWriter) => {
-  //     fileWriter.onwriteend = () => {
-  //       console.log(this.title + ": Datei erfolgreich geschrieben.");
-  //       this.upload(fileEntry);
-  //     };
-
-  //     fileWriter.onerror = (e) => {
-  //       const msg = `${
-  //         this.title
-  //       } Fehler beim Schreiben der Datei: ${JSON.stringify(e)}`;
-  //       // kvm.msg(msg, "Synchronisation");
-  //       console.log(msg);
-  //       // kvm.writeLog(msg);
-  //       kvm.closeSperrDiv(msg);
-  //     };
-  //     (<any>fileWriter).localURL = fileEntry.nativeURL;
-  //     fileWriter.write(dataObj);
-  //   });
-  // }
-
-  // async _upload(fileEntry: FileEntry): Promise<FileUploadResult> {
-  //   // const fileURL = fileEntry.toURL();
-  //   const fileURL = fileEntry.nativeURL;
-  //   console.log(`Layer: "${this.title}" going to upload deltas fileURL: "${fileURL}"`);
-
-  //   // const failFct = (error: FileTransferError) => {
-  //   //     const msg = `Fehler beim Hochladen der Sync-Datei! Prüfe die Netzverbindung! Fehler Nr: ${error.code} body: ${error.body}`;
-  //   //     console.error("Fehler: %o", error);
-  //   //     if ($("#syncLayerIcon_" + this.getGlobalId()).hasClass("fa-spinner")) {
-  //   //         $("#syncLayerIcon_" + this.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
-  //   //     }
-  //   //     kvm.closeSperrDiv("Upload mit Fehler beendet. " + msg);
-  //   // };
-
-  //   const layer = this,
-  //     stelle = layer.stelle,
-  //     url = stelle.get("url"),
-  //     file = stelle.getUrlFile(url),
-  //     server = url + file;
-
-  //   const params = {
-  //     device_id: device.uuid,
-  //     Stelle_ID: stelle.get("Stelle_ID"),
-  //     login_name: stelle.get("login_name"),
-  //     passwort: stelle.get("passwort"),
-  //     selected_layer_id: layer.get("id"),
-  //     table_name: layer.get("table_name"),
-  //     client_time: new Date().toISOString(),
-  //     last_client_version: layer.get("syncVersion"),
-  //     version: layer.get("version"),
-  //     mime_type: "json",
-  //     format: "json_result",
-  //     go: "mobile_sync",
-  //   };
-
-  //   const options: FileUploadOptions = {
-  //     params: params,
-  //     fileKey: "client_deltas",
-  //     fileName: fileURL.substr(fileURL.lastIndexOf("/") + 1),
-  //     mimeType: "application/json",
-  //   };
-  //   // console.log(
-  //   //   this.title + ": Upload to server: %s with options: %s",
-  //   //   server,
-  //   //   JSON.stringify(options).replace(params.passwort, "secret")
-  //   // );
-  //   return Util.upload(fileURL, encodeURI(server), options);
-  // }
-
-  // async applyDeltasOrg(response: SendDeltasResponse) {
-  //   console.error(`applyDeltas Layer: ${this.title}`);
-  //   // const response = JSON.parse(fileUploadResult.response);
-
-  //   if (response.success) {
-  //     kvm.writeLog(`Synchronisierung des Layer ${this.get("title")} erfolgreich.`);
-  //     console.log(this.get("title") + ": Response: %o", response);
-
-  //     if (response.version !== this.get("version")) {
-  //       if (!kvm.dataModelChanges) {
-  //         kvm.dataModelChanges = [];
-  //       }
-  //       console.log(`Trage dataModelChanges für Layer ${this.settings.title} ein.`);
-  //       kvm.dataModelChanges.push({ layer: this, new_version: response.version });
-  //     }
-  //     this.numExecutedDeltas = 0;
-  //     this.numReturnedDeltas = response.deltas.length;
-
-  //     console.log(this.get("title") + ": numReturendDeltas: %s", this.numReturnedDeltas);
-
-  //     if (this.numReturnedDeltas > 0) {
-  //       const msg = `${this.numReturnedDeltas} Änderungen von Daten auf dem Server gefunden. Die Datenbank wurde gesichert und die Änderungen in die lokale Datenbank eingespielt.`;
-  //       kvm.writeLog(msg);
-  //       kvm.msg(msg, "Datenänderung");
-  //       // TODO backupDatabase auch nur ein mal machen wenn irgend ein Delta gekommen ist (Weiß man aber vorher nicht ob irgend ein layer ein Delta bekommen wird.)
-  //       // Wenn ein mal ein backDatabase gemacht wurde bei den anderen layern in der gleichen syncLayers Runde nicht mehr ausführen.
-  //       kvm.backupDatabase();
-  //       if (
-  //         response.deltas.every((value) => {
-  //           return kvm.coalesce(value.sql, "") == "";
-  //         })
-  //       ) {
-  //         await this.readData($("#limit").val(), $("#offset").val());
-  //       } else {
-  //         try {
-  //           for (let delta of response.deltas) {
-  //             if (kvm.coalesce(delta.sql, "") != "") {
-  //               await Util.executeSQL(kvm.db, this.pointToUnderlineName(delta.sql, this.get("schema_name"), this.get("table_name")));
-  //               // this.execSql(
-  //               //   this.pointToUnderlineName(value.sql, this.get("schema_name"), this.get("table_name")),
-  //               //   this.execServerDeltaSuccessFunc.bind({
-  //               //     context: this,
-  //               //     response: response,
-  //               //     numReturnedDeltas: this.numReturnedDeltas,
-  //               //   })
-  //               // );
-  //             }
-  //           }
-  //         } catch (ex) {
-  //           throw new Error(`Fehler beim Schreiben der Deltas in die DB - Layer ${this.title}:<br>&nbsp;&nbsp;${ex}`, { cause: ex });
-  //         }
-
-  //         const newVersion = parseInt(response.syncData[response.syncData.length - 1].push_to_version);
-  //         this.set("syncVersion", newVersion);
-  //         this.saveToStore();
-  //         await this.clearDeltas("sql");
-  //         console.log(this.get("title") + ": call readData after execDelta");
-  //         kvm.writeLog(`Layer ${this.get("title")}: ${this.numExecutedDeltas} Deltas vom Server auf Client ausgeführt.`);
-  //         await this.readData($("#limit").val(), $("#offset").val());
-  //       }
-  //     } else {
-  //       if (response.syncData.length > 0) {
-  //         console.log("upload: Setze LayerSettings syncVersion auf Wert in push_to_version aus den Response");
-  //         this.set("syncVersion", parseInt(response.syncData[response.syncData.length - 1].push_to_version));
-  //         this.runningSyncVersion = this.get("syncVersion");
-  //         this.saveToStore();
-  //         if (this.hasEditPrivilege) {
-  //           await this.clearDeltas("sql");
-  //         }
-  //       }
-  //       await this.readData($("#limit").val(), $("#offset").val());
-  //     }
-  //   } else {
-  //     throw Error(`Sync-Fehler Layer ${this.title}:<br>&nbsp;&nbsp;${response.msg}`);
-  //   }
-  // }
 
   /*
    * Sync images
@@ -1225,7 +997,7 @@ export class Layer {
    *
    */
   async syncImages() {
-    console.error(`syncImages Layer: ${this.title}`);
+    // console.log(`syncImages Layer: ${this.title}`);
     if (this.hasEditPrivilege) {
       //kvm.log("Layer.syncImages", 4);
       sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp; Starte Synchronisation der Bilder mit dem Server.`, false);
@@ -1282,7 +1054,7 @@ export class Layer {
     const ft = new FileTransfer();
     const fileURL = "file://" + kvm.config.localImgPath + img.substring(img.lastIndexOf("/") + 1);
     const url = this.stelle.get("url");
-    const file = this.stelle.getUrlFile(url);
+    const file = Stelle.getUrlFile(url);
     const server = url + file;
 
     const options: FileUploadOptions = {};
@@ -1354,7 +1126,7 @@ export class Layer {
 
     return new Promise<void>(async (resolve, reject) => {
       const url = this.stelle.get("url");
-      const file = this.stelle.getUrlFile(url);
+      const file = Stelle.getUrlFile(url);
       const data = new URLSearchParams({
         device_id: device.uuid,
         Stelle_ID: this.stelle.get("Stelle_ID"),
@@ -1416,76 +1188,6 @@ export class Layer {
     // });
   }
 
-  // /**
-  //  * - Frage Deltas ab und schreibe sie in eine Datei
-  //  * - Schicke die Datei an den Server
-  //  *   - Bei Erfolg:
-  //  *     - Führe die Deltas vom Server aus
-  //  *     - Lösche die Deltas, die weggeschickt wurden
-  //  *     - Setze die neue syncVersion des Layers
-  //  *   - Bei Fehler:
-  //  *     - Zeige Fehlermeldung an
-  //  */
-  // async syncDataOld() {
-  //   console.error(`syncData Layer: ${this.title}`);
-  //   return new Promise<void>(async (resolve, reject) => {
-  //     try {
-  //       sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp; Starte Synchronisation der Daten mit dem Server.`);
-  //       //kvm.log("Layer.syncData", 3);
-  //       const tableName = this.getSqliteTableName();
-
-  //       sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Starte Synchronisation mit Server.`);
-
-  //       const deltas: { rows: { version: string; sql: string }[] } = {
-  //         rows: [],
-  //       };
-
-  //       if (this.hasEditPrivilege) {
-  //         const sql =
-  //           "\
-  //         SELECT\
-  //           * \
-  //         FROM\
-  //           " +
-  //           tableName +
-  //           "_deltas\
-  //         WHERE\
-  //           type = 'sql'\
-  //       ";
-  //         // kvm.log("Layer.syncData: query deltas with sql: " + sql, 3);
-  //         const rs = await Util.executeSQL(kvm.db, sql);
-
-  //         const numRows = rs.rows.length;
-
-  //         for (let i = 0; i < numRows; i++) {
-  //           // kvm.log("Push item " + i + " to deltas. sql: " + rs.rows.item(i).delta, 4);
-  //           deltas.rows.push({
-  //             version: rs.rows.item(i).version,
-  //             sql: rs.rows.item(i).delta,
-  //           });
-  //         }
-  //       }
-  //       // Sende Anfrage auch mit leeren rows Array um Änderungen vom Server zu bekommen.
-  //       const sendDeltasResponse = await this.sendDeltas(deltas);
-
-  //       if (sendDeltasResponse.success) {
-  //         await this.applyDeltas(sendDeltasResponse);
-  //         resolve();
-  //       } else {
-  //         reject({
-  //           message: `Negative Antwort auf Upload der Deltas (Layer "${this.title}") ServerErrorMessage:"${sendDeltasResponse.err_msg}"`,
-  //           response: sendDeltasResponse,
-  //         });
-  //       }
-  //     } catch (ex) {
-  //       reject({
-  //         message: ``,
-  //         cause: ex,
-  //       });
-  //     }
-  //   });
-  // }
-
   /*
    * Delete all features from layer, store, feature list, map and its data in the database table and deltas
    * and also lastVersionNr of the layer to make the way free for a new initial download
@@ -1515,7 +1217,7 @@ export class Layer {
 
     await this.clearDeltas("all");
     this._features = new Map();
-    $("#featurelistBody").html("");
+    // $("#featurelistBody").html("");
     if (this.layerGroup) {
       this.layerGroup.clearLayers();
     }
@@ -1608,89 +1310,20 @@ export class Layer {
     );
   }
 
-  // _createFeatureForm() {
-  //   sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Erzeuge Featureformular neu.`);
-  //   $("#formular")
-  //     .append(
-  //       '<h1 id="featureFormHeader" style="margin-left: 5px;">' +
-  //         this.title +
-  //         "</h1>"
-  //     )
-  //     .append($('<div id="formDiv">').append('<form id="featureFormular">'));
-  //   const formAttr = this.attributes;
-  //   for (let i = 0; i < formAttr.length; i++) {
-  //     const attr = formAttr[i];
-  //     console.log(
-  //       `viewAttr: ${attr.get("name")} arrangement: ${attr.get("arrangement")}`
-  //     );
-  //     if (attr.get("arrangement") == "0") {
-  //       $("#featureFormular").append('<div style="clear: both">');
-  //     }
-  //     $("#featureFormular").append(attr.withLabel());
-  //     attr.formField.bindEvents();
-  //     // add change event handler here to avoid redundancy in different bindEvents methods of formField classes
-  //     if (attr.isEditable() && attr.hasVisibilityDependency()) {
-  //       console.log(
-  //         `Set vcheck event handler for attribute ${attr.get("name")}`
-  //       );
-  //       $(`${attr.formField.selector}`).on("change", (evt) => {
-  //         const attributeId = $(evt.target).attr("id");
-  //         const attribute = kvm.activeLayer.attributes[attributeId];
-  //         console.log(
-  //           "Attribute: %s changed to value: %s",
-  //           attribute.get("name"),
-  //           attribute.formField.getValue()
-  //         );
-  //         kvm.activeLayer.vcheckAttributes(
-  //           attribute.get("name"),
-  //           attribute.formField.getValue()
-  //         );
-  //       });
-  //     }
-  //   }
-  // }
-
   createFeatureForm() {
     sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Erzeuge Featureformular neu.`);
-    $("#formular").empty();
     $("#formular")
+      .empty()
       .append('<h1 id="featureFormHeader" style="margin-left: 5px;">' + this.title + "</h1>")
-      .append($('<div id="formularDiv">').append('<form id="featureFormular">'));
-    this.attributeGroups.forEach((attributeGroup) => {
-      if (attributeGroup.attributeIds.length > 0) {
-        attributeGroup.div = $('<div class="attribute-group">');
-        let attrGrpHead = $(`<div class="attribute-group-header ${attributeGroup.collapsed ? "b-collapsed" : "b-expanded"}">`);
-        let attrGrpBody = $(`<div class="attribute-group-body"${attributeGroup.collapsed ? 'style="display: none"' : ""}>`);
-        attrGrpHead.append(attributeGroup.name); // befülle group header
-        attributeGroup.attributeIds.forEach((attributeId) => {
-          const attr = this.attributes[attributeId];
-          // console.log(`viewAttr: ${attr.get('name')} arrangement: ${attr.get('arrangement')}`);
-          if (attr.get("arrangement") == "0") {
-            attrGrpBody.append('<div style="clear: both">');
-          }
-          attrGrpBody.append(attr.withLabel());
-        });
-        attributeGroup.div.append(attrGrpHead).append(attrGrpBody);
-        $("#featureFormular").append(attributeGroup.div);
+      .append($('<div id="formDiv">').append('<form id="featureFormular">'));
+    const formAttr = this.attributes;
+    for (let i = 0; i < formAttr.length; i++) {
+      const attr = formAttr[i];
+      console.log(`viewAttr: ${attr.get("name")} arrangement: ${attr.get("arrangement")}`);
+      if (attr.get("arrangement") == "0") {
+        $("#featureFormular").append('<div style="clear: both">');
       }
-    });
-    $("#formular").append(`
-			<div id="newAfterCreateDiv" style="margin: 20px; display: none">
-				<input
-					id = "newAfterCreate"
-					type="checkbox"
-					name="newAfterCreate"
-					${kvm.config.newAfterCreate ? " checked" : ""}
-					onchange="
-						kvm.config.newAfterCreate = this.checked;
-						console.log('Set newAfterCreate to ', kvm.config.newAfterCreate);
-						kvm.store.setItem('newAfterCreate', kvm.config.newAfterCreate.toString());
-					"
-				> und neuen Datensatz erfassen
-			</div>
-		`);
-    for (let i = 0; i < this.attributes.length; i++) {
-      const attr = this.attributes[i];
+      $("#featureFormular").append(attr.withLabel());
       attr.formField.bindEvents();
       // add change event handler here to avoid redundancy in different bindEvents methods of formField classes
       if (attr.isEditable() && attr.hasVisibilityDependency()) {
@@ -1704,6 +1337,61 @@ export class Layer {
       }
     }
   }
+
+  // createFeatureForm() {
+  //   sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Erzeuge Featureformular neu.`);
+  //   $("#formular").empty();
+  //   $("#formular")
+  //     .append('<h1 id="featureFormHeader" style="margin-left: 5px;">' + this.title + "</h1>")
+  //     .append($('<div id="formularDiv">').append('<form id="featureFormular">'));
+  //   this.attributeGroups.forEach((attributeGroup) => {
+  //     if (attributeGroup.attributeIds.length > 0) {
+  //       attributeGroup.div = Util.createHtmlElement("div", null, "attribute-group");
+  //       let attrGrpHead = $(`<div class="attribute-group-header ${attributeGroup.collapsed ? "b-collapsed" : "b-expanded"}">`);
+  //       let attrGrpBody = $(`<div class="attribute-group-body"${attributeGroup.collapsed ? 'style="display: none"' : ""}>`);
+  //       attrGrpHead.append(attributeGroup.name); // befülle group header
+  //       attributeGroup.attributeIds.forEach((attributeId) => {
+  //         const attr = this.attributes[attributeId];
+  //         // console.log(`viewAttr: ${attr.get('name')} arrangement: ${attr.get('arrangement')}`);
+  //         if (attr.get("arrangement") == "0") {
+  //           attrGrpBody.append('<div style="clear: both">');
+  //         }
+  //         attrGrpBody.append(attr.withLabel());
+  //       });
+  //       attributeGroup.div.append(attrGrpHead).append(attrGrpBody);
+  //       $("#featureFormular").append(attributeGroup.div);
+  //     }
+  //   });
+  //   $("#formular").append(`
+  // 		<div id="newAfterCreateDiv" style="margin: 20px; display: none">
+  // 			<input
+  // 				id = "newAfterCreate"
+  // 				type="checkbox"
+  // 				name="newAfterCreate"
+  // 				${kvm.config.newAfterCreate ? " checked" : ""}
+  // 				onchange="
+  // 					kvm.config.newAfterCreate = this.checked;
+  // 					console.log('Set newAfterCreate to ', kvm.config.newAfterCreate);
+  // 					kvm.store.setItem('newAfterCreate', kvm.config.newAfterCreate.toString());
+  // 				"
+  // 			> und neuen Datensatz erfassen
+  // 		</div>
+  // 	`);
+  //   for (let i = 0; i < this.attributes.length; i++) {
+  //     const attr = this.attributes[i];
+  //     attr.formField.bindEvents();
+  //     // add change event handler here to avoid redundancy in different bindEvents methods of formField classes
+  //     if (attr.isEditable() && attr.hasVisibilityDependency()) {
+  //       console.log(`Set vcheck event handler for attribute ${attr.get("name")}`);
+  //       $(`${attr.formField.selector}`).on("change", (evt) => {
+  //         const attributeId = $(evt.target).attr("id");
+  //         const attribute = kvm.getActiveLayer().attributes[attributeId];
+  //         console.log("Attribute: %s changed to value: %s", attribute.get("name"), attribute.formField.getValue());
+  //         kvm.getActiveLayer().vcheckAttributes(attribute.get("name"), attribute.formField.getValue());
+  //       });
+  //     }
+  //   }
+  // }
 
   createDataView() {
     console.log("Layer.createDataView");
@@ -1804,7 +1492,7 @@ export class Layer {
    * Setzt die Werte des Features im dataView
    */
   loadFeatureToView(feature: Feature, options = {}) {
-    console.log(this.get("title") + ": Lade Feature in View.");
+    console.error(this.get("title") + ": Lade Feature in View.");
     //$('#featureFormHeader').append('/' + feature.id);
     this.attributes
       .filter(function (attribute) {
@@ -1819,7 +1507,7 @@ export class Layer {
         attr.viewField.setValue(val);
       });
 
-    //this.selectFeature(feature, true);
+    // this.selectFeature(feature, true);
     if (feature.new) {
       $("#newAfterCreateDiv").show();
     } else {
@@ -1834,7 +1522,8 @@ export class Layer {
    */
   loadFeatureToForm(feature: Feature, options = { editable: false }) {
     // console.log("Layer.loadFeature %o ToForm with options: %o", feature, options);
-    this.activeFeature = feature;
+    console.error(`layer.loadFeatureToForm layer=´${this.title}`, feature.getDataValue(this.settings.id_attribute));
+    this._activeFeature = feature;
 
     $.map(this.attributes, function (attr) {
       const attrName = attr.get("name");
@@ -2016,39 +1705,64 @@ export class Layer {
     }
   }
 
-  getPopup(feature) {
+  getPopup(feature: Feature) {
     //console.log("getPopup with feature %o, isActive: %", feature, isActive);
-    const html = `<div style="min-width: 150px">
-        <b>${this.get("title")}</b><br>
-        ${feature.getLabelValue()}<br>
-        <div id="popupFunctions_${this.getGlobalId()}">
-          ${
-            this.hasEditPrivilege
-              ? `<a
-                class="edit-feature"
-                href="#"
-                title="Geometrie ändern"
-                onclick="kvm.getLayer('${feature.globalLayerId}').editFeature('${feature.id}')"
-              ><span class="fa-stack fa-lg">
-                  <i class="fa fa-square fa-stack-2x"></i>
-                  <i class="fa fa-pencil fa-stack-1x fa-inverse"></i>
-                </span></i></a>`
-              : ""
-          }
-          <a
-            class="popup-link"
-            href="#"
-            title="Sachdaten anzeigen"
-            onclick="kvm.getLayer('${feature.globalLayerId}').showDataView('${feature.id}')"
-          ><span class="fa-stack fa-lg">
-              <i class="fa fa-square fa-stack-2x"></i>
-              <i class="fa fa-bars fa-stack-1x fa-inverse"></i>
-            </span></i></a>
-        </div>
-      </div>
-    `;
+    const dom = Util.createHtmlElement("div");
+    dom.style.minWidth = "150px";
+    dom.innerHTML = `<b>${this.get("title")}</b><br>${feature.getLabelValue()}<br>`;
+    const fctDiv = Util.createHtmlElement("div", dom);
+    if (this.hasEditPrivilege) {
+      const editAnchor = Util.createHtmlElement("a", fctDiv, "edit-feature");
+      editAnchor.href = "#";
+      editAnchor.title = "Geometrie ändern";
+      editAnchor.addEventListener("click", () => {
+        this.editFeature(feature);
+      });
+      const span = Util.createHtmlElement("span", editAnchor, "fa-stack fa-lg");
+      Util.createHtmlElement("i", span, "fa fa-square fa-stack-2x");
+      Util.createHtmlElement("i", span, "fa fa-pencil fa-stack-1x fa-inverse");
+    }
+    const showDataAnchor = Util.createHtmlElement("a", fctDiv, "edit-feature");
+    showDataAnchor.href = "#";
+    showDataAnchor.title = "Sachdaten anzeigen";
+    showDataAnchor.addEventListener("click", () => {
+      this.showDataView(feature);
+    });
+    const span = Util.createHtmlElement("span", showDataAnchor, "fa-stack fa-lg");
+    Util.createHtmlElement("i", span, "fa fa-square fa-stack-2x");
+    Util.createHtmlElement("i", span, "fa fa-bars fa-stack-1x fa-inverse");
+
+    // const html = `<div style="min-width: 150px">
+    //     <b>${this.get("title")}</b><br>
+    //     ${feature.getLabelValue()}<br>
+    //     <div id="popupFunctions_${this.getGlobalId()}">
+    //       ${
+    //         this.hasEditPrivilege
+    //           ? `<a
+    //             class="edit-feature"
+    //             href="#"
+    //             title="Geometrie ändern"
+    //             onclick="kvm.getLayer('${feature.globalLayerId}').editFeature('${feature.id}')"
+    //           ><span class="fa-stack fa-lg">
+    //               <i class="fa fa-square fa-stack-2x"></i>
+    //               <i class="fa fa-pencil fa-stack-1x fa-inverse"></i>
+    //             </span></i></a>`
+    //           : ""
+    //       }
+    //       <a
+    //         class="popup-link"
+    //         href="#"
+    //         title="Sachdaten anzeigen"
+    //         onclick="kvm.getLayer('${feature.globalLayerId}').showDataView('${feature.id}')"
+    //       ><span class="fa-stack fa-lg">
+    //           <i class="fa fa-square fa-stack-2x"></i>
+    //           <i class="fa fa-bars fa-stack-1x fa-inverse"></i>
+    //         </span></i></a>
+    //     </div>
+    //   </div>
+    // `;
     //console.log("getPopup returns html: %s", html);
-    return html;
+    return dom;
   }
 
   /**
@@ -2226,9 +1940,11 @@ export class Layer {
    * Activate Feature before if exists and not already active.
    * @param featureId
    */
-  editFeature(featureId) {
-    // console.log("Layer.editFeature featureId: ", featureId);
-    const feature = this.getFeature(featureId) || this.activeFeature;
+  editFeature(featureId: string): void;
+  editFeature(feature: Feature): void;
+  editFeature(f: string | Feature) {
+    const feature = typeof f === "string" ? this.getFeature(f) : f;
+    console.error(`zzz Layer.editFeature of layer ${this.title}`, feature);
 
     if (!this.isActive) {
       this.activate();
@@ -2245,7 +1961,7 @@ export class Layer {
       if (feature.geom) {
         this.startEditing();
       } else {
-        if ($("#newPosSelect").val() == 1) {
+        if (kvm.mapSettings.newPosSelect == 1) {
           navigator.geolocation.getCurrentPosition(
             function (geoLocation) {
               console.log("Starte Editierung an GPS-Coordinate");
@@ -2344,11 +2060,14 @@ export class Layer {
    * Activate the layer before if not already.
    * @param featureId
    */
-  showDataView(featureId: string) {
+  showDataView(featureId: string): void;
+  showDataView(feature: Feature): void;
+  showDataView(f: string | Feature) {
     if (!this.isActive) {
       this.activate();
     }
-    const feature = this.getFeature(featureId);
+    const feature = typeof f === "string" ? this.getFeature(f) : f;
+    // const feature = this.getFeature(featureId);
     if (!feature.isActive) {
       this.activateFeature(feature, true);
     }
@@ -3018,7 +2737,7 @@ export class Layer {
     this.removeFeature(this.activeFeature);
 
     //console.log('Lösche activeFeature')
-    delete this.activeFeature;
+    delete this._activeFeature;
 
     if (parentLayerId && parentFeatureId) {
       kvm.editFeature(parentLayerId, parentFeatureId);
@@ -3493,22 +3212,14 @@ export class Layer {
     // console.log(`xxx appendoApp ${this.getGlobalId()} ${this.title}`);
     sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Füge Layer zur App hinzu.`);
     try {
-      const index = kvm.activeStelle.getLayerDrawingIndex(this);
-      if (index == 0) {
-        // $("#layer_list").prepend(this.getListItem());
-        // document.getElementById("layer_list").insertAdjacentHTML("afterbegin", this.getListItem());
-        document.getElementById("layer_list").append(this.getLayerListItem());
-        // console.log("appendToApp append getListItem " + this.getGlobalId());
-      } else {
-        //ToDo hier die Funktion einbauen, die an Hand des index die richtige Layer id findet.
-        // rtr
-        // $(this.getListItem()).insertAfter("#layer_" + kvm.activeStelle.getLayerDrawingGlobalId(index - 1));
-        // $("#layer_list").append(this.getListItem());
-        // document.getElementById("layer_list").insertAdjacentHTML("beforeend", this.getListItem());
-        document.getElementById("layer_list").append(this.getLayerListItem());
-        // console.log("appendToApp append getListItem " + this.getGlobalId());
-      }
-      // console.log("xxx layer_list childCount=" + document.getElementById("layer_list").childNodes.length);
+      // const index = kvm.activeStelle.getLayerDrawingIndex(this);
+      // if (index == 0) {
+      //   // $("#layer_list").prepend(this.getListItem());
+      //   document.getElementById("layer_list").append(this.getLayerListItem());
+      //   // console.log("appendToApp append getListItem " + this.getGlobalId());
+      // } else {
+      //   document.getElementById("layer_list").append(this.getLayerListItem());
+      // }
       window.setTimeout(() => {
         this.bindLayerEvents(this.getGlobalId());
       }, 500);
@@ -3517,7 +3228,7 @@ export class Layer {
         //    kvm.map.addLayer(this.layerGroup);
         kvm.controls.layers.addOverlay(this.layerGroup, '<span id="layerCtrLayerDiv_' + this.getGlobalId() + '">' + this.title + "</span>");
       }
-      kvm.addLayer(this);
+      // kvm.addLayer(this);
     } catch (ex) {
       kvm.msg(`Fehler beim Hinzufügen des Layers ${this.title} zur Anwendung! Fehlertyp: ${ex.name} Fehlermeldung: ${ex.message}`);
       console.error(`Fehler beim Hinzufügen des Layers ${this.title} zur Anwendung!`, ex);
@@ -3585,7 +3296,7 @@ export class Layer {
             console.log("reload layer id: %s", this.get("id"));
             sperrBildschirm.show("Layer neu laden");
             try {
-              await kvm.activeStelle.reloadLayer(this.get("id"));
+              await kvm.getActiveStelle().reloadLayer(this.get("id"));
             } catch (ex) {
               alert("Fehler beim Einlesen der heruntergeladenen Datei. Prüfen Sie die URL und Parameter, die für den Download verwendet werden.");
               kvm.log("Fehler beim lesen der Datei: ", ex);
@@ -3649,239 +3360,12 @@ export class Layer {
       // kvm.showItem('featurelist');
     });
 
-    $("#layer-functions-button_" + layerGlobalId).on("click", (evt) => {
-      const target = $(evt.target);
-      console.log("click on layer-functions-button von div %o", target.parent().attr("id"), this);
-      target.parent().children().filter(".layer-functions-div").toggle();
-      target.toggleClass("fa-ellipsis-vertical fa-square-xmark");
-    });
-
-    // TODO
-    return;
-    $("#auto_sync_" + layerGlobalId).on("change", function (evt) {
-      var target = $(evt.target);
-      console.log("change on checkbox %o", target.attr("id"));
-      const layer = kvm.getActiveLayer();
-      layer.set("autoSync", target.is(":checked"));
-      layer.saveToStore();
-    });
-
-    // $(".sync-layer-button" + (layerGlobalId > 0 ? "[id='syncLayerButton_" + layerGlobalId + "']" : "")).on("click", (evt) => {
-    // rtr
-    // Daten Synchronisieren
-    document.getElementById("syncLayerButton_" + layerGlobalId).addEventListener("click", (evt) => {
-      // console.log(`sync-layer-button.clicked  (syncLayerButton_${layerGlobalId}`, evt, this);
-      const layer = kvm.getActiveLayer();
-      let target = $(evt.target);
-
-      if (target.hasClass("fa")) {
-        target = target.parent();
-      }
-
-      sperrBildschirm.clear();
-
-      // Sichere Datenbank
-      if (target.hasClass("inactive-button")) {
-        kvm.msg("Keine Internetverbindung! Kann Layer jetzt nicht synchronisieren.");
-      } else {
-        $("#syncLayerIcon_" + layer.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
-        sperrBildschirm.show();
-
-        if (layer.runningSyncVersion == 0) {
-          navigator.notification.confirm(
-            "Daten vom Server holen. Danach können eigene Änderungen synchronisiert werden.",
-            function (buttonIndex) {
-              if (buttonIndex == 1) {
-                // ja
-                layer.requestData();
-              } else {
-                $("#syncLayerIcon_" + layer.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
-                sperrBildschirm.close();
-              }
-            },
-            "Layer mit Server synchronisieren",
-            ["ja", "nein"]
-          );
-        } else {
-          navigator.notification.confirm(
-            "Jetzt lokale Änderungen Daten und Bilder, falls vorhanden, zum Server schicken, Änderungen vom Server holen und lokal einspielen? Wenn Änderungen vom Server kommen wird die lokale Datenbank vorher automatisch gesichert.",
-            async (buttonIndex) => {
-              if (buttonIndex == 1) {
-                $("#syncImageIcon_" + layer.getGlobalId()).toggleClass("fa-upload fa-spinner fa-spin");
-                sperrBildschirm.show();
-                const layers = kvm.getLayersSortedByUpdateOrder();
-                for (let i = 0; i < layers.length; i++) {
-                  const layer = layers[i];
-                  try {
-                    console.info(`Starte Synchronisieren des Layers: "${layer.title}"`);
-                    await layer.syncImages();
-                    console.log(`Bilder des Layers ${layer.title} wurden synchronisiert,`);
-                    // TODO DELTAS
-                    // await layer.syncData();
-                    console.log(`Daten des Layers ${layer.title} wurden synchronisiert,`);
-                  } catch (ex) {
-                    console.error(`Fehler beim Synchronisieren des Layers: "${layer.title}".`, ex);
-                    const fehler = ex.message || JSON.stringify(ex);
-                    navigator.notification.alert(`Fehler beim Synchronisieren des Layers: "${layer.title}". Ursache:  ${fehler}`, () => {}, "Synchronisationsfehler");
-                  }
-                }
-                sperrBildschirm.close();
-                $("#syncLayerIcon_" + layer.getGlobalId()).toggleClass("fa-upload fa-spinner fa-spin");
-              } else {
-                $("#syncLayerIcon_" + layer.getGlobalId()).toggleClass("fa-refresh fa-spinner fa-spin");
-                sperrBildschirm.close();
-              }
-            },
-            "Layer mit Server synchronisieren",
-            ["ja", "nein"]
-          );
-        }
-      }
-    });
-
-    // Bilder Synchronisieren
-    document.getElementById("syncImagesButton_" + layerGlobalId).addEventListener("click", (evt) => {
-      console.log(`syncImagesButton.clicked ${this.getGlobalId()}`);
-      // const layer = kvm.activeLayer;
-      // let target = $(evt.target);
-
-      // if (target.hasClass("fa")) {
-      //     target = target.parent();
-      // }
-      // if ((<HTMLElement>evt.currentTarget).classList.contains("inactive-button")) {
-      //     kvm.msg("Keine Internetverbindung! Kann Bilder jetzt nicht synchronisieren.");
-      // } else {
-      //     navigator.notification.confirm(
-      //         "Bilder mit Server Synchronisieren?",
-      //         function (buttonIndex) {
-      //             if (buttonIndex == 1) {
-      //                 // ja
-      //                 $("#syncImageIcon_" + this.getGlobalId()).toggleClass("fa-upload fa-spinner fa-spin");
-      //                 $("#sperr_div").show();
-      //                 this.syncImages();
-      //             }
-      //         },
-      //         "",
-      //         ["ja", "nein"]
-      //     );
-      // }
-    });
-
-    // Lokale Daten Löschen
-    document.getElementById("clearLayerButton_" + layerGlobalId).addEventListener("click", (evt) => {
-      // var id = (<any>evt.target).value;
-      // const layer = kvm.activeLayer;
-
-      if (this.isEmpty()) {
-        navigator.notification.confirm("Layer ist schon geleert!", function (buttonIndex) {}, "Datenbank", ["OK"]);
-      } else {
-        navigator.notification.confirm(
-          `Alle lokale Daten und nicht hochgeladene Änderungen des Layers "${this.title}" wirklich Löschen?`,
-          async (buttonIndex) => {
-            if (buttonIndex == 1) {
-              // ja
-              $("#clearLayerIcon_" + this.getGlobalId()).toggleClass("fa-ban fa-spinner fa-spin");
-              this.clearData()
-                .catch((reason) => {
-                  Util.showAlert("Fehler bei Löschen der Layerdaten!\nFehlercode: \nMeldung: " + reason.message);
-                  console.error("Fehler clearData", reason);
-                })
-                .finally(() => {
-                  $("#clearLayerIcon_" + this.getGlobalId()).toggleClass("fa-ban fa-spinner fa-spin");
-                });
-            }
-          },
-          "",
-          ["ja", "nein"]
-        );
-      }
-    });
-
-    // $(".reload-layer-button" + (layerGlobalId > 0 ? "[id='reloadLayerButton_" + layerGlobalId + "']" : "")).on("click", (evt) => {
-    document.getElementById("reloadLayerButton_" + layerGlobalId).addEventListener("click", (evt) => {
-      // var id = (<any>evt.target).value;
-      // const layer = kvm.activeLayer;
-      // let target = $(evt.target);
-
-      // if (target.hasClass("fa")) {
-      //     target = target.parent();
-      // }
-
-      if ((<HTMLElement>evt.currentTarget).classList.contains("inactive-button")) {
-        kvm.msg("Keine Internetverbindung! Kann Layer jetzt nicht neu laden.");
-      } else {
-        // const layer = kvm.activeLayer;
-        navigator.notification.confirm(
-          `Die Einstellungen des Layers "${this.title}" neu laden und die Tabelle neu anlegen.`,
-          async (buttonIndex) => {
-            if (buttonIndex == 1) {
-              // ja
-              $("#reloadLayerIcon_" + this.getGlobalId()).toggleClass("fa-rotate fa-spinner fa-spin");
-              console.log("reload layer id: %s", this.get("id"));
-              sperrBildschirm.show("Layer neu laden");
-              try {
-                await kvm.activeStelle.reloadLayer(this.get("id"));
-              } catch (ex) {
-                alert("Fehler beim Einlesen der heruntergeladenen Datei. Prüfen Sie die URL und Parameter, die für den Download verwendet werden.");
-                kvm.log("Fehler beim lesen der Datei: ", ex);
-                console.error(`Fehler`, ex);
-              }
-              sperrBildschirm.close();
-            }
-            if (buttonIndex == 2) {
-              // nein
-              // Do nothing
-            }
-          },
-          "",
-          ["ja", "nein"]
-        );
-      }
-    });
-    console.log("Register event for styleLayerButton with layerId: ", layerGlobalId);
-    /*
-    $("#styleLayerButton_" + layerGlobalId).on("click", function (evt) {
-      console.log("test");
-    });
-    */
-    if (this.hasGeometry) {
-      $(".style-layer-button" + (layerGlobalId > 0 ? "[id='styleLayerButton_" + layerGlobalId + "']" : "")).on("click", function (evt) {
-        const layerGlobalId = evt.target.getAttribute("value") || evt.target.parentElement.getAttribute("value");
-        console.log("click on style-layer-button id: ", layerGlobalId);
-        $("#styleLayerDiv_" + layerGlobalId).toggle();
-      });
-
-      $("#styleLayerDiv_" + layerGlobalId + " input, #styleLayerDiv_" + layerGlobalId + " select").on("change", function (evt) {
-        const globalLayerId = evt.target.parentElement.parentElement.parentElement.getAttribute("value");
-        console.log("Input Feld %s in style-layer-div %s changed", evt.target.getAttribute("name"), "styleLayerDiv_" + globalLayerId);
-        $("#styleLayerOkButton_" + globalLayerId).show();
-      });
-
-      $("#useCustomStyle_" + layerGlobalId).on("change", function (evt) {
-        const globalLayerId = evt.target.parentElement.parentElement.parentElement.getAttribute("value");
-        console.log("#useCustomStyle_" + layerGlobalId + " Checkbox changed");
-        $(".style-layer-setting-div").toggleClass("visible hidden");
-      });
-
-      $("#styleLayerOkButton_" + layerGlobalId).on("click", function (evt) {
-        const globalLayerId = evt.currentTarget.getAttribute("value");
-        console.log("click on style-layer-ok-button id: ", globalLayerId);
-        ["color", "fillcolor", "width", "opacity", "fillOpacity"].forEach(function (formvar) {
-          kvm.getActiveLayer().settings[formvar] = $("#styleLayerDiv_" + globalLayerId + " input[name='" + formvar + "'], #styleLayerDiv_" + globalLayerId + " select[name='" + formvar + "']").val();
-        });
-        kvm.getActiveLayer().settings.useCustomStyle = $("#useCustomStyle_" + globalLayerId).is(":checked");
-        kvm.getActiveLayer().saveToStore();
-        kvm.getActiveLayer().readData();
-        $(evt.currentTarget).hide();
-      });
-    }
-
-    document.getElementById("infoLayerButton_" + layerGlobalId).addEventListener("click", (evt) => {
-      // $(".info-layer-button" + (layerGlobalId > 0 ? "[id='infoLayerButton_" + layerGlobalId + "']" : "")).on("click", function (evt) {
-      // const layerGlobalId = evt.target.getAttribute("value") || evt.target.parentElement.getAttribute("value");
-      console.log("click on info-layer-button id: ", layerGlobalId);
-      $("#infoLayerDiv_" + layerGlobalId).toggle();
-    });
+    // $("#layer-functions-button_" + layerGlobalId).on("click", (evt) => {
+    //   const target = $(evt.target);
+    //   console.log("click on layer-functions-button von div %o", target.parent().attr("id"), this);
+    //   target.parent().children().filter(".layer-functions-div").toggle();
+    //   target.toggleClass("fa-ellipsis-vertical fa-square-xmark");
+    // });
   }
 
   /**
@@ -3891,21 +3375,26 @@ export class Layer {
    * The layer that replace an active layer will also be set active
    * Called from Stelle.reloadLayer for activeLayer and requestLayers to load all layers of stelle
    */
-  removeFromApp() {
-    console.log("remove layer %s (%s)", this.get("title"), this.get("id"));
-    //console.log('Entferne layer div aus layer options list.');
-    $("#layer_" + this.getGlobalId()).remove();
-    //		this.clearData(); Wenn die Tabelle gelöscht wurde, braucht man die Daten nicht mehr löschen.
-    this.isLoaded = false;
-    this.runningSyncVersion = 0;
-    //console.log('Entferne layer aus layer control');
+  // removeFromApp() {
+  //   console.log("remove layer %s (%s)", this.get("title"), this.get("id"));
+  //   //console.log('Entferne layer div aus layer options list.');
+  //   $("#layer_" + this.getGlobalId()).remove();
+  //   //		this.clearData(); Wenn die Tabelle gelöscht wurde, braucht man die Daten nicht mehr löschen.
+  //   this.isLoaded = false;
+  //   this.runningSyncVersion = 0;
+  //   //console.log('Entferne layer aus layer control');
+  //   kvm.controls.layers.removeLayer(this.layerGroup);
+  //   //console.log('Entferne layer von map');
+  //   kvm.map.removeLayer(this.layerGroup);
+  //   //console.log('Lösche activeLayer von kvm layers array');
+  //   kvm.removeLayer(this);
+  //   //console.log('Lösche layer und seine id aus dem store');
+  //   this.removeFromStore();
+  // }
+
+  removeFromMap() {
     kvm.controls.layers.removeLayer(this.layerGroup);
-    //console.log('Entferne layer von map');
     kvm.map.removeLayer(this.layerGroup);
-    //console.log('Lösche activeLayer von kvm layers array');
-    kvm.removeLayer(this);
-    //console.log('Lösche layer und seine id aus dem store');
-    this.removeFromStore();
   }
 
   addActiveFeature() {
@@ -3949,119 +3438,133 @@ export class Layer {
     return div;
   }
 
-  layerSelectionClicked(evt: Event) {
-    // unselect activeLayer
-    // unselect activeFeature
-    console.error(`layerSelectionClicked`);
-    sperrBildschirm.show();
-    window.setTimeout(() => {
-      kvm.map.closePopup();
-      kvm.store.setItem("layerFilter", "");
-      kvm.store.setItem("sortAttribute", "");
-      sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Setze Layer aktiv.`);
-      this.activate();
-      sperrBildschirm.close();
-      // include loading filter, sort, data view, form and readData
-    }, 50);
-  }
+  // layerSelectionClicked(evt: Event) {
+  //   // unselect activeLayer
+  //   // unselect activeFeature
+  //   console.error(`layerSelectionClicked`);
+  //   sperrBildschirm.show();
+  //   window.setTimeout(() => {
+  //     kvm.map.closePopup();
+  //     kvm.store.setItem("layerFilter", "");
+  //     kvm.store.setItem("sortAttribute", "");
+  //     sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Setze Layer aktiv.`);
+  //     kvm.setActiveLayer(this);
+  //     sperrBildschirm.close();
+  //     // include loading filter, sort, data view, form and readData
+  //   }, 50);
+  // }
 
-  getLayerListItem() {
+  getLayerListItemX() {
     console.log(`### getLayerListItem ${this.title}`);
-    const div = Util.createHtmlElement("div", null, "layer-list-div");
-    div.id = `layer_${this.getGlobalId()}`;
-    const radioInput = Util.createHtmlElement("input", div);
+    const dom = Util.createHtmlElement("div", null, "layer-list-div");
+    dom.id = `layer_${this.getGlobalId()}`;
+    const radioInput = Util.createHtmlElement("input", dom);
     radioInput.type = "radio";
     radioInput.addEventListener("change", (evt) => {
-      this.layerSelectionClicked(evt);
+      kvm.setActiveLayer(this);
     });
     (radioInput.name = "activeLayerId"), (radioInput.value = `${this.getGlobalId()}`);
-    const label = Util.createHtmlElement("span", div, "layer-list-element");
+    const label = Util.createHtmlElement("span", dom, "layer-list-element");
     label.innerText = this.get("alias") ? this.get("alias") : this.get("title");
-    const menuBttn = Util.createHtmlElement("i", div, "layer-functions-button fa-regular fa-ellipsis-vertical");
+    const menuBttn = Util.createHtmlElement("i", dom, "layer-functions-button fa-regular fa-ellipsis-vertical");
+
     menuBttn.id = `layer-functions-button_${this.getGlobalId()}`;
-    menuBttn.ariaHidden = "true";
+    if (this.isActive) {
+      menuBttn.ariaHidden = "false";
+      menuBttn.style.display = "";
+    } else {
+      menuBttn.ariaHidden = "true";
+      menuBttn.style.display = "none";
+    }
 
     // div.append(this.createLayerListItemFunction("Daten Synchronisieren", "syncLayer", "sync-layer-button", "fa fa-refresh", (ev) => this.bttnSyncLayerClicked(ev)));
     // if (this.hasDocumentAttribute) {
     //   div.append(this.createLayerListItemFunction("Bilder synchronisieren", "syncImages", "sync-images-button", "fa fa-upload", (ev) => this.bttnSyncImagesLayerClicked(ev)));
     // }
-    div.append(this.createLayerListItemFunction("Lokale Daten löschen", "clearLayer", "clear-layer-button", "fa fa-ban", (ev) => this.bttnClearLayerClicked(ev)));
-    div.append(this.createLayerListItemFunction("Layer neu laden", "reloadLayer", "reload-layer-button", "fa fa-window-restore", (ev) => this.bttnReloadLayerClicked(ev)));
+    dom.append(this.createLayerListItemFunction("Lokale Daten löschen", "clearLayer", "clear-layer-button", "fa fa-ban", (ev) => this.bttnClearLayerClicked(ev)));
+    dom.append(this.createLayerListItemFunction("Layer neu laden", "reloadLayer", "reload-layer-button", "fa fa-window-restore", (ev) => this.bttnReloadLayerClicked(ev)));
 
     if (this.hasGeometry) {
-      div.append(this.createLayerListItemFunction("Layer Style", "styleLayer", "style-layer-button", "fa fa-paint-brush", (ev) => this.bttnStyleLayerClicked(ev)));
+      dom.append(this.createLayerListItemFunction("Layer Style", "styleLayer", "style-layer-button", "fa fa-paint-brush", (ev) => this.bttnStyleLayerClicked(ev)));
     }
 
     const infoPanel = this.getLayerinfoPanel();
     const infoListItem = this.createLayerListItemFunction("Layer-Info", "infoLayer", "info-layer-button", "fa fa-info", (ev) => this.bttnShowLayerInfoClicked(infoPanel, ev));
     infoListItem.append(infoPanel);
-    div.append(infoListItem);
-    return div;
+    dom.append(infoListItem);
+    return {
+      dom: dom,
+      setActiv: (activ: boolean) => {
+        radioInput.checked = activ;
+        menuBttn.style.display = activ ? "" : "none";
+        menuBttn.ariaHidden = activ ? "false" : "true";
+      },
+    };
   }
 
-  getListItem() {
-    // debugger;
-    console.log("getListItem for layerId: ", this.getGlobalId());
-    const customStyleClass = this.get("useCustomStyle") ? "visible" : "hidden";
-    const html = `
-      <div id="layer_${this.getGlobalId()}" class="layer-list-div">
-        <input type="radio" name="activeLayerId" value="${this.getGlobalId()}"/> <span class="layer-list-element">${this.get("alias") ? this.get("alias") : this.get("title")}</span>
-        <i id="layer-functions-button_${this.getGlobalId()}" class="layer-functions-button fa-regular fa-ellipsis-vertical" aria-hidden="true"></i>
-        <div class="layer-functions-div">
-          <button id="syncLayerButton_${this.getGlobalId()}" value="${this.getGlobalId()}" class="settings-button sync-layer-button active-button layer-function-button">
-            <i id="syncLayerIcon_${this.getGlobalId()}" class="fa fa-refresh" aria-hidden="true"></i>
-          </button> Daten Synchronisieren
-          <div class="auto-sync-div"><input id="auto_sync_${this.getGlobalId()}" type="checkbox"${this.get("autoSync") ? " checked" : ""}>&nbsp;Autosync</div>
-        </div>
-        ${
-          this.hasDocumentAttribute
-            ? `
-          <div class="layer-functions-div">
-            <button id="syncImagesButton_${this.getGlobalId()}" value="${this.getGlobalId()}" class="settings-button sync-images-button active-button layer-function-button">
-              <i id="syncImagesIcon_${this.getGlobalId()}" class="fa fa-upload" aria-hidden="true"></i>
-            </button> Bilder synchronisieren
-          </div>`
-            : ""
-        }
-        <div class="layer-functions-div">
-          <button id="clearLayerButton_${this.getGlobalId()}" value="${this.getGlobalId()}" class="settings-button clear-layer-button active-button layer-function-button">
-            <i id="clearLayerIcon_${this.getGlobalId()}" class="fa fa-ban" aria-hidden="true"></i>
-          </button> Lokale Daten löschen
-        </div>
-        <div class="layer-functions-div">
-          <button id="reloadLayerButton_${this.getGlobalId()}" value="${this.getGlobalId()}" class="settings-button reload-layer-button active-button layer-function-button">
-            <i id="reloadLayerIcon_${this.getGlobalId()}" class="fa fa-window-restore" aria-hidden="true"></i>
-          </button> Layer neu laden
-        </div>
-				${
-          this.hasGeometry
-            ? `
-					<div class="layer-functions-div">
-						<button id="styleLayerButton_${this.getGlobalId()}" value="${this.getGlobalId()}" class="settings-button style-layer-button active-button layer-function-button">
-							<i id="styleLayerIcon_${this.getGlobalId()}" class="fa fa-paint-brush" aria-hidden="true"></i>
-						</button> Layer Style
-						<button id="styleLayerOkButton_${this.getGlobalId()}" value="${this.getGlobalId()}" class="settings-button style-layer-ok-button">
-							<i id="styleLayerOkIcon_${this.getGlobalId()}" class="fa fa-check" style="font-size: 24px; color: #00a800" aria-hidden="true"></i>
-						</button>
-						<div id="styleLayerDiv_${this.getGlobalId()}" class="style-layer-div" value="${this.getGlobalId()}" style="display: none">
-							<div id="classesDiv_${this.getGlobalId()}" class="classes-div">
-								${this.getClassStyleItems()}
-							</div>
-						</div>
-					</div>`
-            : ""
-        }
-        <div class="layer-functions-div">\
-          <button id="infoLayerButton_${this.getGlobalId()}" value="${this.getGlobalId()}" class="settings-button info-layer-button active-button layer-function-button">\
-            <i id="infoLayerIcon_${this.getGlobalId()}" class="fa fa-info" aria-hidden="true"></i>\
-          </button> Layerinfo\
-          <div id="infoLayerDiv_${this.getGlobalId()}" class="layer-functions-div info-layer-div" value="${this.getGlobalId()}" style="display: none">\
-            
-          </div>
-        </div>\
-      </div>`;
-    return html;
-  }
+  // getListItem() {
+  //   // debugger;
+  //   console.log("getListItem for layerId: ", this.getGlobalId());
+  //   const customStyleClass = this.get("useCustomStyle") ? "visible" : "hidden";
+  //   const html = `
+  //     <div id="layer_${this.getGlobalId()}" class="layer-list-div">
+  //       <input type="radio" name="activeLayerId" value="${this.getGlobalId()}"/> <span class="layer-list-element">${this.get("alias") ? this.get("alias") : this.get("title")}</span>
+  //       <i id="layer-functions-button_${this.getGlobalId()}" class="layer-functions-button fa-regular fa-ellipsis-vertical" aria-hidden="true"></i>
+  //       <div class="layer-functions-div">
+  //         <button id="syncLayerButton_${this.getGlobalId()}" value="${this.getGlobalId()}" class="settings-button sync-layer-button active-button layer-function-button">
+  //           <i id="syncLayerIcon_${this.getGlobalId()}" class="fa fa-refresh" aria-hidden="true"></i>
+  //         </button> Daten Synchronisieren
+  //         <div class="auto-sync-div"><input id="auto_sync_${this.getGlobalId()}" type="checkbox"${this.get("autoSync") ? " checked" : ""}>&nbsp;Autosync</div>
+  //       </div>
+  //       ${
+  //         this.hasDocumentAttribute
+  //           ? `
+  //         <div class="layer-functions-div">
+  //           <button id="syncImagesButton_${this.getGlobalId()}" value="${this.getGlobalId()}" class="settings-button sync-images-button active-button layer-function-button">
+  //             <i id="syncImagesIcon_${this.getGlobalId()}" class="fa fa-upload" aria-hidden="true"></i>
+  //           </button> Bilder synchronisieren
+  //         </div>`
+  //           : ""
+  //       }
+  //       <div class="layer-functions-div">
+  //         <button id="clearLayerButton_${this.getGlobalId()}" value="${this.getGlobalId()}" class="settings-button clear-layer-button active-button layer-function-button">
+  //           <i id="clearLayerIcon_${this.getGlobalId()}" class="fa fa-ban" aria-hidden="true"></i>
+  //         </button> Lokale Daten löschen
+  //       </div>
+  //       <div class="layer-functions-div">
+  //         <button id="reloadLayerButton_${this.getGlobalId()}" value="${this.getGlobalId()}" class="settings-button reload-layer-button active-button layer-function-button">
+  //           <i id="reloadLayerIcon_${this.getGlobalId()}" class="fa fa-window-restore" aria-hidden="true"></i>
+  //         </button> Layer neu laden
+  //       </div>
+  // 			${
+  //         this.hasGeometry
+  //           ? `
+  // 				<div class="layer-functions-div">
+  // 					<button id="styleLayerButton_${this.getGlobalId()}" value="${this.getGlobalId()}" class="settings-button style-layer-button active-button layer-function-button">
+  // 						<i id="styleLayerIcon_${this.getGlobalId()}" class="fa fa-paint-brush" aria-hidden="true"></i>
+  // 					</button> Layer Style
+  // 					<button id="styleLayerOkButton_${this.getGlobalId()}" value="${this.getGlobalId()}" class="settings-button style-layer-ok-button">
+  // 						<i id="styleLayerOkIcon_${this.getGlobalId()}" class="fa fa-check" style="font-size: 24px; color: #00a800" aria-hidden="true"></i>
+  // 					</button>
+  // 					<div id="styleLayerDiv_${this.getGlobalId()}" class="style-layer-div" value="${this.getGlobalId()}" style="display: none">
+  // 						<div id="classesDiv_${this.getGlobalId()}" class="classes-div">
+  // 							${this.getClassStyleItems()}
+  // 						</div>
+  // 					</div>
+  // 				</div>`
+  //           : ""
+  //       }
+  //       <div class="layer-functions-div">\
+  //         <button id="infoLayerButton_${this.getGlobalId()}" value="${this.getGlobalId()}" class="settings-button info-layer-button active-button layer-function-button">\
+  //           <i id="infoLayerIcon_${this.getGlobalId()}" class="fa fa-info" aria-hidden="true"></i>\
+  //         </button> Layerinfo\
+  //         <div id="infoLayerDiv_${this.getGlobalId()}" class="layer-functions-div info-layer-div" value="${this.getGlobalId()}" style="display: none">\
+
+  //         </div>
+  //       </div>\
+  //     </div>`;
+  //   return html;
+  // }
 
   getLayerinfoPanel() {
     const div = Util.createHtmlElement("div", null, "layer-functions-div info-layer-div");
@@ -4143,7 +3646,7 @@ export class Layer {
   getSyncUrl() {
     console.log(this.get("title") + ": Layer.getSyncUrl");
     var url = this.stelle.get("url"),
-      file = this.stelle.getUrlFile(url);
+      file = Stelle.getUrlFile(url);
 
     url += file + "Stelle_ID=" + this.stelle.get("Stelle_ID") + "&" + "login_name=" + this.stelle.get("login_name") + "&" + "selected_layer_id=" + this.get("id") + "&" + "passwort=" + encodeURIComponent(this.stelle.get("passwort"));
 
@@ -4163,7 +3666,7 @@ export class Layer {
   getDataUrl() {
     console.log(this.get("title") + ": Layer.getDataUrl");
     var url = this.stelle.get("url"),
-      file = this.stelle.getUrlFile(url);
+      file = Stelle.getUrlFile(url);
 
     url += file + "Stelle_ID=" + this.stelle.get("Stelle_ID") + "&" + "login_name=" + this.stelle.get("login_name") + "&" + "selected_layer_id=" + this.get("id") + "&" + "passwort=" + encodeURIComponent(this.stelle.get("passwort"));
 
@@ -4176,7 +3679,7 @@ export class Layer {
   getImgDownloadUrl(image: string) {
     console.log("Layer.getImgDownloadUrl for image: %s", image);
     let url = this.stelle.settings.url;
-    const file = this.stelle.getUrlFile(url);
+    const file = Stelle.getUrlFile(url);
 
     url += file + "Stelle_ID=" + this.stelle.get("Stelle_ID") + "&" + "login_name=" + this.stelle.get("login_name") + "&" + "passwort=" + encodeURIComponent(this.stelle.get("passwort")) + "&" + "go=mobile_download_image" + "&" + "image=" + image;
     return url;
@@ -4254,18 +3757,17 @@ export class Layer {
    * - Wenn dieser Layer gesynct wurde und aktiv ist
    */
   activate() {
-    console.error(`activate ${this.title}`);
-    console.log("Setze Layer " + this.get("title") + " (" + (this.get("alias") ? this.get("alias") : "kein Aliasname") + ") aktiv.");
+    // console.log(`activate ${this.title}`);
+    console.error("Setze Layer " + this.get("title") + " (" + (this.get("alias") ? this.get("alias") : "kein Aliasname") + ") aktiv.");
     try {
-      if (kvm.getActiveLayer()) {
-        kvm.getActiveLayer().deactivate();
-      }
+      // if (kvm.getActiveLayer()) {
+      //   kvm.getActiveLayer().deactivate();
+      // }
       this.isActive = true;
-      kvm.addLayer(this);
-      kvm.setActiveLayer(this);
-      kvm.store.setItem("activeLayerId", this.get("id"));
+      // kvm.addLayer(this);
+      // kvm.setActiveLayer(this);
 
-      $("#featurelistHeading").html(this.get("alias") ? this.get("alias") : this.get("title"));
+      // $("#featurelistHeading").html(this.get("alias") ? this.get("alias") : this.get("title"));
 
       // Create layerFilter
       try {
@@ -4287,47 +3789,47 @@ export class Layer {
       }
 
       // Set sortAttribute
-      sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Setze Sortieroptionen.`);
-      $('#anzeigeSortSelect option[value!=""]').remove();
-      $.each(this.attributes, function (key, value) {
-        $("#anzeigeSortSelect").append($('<option value="' + value.settings.name + '">' + value.settings.alias + "</option>"));
-      });
+      // sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Setze Sortieroptionen.`);
+      // $('#anzeigeSortSelect option[value!=""]').remove();
+      // $.each(this.attributes, function (key, value) {
+      //   $("#anzeigeSortSelect").append($('<option value="' + value.settings.name + '">' + value.settings.alias + "</option>"));
+      // });
 
       // ToDo
       // sortAttribute für jeden Layer einzeln im Store speichern und auch beim Löschen
       // und neu Laden des Layers löschen bzw. reseten
-      var sortAttribute = kvm.store.getItem("sortAttribute");
-      if (sortAttribute) {
-        $("#anzeigeSortSelect").val(sortAttribute);
-      }
+      // var sortAttribute = kvm.store.getItem("sortAttribute");
+      // if (sortAttribute) {
+      //   $("#anzeigeSortSelect").val(sortAttribute);
+      // }
 
       // Set dataView and if editable featureForm
-      $("#formular").html("");
-      if (this.hasEditPrivilege) {
-        try {
-          this.createFeatureForm();
-        } catch ({ name, message }) {
-          kvm.msg("Fehler beim Erzeugen des Sachdatenformulares im Layer id: " + this.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
-        }
-      }
-      try {
-        this.createDataView();
-      } catch ({ name, message }) {
-        kvm.msg("Fehler beim Erzeugen der Datenansicht im Layer id: " + this.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
-      }
+      // $("#formular").html("");
+      // if (this.hasEditPrivilege) {
+      //   try {
+      //     this.createFeatureForm();
+      //   } catch ({ name, message }) {
+      //     kvm.msg("Fehler beim Erzeugen des Sachdatenformulares im Layer id: " + this.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
+      //   }
+      // }
+      // try {
+      //   this.createDataView();
+      // } catch ({ name, message }) {
+      //   kvm.msg("Fehler beim Erzeugen der Datenansicht im Layer id: " + this.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
+      // }
 
-      sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Aktiviere Layer in Layerliste.`);
-      (<any>$("input[name=activeLayerId]")).checked = false;
-      (<any>$("input[value=" + this.getGlobalId() + "]")[0]).checked = true;
-      $(".layer-functions-button, .layer-functions-div").hide();
-      $("#layer_" + kvm.getActiveLayer().getGlobalId() + " > .layer-functions-button").show();
-      $("#layer_" + kvm.getActiveLayer().getGlobalId() + " > .layer-functions-button").removeClass("fa-ellipsis-vertical fa-square-xmark");
-      $("#layer_" + kvm.getActiveLayer().getGlobalId() + " > .layer-functions-button").addClass("fa-ellipsis-vertical");
-      if (this.hasEditPrivilege) {
-        $("#newFeatureButton").show();
-      } else {
-        $("#newFeatureButton").hide();
-      }
+      // sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Aktiviere Layer in Layerliste.`);
+      // (<any>$("input[name=activeLayerId]")).checked = false;
+      // (<any>$("input[value=" + this.getGlobalId() + "]")[0]).checked = true;
+      // $(".layer-functions-button, .layer-functions-div").hide();
+      // $("#layer_" + kvm.getActiveLayer().getGlobalId() + " > .layer-functions-button").show();
+      // $("#layer_" + kvm.getActiveLayer().getGlobalId() + " > .layer-functions-button").removeClass("fa-ellipsis-vertical fa-square-xmark");
+      // $("#layer_" + kvm.getActiveLayer().getGlobalId() + " > .layer-functions-button").addClass("fa-ellipsis-vertical");
+      // if (this.hasEditPrivilege) {
+      //   $("#newFeatureButton").show();
+      // } else {
+      //   $("#newFeatureButton").hide();
+      // }
 
       // ToDo: Die Kommentare überarbeiten.
       // Load Features from Database, recreate FeatureList and draw in map
@@ -4335,7 +3837,7 @@ export class Layer {
       // nach sync wird auch erst readData aufgerufen und wenn layer
       // activ ist isActive, hier also kein readData mehr
       //this.readData();
-      this.createFeatureList();
+      // this.createFeatureList();
 
       // Unselect all overlayLayers in Layer control and select this overlaylayer
       // Style layer in control to show that the layer is editable
@@ -4363,9 +3865,9 @@ export class Layer {
           }
         });
       }
-    } catch ({ name, message }) {
-      console.log("Fehler in activate: %s, %s", name, message);
-      kvm.msg("Fehler beim Aktivieren des Layers id: " + this.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
+    } catch (ex) {
+      console.error("Fehler in activate", ex);
+      kvm.msg("Fehler beim Aktivieren des Layers id: " + this.getGlobalId() + "! Fehlertyp: " + ex.name + " Fehlermeldung: " + ex.message);
     }
   }
 
@@ -4381,10 +3883,10 @@ export class Layer {
     if (this.isActive) {
       this.isActive = false;
       // TODO
-      kvm.addLayer(this);
-      kvm.setActiveLayer(null);
-      kvm.store.removeItem("activeLayerId");
-      $("#searchFeatureField").val("");
+      // kvm.addLayer(this);
+      // kvm.setActiveLayer(null);
+      // kvm.store.removeItem("activeLayerId");
+      // $("#searchFeatureField").val("");
     }
   }
 
@@ -4399,7 +3901,7 @@ export class Layer {
    * @param feature
    * @param zoom
    */
-  activateFeature(feature, zoom = true) {
+  activateFeature(feature: Feature, zoom = true) {
     // console.log(
     // 	"Activate Feature id: %s in Layer %s globalLayerId: %s, in LeafletLayer id: %s as activeFeature.",
     // 	feature.id,
@@ -4407,8 +3909,10 @@ export class Layer {
     // 	feature.globalLayerId,
     // 	feature.layerId
     // );
-    this.activeFeature = feature.activate(zoom);
-    this.loadFeatureToView(feature, { editable: false });
+    console.error("activate Feature");
+    this.setActiveFeature(feature.activate(zoom));
+    // RTR
+    // this.loadFeatureToView(feature, { editable: false });
   }
 
   /**
@@ -4424,7 +3928,7 @@ export class Layer {
       // 	this.activeFeature.layerId
       // );
       this.activeFeature.deactivate();
-      this.activeFeature = null;
+      this.setActiveFeature(null);
     }
   }
 

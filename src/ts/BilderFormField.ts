@@ -1,10 +1,11 @@
 /// <reference types="cordova-plugin-camera"/>
 /// <reference types="cordova-plugin-file-opener2"/>
 
-import { getWebviewUrl, kvm } from "./app";
+import { kvm } from "./app";
 import { AttributeSetting } from "./Attribute";
 import { Field } from "./Field";
-import { fileExists } from "./Util";
+import { fileExists, getWebviewUrl } from "./Util";
+import { createHtmlElement } from "./Util";
 
 export class BilderFormField implements Field {
   settings: AttributeSetting;
@@ -69,9 +70,7 @@ export class BilderFormField implements Field {
       console.log("images: %s", JSON.stringify(images));
       for (let i = 0; i < images.length; i++) {
         const remoteFile = kvm.removeQuotas(images[i]);
-        const localFile = kvm.removeOriginalName(
-          kvm.serverToLocalPath(remoteFile)
-        );
+        const localFile = kvm.removeOriginalName(kvm.serverToLocalPath(remoteFile));
         console.log("images[" + i + "]: %s", remoteFile);
         window.resolveLocalFileSystemURL(
           localFile,
@@ -87,7 +86,7 @@ export class BilderFormField implements Field {
             kvm.log("Datei " + localFile + " existiert nicht!", 2);
             this.addImage("img/no_image.png", remoteFile);
             if (navigator.onLine) {
-              kvm.activeLayer.downloadImage(localFile, remoteFile);
+              kvm.getActiveLayer().downloadImage(localFile, remoteFile);
             }
           }
         );
@@ -115,24 +114,10 @@ export class BilderFormField implements Field {
   async addImage(nativeURL: string, name = "") {
     // console.log("BilderFormField.addimage", nativeURL, name);
     name = name == "" ? nativeURL : name;
-    console.log(
-      "BilderFormField: Add Image with src: %s and name: %s",
-      nativeURL,
-      name
-    );
+    console.log("BilderFormField: Add Image with src: %s and name: %s", nativeURL, name);
     const webviewUrl = await getWebviewUrl(nativeURL);
     // const url = await getFileUrl(src);
-    const imgDiv = $(
-      '<div class="img" src="' +
-        webviewUrl +
-        '" style="background-image: url(' +
-        webviewUrl +
-        ');" field_id="' +
-        this.settings.index +
-        '"name="' +
-        name +
-        '"></div>'
-    );
+    const imgDiv = $('<div class="img" src="' + webviewUrl + '" style="background-image: url(' + webviewUrl + ');" field_id="' + this.settings.index + '"name="' + name + '"></div>');
     /*  ToDo: Ein Kommentarfeld einfügen. Realisieren über Datentyp, der dann aber auch das Datum des Bildes beinhaltet.
     img_div.append($('<br>'));
     img_div.append($('<input type="text"\ name="' + src + '"/>'));
@@ -155,12 +140,9 @@ export class BilderFormField implements Field {
               if (buttonIndex == 1) {
                 // ja
                 const remoteFile = target.attr("name");
-                const localFile =
-                  kvm.activeLayer.attributes[
-                    fieldId
-                  ].formField.serverToLocalPath(remoteFile);
+                const localFile = kvm.getActiveLayer().attributes[fieldId].formField.serverToLocalPath(remoteFile);
 
-                kvm.activeLayer.downloadImage(localFile, remoteFile);
+                kvm.getActiveLayer().downloadImage(localFile, remoteFile);
               }
               if (buttonIndex == 2) {
                 // nein
@@ -171,21 +153,13 @@ export class BilderFormField implements Field {
             ["ja", "nein"]
           );
         } else {
-          kvm.msg(
-            "Kein Internet! Bild kann gerade nicht heruntergeladen werden.",
-            "Bilder Download"
-          );
+          kvm.msg("Kein Internet! Bild kann gerade nicht heruntergeladen werden.", "Bilder Download");
         }
       } else {
         kvm.log("Versuche das Bild zu öffnen: " + src, 4);
         cordova.plugins.fileOpener2.open(nativeURL, "image/jpeg", {
           error: function (e) {
-            alert(
-              "Fehler beim laden der Datei: " +
-                e.message +
-                " Status: " +
-                e.status
-            );
+            alert("Fehler beim laden der Datei: " + e.message + " Status: " + e.status);
           },
           success: function () {
             kvm.log("Datei " + src + " erfolgreich geöffnet.", 4);
@@ -194,7 +168,7 @@ export class BilderFormField implements Field {
               function (buttonIndex) {
                 if (buttonIndex == 1) {
                   // ja
-                  const field = kvm.activeLayer.attributes[fieldId].formField;
+                  const field = kvm.getActiveLayer().attributes[fieldId].formField;
                   field.dropImage(target);
                 }
                 if (buttonIndex == 2) {
@@ -214,10 +188,7 @@ export class BilderFormField implements Field {
   addImgNameToVal(newImg) {
     // console.log("addImgNameToVal");
     let val = this.getValue();
-    val =
-      val == null
-        ? kvm.addBraces(newImg)
-        : kvm.addBraces(kvm.removeBrackes(val) + "," + newImg);
+    val = val == null ? kvm.addBraces(newImg) : kvm.addBraces(kvm.removeBrackes(val) + "," + newImg);
     this.element.val(val);
     this.element.trigger("change");
     return val;
@@ -252,28 +223,17 @@ export class BilderFormField implements Field {
 
   bindEvents() {
     //console.log('BildFormField.bindEvents');
-    $("#featureFormular input[id=" + this.settings.index + "]").on(
-      "change",
-      function () {
-        // console.log('event on saveFeatureButton');
-        if (!$("#saveFeatureButton").hasClass("active-button")) {
-          $("#saveFeatureButton").toggleClass("active-button inactive-button");
-        }
+    $("#featureFormular input[id=" + this.settings.index + "]").on("change", function () {
+      // console.log('event on saveFeatureButton');
+      if (!$("#saveFeatureButton").hasClass("active-button")) {
+        $("#saveFeatureButton").toggleClass("active-button inactive-button");
       }
-    );
+    });
 
     if (this.settings.privilege === "1") {
-      $(`#takePictureButton_${this.settings.index}`).on(
-        "click",
-        { context: this },
-        (ev) => this.takePicture(ev)
-      );
+      $(`#takePictureButton_${this.settings.index}`).on("click", { context: this }, (ev) => this.takePicture(ev));
     }
-    $(`#loadPictureFromPhotolibrary_${this.settings.index}`).on(
-      "click",
-      { context: this },
-      (ev) => this.loadPictureFromPhotolibrary(ev)
-    );
+    $(`#loadPictureFromPhotolibrary_${this.settings.index}`).on("click", { context: this }, (ev) => this.loadPictureFromPhotolibrary(ev));
     /*
     $('#selectPictureButton_1').bind(
       'click',
@@ -281,11 +241,7 @@ export class BilderFormField implements Field {
       this.selectPicture,
     );
 */
-    $("#dropAllPictureButton_" + this.settings.index).on(
-      "click",
-      { context: this },
-      (ev) => this.dropAllPictures(ev)
-    );
+    $("#dropAllPictureButton_" + this.settings.index).on("click", { context: this }, (ev) => this.dropAllPictures(ev));
   }
 
   dropAllPictures(evt: JQuery.ClickEvent) {
@@ -322,16 +278,12 @@ export class BilderFormField implements Field {
 
         if (kvm.hasFilePath(fileURL, kvm.config.localImgPath)) {
           this.addImgNameToVal(kvm.localToServerPath(fileURL));
-          getWebviewUrl(fileURL).then((webviewUrl) =>
-            this.addImage(webviewUrl)
-          );
+          getWebviewUrl(fileURL).then((webviewUrl) => this.addImage(webviewUrl));
         } else {
           this.moveFile(fileURL, kvm.config.localImgPath);
         }
 
-        $("#featureFormular input[name=bilder_updated_at]")
-          .val(kvm.now("T", ""))
-          .show();
+        $("#featureFormular input[name=bilder_updated_at]").val(kvm.now("T", "")).show();
       },
       (message) => {
         kvm.msg("Keine Aufnahme gemacht! " + message);
@@ -339,9 +291,7 @@ export class BilderFormField implements Field {
       {
         // TODO
         quality: <number>$("#cameraOptionsQualitySlider").val(),
-        correctOrientation: $("#cameraOptionsCorrectOrientation").is(
-          ":checked"
-        ),
+        correctOrientation: $("#cameraOptionsCorrectOrientation").is(":checked"),
         allowEdit: $("#cameraOptionsAllowEdit").is(":checked"),
         sourceType: Camera.PictureSourceType.CAMERA,
         destinationType: Camera.DestinationType.FILE_URI,
@@ -366,16 +316,12 @@ export class BilderFormField implements Field {
 
           if (kvm.hasFilePath(ffileURL, kvm.config.localImgPath)) {
             this.addImgNameToVal(kvm.localToServerPath(ffileURL));
-            getWebviewUrl(ffileURL).then((webviewUrl) =>
-              this.addImage(webviewUrl)
-            );
+            getWebviewUrl(ffileURL).then((webviewUrl) => this.addImage(webviewUrl));
           } else {
             this.moveFile(ffileURL, kvm.config.localImgPath);
           }
 
-          $("#featureFormular input[name=bilder_updated_at]")
-            .val(kvm.now("T", ""))
-            .show();
+          $("#featureFormular input[name=bilder_updated_at]").val(kvm.now("T", "")).show();
         });
       },
       (message) => {
@@ -446,12 +392,7 @@ export class BilderFormField implements Field {
   getLocalImgPath(imageData) {
     // console.log("getLocalImgPath", imageData);
     kvm.log("getLocalImgPath for imageData: " + imageData);
-    const result =
-      "file:///storage/" +
-      imageData
-        .split("file:///storage/")[1]
-        .split("/Android/data/de.gdiservice.kvmobile/files/")[0] +
-      "/Android/data/de.gdiservice.kvmobile/files/";
+    const result = "file:///storage/" + imageData.split("file:///storage/")[1].split("/Android/data/de.gdiservice.kvmobile/files/")[0] + "/Android/data/de.gdiservice.kvmobile/files/";
     kvm.log("getLocalImgPath returning: " + result);
   }
 }

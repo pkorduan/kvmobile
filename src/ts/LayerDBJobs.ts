@@ -145,7 +145,7 @@ export async function runUpdate(layer: Layer, delta: { type: string; change: str
 
   return new Promise<SQLitePlugin.Results>(async (resolve, reject) => {
     try {
-      const rsBackupDS = await backupDataset(layer);
+      //      const rsBackupDS = await backupDataset(layer);
       const sql = delta.delta + " AND endet IS NULL";
       const rsUpdate = await executeSQL(kvm.db, sql);
       await writeDelta(layer, delta);

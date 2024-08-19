@@ -1,7 +1,7 @@
 import { AttributeSetting, OptionsAttributtes } from "./Attribute";
 import { Field } from "./Field";
 import { kvm } from "./app";
-import { createHtmlElement } from "./app";
+import { createHtmlElement } from "./Util";
 
 /*
  * create a select form field in the structure
@@ -282,9 +282,9 @@ export class SelectAutoFormField implements Field {
 
   updateRequiredBy() {
     if (this.settings.required_by) {
-      const required_by_idx = kvm.activeLayer.attribute_index[this.settings.required_by];
+      const required_by_idx = kvm.getActiveLayer().attribute_index[this.settings.required_by];
       console.log("Select Feld %s hat abhängiges Auswahlfeld %s", this.settings.name, this.settings.required_by);
-      (<any>kvm.activeLayer.attributes[required_by_idx].formField).filter_by_required(this.settings.name, this.getValue());
+      (<any>kvm.getActiveLayer().attributes[required_by_idx].formField).filter_by_required(this.settings.name, this.getValue());
     }
   }
 
