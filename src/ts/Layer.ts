@@ -696,7 +696,8 @@ export class Layer {
     const layer = this;
 
     return new Promise<void>((resolve, reject) => {
-      kvm.log("Erzeuge Tabelle mit sql: " + sql, 3);
+      // kvm.log("Erzeuge Tabelle mit sql: " + sql, 3);
+      console.log("Erzeuge Tabelle mit sql: " + sql);
       Util.executeSQL(kvm.db, sql)
         .then(() => {
           kvm.log("Tabelle " + layer.getSqliteTableName() + " erfolgreich angelegt.", 3);
@@ -2275,11 +2276,11 @@ export class Layer {
    * Legt ein neues Feature Objekt ohne Geometry an und
    * ordnet diese activeFeature zu
    */
-  newFeature() {
+  newFeature(copyData: { [id: string]: any } = {}) {
     console.log("Layer.newFeature");
-
     this.deactivateFeature();
     const feature = new Feature(this.getNewData(), this, true);
+    feature.setCopyData(copyData);
     this.activateFeature(feature, true);
     kvm.log(`Neues Feature mit id: ${this.activeFeature.id} erzeugt.`);
   }
@@ -2863,7 +2864,8 @@ export class Layer {
     }
     if (kvm.config.newAfterCreate) {
       console.log("option newAfterCreate is on");
-      this.newFeature();
+      this.newFeature(rs.rows.item(0));
+      this.editFeature(this.activeFeature.id);
     } else {
       this.loadFeatureToView(this.activeFeature);
       kvm.showNextItem(kvm.config.viewAfterCreate, this);

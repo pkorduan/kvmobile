@@ -236,7 +236,7 @@ export class Stelle {
 
   finishLayerReading(layer: Layer | MapLibreLayer) {
     // console.log("finishLayerReading: readAllLayers= %s, numLayersRead=%s, numLayers=%s", this.readAllLayers, this.numLayersRead, this.numLayers);
-    console.error(`finishLayerReading ${layer.title}`);
+    // console.log(`finishLayerReading ${layer.title}`);
     if (this.readAllLayers) {
       if (this.numLayersRead < this.numLayers - 1) {
         this.numLayersRead += 1;
@@ -266,7 +266,7 @@ export class Stelle {
       // kvm.closeSperrDiv();
     }
     // console.log("activeLayer after finishLayerReading: ", kvm.activeLayer ? kvm.activeLayer.get("id") : "keiner aktiv");
-    console.error(`finishLayerReading ${layer.title} done`);
+    // console.log(`finishLayerReading ${layer.title} done`);
   }
 
   /*
