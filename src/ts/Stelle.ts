@@ -540,7 +540,7 @@ export class Stelle {
       $("#requestLayersButton").hide();
       $("#featurelistHeading").html("Noch kein Layer ausgewählt");
       $("#featurelistBody").html('Wählen Sie unter Einstellungen in der Gruppe "Layer" einen Layer aus. Öffnen Sie dann das Optionen Menü und wählen die Funktion "Daten synchronisieren"!');
-      $("#showSearch").hide();
+      // $("#showSearch").hide();
       // hier nicht schließen, sonden am Ende von requestData kvm.closeSperrDiv();
     } else {
       kvm.log("Fehlerausgabe von parseLayerResult!", 4);
