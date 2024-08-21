@@ -276,11 +276,11 @@ export class BilderFormField implements Field {
       (fileURL) => {
         kvm.log("this.addImage(" + fileURL + ");", 4);
 
-        if (kvm.hasFilePath(fileURL, kvm.config.localImgPath)) {
+        if (kvm.hasFilePath(fileURL, kvm.getConfigurationOption("localImgPath"))) {
           this.addImgNameToVal(kvm.localToServerPath(fileURL));
           getWebviewUrl(fileURL).then((webviewUrl) => this.addImage(webviewUrl));
         } else {
-          this.moveFile(fileURL, kvm.config.localImgPath);
+          this.moveFile(fileURL, kvm.getConfigurationOption("localImgPath"));
         }
 
         $("#featureFormular input[name=bilder_updated_at]").val(kvm.now("T", "")).show();
@@ -314,11 +314,11 @@ export class BilderFormField implements Field {
         fileExists(fileURL).then((exists) => {
           console.log("File 1" + ffileURL + "  exist => " + exists);
 
-          if (kvm.hasFilePath(ffileURL, kvm.config.localImgPath)) {
+          if (kvm.hasFilePath(ffileURL, kvm.getConfigurationOption("localImgPath"))) {
             this.addImgNameToVal(kvm.localToServerPath(ffileURL));
             getWebviewUrl(ffileURL).then((webviewUrl) => this.addImage(webviewUrl));
           } else {
-            this.moveFile(ffileURL, kvm.config.localImgPath);
+            this.moveFile(ffileURL, kvm.getConfigurationOption("localImgPath"));
           }
 
           $("#featureFormular input[name=bilder_updated_at]").val(kvm.now("T", "")).show();

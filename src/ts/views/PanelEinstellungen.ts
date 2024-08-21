@@ -831,9 +831,33 @@ export class Sortierung extends PanelEinstellungen {
 export class ColorSection extends PanelEinstellungen {
   colorSelectorDiv: HTMLElement;
 
+  fontSizeProzent: HTMLElement;
+  fontSizeDefaultButton: HTMLButtonElement;
+  defaultFontSize: number;
+
   constructor() {
     super("h2_farben");
+
+    this.defaultFontSize = parseFloat(kvm.getDefaultConfigurationOption("fontSize"));
+
+    const fontSize = kvm.getConfigurationOption("fontSize");
+    const sizePixel = parseFloat(fontSize || "24px");
+    const sizeProzent = Math.round((sizePixel / this.defaultFontSize) * 100);
+
     const colorSelectorDiv = (this.colorSelectorDiv = <HTMLElement>document.getElementById("colorSelectorDiv"));
+
+    this.fontSizeProzent = <HTMLElement>document.getElementById("fontSizeProzent");
+    this.fontSizeProzent.innerHTML = `${sizeProzent} %`;
+
+    const fontSizeUpButton = <HTMLButtonElement>document.getElementById("fontSizeUpButton");
+    fontSizeUpButton.addEventListener("click", () => this.changeFontSize("up"));
+
+    const fontSizeDownButton = <HTMLButtonElement>document.getElementById("fontSizeDownButton");
+    fontSizeDownButton.addEventListener("click", () => this.changeFontSize("down"));
+
+    const fontSizeDefaultButton = (this.fontSizeDefaultButton = <HTMLButtonElement>document.getElementById("fontSizeDefaultButton"));
+    fontSizeDefaultButton.addEventListener("click", () => this.changeFontSize("default"));
+    fontSizeDefaultButton.style.display = sizeProzent == 100 ? "none" : "inline";
 
     const markerStyles = kvm.getMarkerStyles();
     Object.values(markerStyles).forEach((style: any, i: number) => {
@@ -853,6 +877,34 @@ export class ColorSection extends PanelEinstellungen {
         kvm.updateMarkerStyle(idx, input.value);
       });
     });
+  }
+
+  private changeFontSize(mode: "up" | "down" | "default") {
+    let sizePixel: number;
+    let sizeProzent: number;
+
+    if (mode === "default") {
+      sizePixel = this.defaultFontSize;
+      sizeProzent = 100;
+      this.fontSizeDefaultButton.style.display = "none";
+    } else {
+      const step5Prozent: number = (Math.round((this.defaultFontSize / 100) * 5 * 10) / 10) * (mode === "up" ? 1 : -1);
+      sizePixel = parseFloat(document.body.style.fontSize) + step5Prozent;
+      sizeProzent = Math.round((sizePixel / this.defaultFontSize) * 100);
+      if (sizeProzent < 30) {
+        kvm.msg("Kleiner geht nicht!", "Einstellung Textgröße");
+        return;
+      }
+      if (sizeProzent > 150) {
+        kvm.msg("Größer geht nicht!", "Einstellung Textgröße");
+        return;
+      }
+    }
+    const fontSize: string = `${sizePixel}px`;
+    document.body.style.fontSize = fontSize;
+    this.fontSizeProzent.innerHTML = `${sizeProzent} %`;
+    this.fontSizeDefaultButton.style.display = sizeProzent == 100 ? "none" : "";
+    kvm.setConfigurationOption("fontSize", fontSize);
   }
 }
 
@@ -1008,7 +1060,7 @@ export class OfflineKarten extends PanelEinstellungen {
   constructor() {
     super("h2_kartenverwaltung");
     console.log("initLoadOfflineMapsDiv");
-    const offlineLayers = kvm.config.backgroundLayerSettings.filter((setting) => {
+    const offlineLayers = kvm.getConfigurationOption("backgroundLayerSettings").filter((setting) => {
       return setting.online === false;
     });
     console.log("offlineLayers in initLoadOfflineMapsDiv: %o", offlineLayers);
@@ -1059,13 +1111,13 @@ export class HintergrundLayer extends PanelEinstellungen {
     const loadBackgroundLayerButton = document.getElementById("loadBackgroundLayerButton");
     // TODO
     resetBackgroundLayerSettingsButton.addEventListener("click", () => {
-      kvm.config.backgroundLayerSettings.forEach((l, i) => {
+      kvm.getConfigurationOption("backgroundLayerSettings").forEach((l, i) => {
         $("#backgroundLayerURL_" + i).val(l.url);
         if (l.params.layers) {
           $("#backgroundLayerLayer_" + i).val(l.params.layers);
         }
       });
-      kvm.saveBackgroundLayerSettings(kvm.config.backgroundLayerSettings);
+      kvm.saveBackgroundLayerSettings(kvm.getConfigurationOption("backgroundLayerSettings"));
       kvm.msg("Einstellung zu Hintergrundlayern aus config Datei erfolgreich wiederhergestellt.");
     });
 
@@ -1259,7 +1311,7 @@ export class Database extends PanelEinstellungen {
     const saveDatabaseButton = <HTMLButtonElement>document.getElementById("saveDatabaseButton");
     saveDatabaseButton.addEventListener("click", () => {
       navigator.notification.prompt(
-        "Geben Sie einen Namen für die Sicherungsdatei an. Die Datenbank wird im Internen Speicher im Verzeichnis " + (kvm.store.getItem("localBackupPath") || kvm.config.localBackupPath) + ' mit der Dateiendung .db gespeichert. Ohne Eingabe wird der Name "Sicherung_" + aktuellem Zeitstempel + ".db" vergeben.',
+        "Geben Sie einen Namen für die Sicherungsdatei an. Die Datenbank wird im Internen Speicher im Verzeichnis " + kvm.getConfigurationOption("localBackupPath") + ' mit der Dateiendung .db gespeichert. Ohne Eingabe wird der Name "Sicherung_" + aktuellem Zeitstempel + ".db" vergeben.',
         function (results) {
           if (results.buttonIndex === 1) {
             kvm.backupDatabase(results.input1, "Datenbank erfolgreich gesichert.");
@@ -1280,7 +1332,7 @@ export class Database extends PanelEinstellungen {
         `Sollen die Bilddaten nach ${destDir} gesichert werden? Gleichnamige Dateien im Zielverzeichnis werden überschrieben!`,
         (buttonIndex) => {
           if (buttonIndex == 1) {
-            FileUtils.copyFiles(kvm.config.localImgPath, destDir);
+            FileUtils.copyFiles(kvm.getConfigurationOption("localImgPath"), destDir);
           }
           if (buttonIndex == 2) {
             // nein

@@ -1058,7 +1058,7 @@ export class Layer extends PropertyChangeSupport {
     kvm.log("Bild " + img + " wird hochgeladen.", 3);
     const icon = $("#syncImagesIcon_" + this.getGlobalId());
     const ft = new FileTransfer();
-    const fileURL = "file://" + kvm.config.localImgPath + img.substring(img.lastIndexOf("/") + 1);
+    const fileURL = "file://" + kvm.getConfigurationOption("localImgPath") + img.substring(img.lastIndexOf("/") + 1);
     const url = this.stelle.get("url");
     const file = Stelle.getUrlFile(url);
     const server = url + file;
@@ -2488,12 +2488,12 @@ export class Layer extends PropertyChangeSupport {
     if (this.hasGeometry) {
       this.saveGeometry(this.activeFeature);
     }
-    if (kvm.config.newAfterCreate) {
+    if (kvm.getConfigurationOption("newAfterCreate")) {
       console.log("option newAfterCreate is on");
       this.newFeature();
     } else {
       this.loadFeatureToView(this.activeFeature);
-      kvm.showNextItem(kvm.config.viewAfterCreate, this);
+      kvm.showNextItem(kvm.getConfigurationOption("viewAfterCreate"), this);
     }
     // kvm.closeSperrDiv(`${this.title}: Datensatz gespeichert.`);
     sperrBildschirm.close();
@@ -2639,7 +2639,7 @@ export class Layer extends PropertyChangeSupport {
         this.saveGeometry(this.activeFeature);
       }
       this.loadFeatureToView(this.activeFeature, { editable: false });
-      kvm.showNextItem(kvm.config.viewAfterUpdate, this);
+      kvm.showNextItem(kvm.getConfigurationOption("viewAfterUpdate"), this);
 
       $(".popup-aendern-link").show();
       $("#saveFeatureButton").toggleClass("active-button inactive-button");
@@ -2751,7 +2751,7 @@ export class Layer extends PropertyChangeSupport {
       //console.log('Wechsel die Ansicht zur Featurelist.');
       kvm.showItem(!$("#map").is(":visible") ? "featurelist" : "map");
       //console.log('Scroll die FeatureListe nach ganz oben');
-      kvm.showNextItem(kvm.config.viewAfterDelete, this);
+      kvm.showNextItem(kvm.getConfigurationOption("viewAfterDelete"), this);
     }
 
     //console.log('Blende Sperrdiv aus');

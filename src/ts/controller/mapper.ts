@@ -164,7 +164,7 @@ export const Mapper = {
     this.watchId = navigator.geolocation.watchPosition((location) => {
       const latlng = L.latLng(location.coords.latitude, location.coords.longitude);
       //console.log("gps Location: %s", latlng.toString());
-      if (this.lastLatlng.distanceTo(latlng) > (kvm.config.minTrackDistance ? kvm.config.minTrackDistance : 5)) {
+      if (this.lastLatlng.distanceTo(latlng) > (kvm.getConfigurationOption("minTrackDistance") ? kvm.getConfigurationOption("minTrackDistance") : 5)) {
         //console.log("Add Point to Line at Location: %s", latlng.toString());
         kvm.map.flyTo(latlng);
         kvm.getActiveLayer().activeFeature.editableLayer.setLatLng(latlng);
