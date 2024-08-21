@@ -329,7 +329,7 @@ export class Stelle {
 
   finishLayerReading(layer: Layer | MapLibreLayer) {
     // console.log("finishLayerReading: readAllLayers= %s, numLayersRead=%s, numLayers=%s", this.readAllLayers, this.numLayersRead, this.numLayers);
-    console.error(`finishLayerReading ${layer.title}`);
+    // console.log(`finishLayerReading ${layer.title}`);
     if (this.readAllLayers) {
       if (this.numLayersRead < this.numLayers - 1) {
         this.numLayersRead += 1;
@@ -359,7 +359,7 @@ export class Stelle {
       // kvm.closeSperrDiv();
     }
     // console.log("activeLayer after finishLayerReading: ", kvm.activeLayer ? kvm.activeLayer.get("id") : "keiner aktiv");
-    console.error(`finishLayerReading ${layer.title} done`);
+    // console.log(`finishLayerReading ${layer.title} done`);
   }
 
   /*
@@ -628,8 +628,11 @@ export class Stelle {
       }
       // kvm.setConnectionStatus();
       //console.log('Store after save layer: %o', kvm.store);
-      $("#requestLayersButton").hide();
-
+      // todo rtr
+      // $("#requestLayersButton").hide();
+      // $("#featurelistHeading").html("Noch kein Layer ausgewählt");
+      // $("#featurelistBody").html('Wählen Sie unter Einstellungen in der Gruppe "Layer" einen Layer aus. Öffnen Sie dann das Optionen Menü und wählen die Funktion "Daten synchronisieren"!');
+      // $("#showSearch").hide();
       // hier nicht schließen, sonden am Ende von requestData kvm.closeSperrDiv();
     } else {
       kvm.log("Fehlerausgabe von parseLayerResult!", 4);

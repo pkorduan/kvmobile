@@ -16,9 +16,18 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 
 # Change log
 
+## 1.18.1
+
+- Bugfix
+  - Nach dem neu Laden der Stelle und Layer fehlte der Suchbutton in der Listenansicht.
+
 ## 1.18.0
+
 - Features
   - Die Karteneinstellungen sind unter Einstellungen immer sichtbar.
+- Bugfix
+  - Hochzählen eines Zahlfeldes mit Kondition behoben mit params_replace nach gdi_conditional_next_val.
+  - Und nächsten Datensatz erfassen lauffähig machen.
 
 ## 1.17.1
 

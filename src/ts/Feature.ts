@@ -187,6 +187,19 @@ export class Feature {
     this.setGeomFromData();
   }
 
+  setCopyData(copyData: { [id: string]: any } = {}) {
+    if (Object.keys(copyData).length > 0) {
+      const attributes = this.layer.attributes;
+      const attributeIdx = this.layer.attribute_index;
+      for (const [key, value] of Object.entries(this.data)) {
+        if (copyData[key] && value == undefined && !attributes[attributeIdx[key]].isAutoAttribute("insert")) {
+          console.log(`Set ${key} of data with value of copy: ${copyData[key]}`);
+          this.setDataValue(key, copyData[key]);
+        }
+      }
+    }
+  }
+
   /*
    * Setzt die Geometrie neu an Hand der übergebenen wkx Geometrie wenn sie sich gegenüber der vorherigen geändert hat.
    * und lößt den Trigger aus, der angibt, dass sich die Geom des Features geändert hat.

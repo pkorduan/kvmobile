@@ -75,6 +75,8 @@ export class ZahlFormField implements Field {
               .replace(/^["'](.+(?=["']$))["']$/, "$1")
               .replace("$user_id", kvm.store.getItem("userId")) // condition: 4. Argument mit user_id
           );
+
+          sql = kvm.replaceParams(sql);
         }
         if (sql) {
           kvm.db.executeSql(
