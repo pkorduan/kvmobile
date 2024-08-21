@@ -2451,6 +2451,15 @@ class Kvm {
         let savedValue = key in layerParams ? layerParams[key] : null; // übernehme gespeicherten Wert wenn er existiert
         kvm.layerParams[key] = savedValue || paramSetting.default_value; // setze gespeicherten oder wenn leer dann den default Wert.
 
+        if (
+          !paramSetting.options.find((option) => {
+            return option.value == kvm.layerParams[key];
+          })
+        ) {
+          // Wenn gespeicherter oder default Wert nicht in Optionen vorkommt, setze die erste Option.
+          kvm.layerParams[key] = paramSetting.options[0].value;
+        }
+
         let labelElement = $(`<div class="form-label><label for="${key}">${paramSetting.alias}</label></div>`);
         let valueElement = $(`
           <div class="form-value">
