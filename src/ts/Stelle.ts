@@ -135,6 +135,13 @@ export class Stelle {
   saveToStore() {
     //kvm.log("Speicher Stelleneinstellungen in lokalen Speicher: " + JSON.stringify(this.settings));
     kvm.store.setItem("stelleSettings_" + this.get("id"), JSON.stringify(this.settings));
+    const layerParams = Object.keys(this.settings.layer_params).map((name) => {
+      let layerParam: Map<string, string> = new Map();
+      layerParam[name] = this.settings.layer_params[name].default_value;
+      return layerParam;
+    });
+    kvm.log("Speicher Layerparameter der Stelle in lokalen Speicher." + JSON.stringify(layerParams));
+    kvm.store.setItem(`layerParams_${this.get("id")}`, JSON.stringify(layerParams));
   }
 
   activate() {

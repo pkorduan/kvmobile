@@ -16,6 +16,11 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 
 # Change log
 
+## 1.18.2
+
+- Bugfix
+  - Speicher die layerParams aus stelle settings im store nach dem neu Laden der Stelle
+
 ## 1.18.1
 
 - Bugfix
