@@ -16,6 +16,20 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 
 # Change log
 
+## 1.18.0
+- Features
+  - Die Karteneinstellungen sind unter Einstellungen immer sichtbar.
+
+## 1.17.1
+
+- Bugfix
+  - Fix create table error for Default values with strings in single quotas
+
+## 1.17.0
+
+- Features
+  - Font Size Setting
+
 ## 1.16.3
 
 - Bugfix

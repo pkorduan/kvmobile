@@ -1,4 +1,5 @@
 import * as L from "leaflet";
+
 import { BackgroundLayerSetting } from "./Layer";
 
 // export type BackgroundLayerSettings = {
@@ -36,6 +37,7 @@ export type Configuration = {
   projZone: number;
   logLevel: any;
   debug: boolean;
+  fontSize: string;
   minTrackDistance: number;
   kvwmapServerId: number;
   kvwmapServerName: string;
@@ -87,6 +89,7 @@ export const configurations: Configuration[] = [
     projZone: 33,
     logLevel: 4,
     debug: true,
+    fontSize: "24px",
     minTrackDistance: 5,
     kvwmapServerId: 1,
     kvwmapServerName: "kvwmap",
@@ -247,6 +250,7 @@ export const configurations: Configuration[] = [
     projZone: 33,
     logLevel: 4,
     debug: true,
+    fontSize: "24px",
     minTrackDistance: 5,
     kvwmapServerId: 1,
     kvwmapServerName: "kvwmap",
@@ -330,6 +334,7 @@ export const configurations: Configuration[] = [
     projZone: 33,
     logLevel: 4,
     debug: true,
+    fontSize: "24px",
     minTrackDistance: 5,
     kvwmapServerId: 1,
     kvwmapServerName: "kvwmap",
@@ -403,6 +408,7 @@ export const configurations: Configuration[] = [
     projZone: 33,
     logLevel: 4,
     debug: true,
+    fontSize: "24px",
     minTrackDistance: 5,
     kvwmapServerId: 1,
     kvwmapServerName: "kvwmap",
@@ -453,6 +459,7 @@ export const configurations: Configuration[] = [
     projZone: 33,
     logLevel: 4,
     debug: true,
+    fontSize: "24px",
     minTrackDistance: 5,
     kvwmapServerId: 1,
     kvwmapServerName: "kvwmap",
@@ -614,6 +621,7 @@ export const configurations: Configuration[] = [
     projZone: 33,
     logLevel: 4,
     debug: true,
+    fontSize: "24px",
     minTrackDistance: 5,
     kvwmapServerId: 1,
     kvwmapServerName: "kvwmap",
@@ -777,6 +785,7 @@ export const configurations: Configuration[] = [
     projZone: 33,
     logLevel: 4,
     debug: true,
+    fontSize: "24px",
     minTrackDistance: 5,
     kvwmapServerId: 1,
     kvwmapServerName: "kvwmap",
@@ -860,6 +869,7 @@ export const configurations: Configuration[] = [
     projZone: 33,
     logLevel: 4,
     debug: true,
+    fontSize: "24px",
     minTrackDistance: 5,
     kvwmapServerId: 1,
     kvwmapServerName: "kvwmap",
@@ -1044,6 +1054,7 @@ export const configurations: Configuration[] = [
     projZone: 33,
     logLevel: 4,
     debug: true,
+    fontSize: "24px",
     minTrackDistance: 5,
     kvwmapServerId: 1,
     kvwmapServerName: "kvwmap",
@@ -1117,6 +1128,7 @@ export const configurations: Configuration[] = [
     projZone: 33,
     logLevel: 4,
     debug: true,
+    fontSize: "24px",
     minTrackDistance: 5,
     kvwmapServerId: 1,
     kvwmapServerName: "kvwmap",

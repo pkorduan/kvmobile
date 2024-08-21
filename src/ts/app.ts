@@ -101,7 +101,9 @@ export class Kvm extends PropertyChangeSupport {
   readTile: (key: IDBValidKey) => Promise<any>;
   orgTileUrl: any;
   debug: any;
-  config: Configuration;
+
+  private configName: string;
+  private config: Configuration;
   backgroundLayers: BackgroundLayer[] = [];
   backgroundLayerSettings: BackgroundLayerSetting[];
   backgroundGeolocation: BackgroundGeolocation;
@@ -614,14 +616,42 @@ export class Kvm extends PropertyChangeSupport {
     await prepareBackgrounLayer();
     kvm.store = window.localStorage;
     // console.log("onDeviceReady");
-    const foundConfiguration = configurations.filter(function (c) {
-      return c.name == (kvm.store.getItem("configName") ? kvm.store.getItem("configName") : "Standard");
+    const configName = (this.configName = kvm.store.getItem("configName") ? kvm.store.getItem("configName") : "Standard");
+    const foundConfiguration = configurations.find(function (c) {
+      return c.name === configName;
     });
-    if (foundConfiguration.length == 0) {
-      kvm.config = configurations[0];
-    } else {
-      kvm.config = foundConfiguration[0];
+    kvm.config = foundConfiguration || configurations[0];
+    for (const k in kvm.config) {
+      const v = kvm.store.getItem(k);
+      if (v) {
+        try {
+          kvm.config[k] = JSON.parse(v);
+          console.error(`Config key="${k}" v="${v}"`);
+        } catch (ex) {
+          kvm.config[k] = v;
+          kvm.store.setItem(k, JSON.stringify(v));
+          console.error(`konnte Config not parsen key="${k}" v="${v}" ${JSON.stringify(v)}`, typeof v);
+        }
+      }
     }
+    let teststring = "test";
+    kvm.store.setItem("teststring", JSON.stringify(teststring));
+    console.info("teststring", teststring, JSON.parse(kvm.store.getItem("teststring")), typeof JSON.parse(kvm.store.getItem("teststring")), kvm.store.getItem("teststring"), typeof kvm.store.getItem("teststring"));
+
+    teststring = "24px";
+    kvm.store.setItem("teststring", JSON.stringify(teststring));
+    console.info("teststring", teststring, JSON.parse(kvm.store.getItem("teststring")), typeof JSON.parse(kvm.store.getItem("teststring")), kvm.store.getItem("teststring"), typeof kvm.store.getItem("teststring"));
+
+    const testboolean = true;
+    kvm.store.setItem("testboolean", JSON.stringify(testboolean));
+    console.info("testboolean", testboolean, typeof JSON.parse(kvm.store.getItem("testboolean")), kvm.store.getItem("testboolean"), typeof kvm.store.getItem("testboolean"));
+
+    const testnr = 1.2;
+    kvm.store.setItem("testnr", JSON.stringify(testnr));
+    console.info("testnr", testnr, typeof JSON.parse(kvm.store.getItem("testnr")), kvm.store.getItem("testnr"), typeof kvm.store.getItem("testnr"));
+
+    console.info(`setting FontSize ${this.getConfigurationOption("fontSize")}`);
+    document.body.style.fontSize = this.getConfigurationOption("fontSize");
 
     this.db = window.sqlitePlugin.openDatabase(
       {
@@ -780,11 +810,15 @@ export class Kvm extends PropertyChangeSupport {
       this.gpsStatus = GpsStatus;
       // this.initConfigOptions();
       this.initMap();
+
       // this.initViewSettings();
       // this.initLoadOfflineMapsDiv();
       // this.initColorSelector();
       // this.initStatusFilter();
       // this.initLocalBackupPath();
+
+      // this.initFontSize();
+      // this.initColorSelector();
     } catch ({ name, message }) {
       kvm.msg("Fehler beim initieren der Anwendungskomponenten! Fehlertyp: " + name + " Fehlermeldung: " + message);
     }
@@ -962,6 +996,20 @@ export class Kvm extends PropertyChangeSupport {
       }
     }
     return configValue;
+  }
+
+  getDefaultConfigurationOption<K extends keyof Configuration>(optionName: K): any {
+    const foundConfiguration = configurations.find((c) => {
+      return c.name === this.configName;
+    });
+    const config = foundConfiguration || configurations[0];
+    return config[optionName];
+  }
+
+  getConfigName() {
+    if (this.configName) {
+      return this.configName;
+    }
   }
 
   /**
@@ -1282,6 +1330,43 @@ export class Kvm extends PropertyChangeSupport {
   //   kvm.store.setItem("markerStyles", JSON.stringify(markerStyles));
   //   Object.values(markerStyles).forEach(this.addColorSelector);
   // }
+
+  // initFontSize() {
+  //   const sizePixel = parseFloat(kvm.store.getItem("fontSize") || kvm.config.fontSize || "24px");
+  //   const sizeDefault = parseFloat(kvm.config.fontSize);
+  //   const sizeProzent = Math.round((sizePixel / sizeDefault) * 100);
+  //   const fontSize = `${sizePixel}px`;
+  //   document.body.style.fontSize = fontSize;
+  //   document.getElementById("fontSizeProzent").innerHTML = `${sizeProzent} %`;
+  //   document.getElementById("fontSizeDefaultButton").style.display = sizeProzent == 100 ? "none" : "inline";
+  //   kvm.store.setItem("fontSize", fontSize);
+  // }
+
+  // initColorSelector() {
+  //   const markerStyles = JSON.parse(kvm.store.getItem("markerStyles")) || kvm.config.markerStyles;
+  //   kvm.store.setItem("markerStyles", JSON.stringify(markerStyles));
+  //   Object.values(markerStyles).forEach(this.addColorSelector);
+  // }
+
+  addColorSelector(style: any, i: number) {
+    const colorSelectorDiv = $("#colorSelectorDiv");
+    colorSelectorDiv.append(
+      '\
+      <label for="colorStatus' +
+        i +
+        '">Status ' +
+        i +
+        ':</label>\
+      <input type="color" id="colorStatus' +
+        i +
+        '" name="colorStatus' +
+        i +
+        '" value="' +
+        style.fillColor +
+        '" onChange="kvm.updateMarkerStyle(this)"><br>\
+    '
+    );
+  }
 
   // initStatusFilter() {
   //   const statusFilter = kvm.store.getItem("statusFilter");
@@ -2321,6 +2406,89 @@ export class Kvm extends PropertyChangeSupport {
     //   });
     // }
 
+    if (document.getElementById("downloadBackgroundLayerButton")) {
+      document.getElementById("downloadBackgroundLayerButton").addEventListener("click", (evt) => {
+        const offlineLayerId = (<HTMLElement>evt.currentTarget).getAttribute("value");
+        navigator.notification.confirm(
+          "Alle Vektorkacheln vom Projektgebiet herunterladen? Vergewissern Sie sich, dass Sie in einem Netz mit guter Anbindung sind.",
+          function (buttonIndex) {
+            if (buttonIndex === 1) {
+              if (navigator.onLine) {
+                // ja
+                //kvm.msg("Ich beginne mit dem Download der Kacheln.", "Kartenverwaltung");
+                document.getElementById("sperr_div").style.display = "block";
+                let sperrDivContent = document.getElementById("sperr_div_content");
+                sperrDivContent.innerHTML = '<b>Kartenverwaltung</b><br><br>Download der Kacheln:<br><br><div id="sperr_div_progress_div"></div>';
+                let sperrDivProgressDiv = document.getElementById("sperr_div_progress_div");
+                // hide the button and show a progress div
+                // find p1, p2 and zoom levels to fetch data in layer configuration
+                // get urls for vector tiles to download
+                // download the files in background and update the progress div
+                // confirm the finish
+                // hide the progress div and show the delete and update button
+                const bl = kvm.backgroundLayerSettings.filter(function (l) {
+                  return String(l.layer_id) == offlineLayerId;
+                })[0];
+                const params = bl.params;
+                let key = "";
+
+                //console.log('Fetch vector tiles for p1: %s,%s p2: %s,%s', params.south, params.west, params.north, params.east);
+                const tileLinks = [];
+
+                for (let z = params.minZoom; z <= params.maxNativeZoom; z++) {
+                  //console.log('Zoom level: %s', z);
+                  kvm.getTilesUrls(new LatLng(params.south, params.west), new LatLng(params.north, params.east), z, bl.url).forEach((url) => tileLinks.push(url));
+                }
+                let i = 0;
+                const iSoll = tileLinks.length;
+                console.log("Anzahl der herunter zu ladenden Kacheln:" + iSoll);
+
+                function download() {
+                  if (tileLinks.length > 0) {
+                    const url = tileLinks.pop();
+                    const key = kvm.getTileKey(url);
+                    fetch(url)
+                      .then((t) => {
+                        // console.info("result ", t);
+                        t.arrayBuffer()
+                          .then((arr) => {
+                            kvm.saveTile(key, arr.slice(0));
+                            i++;
+                            sperrDivProgressDiv.innerHTML = `<span class="highlighted">${i} von ${iSoll} runtergeladen</span>`;
+                            download();
+                          })
+                          .catch((reason) => {
+                            console.info("Fehler by arraybuffer", reason);
+                            download();
+                          });
+                      })
+                      .catch((reason) => {
+                        console.info("Fehler by fetch", reason);
+                        download();
+                      });
+                  } else {
+                    console.info("downloaded " + i + " von " + iSoll);
+                    document.getElementById("sperr_div_content").innerHTML = "";
+                    document.getElementById("sperr_div").style.display = "none";
+                    kvm.msg("Download abgeschlossen!", "Kartenverwaltung");
+                  }
+                }
+                download();
+              } else {
+                kvm.msg("Kein Internet! Stellen Sie eine Internetverbindung her.", "Kartenverwaltung");
+              }
+            }
+            if (buttonIndex == 2) {
+              // nein
+              kvm.msg("OK, Abbruch.", "Kartenverwaltung");
+            }
+          },
+          "Kartenverwaltung",
+          ["ja", "nein"]
+        );
+      });
+    }
+
     document.getElementById("syncLayerButton").addEventListener("click", (evt) => this.bttnSyncLayersClicked(evt));
 
     // $("#featurelistHeading").on("click", (evt) => {
@@ -2333,6 +2501,34 @@ export class Kvm extends PropertyChangeSupport {
   // bindFeatureItemClickEvents() {
   //   //kvm.log("bindFeatureItemClickEvents", 4);
   //   $(".feature-item").on("click", kvm.featureItemClickEventFunction);
+  // }
+
+  // changeFontSize(evt) {
+  //   let sizePixel: number;
+  //   let sizeProzent: number;
+  //   const sizeDefault = parseFloat(kvm.config.fontSize);
+  //   if (evt.target.id.toLowerCase().includes("default")) {
+  //     sizePixel = sizeDefault;
+  //     sizeProzent = 100;
+  //     document.getElementById("fontSizeDefaultButton").style.display = "none";
+  //   } else {
+  //     const step5Prozent: number = (Math.round((sizeDefault / 100) * 5 * 10) / 10) * (evt.target.id.toLowerCase().includes("up") ? 1 : -1);
+  //     sizePixel = parseFloat(document.body.style.fontSize) + step5Prozent;
+  //     sizeProzent = Math.round((sizePixel / sizeDefault) * 100);
+  //     if (sizeProzent < 30) {
+  //       kvm.msg("Kleiner geht nicht!", "Einstellung Textgröße");
+  //       return;
+  //     }
+  //     if (sizeProzent > 150) {
+  //       kvm.msg("Größer geht nicht!", "Einstellung Textgröße");
+  //       return;
+  //     }
+  //   }
+  //   const fontSize: string = `${sizePixel}px`;
+  //   document.body.style.fontSize = fontSize;
+  //   document.getElementById("fontSizeProzent").innerHTML = `${sizeProzent} %`;
+  //   document.getElementById("fontSizeDefaultButton").style.display = sizeProzent == 100 ? "none" : "inline";
+  //   kvm.store.setItem("fontSize", fontSize);
   // }
 
   featureItemClickEventFunction(evt: MouseEvent) {
