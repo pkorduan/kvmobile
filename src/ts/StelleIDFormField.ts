@@ -1,10 +1,9 @@
 import { AttributeSetting } from "./Attribute";
 import { Field } from "./Field";
 import { kvm } from "./app";
-import { createHtmlElement } from "./Util";
 
 /*
- * create a UserID form field in the structure
+ * create a StelleID form field in the structure
  *   <div class="form-field">
  *     <div class="form-label">
  *       <label for="name"/>
@@ -14,12 +13,12 @@ import { createHtmlElement } from "./Util";
  *     </div>
  *   </div>
  */
-export class UserIDFormField implements Field {
+export class StelleIDFormField implements Field {
   settings: AttributeSetting;
   selector: string;
   element: JQuery<HTMLElement>;
   constructor(formId: string, settings: AttributeSetting) {
-    //console.log('Erzeuge UserIDFormField with settings %o', settings);
+    //console.log('Erzeuge StelleIDFormField with settings %o', settings);
     this.settings = settings;
     this.selector = "#" + formId + " input[id=" + this.settings.index + "]";
     this.element = $(
@@ -49,17 +48,17 @@ export class UserIDFormField implements Field {
   }
 
   getValue(action = "") {
-    kvm.log("UserIDFormField.getValue", 4);
+    kvm.log("StelleIDFormField.getValue", 4);
     let val = this.element.val();
     if (typeof val === "undefined" || val == "") {
-      val = null;
+      return null;
     }
     return val;
   }
 
   getAutoValue() {
-    kvm.log("UserIDFormField.getAutoValue");
-    return kvm.store.getItem("userId");
+    kvm.log("StelleIDFormField.getAutoValue");
+    return kvm.activeStelle.get("ID");
   }
 
   bindEvents() {}

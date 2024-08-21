@@ -451,7 +451,7 @@ export class Layer extends PropertyChangeSupport {
 
     const sql = this.extentSql(query, where, order, limit, offset, filter);
 
-    console.log(`Lese Daten von Layer ${this.title} mit sql: "${sql}"`);
+    // console.log(`Lese Daten von Layer ${this.title} mit sql: "${sql}"`);
 
     try {
       const rs = await Util.executeSQL(kvm.db, sql);
@@ -1871,6 +1871,16 @@ export class Layer extends PropertyChangeSupport {
         case attribute.get("form_element_type") == "User" && (options == "" || options.toLowerCase() == "insert"):
           {
             value = kvm.store.getItem("userName");
+          }
+          break;
+        case attribute.get("form_element_type") == "StelleID" && (options == "" || options.toLowerCase() == "insert"):
+          {
+            value = kvm.activeStelle.get("ID");
+          }
+          break;
+        case attribute.get("form_element_type") == "ClientID" && (options == "" || options.toLowerCase() == "insert"):
+          {
+            value = device.uuid;
           }
           break;
         case attribute.get("form_element_type") == "SubFormFK":

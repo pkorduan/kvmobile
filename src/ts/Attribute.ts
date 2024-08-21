@@ -11,6 +11,8 @@ import { TextfeldFormField } from "./TextfeldFormField";
 import { TextFormField } from "./TextFormField";
 import { UserFormField } from "./UserFormField";
 import { UserIDFormField } from "./UserIDFormField";
+import { StelleIDFormField } from "./StelleIDFormField";
+import { ClientIDFormField } from "./ClientIDFormField";
 import { ZahlFormField } from "./ZahlFormField";
 import { SubFormEmbeddedPKFormField } from "./SubFormEmbeddedPKFormField";
 import { SubFormFKFormField } from "./SubFormFKFormField";
@@ -224,6 +226,12 @@ export class Attribute {
       case "UserID":
         field = new UserIDFormField("featureFormular", this.settings);
         break;
+      case "StelleID":
+        field = new StelleIDFormField("featureFormular", this.settings);
+        break;
+      case "ClientID":
+        field = new ClientIDFormField("featureFormular", this.settings);
+        break;
       case "SubFormEmbeddedPK":
         field = new SubFormEmbeddedPKFormField("featureFormular", this);
         break;
@@ -304,12 +312,12 @@ export class Attribute {
     //    kvm.log('Attribute.isAutoAttribute for action ' + action, 4);
     /*
     kvm.log('name ' + this.get('name') + ' ist user_name, updated_at_client oder created_at? ' + (['user_name', 'updated_at_client', 'created_at'].includes(this.get('name'))), 4);
-    kvm.log('form_element_type ' + this.get('form_element_type') + ' ist User, UserID oder Time? ' + (['User', 'UserID', 'Time'].includes(this.get('form_element_type'))), 4);
+    kvm.log('form_element_type ' + this.get('form_element_type') + ' ist User, UserID, StelleID, ClientID oder Time? ' + (['User', 'UserID', 'Time'].includes(this.get('form_element_type'))), 4);
     kvm.log('name ' + this.get('name') + ' ist nicht updated_at_server? ' + (this.get('name') != 'updated_at_server'), 4);
     kvm.log('options ist leer? ' + (this.get('options') == ''), 4);
     kvm.log('action == options? ' + (action == this.get('options').toLowerCase()), 4);
     */
-    const answer = ["SubFormFK"].includes(this.get("form_element_type")) || ((["user_name", "updated_at_client", "created_at"].includes(this.get("name")) || ["User", "UserID", "Time"].includes(this.get("form_element_type"))) && this.get("name") != "updated_at_server" && (action == "" || this.get("options") == "" || action == this.get("options").toLowerCase()));
+    const answer = ["SubFormFK"].includes(this.get("form_element_type")) || ((["user_name", "updated_at_client", "created_at"].includes(this.get("name")) || ["User", "UserID", "StelleID", "Time", "ClientID"].includes(this.get("form_element_type"))) && this.get("name") != "updated_at_server" && (action == "" || this.get("options") == "" || action == this.get("options").toLowerCase()));
     //kvm.log("Attribute " + this.get("name") + " is Autoattribute" + (action ? " for action " + action : "") + "? " + answer, 4);
     return answer;
   }
