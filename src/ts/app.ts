@@ -2787,6 +2787,16 @@ class Kvm {
         str = str.replace(regExp, kvm.userId);
         // console.log(`$USER_ID in Text ersetzt mit ${kvm.userId}: "${str}"`);
       }
+      if (str.includes("$STELLE_ID")) {
+        regExp = new RegExp(`\\$STELLE_ID`, "g");
+        str = str.replace(regExp, kvm.activeStelle.get("ID"));
+        // console.log(`$STELLE_ID in Text ersetzt mit ${kvm.activeStelle.get('ID')}: "${str}"`);
+      }
+      if (str.includes("$CLIENT_ID")) {
+        regExp = new RegExp(`\\$CLIENT_ID`, "g");
+        str = str.replace(regExp, device.uuid);
+        // console.log(`$CLIENT_ID in Text ersetzt mit ${device.uuid}: "${str}"`);
+      }
     }
     return str;
   }

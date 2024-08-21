@@ -3,7 +3,7 @@ import { Field } from "./Field";
 import { kvm } from "./app";
 
 /*
- * create a UserID form field in the structure
+ * create a ClientID form field in the structure
  *   <div class="form-field">
  *     <div class="form-label">
  *       <label for="name"/>
@@ -13,12 +13,12 @@ import { kvm } from "./app";
  *     </div>
  *   </div>
  */
-export class UserIDFormField implements Field {
+export class ClientIDFormField implements Field {
   settings: AttributeSetting;
   selector: string;
   element: JQuery<HTMLElement>;
   constructor(formId: string, settings: AttributeSetting) {
-    //console.log('Erzeuge UserIDFormField with settings %o', settings);
+    //console.log('Erzeuge ClientIDFormField with settings %o', settings);
     this.settings = settings;
     this.selector = "#" + formId + " input[id=" + this.settings.index + "]";
     this.element = $(
@@ -36,10 +36,6 @@ export class UserIDFormField implements Field {
     );
   }
 
-  // get(key) {
-  //     return this.settings[key];
-  // }
-
   setValue(val) {
     if (kvm.coalesce(val, "") == "" && this.settings.default) {
       val = this.settings.default;
@@ -48,17 +44,17 @@ export class UserIDFormField implements Field {
   }
 
   getValue(action = "") {
-    kvm.log("UserIDFormField.getValue", 4);
+    kvm.log("ClientIDFormField.getValue", 4);
     let val = this.element.val();
     if (typeof val === "undefined" || val == "") {
-      val = null;
+      return null;
     }
     return val;
   }
 
   getAutoValue() {
-    kvm.log("UserIDFormField.getAutoValue");
-    return kvm.store.getItem("userId");
+    kvm.log("ClientIDFormField.getAutoValue");
+    return device.uuid;
   }
 
   bindEvents() {}
