@@ -102,7 +102,7 @@ child-src * 'self' blob: http:
   <div class="clear"></div>
 
   <!-- Einstellungen -->
-  <div id="settings" style="display: none;" class="panel v-scroll-div">
+  <div id="settings" style="display: none; overflow: auto;">
     <h1>Einstellungen</h1>
     <div class="h2-div"><h2 id="h2_konfiguration" class="b-collapsed">Konfiguration</h2>
       <div id="configFileDiv">
@@ -113,8 +113,8 @@ child-src * 'self' blob: http:
     <div class="h2-div">
       <h2 id="h2_server" class="b-collapsed">Server</h2>
       <div id="kvwmapServerDataForm" class="div-form">
-        <input id="kvwmapServerIdField" name="kvwmapServerId" type="hidden" value="1">
-        Name<br>
+        <!-- <input id="kvwmapServerIdField" name="kvwmapServerId" type="hidden" value="1">
+        Name<br> -->
         <input id="kvwmapServerNameField" name="kvwmapServerName" type="text" value="Server kvwmap LK-ROS"><br>
         URL<br>
         <input id="kvwmapServerUrlField" name="kvwmapServerUrl" type="text"><br>
@@ -141,33 +141,28 @@ child-src * 'self' blob: http:
 
     <div class="h2-div">
       <h2 id="h2_layer" class="b-collapsed">Layer</h2>
-    
-    <div>
+      <div>
         <button id="requestLayersButton" class="settings-button" style="display: none;">
           <i class="fa fa-download" aria-hidden="true"></i> Layer abfragen
         </button>
         <div style="clear: both"></div>
         <div id="layer_list">
-        </div>
-      
-      <div style="margin-top: 10px;">
-      <button
-        class="sync-layer-button settings-button active-button layer-function-button"
-        id="syncLayerButton"
-      ><i class="fa fa-refresh" aria-hidden="true"></i>
-      </button> Layer mit Server synchronisieren
-      </div>  
+        </div>      
+        <div style="margin-top: 10px;">
+          <button class="sync-layer-button settings-button active-button layer-function-button" id="syncLayerButton">
+            <i class="fa fa-refresh" aria-hidden="true"></i>
+          </button>
+          Layer mit Server synchronisieren
+        </div>  
+      </div>
     </div>
-  </div>
     <hr>
 
-    <div class="h2-div"><h2 id="h2_layerparams" class="b-collapsed">Layerparameter</h2>
-    <div>
+    <div class="h2-div">
+      <h2 id="h2_layerparams" class="b-collapsed">Layerparameter</h2>      
       <div id="layer_prams_list">
-      </div>
-      <div style="clear: both"></div>
-    </div>
-  </div>
+      </div>      
+    </div>  
     <hr>
 
     <div class="h2-div"><h2 id="h2_karteneinstellungen" class="b-collapsed">Karteneinstellungen</h2>
@@ -625,21 +620,23 @@ child-src * 'self' blob: http:
   </div>
 
   <!-- Logs -->
-  <div id="loggings" style="display:none" class="panel v-scroll-div">
+  <div id="loggings" style="display:none" class="v-scroll-div">
     <h1>Logging</h1>
     <div id="logText"></div>
   </div>
   <div class="clear"></div>
 
   <!-- featurelist-->
-  <div id="featurelist" style="display:none" class="panel v-scroll-div">
+  <div id="featurelist" style="display:none; overflow: hidden;" class="flex-column">
+    <div>
     <div style="float: left; margin-left: 5px;">
       <h1 id="featurelistHeading" style="font-size: 24px"></h1>
     </div>
     <div style="float: right; margin-right: 5px">
       <h1><i id="showSearch" class="fa fa-magnifying-glass" aria-hidden="true"></i></h1>
     </div>
-    <div style="clear: both;"></div>
+    </div>
+    <!-- <div style="clear: both;"></div> -->
     <input type="search" id="searchFeatureField" placeholder="Datensatz suchen" title="Liste der Datensätze durchsuchen" autocomplete="off" style="display:none; margin-left: 6px; margin-bottom: 4px; padding-left: 4px; padding-top: 2px; padding-bottom: 2px; font-size: 24px; width: 97%; border-radius: 5px;">
     <!--div class="center">
       <div class="pagination">
@@ -649,10 +646,7 @@ child-src * 'self' blob: http:
         <a class="page_last_link" href="#" page="" onclick="kvm.paginate(this)" style="display: none">&raquo;</a>
       </div>
     </div//-->
-    <div id="featurelistBody" style="
-      width: 100%;
-      float: left;
-    "></div>
+    <div id="featurelistBody" style="overflow: auto;"></div>
     <div id="alphabetical_list" style="
       float: right;
       margin-right: 7px;
@@ -675,22 +669,22 @@ child-src * 'self' blob: http:
       </div>
     </div//-->
   </div>
-  <div class="clear"></div>
+  <!-- <div class="clear"></div> -->
 
   <!-- Karte -->
-  <div id="map" style="display:none" class="panel">
+  <div id="map" style="display:none" class="">
   </div>
-  <div class="clear"></div>
+  <!-- <div class="clear"></div> -->
 
   <!-- DataView -->
-  <div id="dataView" style="display:none" class="panel v-scroll-div">
+  <div id="dataView" style="display:none" class="v-scroll-div">
   </div>
-  <div class="clear"></div>
+  <!-- <div class="clear"></div> -->
 
   <!-- Formular -->
-  <div id="formular" style="display:none" class="panel v-scroll-div">
+  <div id="formular" style="display:none" class="v-scroll-div">
   </div>
-  <div class="clear"></div>
+  <!-- <div class="clear"></div> -->
 
   <!-- Debugs -->
   <div id="debugs" class="deb">

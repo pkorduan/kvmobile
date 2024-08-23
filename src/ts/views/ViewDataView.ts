@@ -6,7 +6,6 @@ import { sperrBildschirm } from "../SperrBildschirm";
 import { createHtmlElement } from "../Util";
 
 export class ViewDataView extends View {
-  dom: HTMLElement;
   header: HTMLHeadingElement;
   dataViewDiv: HTMLDivElement;
   feature: Feature;

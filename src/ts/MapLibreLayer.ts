@@ -128,12 +128,12 @@ export class MapLibreLayer extends LLayer {
 
   removeFromStore() {
     //console.log("removeFromStore");
-    console.log("layerIds in Store vor dem Löschen: %s", kvm.store.getItem("layerIds_" + this.stelle.get("id")));
-    const layerIds = <string[]>JSON.parse(kvm.store.getItem("layerIds_" + this.stelle.get("id"))) || [];
+    console.log("layerIds in Store vor dem Löschen: %s", kvm.store.getItem("layerIds_" + this.stelle.get("ID")));
+    const layerIds = <string[]>JSON.parse(kvm.store.getItem("layerIds_" + this.stelle.get("ID"))) || [];
     console.log("Entferne LayerID %s aus layerIds Liste im Store.", this.get("id"));
     layerIds.splice(layerIds.indexOf(this.get("id")), 1);
-    kvm.store.setItem("layerIds_" + this.stelle.get("id"), JSON.stringify(layerIds));
-    console.log("layerIds in Store nach dem Löschen: %s", kvm.store.getItem("layerIds_" + this.stelle.get("id")));
+    kvm.store.setItem("layerIds_" + this.stelle.get("ID"), JSON.stringify(layerIds));
+    console.log("layerIds in Store nach dem Löschen: %s", kvm.store.getItem("layerIds_" + this.stelle.get("ID")));
     kvm.store.removeItem("layerSettings_" + this.getGlobalId());
   }
 
@@ -235,7 +235,7 @@ export class MapLibreLayer extends LLayer {
   saveToStore() {
     //console.log('layerIds vor dem Speichern: %o', kvm.store.getItem('layerIds_' + this.stelle.get('id')));
     this.settings.loaded = false;
-    let layerIds = <string[]>JSON.parse(kvm.store.getItem("layerIds_" + this.stelle.get("id"))) || [];
+    let layerIds = <string[]>JSON.parse(kvm.store.getItem("layerIds_" + this.stelle.get("ID"))) || [];
     const settings = JSON.stringify(this.settings);
 
     kvm.store.setItem("layerSettings_" + this.getGlobalId(), settings);
@@ -244,7 +244,7 @@ export class MapLibreLayer extends LLayer {
     if ($.inArray(this.get("id"), layerIds) < 0) {
       console.log("%s->saveToStore: Insert layerId %s in layerIds List at index %s", this.title, this.get("id"), this.stelle.getLayerDrawingIndex(this));
       layerIds.splice(this.stelle.getLayerDrawingIndex(this), 0, this.get("id"));
-      kvm.store.setItem("layerIds_" + this.stelle.get("id"), JSON.stringify(layerIds));
+      kvm.store.setItem("layerIds_" + this.stelle.get("ID"), JSON.stringify(layerIds));
     }
   }
 
@@ -271,7 +271,7 @@ export class MapLibreLayer extends LLayer {
   }
 
   getGlobalId() {
-    return this.stelle.get("id") + "_" + this.get("id");
+    return this.stelle.get("ID") + "_" + this.get("id");
   }
 
   getListItem() {

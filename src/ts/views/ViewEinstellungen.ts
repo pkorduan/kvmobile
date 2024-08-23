@@ -4,9 +4,10 @@ import * as PanelEinstellungen from "./PanelEinstellungen";
 import { View } from "./View";
 
 export class ViewEinstellungen extends View {
-  dom: HTMLElement;
+  // dom: HTMLElement;
 
   panelLayer: PanelEinstellungen.Layers;
+  panelLayerParams: PanelEinstellungen.LayerParams;
   panelSortierung: PanelEinstellungen.Sortierung;
   panelAnzeigeFilter: PanelEinstellungen.AnzeigeFilter;
   panelConfiguration: PanelEinstellungen.Konfiguration;
@@ -35,6 +36,7 @@ export class ViewEinstellungen extends View {
     this.panelConfiguration = new PanelEinstellungen.Konfiguration(configurations);
     this.panelServer = new PanelEinstellungen.Server();
     this.panelLayer = new PanelEinstellungen.Layers();
+    this.panelLayerParams = new PanelEinstellungen.LayerParams();
     this.panelAnzeigeFilter = new PanelEinstellungen.AnzeigeFilter();
     this.panelSortierung = new PanelEinstellungen.Sortierung();
     this.panelColorSection = new PanelEinstellungen.ColorSection();

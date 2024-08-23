@@ -206,25 +206,6 @@ export const Mapper = {
   clearWatch: function () {
     navigator.geolocation.clearWatch(this.watchId);
   },
-  /*
-  createLayerList: function(stelle) {
-    kvm.log('Erzeuge Layerliste.', 3);
-    var layerIds = JSON.parse(kvm.store.getItem('layerIds_' + stelle.get('id'))),
-        i,
-        layer;
-
-    $('#layer_list').html('');
-    for (i = 0; i < layerIds.length; i++) {
-      layer = new Layer(
-        stelle,
-        JSON.parse(kvm.store.getItem('layerSettings_' + stelle.get('id') + '_' + layerIds[i]))
-      );
-      layer.appendToApp();
-    };
-
-    kvm.bindLayerEvents();
-  },
-*/
 
   gpsError: function (error) {
     $("#gps-signal-icon").attr("class", "gps-signal-level-0");

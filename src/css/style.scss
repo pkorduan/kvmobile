@@ -15,6 +15,17 @@ body {
   overflow: hidden;
   font: 100.01% Verdana, Arial, Helvetica, sans-serif;
   font-size: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+}
+.flex-row {
+  display: flex;
+  flex-direction: column;
 }
 
 label {
@@ -894,11 +905,15 @@ ul.subformlist {
 // }
 
 #map {
+  flex-grow: 1;
+  position: relative;
+  /*
   clear: both;
   position: fixed;
   height: 100%;
   width: 100%;
   margin: auto;
+  */
 }
 
 #gps-signal-icon {

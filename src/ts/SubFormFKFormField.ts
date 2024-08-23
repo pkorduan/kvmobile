@@ -110,8 +110,8 @@ export class SubFormFKFormField implements Field {
         //     )
         // `;
 
-        let query = kvm.replaceParams(pkLayer.settings.query);
-        let filter: string = kvm.replaceParams(pkLayer.settings.filter);
+        let query = kvm.getActiveStelle().replaceParams(pkLayer.settings.query);
+        let filter: string = kvm.getActiveStelle().replaceParams(pkLayer.settings.filter);
         let where: string[] = [
           `
           ST_Within(

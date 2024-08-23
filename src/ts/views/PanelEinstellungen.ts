@@ -1,5 +1,5 @@
 import { Kvm, kvm } from "../app";
-import { Configuration } from "../configurations";
+import { Configuration, configurations } from "../configurations";
 import { FileUtils } from "../controller/files";
 import { AttributFilter, Layer } from "../Layer";
 import { sperrBildschirm } from "../SperrBildschirm";
@@ -126,7 +126,7 @@ export class Server extends PanelEinstellungen {
   stelle: Stelle;
 
   //dom: HTMLElement;
-  kvwmapServerIdField: HTMLInputElement;
+  // kvwmapServerIdField: HTMLInputElement;
   kvwmapServerUrlField: HTMLInputElement;
 
   kvwmapServerLoginNameField: HTMLInputElement;
@@ -144,7 +144,7 @@ export class Server extends PanelEinstellungen {
   constructor() {
     super("h2_server");
 
-    this.kvwmapServerIdField = <HTMLInputElement>document.getElementById("kvwmapServerIdField");
+    // this.kvwmapServerIdField = <HTMLInputElement>document.getElementById("kvwmapServerIdField");
 
     this.kvwmapServerNameField = <HTMLInputElement>document.getElementById("kvwmapServerNameField");
 
@@ -170,6 +170,9 @@ export class Server extends PanelEinstellungen {
       this.saveServerSettingsButton.style.display = "";
     });
 
+    kvm.addEventListener(Kvm.EVENTS.ACTIVE_CONFIGURATION_CHANGED, (evt) => {
+      this.setConfiguration(evt.newValue);
+    });
     kvm.addEventListener(Kvm.EVENTS.ACTIVE_STELLE_CHANGED, (evt) => {
       this.setStelle(evt.newValue);
     });
@@ -180,15 +183,24 @@ export class Server extends PanelEinstellungen {
     super.show();
   }
 
+  private setConfiguration(configName: string) {
+    const config = configurations.find((conf) => conf.name === configName);
+    this.kvwmapServerNameField.value = config?.kvwmapServerName || "";
+    this.kvwmapServerUrlField.value = config?.kvwmapServerUrl || "";
+    this.kvwmapServerLoginNameField.value = config?.kvwmapServerLoginName || "";
+  }
+
   setStelle(stelle: Stelle) {
     //kvm.log("ServerSettings.viewSettings", 4);
-    console.error(`setStelle(${stelle?.get("id")})`);
-    this.stelle = stelle;
-    this.kvwmapServerIdField.value = stelle?.get("id");
-    this.kvwmapServerNameField.value = stelle?.get("name");
-    this.kvwmapServerUrlField.value = stelle?.get("url");
-    this.kvwmapServerLoginNameField.value = stelle?.get("login_name");
-    this.kvwmapServerPasswortField.value = stelle?.get("passwort");
+    if (stelle !== this.stelle) {
+      console.error(`setStelle(${stelle?.get("ID")})`);
+      this.stelle = stelle;
+      // this.kvwmapServerIdField.value = stelle?.get("ID") || "";
+      this.kvwmapServerNameField.value = stelle?.get("name") || "";
+      this.kvwmapServerUrlField.value = stelle?.get("url") || "";
+      this.kvwmapServerLoginNameField.value = stelle?.get("login_name") || "";
+      this.kvwmapServerPasswortField.value = stelle?.get("passwort") || "";
+    }
 
     // $("#kvwmapServerStelleSelectField").find("option").remove();
     // // $.each(JSON.parse(this.get("stellen")), function (index, stelle) {
@@ -208,12 +220,12 @@ export class Server extends PanelEinstellungen {
             if (this.kvwmapServerUrlField.value && this.kvwmapServerLoginNameField.value && this.kvwmapServerPasswortField.value) {
               sperrBildschirm.show("Frage Stellen ab");
               this.activeStelleBezeichnungDiv.style.display = "none";
-              const stelle = new Stelle({
-                url: this.kvwmapServerUrlField.value,
-                login_name: this.kvwmapServerLoginNameField.value,
-                passwort: this.kvwmapServerPasswortField.value,
-              });
-              console.log("Stellenobjekt erzeugt um Stellen abfragen zu können: " + JSON.stringify(stelle));
+              // const stelle = new Stelle({
+              //   url: this.kvwmapServerUrlField.value,
+              //   login_name: this.kvwmapServerLoginNameField.value,
+              //   passwort: this.kvwmapServerPasswortField.value,
+              // });
+              // console.log("Stellenobjekt erzeugt um Stellen abfragen zu können: " + JSON.stringify(stelle));
               //kvm.log("Stellenobjekt erzeugt um Stellen abfragen zu können: " + JSON.stringify(stelle), 4);
               // stelle.reloadLayer;
               this.requestStellen();
@@ -240,7 +252,7 @@ export class Server extends PanelEinstellungen {
     const stelleSettings = this.stellen.find((stelle) => {
       return stelle.ID == selectedStelleId;
     });
-    stelleSettings["id"] = this.kvwmapServerIdField.value;
+    // stelleSettings["id"] = this.kvwmapServerIdField.value;
     stelleSettings["name"] = this.kvwmapServerNameField.value;
     stelleSettings["bezeichnung"] = this.kvwmapServerStelleSelectField.selectedOptions[0].text;
     stelleSettings["url"] = this.kvwmapServerUrlField.value;
@@ -248,9 +260,11 @@ export class Server extends PanelEinstellungen {
     stelleSettings["passwort"] = this.kvwmapServerPasswortField.value;
     stelleSettings["Stelle_ID"] = this.kvwmapServerStelleSelectField.value;
 
-    const stelle = new Stelle(stelleSettings);
+    const stelle = (this.stelle = new Stelle(stelleSettings));
     stelle.saveToStore();
-    stelle.activate();
+    // stelle.activate();
+    sperrBildschirm.show();
+    kvm.setActiveStelle(stelle);
     await stelle.requestLayers();
     if ($("#saveServerSettingsButton").hasClass("settings-button-active")) {
       $("#saveServerSettingsButton").toggleClass("settings-button settings-button-active");
@@ -263,6 +277,7 @@ export class Server extends PanelEinstellungen {
     } else {
       kvm.msg("Stellen Sie eine Netzverbindung her zum Laden der Layer und speichern Sie noch mal die Servereinstellungen.");
     }
+    sperrBildschirm.close();
   }
 
   setActiveStellenBezeichnung(stellenBezeichnung: string) {
@@ -489,11 +504,74 @@ export class Layers extends PanelEinstellungen {
 }
 
 export class LayerParams extends PanelEinstellungen {
+  layer_prams_list: HTMLElement;
+
   constructor() {
     super("h2_layerparams");
-    kvm.addEventListener(Kvm.EVENTS.ACTIVE_LAYER_CHANGED, (evt) => {
-      console.error("notImplemented LayerParams", evt);
+    this.layer_prams_list = <HTMLElement>document.getElementById("layer_prams_list");
+    kvm.addEventListener(Kvm.EVENTS.ACTIVE_STELLE_CHANGED, (evt) => {
+      this.setStelle(evt.newValue);
     });
+  }
+
+  setStelle(stelle: Stelle) {
+    // layerParamSettings, layerParams = []) {
+    console.error("PanelEinstellungen.LayerParams.setStelle", stelle?.settings?.layer_params);
+    const layer_params = stelle?.settings?.layer_params;
+    this.layer_prams_list.innerHTML = "";
+    if (layer_params) {
+      for (const key of Object.keys(layer_params)) {
+        const layerParam = layer_params[key];
+        const selectValue = stelle.getLayerParam(key);
+        const el = createHtmlElement("div", this.layer_prams_list, "form-label");
+        const label = createHtmlElement("label", el);
+        label.innerHTML = layerParam.alias;
+        const select = createHtmlElement("select", el);
+        select.addEventListener("change", async () => {
+          sperrBildschirm.show();
+          try {
+            await stelle.setLayerParam(key, select.value);
+          } catch (ex) {
+            console.error("error while calling setLayerParam", ex);
+          }
+          sperrBildschirm.close();
+        });
+        for (const option of layerParam.options) {
+          const selectOption = createHtmlElement("option", select);
+          selectOption.value = option.value;
+          selectOption.innerHTML = option.output;
+          selectOption.selected = option.value === selectValue;
+        }
+      }
+    }
+
+    // let layerParamsDiv = $("#h2_layerparams").parent();
+    // if (layerParamSettings && Object.keys(layerParamSettings).length > 0) {
+    //   let layerParamsList = $("#layer_prams_list");
+    //   layerParamsList.html("");
+    //   Object.keys(layerParamSettings).forEach((key) => {
+    //     let paramSetting = layerParamSettings[key];
+    //     let savedValue = key in layerParams ? layerParams[key] : null; // übernehme gespeicherten Wert wenn er existiert
+    //     kvm.layerParams[key] = savedValue || paramSetting.default_value; // setze gespeicherten oder wenn leer dann den default Wert.
+
+    //     let labelElement = $(`<div class="form-label><label for="${key}">${paramSetting.alias}</label></div>`);
+    //     let valueElement = $(`
+    //       <div class="form-value">
+    //         <select id="${key}" name="${key}" onchange="kvm.saveLayerParams(this)">
+    //           ${paramSetting.options
+    //             .map((option) => {
+    //               return `<option value="${option.value}"${kvm.layerParams[key] == option.value ? " selected" : ""}>${option.output}</option>`;
+    //             })
+    //             .join("")}
+    //         </select>
+    //       </div>
+    //     `);
+    //     layerParamsList.append(labelElement).append(valueElement);
+    //   });
+    //   layerParamsDiv.show();
+    // } else {
+    //   layerParamsDiv.hide();
+    // }
   }
 }
 

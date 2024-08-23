@@ -338,7 +338,7 @@ async function readDataset(layer: Layer) {
   // console.log("readDataset");
   const id_attribute = layer.get("id_attribute");
   const featureId = layer.activeFeature.getDataValue(id_attribute);
-  const sql = layer.extentSql(kvm.replaceParams(layer.settings.query), [`${layer.settings.table_alias}.${id_attribute} = '${featureId}'`, `${layer.settings.table_alias}.endet IS NULL`]);
+  const sql = layer.extentSql(kvm.getActiveStelle().replaceParams(layer.settings.query), [`${layer.settings.table_alias}.${id_attribute} = '${featureId}'`, `${layer.settings.table_alias}.endet IS NULL`]);
   console.log("LayerDBJobs->readDataset: ", sql);
   return executeSQL(kvm.db, sql);
 }

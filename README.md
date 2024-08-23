@@ -16,6 +16,10 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 
 # Change log
 
+## 1.19.0
+
+- Hausekeeping
+
 ## 1.18.1
 
 - Bugfix

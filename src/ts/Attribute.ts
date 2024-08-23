@@ -64,7 +64,7 @@ export class Attribute {
     //console.log('Erzeuge Attributeobjekt with settings %o', settings);
     this.layer = layer;
     this.settings = settings;
-    this.settings.stelleId = layer.stelle.get("id");
+    this.settings.stelleId = layer.stelle.get("ID");
     this.settings.layerId = layer.get("id");
     this.formField = this.getFormField();
     this.viewField = this.getViewField();

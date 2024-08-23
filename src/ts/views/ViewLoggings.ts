@@ -2,8 +2,6 @@ import { Kvm } from "../app";
 import { View } from "./View";
 
 export class ViewLoggings extends View {
-  dom: HTMLElement;
-
   constructor(app: Kvm) {
     super(app, "loggings");
   }

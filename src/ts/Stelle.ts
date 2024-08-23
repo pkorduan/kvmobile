@@ -16,6 +16,16 @@ type Deltas = {
   rows: DeltaEntry[];
 };
 
+type LayerParams = {
+  id: string;
+  key: string;
+  alias: string;
+  default_value: string;
+  current_value?: string;
+  options_sql: string;
+  options: { value: string; output: string }[];
+};
+
 type StelleSetting = {
   ID: string;
   Bezeichnung: string;
@@ -26,14 +36,16 @@ type StelleSetting = {
   north: number;
   startCenterLat: number;
   startCenterLon: number;
-  layer_params: any;
-  id: string;
+  layer_params: { [key: string]: LayerParams };
+  // id: string;
   name: string;
   bezeichnung: string;
   url: string;
   login_name: string;
   passwort: string;
   Stelle_ID: string;
+  syncVersion: any;
+  version: any;
 };
 
 export type RequestStellenResponse = {
@@ -116,47 +128,138 @@ export class Stelle {
   numLayers: number = 0;
   loadAllLayers: boolean = false;
   readAllLayers: boolean = false;
-  tableNames: string[] = [];
+  _tableNames: string[];
+  /**
+   * die konkreten Werte der LayerParams
+   */
+  private _layerParams: { [key: string]: string };
+
+  private _layerSettings: LayerSetting[];
 
   constructor(settings = {}) {
-    this.settings = typeof settings === "string" ? JSON.parse(settings) : settings;
-    this.tableNames = this.getTableNames();
+    this.settings = <StelleSetting>(typeof settings === "string" ? JSON.parse(settings) : settings);
+    this.readSettings();
   }
 
-  get(key) {
+  private readSettings() {
+    let layerIds: string[];
+    this._tableNames = [];
+    if (this.settings.ID) {
+      const slayerIds = kvm.store.getItem("layerIds_" + this.get("ID"));
+      if (slayerIds) {
+        try {
+          layerIds = JSON.parse(slayerIds);
+          console.info("layerIds", layerIds);
+        } catch (ex) {
+          console.info("error", ex);
+        }
+      }
+      if (layerIds) {
+        this._layerSettings = [];
+        for (const layerId of layerIds) {
+          const sLayerSetting = kvm.store.getItem("layerSettings_" + layerId);
+          if (sLayerSetting) {
+            const layerSetting = JSON.parse(sLayerSetting);
+            this._layerSettings.push(layerSetting);
+            if (layerSetting.table_name) {
+              const schema = layerSetting.schema_name || "";
+              this._tableNames.push(schema + "." + layerSetting.table_name);
+            }
+          }
+        }
+      }
+      const sLayerParams = kvm.store.getItem("layerParams_" + this.get("ID"));
+      if (sLayerParams) {
+        this._layerParams = JSON.parse(sLayerParams);
+      }
+    }
+  }
+
+  getLayerSettings() {
+    return this._layerSettings;
+  }
+
+  get<K extends keyof StelleSetting>(key: K) {
     return this.settings[key];
   }
 
-  set(key, value) {
+  set<K extends keyof StelleSetting>(key: K, value: any) {
     this.settings[key] = value;
     return this.settings[key];
   }
 
   saveToStore() {
     //kvm.log("Speicher Stelleneinstellungen in lokalen Speicher: " + JSON.stringify(this.settings));
-    kvm.store.setItem("stelleSettings_" + this.get("id"), JSON.stringify(this.settings));
+    kvm.store.setItem("stelleSettings_" + this.get("ID"), JSON.stringify(this.settings));
   }
 
-  activate() {
-    console.log("Activate Stelle");
-    kvm.setActiveStelle(this);
-    kvm.store.setItem("activeStelleId", this.get("id"));
-    $("#activeStelleBezeichnungDiv").html(this.get("bezeichnung")).show();
-    let layerParams = [];
-    if (kvm.store.getItem(`layerParams_${this.get("id")}`)) {
-      layerParams = JSON.parse(kvm.store.getItem(`layerParams_${this.get("id")}`));
-      console.log("Get layerParams from store: ", layerParams);
-    } else {
-      layerParams = Object.keys(this.settings.layer_params).map((name) => {
-        let layerParam: Map<string, string> = new Map();
-        layerParam[name] = this.settings.layer_params[name].default_value;
-        return layerParam;
-      });
-      console.log("Get layerParams from stelle settings: ", layerParams);
-      console.log("Set layerParams to store.");
-      kvm.store.setItem(`layerParams_${this.get("id")}`, JSON.stringify(layerParams));
+  // activate() {
+  //   console.error("Activate Stelle");
+  //   kvm.setActiveStelle(this);
+  //   kvm.store.setItem("activeStelleId", this.get("ID"));
+  //   $("#activeStelleBezeichnungDiv").html(this.get("bezeichnung")).show();
+  //   let layerParams = [];
+  //   if (kvm.store.getItem(`layerParams_${this.get("ID")}`)) {
+  //     layerParams = JSON.parse(kvm.store.getItem(`layerParams_${this.get("ID")}`));
+  //     console.log("Get layerParams from store: ", layerParams);
+  //   } else {
+  //     layerParams = Object.keys(this.settings.layer_params).map((name) => {
+  //       let layerParam: Map<string, string> = new Map();
+  //       layerParam[name] = this.settings.layer_params[name].default_value;
+  //       return layerParam;
+  //     });
+  //     console.log("Get layerParams from stelle settings: ", layerParams);
+  //     console.log("Set layerParams to store.");
+  //     kvm.store.setItem(`layerParams_${this.get("ID")}`, JSON.stringify(layerParams));
+  //   }
+  //   kvm.loadLayerParams(this.settings.layer_params, layerParams);
+  // }
+
+  getLayerParam(key: string): string {
+    if (this._layerParams && this._layerParams.hasOwnProperty(key)) {
+      return this._layerParams[key];
     }
-    kvm.loadLayerParams(this.settings.layer_params, layerParams);
+    return this.settings.layer_params[key]?.default_value;
+  }
+
+  async setLayerParam(key: string, value: string) {
+    console.error(`setLayerParams ${key}=$${value}`);
+    this._layerParams[key] = value;
+    kvm.store.setItem("layerParams_" + this.get("ID"), JSON.stringify(this._layerParams));
+    for (const layer of kvm.getLayers()) {
+      await layer.readData();
+    }
+  }
+
+  /**
+   * errsetzt die LayerParams in den SQL-Anweisungen
+   * @param sql
+   * @returns
+   */
+  replaceParams(sql: string) {
+    if (typeof sql === "string") {
+      const layerParams = this.settings.layer_params;
+      Object.keys(layerParams).forEach((layerParam) => {
+        const searchString = "$" + layerParam;
+        // const replaceString = layerParams[layerParam].current_value || layerParams[layerParam].default_value;
+        const replaceString = kvm.getActiveStelle().getLayerParam(layerParam);
+
+        sql = sql.replaceAll(searchString, replaceString);
+
+        // if (str.includes(`$${layerParam}`)) {
+        //   const regExp = new RegExp(`\\$${layerParam}`, "g");
+        //   str = str.replace(regExp, $(`#${layerParam}`).val().toString());
+        //   // console.log(`LayerParameter $${layerParam} in Text ersetzt: "${str}"`);
+        // }
+      });
+      // console.log(`Check if $USER_ID is in Text: "${str}"`);
+      if (sql.includes("$USER_ID")) {
+        const regExp = new RegExp(`\\$USER_ID`, "g");
+        sql = sql.replace(regExp, kvm.userId);
+        // console.log(`$USER_ID in Text ersetzt mit ${kvm.userId}: "${str}"`);
+      }
+    }
+    return sql;
   }
 
   /*
@@ -330,6 +433,7 @@ export class Stelle {
   finishLayerReading(layer: Layer | MapLibreLayer) {
     // console.log("finishLayerReading: readAllLayers= %s, numLayersRead=%s, numLayers=%s", this.readAllLayers, this.numLayersRead, this.numLayers);
     // console.log(`finishLayerReading ${layer.title}`);
+
     if (this.readAllLayers) {
       if (this.numLayersRead < this.numLayers - 1) {
         this.numLayersRead += 1;
@@ -338,14 +442,14 @@ export class Stelle {
         sperrBildschirm.tick(`${layer.title}:<br>&nbsp;&nbsp;Laden beeendet.`);
         this.numLayersRead = 0;
         this.readAllLayers = false;
-        const globalLayerId = `${kvm.store.getItem("activeStelleId")}_${kvm.store.getItem("activeLayerId")}`;
-        const activeLayer = kvm.getLayer(globalLayerId);
+        // const globalLayerId = `${kvm.store.getItem("activeStelleId")}_${kvm.store.getItem("activeLayerId")}`;
+        // const activeLayer = kvm.getLayer(globalLayerId);
         // if (activeLayer) {
         //   activeLayer.activate(); // activate latest active
         // } else {
         //   layer.activate(); // activate latest loaded
         // }
-        this.tableNames = this.getTableNames();
+        // this.tableNames = this.getTableNames();
         // kvm.showActiveItem();
         // kvm.closeSperrDiv("Laden der Layer beendet. Schließe Sperr-Bildschirm.");
         sperrBildschirm.close("");
@@ -353,8 +457,8 @@ export class Stelle {
     } else {
       sperrBildschirm.tick(layer.title + ": Laden beeendet.");
       this.sortOverlays();
-      layer.activate();
-      this.tableNames = this.getTableNames();
+      // layer.activate();
+      // this.tableNames = this.getTableNames();
       // kvm.showActiveItem();
       // kvm.closeSperrDiv();
     }
@@ -377,29 +481,10 @@ export class Stelle {
   }
 
   getTableNames() {
-    const stelleId = this.get("id");
-    if (typeof stelleId == "undefined") return [];
-
-    const layerIdsText = kvm.store.getItem(`layerIds_${this.get("id")}`);
-    if (layerIdsText == null) return [];
-
-    const layerIds = JSON.parse(layerIdsText);
-    if (!Array.isArray(layerIds)) return [];
-
-    return layerIds
-      .map((layerId) => {
-        try {
-          const layerSettings = JSON.parse(kvm.store.getItem(`layerSettings_${stelleId}_${layerId}`));
-          return `${layerSettings.schema_name}.${layerSettings.table_name}`;
-        } catch ({ name, message }) {
-          const msg = `Fehler beim Parsen der layerSettings ${stelleId}_${layerId}, Einstellungen des Layers können nicht aus dem Store geladen werden. TypeError: ${name}, Message: ${message}`;
-          console.error(msg);
-          kvm.msg(msg, "Fehler");
-        }
-      })
-      .filter((tableName) => {
-        return typeof tableName != "undefined";
-      });
+    return this._tableNames || [];
+  }
+  setTableNames(tableNames: string[]) {
+    this._tableNames = tableNames;
   }
 
   /**
@@ -417,7 +502,7 @@ export class Stelle {
     console.log("Layer.reloadLayer for stelle: %o", this);
     try {
       // var fileTransfer = new FileTransfer(),
-      const filename = cordova.file.dataDirectory + "layers_stelle_" + this.get("id") + ".json";
+      const filename = cordova.file.dataDirectory + "layers_stelle_" + this.get("ID") + ".json";
       //filename = 'temp_file.json',
       const url = this.getLayerUrl();
       sperrBildschirm.tick(`Download Layerdaten der Stelle.`);
@@ -515,7 +600,7 @@ export class Stelle {
     // TODO CHECK !!
     let index = sortedLayers.findIndex((layer, index, layers) => parseInt(layer.get("drawingorder")) > parseInt(layer.get("drawingorder")));
 
-    if (index == -1) {
+    if (index === -1) {
       index = sortedLayers.length;
     }
     console.log("%s: Stelle.getLayerDrawingIndex return index: %s", layer.get("title"), index);
@@ -539,33 +624,6 @@ export class Stelle {
     throw new Error("Method not implemented.");
   }
 
-  // async removeLayers() {
-  //   document.getElementById("layer_list").innerHTML = "";
-  //   if ("layerIds_" + kvm.activeStelle.get("id") in kvm.store) {
-  //     const layerIds = <string[]>JSON.parse(kvm.store["layerIds_" + kvm.activeStelle.get("id")]);
-  //     sperrBildschirm.tick("Lösche folgende Layer:");
-  //     // layerIds.map((id) => {
-  //     //   let globalId = kvm.activeStelle.get("id") + "_" + id;
-  //     //   if (kvm.getLayer(globalId)) {
-  //     //     sperrBildschirm.tick(`&nbsp;&nbsp;-&nbsp;${kvm.getLayer(globalId).title}`);
-  //     //   }
-  //     // });
-  //     // debugger;
-  //     for (let i = 0; i < layerIds.length; i++) {
-  //       const id = layerIds[i];
-  //       const globalId = kvm.activeStelle.get("id") + "_" + id;
-  //       const layer = kvm.getLayer(globalId);
-  //       if (layer) {
-  //         if (layer.get("vector_tile_url") == "") {
-  //           await layer.dropDataTable();
-  //           await layer.dropDeltasTable();
-  //         }
-  //         layer.removeFromMap();
-  //       }
-  //     }
-  //   }
-  // }
-
   /*
    * Remove existing layer of stelle with sequential function calls
    * 	dropDataTable
@@ -581,7 +639,7 @@ export class Stelle {
     console.error("Layer.requestLayers for stelle: %o", this);
     sperrBildschirm.tick("Starte Download der Layerdaten der Stelle");
 
-    const filename = cordova.file.dataDirectory + "layers_stelle_" + this.get("id") + ".json";
+    const filename = cordova.file.dataDirectory + "layers_stelle_" + this.get("ID") + ".json";
     const url = this.getLayerUrl();
     console.log("Download Layerdaten der Stelle mit url: ", kvm.replacePassword(url));
     const fileEntry = await download(url, filename);
@@ -594,7 +652,7 @@ export class Stelle {
       sperrBildschirm.tick("Downloadergebnis ist fehlerfrei.");
       sperrBildschirm.tick("Entferne existierende Layer aus der Anwendung.");
 
-      await kvm.clearLayers();
+      await this.clearLayers();
 
       this.loadAllLayers = true;
       this.numLayersLoaded = 0;
@@ -604,27 +662,45 @@ export class Stelle {
 
       if (this.numLayers > 0) {
         sperrBildschirm.tick("Lege Layer neu an.");
+
+        // Wir sammeln alle verwendeten Tabellenname mit Schema.TabellenNamen
+        this._tableNames = [];
+        for (const layerSetting of resultObj.layers) {
+          if (layerSetting.table_name) {
+            const schema = layerSetting.schema_name || "";
+            this._tableNames.push(schema + "." + layerSetting.table_name);
+          }
+        }
+
+        const idsOfLayer: string[] = [];
+
         // Sortiere Layer settings nach drawing order
         resultObj.layers = resultObj.layers.sort((a, b) => (parseInt(a.drawingorder) > parseInt(b.drawingorder) ? 1 : -1));
         // add requested layers
         console.log("  requestLayers) Füge neu runtergeladene Layer zur Anwendung hinzu.");
-        for (let layerSetting of resultObj.layers) {
-          if (layerSetting.vector_tile_url) {
-            console.log(`Erzeuge einen VectorTile Layer-Objekt für Layer ${layerSetting.title}`);
-            const layer = new MapLibreLayer(layerSetting, true, this);
-            layer.appendToApp();
-            layer.saveToStore();
-            this.finishLayerReading(layer);
-          } else {
-            console.log(`Erzeuge einen normales Layer-Objekt für Layer ${layerSetting.title}`);
-            const layer = new Layer(this, layerSetting);
-            await layer.createTable();
-            await layer.requestData(); // Das ist neu: Daten werden gleich geladen nach dem Anlegen in der Stelle
-            await layer.readData();
-            kvm.addLayer(layer);
-            // layer.saveToStore();
+        for (const layerSetting of resultObj.layers) {
+          try {
+            if (layerSetting.vector_tile_url) {
+              console.log(`Erzeuge einen VectorTile Layer-Objekt für Layer ${layerSetting.title}`);
+              const layer = new MapLibreLayer(layerSetting, true, this);
+              layer.appendToApp();
+              layer.saveToStore();
+              this.finishLayerReading(layer);
+            } else {
+              console.log(`Erzeuge einen normales Layer-Objekt für Layer ${layerSetting.title}`);
+              const layer = new Layer(this, layerSetting);
+              await layer.createTable();
+              await layer.requestData(); // Das ist neu: Daten werden gleich geladen nach dem Anlegen in der Stelle
+              await layer.readData();
+              kvm.addLayer(layer);
+              layer.saveToStore();
+            }
+            idsOfLayer.push(this.get("ID") + "_" + layerSetting.id);
+          } catch (ex) {
+            console.error(`stelle.requestLayers Layer ${layerSetting?.title} schlug fehl.`, ex);
           }
         }
+        kvm.store.setItem("layerIds_" + this.get("ID"), JSON.stringify(idsOfLayer));
       }
       // kvm.setConnectionStatus();
       //console.log('Store after save layer: %o', kvm.store);
@@ -638,6 +714,17 @@ export class Stelle {
       kvm.log("Fehlerausgabe von parseLayerResult!", 4);
       kvm.msg(resultObj.errMsg, "Downloadfehler");
     }
+  }
+
+  async clearLayers() {
+    console.error("stelle.clearLayers");
+    this._tableNames = [];
+    this._layerSettings = [];
+    for (const layerSetting of this._layerSettings) {
+      kvm.store.removeItem("layerSettings" + this.get("ID") + "_" + layerSetting.id);
+    }
+    kvm.store.removeItem("layerIds_" + this.get("ID"));
+    await kvm.clearLayers();
   }
 
   /**
@@ -790,7 +877,7 @@ export class Stelle {
 
     if (response.success) {
       kvm.writeLog(`Deltas wurden empfangen.`);
-      console.log(this.get("title") + ": Response: %o", response);
+      console.log(this.get("Bezeichnung") + ": Response: %o", response);
 
       if (response.version !== this.get("version")) {
         // TODO dataModelChange
@@ -824,8 +911,8 @@ export class Stelle {
           this.set("syncVersion", newVersion);
           this.saveToStore();
           await this.clearDeltas("sql");
-          console.log(this.get("title") + ": call readData after execDelta");
-          kvm.writeLog(`Layer ${this.get("title")}: ${numExecutedDeltas} Deltas vom Server auf Client ausgeführt.`);
+          console.log(this.get("Bezeichnung") + ": call readData after execDelta");
+          kvm.writeLog(`Layer ${this.get("Bezeichnung")}: ${numExecutedDeltas} Deltas vom Server auf Client ausgeführt.`);
           await this.readData(Util.getValueOfElement("limit"), Util.getValueOfElement("offset"));
         }
         // } else {

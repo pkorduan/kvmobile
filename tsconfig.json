@@ -10,8 +10,8 @@
     "inlineSourceMap": false,
     "sourceMap": false,
     "experimentalDecorators": true,
-    "target": "es2019",
-    "lib": ["es2019", "es2022.error", "dom"],
+    "target": "es2022",
+    "lib": ["es2022", "dom"],
     "allowJs": true,
     "allowUmdGlobalAccess": true,
     "esModuleInterop": true

@@ -5,7 +5,7 @@ import { View } from "./View";
 
 export class ViewFeatureList extends View {
   activeLayer: Layer;
-  dom: HTMLElement;
+  // dom: HTMLElement;
   featurelistHeading: HTMLElement;
   featurelistBody: HTMLElement;
   showSearch: HTMLElement;
@@ -24,6 +24,7 @@ export class ViewFeatureList extends View {
 
     for (const evt of ["keyup", "paste", "change", "search"]) {
       searchFeatureField.addEventListener(evt, () => {
+        console.info("searchFeatureField", evt);
         const needle = searchFeatureField.value.toLowerCase();
         const haystack = this.featurelistBody.querySelectorAll(".feature-item");
         haystack.forEach((el) => {
@@ -57,6 +58,7 @@ export class ViewFeatureList extends View {
       layer.addEventListener(this.fctUpdate);
       this.featurelistHeading.innerHTML = layer.get("alias") || layer.get("title");
       this.addFeatures(layer);
+      this.showSearch.style.display = "";
     } else {
       this.featurelistHeading.innerHTML = "Noch kein Layer ausgewählt";
       this.featurelistBody.innerHTML = 'Wählen Sie unter Einstellungen in der Gruppe "Layer" einen Layer aus. Öffnen Sie dann das Optionen Menü und wählen die Funktion "Daten synchronisieren"!';

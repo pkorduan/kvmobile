@@ -320,7 +320,7 @@ export class Layer extends PropertyChangeSupport {
     const vorschauOption: String = attribute.getVorschauOption();
     const subLayer: Layer = kvm.getLayer(subLayerId);
     const where: string[] = [`${subLayer.settings.table_alias}.${fkAttribute} = '${featureId}'`];
-    const filter: string = kvm.replaceParams(this.settings.filter);
+    const filter: string = this.stelle.replaceParams(this.settings.filter);
 
     if ($("#historyFilter").is(":checked")) {
       where.push(`${subLayer.settings.table_alias}.endet IS NOT NULL`);
@@ -328,7 +328,7 @@ export class Layer extends PropertyChangeSupport {
       where.push(`${subLayer.settings.table_alias}.endet IS NULL`);
     }
 
-    const sql = this.extentSql(kvm.replaceParams(subLayer.settings.query), where, "", "", "", filter);
+    const sql = this.extentSql(this.stelle.replaceParams(subLayer.settings.query), where, "", "", "", filter);
 
     console.log(`Read Vorschaudatensätze für Layer ${subLayer.title} with sql ${sql}`);
     // Das folgende geht noch nicht weil die Tabellen nicht so benannt sind  wie in sqlite
@@ -400,7 +400,7 @@ export class Layer extends PropertyChangeSupport {
     //  order = (this.get('name_attribute') != '' ? this.get('name_attribute') : this.get('id_attribute'));
 
     let where: string[] = [];
-    let filter: string = kvm.replaceParams(this.settings.filter);
+    let filter: string = this.stelle.replaceParams(this.settings.filter);
 
     // console.log("readdata", this);
     // let sql: string;
@@ -408,7 +408,7 @@ export class Layer extends PropertyChangeSupport {
     this._activeFeature = null;
 
     if (this.isActive) {
-      order = Util.getValueOfElement("anzeigeSortSelect");
+      // order = Util.getValueOfElement("anzeigeSortSelect");
 
       where = $(".filter-view-field")
         .filter(function (i, field) {
@@ -442,16 +442,20 @@ export class Layer extends PropertyChangeSupport {
     //   ${(limit == 0 && offset == 0 ? "" : "LIMIT " + limit + " OFFSET " + offset)}
     // `;
     let regExp: RegExp;
-    this.stelle.tableNames.forEach((table) => {
+    this.stelle.getTableNames().forEach((table) => {
       regExp = new RegExp(table, "g");
       this.settings.query = this.settings.query.replace(regExp, table.replace(".", "_"));
     });
 
-    let query = kvm.replaceParams(this.settings.query);
+    const query = this.stelle.replaceParams(this.settings.query);
 
     const sql = this.extentSql(query, where, order, limit, offset, filter);
 
     console.log(`Lese Daten von Layer ${this.title} mit sql: "${sql}"`);
+
+    if ("Standorte" === this.title) {
+      console.error(sql);
+    }
 
     try {
       const rs = await Util.executeSQL(kvm.db, sql);
@@ -657,74 +661,9 @@ export class Layer extends PropertyChangeSupport {
     }
   }
 
-  // createTables() {
-  //   //kvm.log("Layer.createTables", 3);
-  //   const layerIds = JSON.parse(kvm.store.getItem("layerIds_" + this.stelle.get("id")));
-
-  //   for (let i = 0; i < layerIds.length; i++) {
-  //     this.set("id", layerIds[i]);
-  //     this.settings = JSON.parse(kvm.store.getItem("layerSettings_" + this.getGlobalId()));
-  //     this.attributes = $.map(this.settings.attributes, (attribute) => {
-  //       return new Attribute(this, attribute);
-  //     });
-  //     this.createTable();
-  //   }
-  // }
-
   /**
    * Create the table for layer data and the deltas
    */
-  // createTableOrg() {
-  //   const sql = this.getCreateTableSql();
-  //   const layer = this;
-  //   try {
-  //     // let j: SQLitePlugin.TransactionStatementErrorCallback;
-  //     kvm.db.transaction(
-  //       (tx) => {
-  //         kvm.log("Erzeuge Tabelle mit sql: " + sql, 3);
-  //         //create table
-  //         tx.executeSql(
-  //           sql,
-  //           [],
-  //           (tx, res) => {
-  //             kvm.log("Tabelle " + layer.getSqliteTableName() + " erfolgreich angelegt.", 3);
-  //             if (layer.hasEditPrivilege) {
-  //               const tableName = layer.getSqliteTableName() + "_deltas",
-  //                 tableColumnDefinitions = ["version INTEGER PRIMARY KEY", "type text", "change text", "delta text", "created_at text"],
-  //                 sql = "CREATE TABLE IF NOT EXISTS " + tableName + " (" + tableColumnDefinitions.join(", ") + ")";
-  //               //kvm.log("Erzeuge Delta-Tabelle mit sql: " + sql, 3);
-
-  //               tx.executeSql(
-  //                 sql,
-  //                 [],
-  //                 (tx, res) => {
-  //                   kvm.log(`Deltas Tabelle für Layer ${layer.title} erfolgreich angelegt.`, 3);
-  //                 },
-  //                 (tx, error) => {
-  //                   const tableName = layer.getSqliteTableName();
-  //                   console.log("Exception in createTable: %o", error);
-  //                   kvm.msg("Fehler beim Anlegen der Tabelle: " + tableName + " " + error.message);
-  //                 }
-  //               );
-  //             }
-  //           },
-  //           (tx, error) => {
-  //             const tableName = layer.getSqliteTableName();
-  //             kvm.msg("Fehler beim Anlegen der Tabelle: " + tableName + " " + error.message);
-  //           }
-  //         );
-  //       },
-  //       (error) => {
-  //         kvm.log("Fehler beim Anlegen der Tabellen für den Layer: " + layer.get("title") + " " + error.message, 1);
-  //         kvm.msg("Fehler beim Anlegen der Tabellen für den Layer: " + layer.get("title") + " " + error.message);
-  //       }
-  //     );
-  //   } catch ({ name, message }) {
-  //     console.error(`Fehler in Funktion createTable: ${name} Message: ${message}`);
-  //     kvm.msg(`Fehler beim Anlegen der Tabelle mit sql: ${sql} Fehler: ${name} Message: ${message}`, "Datenbank");
-  //   }
-  // }
-
   createTable() {
     const sql = this.getCreateTableSql();
     const layer = this;
@@ -1908,9 +1847,14 @@ export class Layer extends PropertyChangeSupport {
                 {
                   // replace default String with layerParams if exists
                   let paramName = attribute.get("default").slice(1);
-                  if (paramName in kvm.layerParams && attribute.hasEnumValue(kvm.layerParams[paramName])) {
-                    value = kvm.layerParams[paramName];
+                  console.error("!!!!!!!!!!!");
+                  const paramValue = this.stelle.getLayerParam(paramName);
+                  if (attribute.hasEnumValue(paramValue)) {
+                    value = paramValue;
                   }
+                  // if (paramName in kvm.layerParams && attribute.hasEnumValue(kvm.layerParams[paramName])) {
+                  //   value = kvm.layerParams[paramName];
+                  // }
                 }
                 break;
               default: {
@@ -2895,7 +2839,7 @@ export class Layer extends PropertyChangeSupport {
       const layer = <Layer>this.context;
       const id_attribute = layer.get("id_attribute");
       const featureId = layer.activeFeature.id;
-      const filter: string = kvm.replaceParams(this.settings.filter);
+      const filter: string = this.stelle.replaceParams(this.settings.filter);
       const sql = layer.extentSql(layer.settings.query, [`${layer.settings.table_alias}.${id_attribute} = '${featureId}'`, `${layer.settings.table_alias}.endet IS NULL`], "", "", "", filter);
       console.log("SQL zum lesen des Datensatzes: ", sql);
 
@@ -3412,7 +3356,7 @@ export class Layer extends PropertyChangeSupport {
   }
 
   getGlobalId() {
-    return `${this.stelle.get("id")}_${this.get("id")}`;
+    return `${this.stelle.get("ID")}_${this.get("id")}`;
   }
 
   getParentLayerId() {
@@ -3702,29 +3646,12 @@ export class Layer extends PropertyChangeSupport {
   }
 
   saveToStore() {
-    //console.log('layerIds vor dem Speichern: %o', kvm.store.getItem('layerIds_' + this.stelle.get('id')));
     this.settings.loaded = false;
-    let layerIds = <string[]>JSON.parse(kvm.store.getItem("layerIds_" + this.stelle.get("id"))) || [];
     const settings = JSON.stringify(this.settings);
-
     kvm.store.setItem("layerSettings_" + this.getGlobalId(), settings);
-    //console.log("%s: layerSettings_%s eingetragen.", this.title, this.getGlobalId());
-
-    if ($.inArray(this.get("id"), layerIds) < 0) {
-      console.log("%s->saveToStore: Insert layerId %s in layerIds List at index %s", this.title, this.get("id"), this.stelle.getLayerDrawingIndex(this));
-      layerIds.splice(this.stelle.getLayerDrawingIndex(this), 0, this.get("id"));
-      kvm.store.setItem("layerIds_" + this.stelle.get("id"), JSON.stringify(layerIds));
-    }
   }
 
   removeFromStore() {
-    //console.log("removeFromStore");
-    console.log("layerIds in Store vor dem Löschen: %s", kvm.store.getItem("layerIds_" + this.stelle.get("id")));
-    const layerIds = <string[]>JSON.parse(kvm.store.getItem("layerIds_" + this.stelle.get("id"))) || [];
-    console.log("Entferne LayerID %s aus layerIds Liste im Store.", this.get("id"));
-    layerIds.splice(layerIds.indexOf(this.get("id")), 1);
-    kvm.store.setItem("layerIds_" + this.stelle.get("id"), JSON.stringify(layerIds));
-    console.log("layerIds in Store nach dem Löschen: %s", kvm.store.getItem("layerIds_" + this.stelle.get("id")));
     kvm.store.removeItem("layerSettings_" + this.getGlobalId());
   }
 
