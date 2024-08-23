@@ -20,6 +20,13 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 
 - Hausekeeping
 
+## 1.18.2
+
+- Bugfix
+  - Speicher die layerParams aus stelle settings im store nach dem neu Laden der Stelle
+  - Zoomstufe auf 21 hochsetzbar.
+  - Unterstützung von StelleID und ClientID
+
 ## 1.18.1
 
 - Bugfix
