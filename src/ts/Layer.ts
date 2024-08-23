@@ -1814,7 +1814,7 @@ export class Layer extends PropertyChangeSupport {
           break;
         case attribute.get("form_element_type") == "StelleID" && (options == "" || options.toLowerCase() == "insert"):
           {
-            value = kvm.activeStelle.get("ID");
+            value = kvm.getActiveStelle().get("ID");
           }
           break;
         case attribute.get("form_element_type") == "ClientID" && (options == "" || options.toLowerCase() == "insert"):
