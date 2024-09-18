@@ -36,7 +36,7 @@ export class ClientIDFormField implements Field {
     );
   }
 
-  setValue(val) {
+  async setValue(val) {
     if (kvm.coalesce(val, "") == "" && this.settings.default) {
       val = this.settings.default;
     }

@@ -43,20 +43,14 @@ export class GeometrieFormField implements Field {
   //     return this.settings[key];
   // }
 
-  setValue(val) {
+  async setValue(val) {
     // kvm.log("GeometrieFormField.setValue with value:" + val);
-    const geom = wkx.Geometry.parse(<any>new Buffer(val, "hex"));
-    this.element.val(geom.toEwkb().toString("hex"));
-    /*
-    if (val == null || val == 'null') {
-      val = '';
+    if (val) {
+      const geom = wkx.Geometry.parse(<any>new Buffer(val, "hex"));
+      this.element.val(geom.toEwkb().toString("hex"));
+    } else {
+      this.element.val("");
     }
-    else {
-      var geom = kvm.wkx.Geometry.parse(new kvm.Buffer(val, 'hex')),
-          faktor = Math.pow(10, 6),
-          val = Math.round(geom.x * faktor) / faktor + ' ' + Math.round(geom.y * faktor) / faktor;
-    }
-*/
   }
 
   getValue(action = "") {
@@ -84,7 +78,7 @@ export class GeometrieFormField implements Field {
 
     $("#goToGpsPositionButton").on("click", function () {
       console.log("Fly to feature position.");
-      kvm.showItem("mapEdit");
+      kvm.showView("mapEdit");
       kvm.map.flyTo(kvm.getActiveLayer().activeFeature.editableLayer.getLatLng(), 18);
     });
 
@@ -142,6 +136,7 @@ export class GeometrieFormField implements Field {
      *   exclude: Die Variante zum setzen der Geometrie nicht verwenden
      */
     $(document).on("geomChanged", function (event, options) {
+      console.error("geomChanged", event, options);
       const feature = kvm.getActiveLayer().activeFeature;
       const geom = options.geom;
       const exclude = options.exclude;

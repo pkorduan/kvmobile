@@ -1,6 +1,9 @@
 import { Kvm } from "./app";
+import { sperrBildschirm } from "./SperrBildschirm";
 import * as PanelEinstellungen from "./views/PanelEinstellungen";
 import { View } from "./views/View";
+
+export type ViewName = "settings" | "loggings" | "featurelist" | "map" | "mapEdit" | "dataView" | "formular";
 
 export class Menu {
   private showSettings: HTMLElement;
@@ -47,21 +50,21 @@ export class Menu {
       item.style.display = "none";
     }
     this.showFormEdit.addEventListener("click", () => {
-      this.app.showItem("formular");
+      this.app.showView("formular");
     });
 
     this.showFeatureList.addEventListener("click", () => {
-      this.app.showItem("featurelist");
+      this.app.showView("featurelist");
     });
     this.showMap.addEventListener("click", () => {
-      this.app.showItem("map");
+      this.app.showView("map");
     });
     this.showMapEdit.addEventListener("click", () => {
-      this.app.showItem("mapEdit");
+      this.app.showView("mapEdit");
     });
 
     this.showSettings.addEventListener("click", () => {
-      this.app.showItem("settings");
+      this.app.showView("settings");
     });
 
     this.editFeatureButton.addEventListener("click", () => {
@@ -70,9 +73,12 @@ export class Menu {
     });
 
     this.newFeatureButton.addEventListener("click", () => {
+      sperrBildschirm.show();
       const layer = this.app.getActiveLayer();
-      layer.newFeature();
-      layer.editFeature(layer.activeFeature.id);
+      const newFeature = layer.newFeature();
+      // layer.editFeature(layer.activeFeature.id);
+      layer.editFeature(newFeature);
+      sperrBildschirm.close();
     });
 
     this.tplFeatureButton.addEventListener("click", () => {
@@ -107,7 +113,9 @@ export class Menu {
     });
 
     this.app.addEventListener(Kvm.EVENTS.ACTIVE_LAYER_CHANGED, (evt) => {
-      this.newFeatureButton.style.display = evt.newValue?.hasEditPrivilege ? "" : "none";
+      if (this.activeView?.id !== "formular") {
+        this.newFeatureButton.style.display = evt.newValue?.hasEditPrivilege ? "" : "none";
+      }
     });
   }
 
@@ -164,21 +172,16 @@ export class Menu {
     this.showItems(items);
   }
 
-  activate(item: string) {
-    console.error(`yyyy newView=${item}  oldView=${this.activeView?.id}`);
+  activate(item: ViewName) {
+    console.info(`yyyy newView=${item}  oldView=${this.activeView?.id}`);
     if (this.activeView) {
-      // this.activeView.style.display = "none";
       this.activeView.hide();
     }
 
-    // if (["map", "mapEdit"].indexOf(item) === -1) {
-    //   document.getElementById("geolocation_div").style.display = "none";
-    // }
     let newView: View;
     switch (item) {
       case "settings":
         this.showDefaultMenu();
-        PanelEinstellungen.show("layer");
         newView = this.id2View.get(item);
         break;
       case "loggings":
@@ -192,12 +195,12 @@ export class Menu {
         break;
       case "map":
         this.showDefaultMenu();
-        newView = this.id2View.get(item);
+        newView = this.id2View.get("mapView");
         this.app.lastMapOrListView = "map";
         break;
       case "mapEdit":
         this.showMenuMapEdit();
-        newView = this.id2View.get("map");
+        newView = this.id2View.get("mapView");
         this.app.map.invalidateSize();
         break;
       case "dataView":
@@ -216,6 +219,10 @@ export class Menu {
     }
     this.activeView = newView;
     newView.show();
+
+    if (item === "settings") {
+      PanelEinstellungen.show("layer");
+    }
     // newView.scrollTop(0);
   }
 

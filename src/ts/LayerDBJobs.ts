@@ -1,35 +1,23 @@
+import { Feature } from "./Feature";
 import { Layer } from "./Layer";
 import { executeSQL, underlineToPointName } from "./Util";
 import { kvm } from "./app";
 
-export async function runInsert(layer: Layer, delta: { type: string; change: string; delta: string }) {
-  console.log("LayerDBJobs.runInsert", layer, delta);
-  // const strategy = {
-  //     context: this,
-  //     succFunc: "backupDataset",
-  //     next: {
-  //         succFunc: "createDataset",
-  //         next: {
-  //             succFunc: "writeDelta",
-  //             next: {
-  //                 succFunc: "readDataset",
-  //                 next: {
-  //                     succFunc: "afterCreateDataset",
-  //                     succMsg: "Datensatz erfolgreich angelegt",
-  //                 },
-  //             },
-  //         },
-  //     },
-  // };
+/**
+ * insert den Datensatz, liest die Datensätze des Layers neu, und gibt diese zurück
+ *
+ * @param layer
+ * @param delta
+ * @returns
+ */
+export async function runInsert(feature: Feature, delta: { action: "insert"; sql: string }) {
+  console.log("LayerDBJobs.runInsert", feature, delta);
   return new Promise<SQLitePlugin.Results>(async (resolve, reject) => {
     try {
-      // const rsBackupDS = await backupDataset(layer);
-      const sql = delta.delta;
-      console.log("SQL zum Anlegen eines neuen Datensatzes: ", sql);
-      const rsUpdate = await executeSQL(kvm.db, sql);
-      await writeDelta(layer, delta);
-      const rsNew = readDataset(layer);
-      // console.log("resolve....");
+      const sql = delta.sql;
+      await executeSQL(kvm.db, sql);
+      await writeDelta(feature, delta);
+      const rsNew = readDataset(feature.layer);
       resolve(rsNew);
     } catch (ex) {
       reject(ex);
@@ -37,62 +25,43 @@ export async function runInsert(layer: Layer, delta: { type: string; change: str
   });
 }
 
-export async function runDelete(layer: Layer, delta: { type: string; change: string; delta: string }) {
-  console.log("LayerDBJobs.runDelete", layer);
-  // const strategy = {
-  //   context: this,
-  //   succFunc: "backupDataset",
-  //   next: {
-  //     succFunc: "deleteDataset",
-  //     next: {
-  //       succFunc: "writeDelta",
-  //       next: {
-  //         succFunc: "deleteDeltas",
-  //         other: "insert",
-  //         next: {
-  //           succFunc: "afterDeleteDataset",
-  //           succMsg:
-  //             "Datensatz erfolgreich gelöscht! Er kann wieder hergestellt werden.",
-  //         },
-  //       },
-  //     },
-  //   },
-  // };
+/**
+ * updated den Datensatz, liest die Datensätze des Layers neu, und gibt diese zurück
+ *
+ * @param layer
+ * @param delta
+ * @returns
+ */
+export async function runUpdate(feature: Feature, delta: { action: "update"; sql: string }) {
+  console.log("LayerDBJobs.runUpdate", feature, delta);
   return new Promise<SQLitePlugin.Results>(async (resolve, reject) => {
     try {
-      // const rsBackupDS = await backupDataset(layer);
-
-      // ToDo pk: Delete all sub featues
-      // layer.attributes
-      //   .filter((allAttr) => {
-      //     return allAttr.get("form_element_type") === "SubFormEmbeddedPK";
-      //   })
-      //   .forEach((subFormAttr) => {
-      //     let subLayerId = subFormAttr.getGlobalSubLayerId();
-      //     let subLayerFK = subFormAttr.getFKAttribute();
-      //     let featureId = layer.activeFeature.id;
-      //     console.log(
-      //       `Delete features in subLayerId: ${subLayerId} with featureId: ${featureId} in foreign key attribute: ${subLayerFK}`
-      //     );
-      //     [...kvm.getLayer(subLayerId).getFeaturesByFK(subLayerFK, featureId)].forEach(([id, feature]) => {
-      //       delta = layer.getDeleteDelta(feature.id);
-      //       sql =  delta.delta + " AND endet IS NULL";
-      //       console.log("SQL zum Löschen des SubFeatures: ", sql);
-      //       let rsDelete = await executeSQL(kvm.db, sql);
-      //       await writeDelta(layer, delta);
-      //       const rsNew = deleteDeltas(layer);
-      //       // console.log("resolve....");
-      //       resolve(rsNew);
-      //     });
-      //   });
-
-      const sql = delta.delta + " AND endet IS NULL";
-      console.log("SQL zum Löschen eines Datensatzes: ", sql);
-      let rsDelete = await executeSQL(kvm.db, sql);
-      await writeDelta(layer, delta);
-      const rsNew = deleteDeltas(layer);
-      // console.log("resolve....");
+      const sql = delta.sql + " AND endet IS NULL";
+      await executeSQL(kvm.db, sql);
+      await writeDelta(feature, delta);
+      const rsNew = readDataset(feature.layer);
       resolve(rsNew);
+    } catch (ex) {
+      reject(ex);
+    }
+  });
+}
+
+/**
+ * updated den Datensatz, liest die Datensätze des Layers neu, und gibt diese zurück
+ *
+ * @param layer
+ * @param delta
+ * @returns
+ */
+export async function runDelete(feature: Feature, delta: { action: "delete"; sql: string }) {
+  console.log("LayerDBJobs.runDelete", feature);
+  return new Promise<void>(async (resolve, reject) => {
+    try {
+      const sql = delta.sql + " AND endet IS NULL";
+      await executeSQL(kvm.db, sql);
+      await writeDelta(feature, delta);
+      resolve();
     } catch (ex) {
       reject(ex);
     }
@@ -115,48 +84,6 @@ export async function runDelete(layer: Layer, delta: { type: string; change: str
 //         }
 //     });
 // }
-
-/**
- * updated den Datensatz unf gibt den neu gelesenden Datensatz zurück
- *
- * @param layer
- * @param delta
- * @returns
- */
-export async function runUpdate(layer: Layer, delta: { type: string; change: string; delta: string }) {
-  console.log("LayerDBJobs.runUpdate", layer, delta);
-  // const strategy = {
-  //     context: this,
-  //     succFunc: "backupDataset",
-  //     next: {
-  //         succFunc: "updateDataset",
-  //         next: {
-  //             succFunc: "writeDelta",
-  //             next: {
-  //                 succFunc: "readDataset",
-  //                 next: {
-  //                     succFunc: "afterUpdateDataset",
-  //                     succMsg: "Datensatz erfolgreich aktualisiert",
-  //                 },
-  //             },
-  //         },
-  //     },
-  // };
-
-  return new Promise<SQLitePlugin.Results>(async (resolve, reject) => {
-    try {
-      //      const rsBackupDS = await backupDataset(layer);
-      const sql = delta.delta + " AND endet IS NULL";
-      const rsUpdate = await executeSQL(kvm.db, sql);
-      await writeDelta(layer, delta);
-      const rsNew = readDataset(layer);
-      // console.log("resolve....");
-      resolve(rsNew);
-    } catch (ex) {
-      reject(ex);
-    }
-  });
-}
 
 /**
  * Function copy a dataset with endet = current date as a backup of activeFeature
@@ -265,36 +192,39 @@ async function backupDataset(layer: Layer) {
  * for delete delta if insert delta exists or
  * for insert delta if delte delta exists
  */
-async function writeDelta(layer: Layer, delta: { type: string; change: string; delta: string }) {
+async function writeDelta(feature: Feature, delta: { action: "insert" | "delete" | "update"; sql: string }) {
   try {
-    // console.log("writeDelta: ", delta);
-    // const layer = this.layer;
-    // const delta = this.delta;
-    // const changes = this.changes;
+    const layer = feature.layer;
+    const schemaName = layer.get("schema_name");
+    const tableName = layer.get("table_name");
+
     const sql = `
-  INSERT INTO ${layer.getSqliteTableName()}_deltas (
-    type,
-    change,
-    delta,
-    created_at
+  INSERT INTO deltas (
+    action,
+    sql,
+    uuid,
+    action_time,
+    schema_name,
+    table_name
   )
   SELECT
-    '${delta.type}' AS type,
-    '${delta.change}' AS change,
-    '${underlineToPointName(delta.delta, layer.get("schema_name"), layer.get("table_name")).replace(/\'/g, "''")}' AS delta,
-    '${kvm.now()}' AS created_at
+    '${delta.action}' AS action,
+    '${underlineToPointName(delta.sql, layer.get("schema_name"), layer.get("table_name")).replace(/\'/g, "''")}' AS sql,
+    '${feature.id}' as uuid,
+    '${kvm.now()}' AS created_at,
+    '${schemaName}', 
+    '${tableName}'
   WHERE
     (
       SELECT
         count(*)
       FROM
-        ${layer.getSqliteTableName()}_deltas
+        deltas 
       WHERE
-        INSTR(delta, '${layer.activeFeature.id}') > 0 AND
-        type = 'sql' AND
+        INSTR(sql, '${layer.activeFeature.id}') > 0 AND
         (
-          (change = 'insert' AND '${delta.change}' = 'delete') OR
-          (change = 'delete' AND '${delta.change}' = 'insert')
+          (action = 'insert' AND '${delta.action}' = 'delete') OR
+          (action = 'delete' AND '${delta.action}' = 'insert')
         )
     ) = 0
 `;
@@ -306,29 +236,33 @@ async function writeDelta(layer: Layer, delta: { type: string; change: string; d
   }
 }
 
-// async function createDataset(layer: Layer) {
-//     console.error("createDataset");
+export async function writeImgDelta(feature: Feature, delta: { action: "insert" | "delete"; file: string }) {
+  try {
+    const layer = feature.layer;
 
-//     let changes = layer.collectChanges("insert");
-//     const dokumentAttributeNames = layer.getDokumentAttributeNames();
-//     let imgChanges = changes.filter(function (change) {
-//             return $.inArray(change.key, dokumentAttributeNames) > -1;
-//         }),
-//         // delta: any = {},
-//         sql = "";
+    const sql = `
+  INSERT INTO image_deltas (
+    action,
+    file,
+    uuid,
+    action_time,
+    layer_id
+  )
+  values(
+    '${delta.action}',
+    '${delta.file}',
+    '${feature.id}',
+    '${kvm.now()}',
+    '${layer.get("id")}'
+  )`;
 
-//     if (imgChanges.length == 0) {
-//         //console.log('no imgChanges');
-//     } else {
-//         layer.createImgDeltas(imgChanges);
-//     }
-
-//     changes = layer.addAutoChanges(changes, "insert");
-//     const delta = layer.getInsertDelta(changes);
-//     sql = delta.delta;
-
-//     return executeSQL(kvm.db, sql);
-// }
+    // console.log("Funktion nach schreiben des Deltas: %s", this.next.succFunc);
+    return executeSQL(kvm.db, sql);
+  } catch (ex) {
+    console.error("Error in writeDelta", ex);
+    throw new Error("Fehler beim Schreiben des Image-Deltas", { cause: ex });
+  }
+}
 
 /**
  * read feature data from database and call function this.next.succFunc

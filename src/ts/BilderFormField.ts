@@ -4,8 +4,7 @@
 import { kvm } from "./app";
 import { AttributeSetting } from "./Attribute";
 import { Field } from "./Field";
-import { fileExists, getWebviewUrl } from "./Util";
-import { createHtmlElement } from "./Util";
+import { confirm, fileExists, getWebviewUrl } from "./Util";
 
 export class BilderFormField implements Field {
   settings: AttributeSetting;
@@ -45,7 +44,7 @@ export class BilderFormField implements Field {
    * create corresponding form and view elements.
    * @params any set to '' if val is undefined, null, 'null' or NAN
    */
-  setValue(kvwmapFilePath: string) {
+  async setValue(kvwmapFilePath: string) {
     // console.log("BilderFormField.setValue kvwmapFilePath=" + kvwmapFilePath);
     // console.log("BilderFormField.setValue with value: " + val);
     const val = kvm.coalesce(kvwmapFilePath, "");
@@ -129,7 +128,7 @@ export class BilderFormField implements Field {
     $("#dropAllPictureButton_" + this.settings.index).show();
 
     imgDiv.on("click", (evt) => {
-      var target = $(evt.target),
+      const target = $(evt.target),
         src = target.attr("src"),
         fieldId = target.attr("field_id");
       if (src == "img/no_image.png") {
@@ -158,27 +157,18 @@ export class BilderFormField implements Field {
       } else {
         kvm.log("Versuche das Bild zu öffnen: " + src, 4);
         cordova.plugins.fileOpener2.open(nativeURL, "image/jpeg", {
-          error: function (e) {
-            alert("Fehler beim laden der Datei: " + e.message + " Status: " + e.status);
+          error: async (e) => {
+            debugger;
+            alert("Fehler beim Laden der Datei '" + nativeURL + "'. Fehler: " + e.status);
+            if (await confirm("Bild Löschen?", null, "ja", "nein")) {
+              this.dropImage(target);
+            }
           },
-          success: function () {
+          success: async () => {
             kvm.log("Datei " + src + " erfolgreich geöffnet.", 4);
-            navigator.notification.confirm(
-              "Bild Löschen?",
-              function (buttonIndex) {
-                if (buttonIndex == 1) {
-                  // ja
-                  const field = kvm.getActiveLayer().attributes[fieldId].formField;
-                  field.dropImage(target);
-                }
-                if (buttonIndex == 2) {
-                  // nein
-                  // Do nothing
-                }
-              },
-              "",
-              ["ja", "nein"]
-            );
+            if (await confirm("Bild Löschen?", null, "ja", "nein")) {
+              this.dropImage(target);
+            }
           },
         });
       }

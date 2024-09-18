@@ -41,7 +41,7 @@ export class TextfeldFormField implements Field {
   //     return this.settings[key];
   // }
 
-  setValue(val) {
+  async setValue(val) {
     //console.log('TextFormField.setValue with value: ' + val);
     if (kvm.coalesce(val, "") == "" && this.settings.default) {
       val = this.settings.default;

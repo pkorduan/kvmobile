@@ -1,5 +1,5 @@
 import * as wkx from "wkx";
-import { GeoJSON } from "leaflet";
+import { CircleMarker, GeoJSON, Layer as LeafletLayer, Marker, Path, Point } from "leaflet";
 import { kvm } from "./app";
 import { Layer } from "./Layer";
 import { Klasse } from "./Klasse";
@@ -36,7 +36,7 @@ export class Feature {
   layer: Layer;
   id: string;
   // Achtung reine Id von leaflet
-  layerId: number;
+  // layerId: number;
   globalLayerId: string;
   isEditable: boolean;
   private _isActive: boolean;
@@ -47,6 +47,8 @@ export class Feature {
   new: boolean;
 
   listElement: HTMLElement;
+
+  leafletLayer: CircleMarker | Path;
 
   constructor(data: any = {}, layer: Layer, isNew?: boolean) {
     // this.options = {
@@ -79,18 +81,23 @@ export class Feature {
     return this._isActive;
   }
 
-  setActive(active: boolean) {
-    console.error(`feature.setActiv(${active})`);
-    this._isActive = active;
-  }
+  // setActive(active: boolean) {
+  //   console.error(`zzz feature.setActiv(${active})  ${this.layer?.title} ${this.id}`);
+  //   this._isActive = active;
+  // }
 
   // getId() {
   //     return this.id;
   // }
 
+  /**
+   * gibt den Wert des Attributes zurück oder null
+   * @param attributeName
+   * @returns
+   */
   getDataValue(attributeName: string) {
     // ToDo: value auf null nicht auf 'null' setzen wenn er undefined ist
-    return typeof this.data !== "undefined" && typeof this.data[attributeName] != "undefined" ? this.data[attributeName] : "null";
+    return typeof this.data !== "undefined" && typeof this.data[attributeName] != "undefined" ? this.data[attributeName] : null;
   }
 
   setEditable(editable) {
@@ -461,8 +468,9 @@ export class Feature {
    */
 
   zoomTo(zoom: boolean, startLatLng?: L.LatLngExpression) {
-    if (this.layerId) {
-      let layer = this.isEditable ? this.editableLayer : (<any>kvm.map)._layers[this.layerId];
+    console.info("feature.zoomTo");
+    if (this.leafletLayer) {
+      let layer = this.isEditable ? this.editableLayer : this.leafletLayer;
       if (this.layer.settings.geometry_type == "Point") {
         if (zoom) {
           kvm.map.setZoom(18);
@@ -471,17 +479,18 @@ export class Feature {
         kvm.map.panTo(layer.getLatLng());
       } else {
         console.log("flyToBounds %s %o", this.isEditable ? "editableLayer: " : "feature bounds: ", layer.getBounds().getCenter());
-        let isVisible = $("#map").is(":visible");
-        if (!isVisible) {
-          $("#map").show();
-        }
-        kvm.map.invalidateSize();
+        // let isVisible = $("#map").is(":visible");
+        // if (!isVisible) {
+        //   $("#map").show();
+        // }
+        // kvm.map.invalidateSize();
         //kvm.map.flyToBounds(layer.getBounds());
         kvm.map.fitBounds(layer.getBounds());
-        if (!isVisible) {
-          $("#map").hide();
-        }
+        // if (!isVisible) {
+        //   $("#map").hide();
+        // }
       }
+      // kvm.viewMap.set(zoomLevel, layer.getLatLng())
     } else {
       kvm.map.setZoom(18);
       if (startLatLng) {
@@ -509,12 +518,15 @@ export class Feature {
     // this.layer.setActiveFeature(this);
 
     if (this.layer.hasGeometry) {
-      let mapLayer = (<any>kvm.map)._layers[this.layerId];
+      // let mapLayer = (<any>kvm.map)._layers[this.layerId];
       if (this.newGeom) {
         //console.log("Feature has newGeom");
         console.log("Markiere Feature %s in Layer %s", this.id, this.layer.title);
-        mapLayer.setStyle(this.layer.getSelectedStyle(this.getStyle()));
-        mapLayer.bindPopup(this.layer.getPopup(this)).openPopup();
+        this.leafletLayer.setStyle(this.layer.getSelectedStyle(this.getStyle()));
+        this.leafletLayer.bindPopup(this.layer.getPopup(this)).openPopup();
+        this.leafletLayer.on("popupclose", (evt) => {
+          console.error("popupclose", evt);
+        });
         if (zoom) {
           this.zoomTo(zoom);
         }
@@ -524,8 +536,9 @@ export class Feature {
       }
     }
     kvm.log("Select feature in list " + this.id, 4);
-    $("#" + this.id).addClass("selected-feature-item");
-    this.setActive(true);
+    //  $("#" + this.id).addClass("selected-feature-item");
+    // this.setActive(true);
+    this._isActive = true;
     return this;
   }
 
@@ -541,9 +554,9 @@ export class Feature {
     if (this.editableLayer) {
       kvm.map.removeLayer(this.editableLayer);
     }
-    let mapLayer = (<any>kvm.map)._layers[this.layerId];
-    if (mapLayer) {
-      const kvmLayer = kvm.getLayer(this.globalLayerId);
+    // const mapLayer = (<any>kvm.map)._layers[this.layerId];
+    if (this.leafletLayer) {
+      // const kvmLayer = kvm.getLayer(this.globalLayerId);
       // console.log(
       // 	"Deselektiere Feature id: %s in Layer: %s, globalLayerId: %s in Leaflet layerId: %s",
       // 	this.id,
@@ -551,15 +564,15 @@ export class Feature {
       // 	this.globalLayerId,
       // 	this.layerId
       // );
-      if (this.layerId) {
-        mapLayer.setStyle(this.getStyle());
-        //kvm.map.zoomIn();
-        //kvm.map.zoomOut(); // To refresh layer style
-      }
-      mapLayer.closePopup();
+      // if (this.layerId) {
+      this.leafletLayer.setStyle(this.getStyle());
+      //kvm.map.zoomIn();
+      //kvm.map.zoomOut(); // To refresh layer style
+      // }
+      this.leafletLayer.closePopup();
     }
-    $(".feature-item").removeClass("selected-feature-item");
-    this.setActive(false);
+    // $(".feature-item").removeClass("selected-feature-item");
+    this._isActive = false;
     return null;
   }
 
@@ -612,29 +625,29 @@ export class Feature {
     return label_value;
   }
 
-  /**
-   * Add a single list element to the list of features in list view
-   */
-  addListElement() {
-    //kvm.log("Feature.addListElement", 4);
-    //console.log('Add listelement: %o', this.listElement());
-    const htmlEl = this.getListElement();
-    htmlEl.addEventListener("click", kvm.featureItemClickEventFunction);
-    document.getElementById("featurelistBody").append(htmlEl);
+  // /**
+  //  * Add a single list element to the list of features in list view
+  //  */
+  // addListElement() {
+  //   //kvm.log("Feature.addListElement", 4);
+  //   //console.log('Add listelement: %o', this.listElement());
+  //   const htmlEl = this.getListElement();
+  //   htmlEl.addEventListener("click", kvm.featureItemClickEventFunction);
+  //   document.getElementById("featurelistBody").append(htmlEl);
 
-    // $("#" + this.id).on("click", kvm.featureItemClickEventFunction);
-    //kvm.log("Click Event an Listenelement registriert", 4);
-  }
+  //   // $("#" + this.id).on("click", kvm.featureItemClickEventFunction);
+  //   //kvm.log("Click Event an Listenelement registriert", 4);
+  // }
 
-  updateListElement() {
-    kvm.log("Feature.updateListElement", 4);
-    const markerStyles = JSON.parse(kvm.store.getItem("markerStyles"));
-    const numStyles = Object.keys(markerStyles).length;
-    const markerStyleIndex = this.getDataValue("status") && this.getDataValue("status") >= 0 && this.getDataValue("status") < numStyles ? this.getDataValue("status") : 0;
-    const listElement = this.getListElement();
-    listElement.innerHTML = this.getLabelValue();
-    listElement.style.backgroundColor = markerStyles[markerStyleIndex].fillColor;
-  }
+  // updateListElement() {
+  //   kvm.log("Feature.updateListElement", 4);
+  //   const markerStyles = kvm.getConfigurationOption("markerStyles");
+  //   const numStyles = Object.keys(markerStyles).length;
+  //   const markerStyleIndex = this.getDataValue("status") && this.getDataValue("status") >= 0 && this.getDataValue("status") < numStyles ? this.getDataValue("status") : 0;
+  //   const listElement = this.getListElement();
+  //   listElement.innerHTML = this.getLabelValue();
+  //   listElement.style.backgroundColor = markerStyles[markerStyleIndex].fillColor;
+  // }
 
   /**
    * This function return a style for this feature
@@ -644,20 +657,35 @@ export class Feature {
    * @return leafletPathOptions
    */
   getStyle() {
-    // TODO
-    let matchingClass: Klasse;
-    let style: any;
-    const kvmLayer: Layer = kvm.getLayer(this.globalLayerId);
-
-    // if (typeof (matchingClass = kvmLayer.getClass(this.getDataValue(kvmLayer.settings.classitem))) == "undefined") {
-    if (typeof (matchingClass = this.layer.getClass(this.getDataValue(this.layer.settings.classitem))) == "undefined") {
-      style = kvmLayer.getDefaultPathOptions();
+    const matchingClass = this.layer.getClass(this.getDataValue(this.layer.settings.classitem));
+    if (matchingClass) {
+      return this.layer.getLeafletPathOptions(matchingClass.settings.style);
     } else {
-      //console.log("%s: Use styles from matching class.", layer.title);
-      style = matchingClass.getLeafletPathOptions();
+      return this.layer.getDefaultPathOptions();
     }
-    return style;
   }
+
+  // /**
+  //    * This function translate mapserver class style options into
+  //    * leaflet path options
+  //    * @returns {}
+  //    */
+  // getLeafletPathOptions(style:any) {
+  //       const defaultPathOptions = this.layer.getDefaultPathOptions();
+  //       const pathOptions: { [k: string]: any } = {
+  //           color: `rgb(${(this.layer.get("geometry_type") == "Line" ? style?.fillColor : style.color) || defaultPathOptions.color})`,
+  //           opacity: style.opacity / 100 || defaultPathOptions.opacity,
+  //           fill: this.layer.get("geometry_type") == "Line" ? false : style.fill === "" ? defaultPathOptions.fill : style.fill,
+  //           stroke: style?.stroke || defaultPathOptions.stroke,
+  //           fillColor: `rgb(${(this.layer.get("geometry_type") == "Line" ? style.color : style.fillColor) || defaultPathOptions.fillColor})`,
+  //           fillOpacity: style.opacity / 100 || defaultPathOptions.fillOpacity,
+  //           weight: parseInt(style.weight) || defaultPathOptions.weight,
+  //       };
+  //       if (this.layer.get("geometry_type") == "Point") {
+  //           pathOptions.size = style?.size || defaultPathOptions.size;
+  //       }
+  //       return pathOptions;
+  //   }
 
   getNormalStyle() {
     if (this.layer.settings.geometry_type == "Point") {
@@ -742,7 +770,7 @@ export class Feature {
   setGeomFromData() {
     //console.log('setGeomFromData');
     const dataGeom = this.getDataValue(this.layer.settings.geometry_attribute);
-    if (dataGeom && dataGeom !== "null") {
+    if (dataGeom) {
       //console.log('Setze geom des neuen Features mit data: %o', this.data);
       this.geom = this.wkbToWkx(dataGeom);
     }

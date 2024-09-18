@@ -36,7 +36,7 @@ export class DateTimeFormField implements Field {
   //     return this.settings[key];
   // }
 
-  setValue(val) {
+  async setValue(val) {
     // console.log('DateTimeFormField setVal val: -%s-', val);
     var val = kvm.coalesce(val, "");
     if (val != "") {

@@ -4,7 +4,7 @@ import { FileUtils } from "../controller/files";
 import { AttributFilter, Layer } from "../Layer";
 import { sperrBildschirm } from "../SperrBildschirm";
 import { RequestStellenResponse, Stelle } from "../Stelle";
-import { createHtmlElement, removeOptions, setValueOfElement, getSqliteVersion, getSpatialLiteVersion, download, readFileAsString, executeSQL } from "../Util";
+import { createHtmlElement, removeOptions, setValueOfElement, getSqliteVersion, getSpatialLiteVersion, download, readFileAsString, executeSQL, confirm } from "../Util";
 
 abstract class PanelEinstellungen {
   domHeader: HTMLElement;
@@ -15,21 +15,20 @@ abstract class PanelEinstellungen {
   constructor(nodeId: string) {
     const dom = (this.domHeader = <HTMLElement>document.getElementById(nodeId));
     PanelEinstellungen.id2panel.set(nodeId, this);
-    if (!dom) {
-      console.error("xxxxx", nodeId);
-    } else {
+    if (dom) {
       console.error("xxxxx", nodeId, this);
-
       dom.addEventListener("click", () => {
         if (!dom.classList.toggle("b-collapsed")) {
           if (PanelEinstellungen.currentPanel) {
             PanelEinstellungen.currentPanel.domHeader.classList.add("b-collapsed");
+            PanelEinstellungen.currentPanel.hide();
           }
           PanelEinstellungen.currentPanel = this;
           this.show();
         } else {
           this.hide();
           PanelEinstellungen.currentPanel = null;
+          show("layer");
         }
       });
     }
@@ -37,6 +36,7 @@ abstract class PanelEinstellungen {
 
   show(): void {
     console.info("show", this);
+    this.domHeader.scrollIntoView();
   }
   hide(): void {
     console.info("hide", this);
@@ -64,12 +64,15 @@ PanelEinstellungen.init();
 export function show(id: string) {
   console.info(`showEinstellung ${id}`);
   const panel = PanelEinstellungen.id2panel.get("h2_" + id);
-  if (panel && panel !== PanelEinstellungen.currentPanel) {
-    panel.domHeader.classList.remove("b-collapsed");
-    if (PanelEinstellungen.currentPanel) {
-      PanelEinstellungen.currentPanel.domHeader.classList.add("b-collapsed");
+  if (panel) {
+    if (panel !== PanelEinstellungen.currentPanel) {
+      panel.domHeader.classList.remove("b-collapsed");
+      if (PanelEinstellungen.currentPanel) {
+        PanelEinstellungen.currentPanel.domHeader.classList.add("b-collapsed");
+      }
+      PanelEinstellungen.currentPanel = panel;
     }
-    PanelEinstellungen.currentPanel = panel;
+    panel.domHeader.scrollIntoView();
   }
 }
 
@@ -111,18 +114,20 @@ export class Konfiguration extends PanelEinstellungen {
 }
 
 export class Server extends PanelEinstellungen {
-  stellen: {
-    ID: string;
-    Bezeichnung: string;
-    dbname: string;
-    west: number;
-    south: number;
-    east: number;
-    north: number;
-    startCenterLat: number;
-    startCenterLon: number;
-    layer_params: [];
-  }[];
+  requestStellenResponse: RequestStellenResponse;
+
+  // stellen: {
+  //   ID: string;
+  //   Bezeichnung: string;
+  //   dbname: string;
+  //   west: number;
+  //   south: number;
+  //   east: number;
+  //   north: number;
+  //   startCenterLat: number;
+  //   startCenterLon: number;
+  //   layer_params: [];
+  // }[];
   stelle: Stelle;
 
   //dom: HTMLElement;
@@ -164,9 +169,6 @@ export class Server extends PanelEinstellungen {
     this.saveServerSettingsButton.addEventListener("click", () => this.clickedSaveServerSettingsButton());
 
     this.kvwmapServerStelleSelectField.addEventListener("change", () => {
-      if (this.saveServerSettingsButton.classList.contains("settings-button")) {
-        this.saveServerSettingsButton.classList.toggle("settings-button settings-button-active");
-      }
       this.saveServerSettingsButton.style.display = "";
     });
 
@@ -247,9 +249,13 @@ export class Server extends PanelEinstellungen {
   }
 
   private async clickedSaveServerSettingsButton() {
+    this.saveServerSettingsButton.style.display = "none";
+    if (!navigator.onLine) {
+      kvm.msg("Stellen Sie eine Netzverbindung her zum Laden der Layer und speichern Sie noch mal die Servereinstellungen.");
+    }
     // const stellen = this.kvwmapServerStellenField.value;
     const selectedStelleId = this.kvwmapServerStelleSelectField.value;
-    const stelleSettings = this.stellen.find((stelle) => {
+    const stelleSettings = this.requestStellenResponse.stellen.find((stelle) => {
       return stelle.ID == selectedStelleId;
     });
     // stelleSettings["id"] = this.kvwmapServerIdField.value;
@@ -261,22 +267,18 @@ export class Server extends PanelEinstellungen {
     stelleSettings["Stelle_ID"] = this.kvwmapServerStelleSelectField.value;
 
     const stelle = (this.stelle = new Stelle(stelleSettings));
+    // stelle.set("last_delta_version", this.requestStellenResponse.last_delta_version);
+
     stelle.saveToStore();
     // stelle.activate();
     sperrBildschirm.show();
     kvm.setActiveStelle(stelle);
     await stelle.requestLayers();
-    if ($("#saveServerSettingsButton").hasClass("settings-button-active")) {
-      $("#saveServerSettingsButton").toggleClass("settings-button settings-button-active");
-    }
+
     this.kvwmapServerStelleSelectField.style.display = "none";
     this.saveServerSettingsButton.style.display = "none";
     this.requestStellenButton.style.display = "";
-    if (navigator.onLine) {
-      show("layer");
-    } else {
-      kvm.msg("Stellen Sie eine Netzverbindung her zum Laden der Layer und speichern Sie noch mal die Servereinstellungen.");
-    }
+    show("layer");
     sperrBildschirm.close();
   }
 
@@ -326,7 +328,8 @@ export class Server extends PanelEinstellungen {
     if (resultObj) {
       console.log("Download erfolgreich. Antwortobjekt: %o", resultObj);
       const selectField = this.kvwmapServerStelleSelectField;
-      this.stellen = resultObj.stellen;
+      // this.stellen = resultObj.stellen;
+      this.requestStellenResponse = resultObj;
 
       removeOptions(this.kvwmapServerStelleSelectField);
 
@@ -401,6 +404,26 @@ export class Layers extends PanelEinstellungen {
       this.removeLayer(evt.oldValue);
     });
     this.setActiveLayer(kvm.getActiveLayer());
+
+    if (!layers || layers.length === 0) {
+      document.getElementById("syncLayerButtonTxt").innerHTML = "Layer abfragen";
+    } else {
+      document.getElementById("syncLayerButtonTxt").innerHTML = "Layer mit Server synchronisieren";
+    }
+    document.getElementById("syncLayerButton").addEventListener("click", (evt) => this.bttnSyncLayersClicked(evt));
+  }
+
+  async requestLayers() {
+    sperrBildschirm.clear();
+    const stelle = kvm.getActiveStelle();
+    if (stelle) {
+      sperrBildschirm.show();
+      await stelle.requestLayers();
+      sperrBildschirm.close();
+    } else {
+      kvm.msg("Bitte Stelle wählen");
+      show("server");
+    }
   }
 
   show() {
@@ -409,7 +432,39 @@ export class Layers extends PanelEinstellungen {
     this.setActiveLayer(kvm.getActiveLayer());
   }
 
+  async bttnSyncLayersClicked(evt: MouseEvent) {
+    console.error(`bttnSyncLayersClicked`);
+    // const layer = kvm._activeLayer;
+    if (this.layerId2layerListIem.size === 0) {
+      this.requestLayers();
+      return;
+    }
+
+    sperrBildschirm.clear();
+
+    // Sichere Datenbank
+    if ((<HTMLButtonElement>evt.currentTarget).classList.contains("inactive-button")) {
+      kvm.msg("Keine Internetverbindung! Kann Layer jetzt nicht synchronisieren.");
+    } else {
+      sperrBildschirm.show();
+      const confirmed = await confirm("Jetzt lokale Änderungen Daten und Bilder, falls vorhanden, zum Server schicken, Änderungen vom Server holen und lokal einspielen? Wenn Änderungen vom Server kommen wird die lokale Datenbank vorher automatisch gesichert.", "Layer mit Server synchronisieren", "ja", "nein");
+      if (confirmed) {
+        try {
+          await kvm.syncLayers();
+          sperrBildschirm.close();
+        } catch (ex) {
+          console.error("Fehler beim Synchronisieren", ex);
+          sperrBildschirm.close("Fehler beim Synchronisieren: ", ex);
+        }
+      }
+    }
+  }
+
   appendLayer(layer: Layer) {
+    if (this.layerId2layerListIem.size === 0) {
+      document.getElementById("syncLayerButtonTxt").innerHTML = "Layer mit Server synchronisieren";
+    }
+
     console.error(`PanelLayer.appendLayer(${layer.title})`);
     console.log(`### getLayerListItem ${layer.title}`);
     const dom = createHtmlElement("div", null, "layer-list-div");
@@ -456,7 +511,7 @@ export class Layers extends PanelEinstellungen {
 
     const infoPanel = layer.getLayerinfoPanel();
     const infoListItem = layer.createLayerListItemFunction("Layer-Info", "infoLayer", "info-layer-button", "fa fa-info", (ev) => layer.bttnShowLayerInfoClicked(infoPanel, ev));
-    infoListItem.append(infoPanel);
+    infoListItem.append(infoPanel.dom);
     fctDiv.append(infoListItem);
 
     this.divLayerList.append(dom);
@@ -621,26 +676,25 @@ export class AnzeigeFilter extends PanelEinstellungen {
     };
 
     const inputLimit = (this.inputLimit = <HTMLInputElement>document.getElementById("limit"));
-    inputLimit.value = setting.limit;
+    inputLimit.value = kvm.getConfigurationOption("limit");
     inputLimit.addEventListener("input", fctInptHandler);
     const inputOffset = (this.inputOffset = <HTMLInputElement>document.getElementById("offset"));
-    inputOffset.value = setting.offset;
+    inputOffset.value = kvm.getConfigurationOption("offset");
     inputOffset.addEventListener("input", fctInptHandler);
 
     const cbHistoryFilter = (this.cbHistoryFilter = <HTMLInputElement>document.getElementById("historyFilter"));
-    cbHistoryFilter.value = setting.offset;
+    cbHistoryFilter.checked = kvm.getConfigurationOption("historyFilter") === true;
     cbHistoryFilter.addEventListener("input", fctInptHandler);
     const cbUserIdFilter = (this.cbUserIdFilter = <HTMLInputElement>document.getElementById("userIdFilter"));
-    cbUserIdFilter.value = setting.offset;
+    cbUserIdFilter.checked = kvm.getConfigurationOption("userIdFilter") === true;
     cbUserIdFilter.addEventListener("input", fctInptHandler);
 
     const bttnRunFilter = (this.bttnRunFilter = <HTMLButtonElement>document.getElementById("runFilterButton"));
     bttnRunFilter.addEventListener("click", () => {
-      this.setting.limit = this.inputLimit.value;
-      this.setting.offset = this.inputOffset.value;
+      kvm.setConfigurationOption("limit", parseInt(this.inputLimit.value));
+      kvm.setConfigurationOption("offset", parseInt(this.inputOffset.value));
       this.setting.userIdFilter = this.cbUserIdFilter.checked;
       this.setting.historyFilter = this.cbHistoryFilter.checked;
-
       // kvm.store.setItem("layerFilter", JSON.stringify(kvm.composeLayerFilter()));
       if (this.layer) {
         this.layer.setFilter(this.getLayerFilters());
@@ -772,7 +826,7 @@ export class AnzeigeFilter extends PanelEinstellungen {
                 const valueSelect = (valueElement = createHtmlElement("select", filterRow, "filter-view-value"));
                 valueSelect.dataset.attrName = value.settings.name;
                 createHtmlElement("option", valueSelect, null, { innerText: "-- Bitte wählen --" });
-                if (value.settings.enums !== "" && Array.isArray(value.settings.enums)) {
+                if (Array.isArray(value.settings.enums)) {
                   for (const valueOption of value.settings.enums) {
                     createHtmlElement("option", valueSelect, null, { value: valueOption.value, innerText: valueOption.output });
                   }
@@ -1255,7 +1309,7 @@ export class GPSStatus extends PanelEinstellungen {
 
     this.zoomToCurrentLocation = <HTMLButtonElement>document.getElementById("zoomToCurrentLocation");
     this.zoomToCurrentLocation.addEventListener("click", () => {
-      kvm.showItem("map");
+      kvm.showView("map");
       kvm.map.locate({ setView: true, maxZoom: 16 });
     });
 
@@ -1369,22 +1423,29 @@ export class Database extends PanelEinstellungen {
   showDeltasDiv: HTMLElement;
   hideDeltasButton: HTMLButtonElement;
 
+  showImageDeltasButton: HTMLButtonElement;
+  showImageDeltasWaiting: HTMLElement;
+  showImageDeltasDiv: HTMLElement;
+  hideImageDeltasButton: HTMLButtonElement;
+
   constructor() {
     super("h2_datenbank");
-    const dbnameText = document.getElementById("dbnameText");
 
     const showDeltasButton = (this.showDeltasButton = <HTMLButtonElement>document.getElementById("showDeltasButton"));
-
     this.showDeltasWaiting = <HTMLElement>document.getElementById("showDeltasWaiting");
     const hideDeltasButton = (this.hideDeltasButton = <HTMLButtonElement>document.getElementById("hideDeltasButton"));
+    const showDeltasDiv = (this.showDeltasDiv = <HTMLElement>document.getElementById("showDeltasDiv"));
+
+    const showImageDeltasButton = (this.showImageDeltasButton = <HTMLButtonElement>document.getElementById("showImageDeltasButton"));
+    this.showImageDeltasWaiting = <HTMLElement>document.getElementById("showImageDeltasWaiting");
+    const hideImageDeltasButton = (this.hideImageDeltasButton = <HTMLButtonElement>document.getElementById("hideImageDeltasButton"));
+    const showImageDeltasDiv = (this.showImageDeltasDiv = <HTMLElement>document.getElementById("showImageDeltasDiv"));
 
     const localBackupPath = <HTMLInputElement>document.getElementById("localBackupPath");
     localBackupPath.value = kvm.getConfigurationOption("localBackupPath");
     localBackupPath.addEventListener("change", () => {
       kvm.setConfigurationOption("localBackupPath", localBackupPath.value);
     });
-
-    const showDeltasDiv = (this.showDeltasDiv = <HTMLElement>document.getElementById("showDeltasDiv"));
 
     const saveDatabaseButton = <HTMLButtonElement>document.getElementById("saveDatabaseButton");
     saveDatabaseButton.addEventListener("click", () => {
@@ -1421,52 +1482,108 @@ export class Database extends PanelEinstellungen {
       );
     });
 
-    showDeltasButton.addEventListener("click", () => this.showDeltaBttnClicked());
-    hideDeltasButton.addEventListener("click", () => {
-      hideDeltasButton.style.display = "none";
-      showDeltasDiv.style.display = "none";
-      showDeltasButton.style.display = "none";
-    });
+    showDeltasButton.addEventListener("click", () => this.showDeltas());
+    hideDeltasButton.addEventListener("click", () => this.hideDeltas());
+
+    showImageDeltasButton.addEventListener("click", () => this.showImageDelta());
+    hideImageDeltasButton.addEventListener("click", () => this.hideImageDeltas());
   }
 
-  async showDeltaBttnClicked() {
-    const layer = kvm.getActiveLayer();
-    if (layer?.hasEditPrivilege) {
-      let sql = `
-          SELECT
-            *
-          FROM
-            ${layer.get("schema_name")}_${layer.get("table_name")}_deltas
-        `;
+  hideDeltas() {
+    this.hideDeltasButton.style.display = "none";
+    this.showDeltasButton.style.display = "";
+    this.showDeltasDiv.style.display = "none";
+    this.showDeltasDiv.innerHTML = "";
+  }
 
-      this.showDeltasButton.style.display = "none";
-      this.showDeltasWaiting.style.display = "";
-      const rs = await executeSQL(kvm.db, sql);
-      try {
-        const numRows = rs.rows.length;
-        if (numRows > 0) {
-          $("#showDeltasDiv").html("<b>Deltas</b>");
-          for (let i = 0; i < numRows; i++) {
-            const item = rs.rows.item(i);
-            this.showDeltasDiv.append("<br>" + item.version + ": " + (item.type == "sql" ? item.delta : item.change + " " + item.delta));
-          }
-          this.showDeltasDiv.style.display = "";
-          this.hideDeltasButton.style.display = "";
-        } else {
-          kvm.msg("Keine Änderungen vorhanden");
-          this.showDeltasDiv.style.display = "";
-        }
-        this.showDeltasWaiting.style.display = "none";
-      } catch (error) {
-        const msg = `Fehler in bei Abfrage der Deltas mit sql: ${sql} Fehler: ${error.message} code: ${(<any>error).code}`;
-        console.error(msg);
-        kvm.log(msg, 1);
-        kvm.msg(msg, "Datenbank");
+  hideImageDeltas() {
+    this.hideImageDeltasButton.style.display = "none";
+    this.showImageDeltasButton.style.display = "";
+    this.showImageDeltasDiv.style.display = "none";
+    this.showDeltasDiv.innerHTML = "";
+  }
+
+  async showDeltas() {
+    const sql = `SELECT * FROM deltas`;
+
+    const rs = await executeSQL(kvm.db, sql);
+    try {
+      const numRows = rs.rows.length;
+      if (numRows > 0) {
+        this.showDeltasButton.style.display = "none";
+        this.showDeltasWaiting.style.display = "";
+        this.showDeltasDiv.innerHTML = "";
+        const fragm = createTable(rs);
+        this.showDeltasDiv.append(fragm);
+        this.showDeltasDiv.style.display = "";
+        this.hideDeltasButton.style.display = "";
+      } else {
+        kvm.msg("Keine Änderungen vorhanden");
+        this.showDeltasDiv.style.display = "";
       }
-    } else {
-      kvm.msg(`Der Layer ${layer.title} hat keine Änderungen weil auf dem Server keine Rechte zum Ändern von Datensätzen des Layers eingestellt wurden.`, "Datenbank");
+      this.showDeltasWaiting.style.display = "none";
+    } catch (error) {
+      const msg = `Fehler in bei Abfrage der Deltas mit sql: ${sql} Fehler: ${error.message} code: ${(<any>error).code}`;
+      console.error(msg);
+      kvm.log(msg, 1);
+      kvm.msg(msg, "Datenbank");
     }
   }
+
+  async showImageDelta() {
+    const sql = `SELECT * FROM image_deltas`;
+
+    const rs = await executeSQL(kvm.db, sql);
+    try {
+      const numRows = rs.rows.length;
+      if (numRows > 0) {
+        this.showImageDeltasButton.style.display = "none";
+        this.showImageDeltasWaiting.style.display = "";
+        this.showImageDeltasDiv.innerHTML = "";
+        const fragm = createTable(rs);
+        this.showImageDeltasDiv.append(fragm);
+        this.showImageDeltasDiv.style.display = "";
+        this.hideImageDeltasButton.style.display = "";
+      } else {
+        kvm.msg("Keine Änderungen vorhanden");
+        this.showImageDeltasDiv.style.display = "";
+      }
+      this.showImageDeltasWaiting.style.display = "none";
+    } catch (error) {
+      const msg = `Fehler in bei Abfrage der Deltas mit sql: ${sql} Fehler: ${error.message} code: ${(<any>error).code}`;
+      console.error(msg);
+      kvm.log(msg, 1);
+      kvm.msg(msg, "Datenbank");
+    }
+  }
+
+  hide(): void {
+    console.info("PanelEinstellungen.Database.hide");
+    this.hideDeltas();
+    this.hideImageDeltas();
+  }
+}
+
+function createTable(rs: SQLitePlugin.Results) {
+  const fragm = document.createDocumentFragment();
+  const table = createHtmlElement("table");
+  fragm.appendChild(table);
+  const htmlHeadRow = createHtmlElement("tr", table);
+  for (let i = 0; i < rs.rows.length; i++) {
+    const dbRow = rs.rows.item(i);
+    const htmlRow = createHtmlElement("tr", table);
+    for (const key in dbRow) {
+      if (i === 0) {
+        createHtmlElement("th", htmlHeadRow, null, { innerText: key });
+      }
+      const v = dbRow[key];
+      createHtmlElement("td", htmlRow, null, { innerText: typeof v === "string" ? v.trim() : v });
+      if (i % 2 === 0) {
+        htmlRow.style.backgroundColor = "#ccc";
+      }
+    }
+  }
+  return fragm;
 }
 
 export class Protokoll extends PanelEinstellungen {

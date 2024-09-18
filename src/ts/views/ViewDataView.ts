@@ -73,7 +73,12 @@ export class ViewDataView extends View {
   // }
 
   private _updateFeature(f: Feature) {
-    f.layer.createDataView();
-    f.layer.loadFeatureToView(f, { editable: false });
+    console.error(`_updateFeature ${f?.layer?.title} ${f?.id}`);
+    if (f) {
+      f.layer.createDataView();
+      f.layer.loadFeatureToView(f, { editable: false });
+    } else {
+      this.dom.innerHTML = "";
+    }
   }
 }

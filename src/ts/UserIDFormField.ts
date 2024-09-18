@@ -41,7 +41,7 @@ export class UserIDFormField implements Field {
   //     return this.settings[key];
   // }
 
-  setValue(val) {
+  async setValue(val) {
     if (kvm.coalesce(val, "") == "" && this.settings.default) {
       val = this.settings.default;
     }

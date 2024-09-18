@@ -52,7 +52,7 @@ export class SelectAutoFormField implements Field {
    * set value or values in html element related to the type of value and type of element.
    * @param any val
    */
-  setValue(val: any) {
+  async setValue(val: any) {
     // console.log("SelectFormField.setValue with value: " + val);
     if (kvm.coalesce(val, "") == "" && this.settings.default) {
       val = this.settings.default;

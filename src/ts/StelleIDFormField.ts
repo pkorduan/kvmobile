@@ -40,7 +40,7 @@ export class StelleIDFormField implements Field {
   //     return this.settings[key];
   // }
 
-  setValue(val) {
+  async setValue(val) {
     if (kvm.coalesce(val, "") == "" && this.settings.default) {
       val = this.settings.default;
     }
@@ -58,7 +58,7 @@ export class StelleIDFormField implements Field {
 
   getAutoValue() {
     kvm.log("StelleIDFormField.getAutoValue");
-    return kvm.activeStelle.get("ID");
+    return kvm.getActiveStelle().get("ID");
   }
 
   bindEvents() {}

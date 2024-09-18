@@ -74,7 +74,8 @@ export class SubFormFKFormField implements Field {
     }
 
     // ToDo: Das darf nur gemacht werden wenn der Layer Geometrie hat und der übergeordnete auch.
-    if (kvm.getActiveLayer().hasGeometry && kvm.getActiveLayer().activeFeature.new) {
+    // rtr
+    if (kvm.getActiveLayer().hasGeometry && kvm.getActiveLayer().activeFeature.new && kvm.getActiveLayer().activeFeature.newGeom) {
       // Abfragen des übergeordneten Layers
       const pkLayer = kvm.getLayer(`${this.get("stelleId")}_${this.get("options").split(",")[0]}`);
       if (pkLayer.hasGeometry) {

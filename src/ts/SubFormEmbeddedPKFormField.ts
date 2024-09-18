@@ -42,7 +42,7 @@ export class SubFormEmbeddedPKFormField implements Field {
    * @param val Der Wert ist leer weil in einem SubFormEmbedded die Werte erst abgefragt
    * werden über die ID des Datensatzes der in id_attribut steht
    */
-  setValue(val) {
+  async setValue(val) {
     const feature = this.attribute.layer.activeFeature;
     console.log("setValue of SubFormEmbeddedPK FormField");
     this.element.innerHTML = "";

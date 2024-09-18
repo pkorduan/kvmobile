@@ -42,7 +42,7 @@ export class ZahlFormField implements Field {
   //     return this.settings[key];
   // }
 
-  setValue(val) {
+  async setValue(val) {
     // console.log(`Attribute: ${this.get('name')} ZahlFormField.setValue with value: ${val}`);
     const _attribute = this;
     const layer = kvm.getLayer(`${this.settings.stelleId}_${this.settings.layerId}`);

@@ -2,6 +2,20 @@
 
 export type AsyncFunction<T> = (params?: any) => Promise<T>;
 
+export async function checksum(obj: any) {
+  const data = new TextEncoder().encode(JSON.stringify(obj));
+  const checksumBuffer = await window.crypto.subtle.digest("SHA-1", data);
+  const uint8ViewOfHash = new Uint8Array(checksumBuffer);
+  // We then convert it to a regular array so we can convert each item
+  // to hexadecimal strings, where characters of 0-9 or a-f represent
+  // a number between 0 and 15, containing 4 bits of information,
+  // so 2 of them is 8 bits (1 byte).
+  const hashAsString = Array.from(uint8ViewOfHash)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  return hashAsString;
+}
+
 export function listFiles(dir: string) {
   window.resolveLocalFileSystemURL(
     dir,
@@ -59,6 +73,18 @@ export async function getWebviewUrl(filePath: string): Promise<string> {
       }
     );
   });
+}
+
+export function printResultSet(headline: string, rs: SQLitePlugin.Results) {
+  let s = headline + "\n";
+  for (let i = 0; i < rs.rows.length; i++) {
+    const row = rs.rows.item(i);
+    for (const k in row) {
+      s += k + ":" + row[k] + "\t";
+    }
+    s += "\n";
+  }
+  console.info(s);
 }
 
 export async function executeSQL(db: SQLitePlugin.Database, statement: string, params?: any[]): Promise<SQLitePlugin.Results> {
@@ -235,6 +261,40 @@ export async function showAlert(message: string, title?: string, buttonName?: st
       },
       title,
       buttonName
+    );
+  });
+}
+/**
+ * gibt ein Promise zurück mit dem true, wenn der ok-Button geklickt wurde
+ *
+ * @param message
+ * @param title Titel des Dialoges
+ * @param okButtonText
+ * @param rejectButtonText
+ * @returns
+ */
+export async function confirm(message: string, title?: string, okButtonText?: string, rejectButtonText?: string) {
+  return new Promise<boolean>((resolve, reject) => {
+    navigator.notification.confirm(
+      message,
+      (buttonIndex) => {
+        resolve(buttonIndex === 1);
+      },
+      title,
+      [okButtonText || "ok", rejectButtonText || "Abbruch"]
+    );
+  });
+}
+
+export async function alert(message: string, title?: string, okButtonText?: string) {
+  return new Promise<void>((resolve, reject) => {
+    navigator.notification.alert(
+      message,
+      () => {
+        resolve();
+      },
+      title,
+      okButtonText || "ok"
     );
   });
 }

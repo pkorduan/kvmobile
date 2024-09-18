@@ -3,11 +3,12 @@ import { View } from "./View";
 
 export class ViewMap extends View {
   constructor(app: Kvm) {
-    super(app, "map");
+    super(app, "mapView");
   }
 
   show() {
     super.show();
+    this.dom.style.zIndex = "100";
     console.info(`show ViewMap`, this);
     this.app.map.invalidateSize();
     // TODO
@@ -17,7 +18,8 @@ export class ViewMap extends View {
     }
   }
   hide() {
-    super.hide();
+    // super.hide();
+    this.dom.style.zIndex = "0";
     console.info(`hide ViewMap`, this);
 
     const geolocation_div = document.getElementById("geolocation_div");

@@ -30,7 +30,7 @@ export class CheckboxFormField implements Field {
   //     return this.settings[key];
   // }
 
-  setValue(val) {
+  async setValue(val) {
     //console.log('CheckboxFormField.setValue with value: ' + val);
     if (!val && this.settings.default) {
       val = this.settings.default;

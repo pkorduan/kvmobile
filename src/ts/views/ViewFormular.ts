@@ -102,7 +102,9 @@ export class ViewFormular extends View {
   // }
 
   private _updateFeature(f: Feature) {
-    f.layer.createFeatureForm();
-    f.layer.loadFeatureToForm(f, { editable: false });
+    if (f) {
+      f.layer.createFeatureForm();
+      f.layer.loadFeatureToForm(f, { editable: false });
+    }
   }
 }

@@ -35,7 +35,7 @@ export class DateFormField implements Field {
   // get(key: string) {
   //     return this.settings[key];
   // }
-  setValue(val) {
+  async setValue(val) {
     kvm.log("val: " + val, 4);
     val = kvm.coalesce(val, "");
     if (this.isValidDate(val)) {

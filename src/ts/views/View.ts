@@ -14,8 +14,10 @@ export abstract class View {
   }
   show() {
     this.dom.style.display = "";
+    this.dom.style.zIndex = "1";
   }
   hide() {
+    console.error("View.hide " + this.id);
     this.dom.style.display = "none";
   }
 }

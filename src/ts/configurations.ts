@@ -62,6 +62,11 @@ export type Configuration = {
   backgroundLayerSettings: BackgroundLayerSetting[];
   confirmSave?: any;
   activeBackgroundLayerId?: string;
+
+  limit?: number;
+  offset?: number;
+  historyFilter?: boolean;
+  userIdFilter?: boolean;
 };
 
 export const configurations: Configuration[] = [

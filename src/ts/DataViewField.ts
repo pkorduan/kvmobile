@@ -93,10 +93,11 @@ export class DataViewField implements Field {
 
           imgDiv.addEventListener("click", (evt) => {
             cordova.plugins.fileOpener2.open(localFile, "image/jpeg", {
-              error: function (e) {
-                alert("Fehler beim laden der Datei: " + e.message + " Status: " + e.status);
+              error: (e) => {
+                console.error("Fehler beim laden der Datei: '" + localFile + "'. Fehler:", e);
+                alert("Fehler beim laden der Datei: '" + localFile + "'. Fehler:" + e);
               },
-              success: function () {
+              success: () => {
                 kvm.log("Datei " + localFile + " erfolgreich geöffnet.", 4);
               },
             });
@@ -152,6 +153,7 @@ export class DataViewField implements Field {
   }
 
   setSubFormFKValue(val) {
+    this.element.innerHTML = "";
     const globalParentLayerId = this.attribute.getGlobalParentLayerId();
     // let parentLayer = kvm.layers.get(globalParentLayerId);
     const vorschauOption = this.attribute.getVorschauOption();
@@ -205,7 +207,7 @@ export class DataViewField implements Field {
     return output;
   }
 
-  async setValue(val) {
+  setValue(val) {
     if (val == "null") {
       val = null;
     }
@@ -266,7 +268,8 @@ export class DataViewField implements Field {
             kvm.log("Versuche das Bild zu öffnen: " + src, 4);
             cordova.plugins.fileOpener2.open(src, "image/jpeg", {
               error: function (e) {
-                alert("Fehler beim laden der Datei: " + e.message + " Status: " + e.status);
+                console.error("Fehler beim laden der Datei: '" + src + "'. Fehler:", e);
+                alert("Fehler beim Laden der Datei: '" + src + "'. Fehler:" + e);
               },
               success: function () {
                 kvm.log("Datei " + src + " erfolgreich geöffnet.", 4);
@@ -341,7 +344,8 @@ export class DataViewField implements Field {
         kvm.log("Versuche das Bild zu öffnen: " + src, 4);
         cordova.plugins.fileOpener2.open(src, "image/jpeg", {
           error: function (e) {
-            alert("Fehler beim laden der Datei: " + e.message + " Status: " + e.status);
+            console.error("Fehler beim laden der Datei: '" + src + "'. Fehler:", e);
+            alert("Fehler beim Laden der Datei: '" + src + "'. Fehler:" + e);
           },
           success: function () {
             kvm.log("Datei " + src + " erfolgreich geöffnet.", 4);

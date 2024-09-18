@@ -15,8 +15,17 @@ body {
   overflow: hidden;
   font: 100.01% Verdana, Arial, Helvetica, sans-serif;
   font-size: 24px;
-  display: flex;
-  flex-direction: column;
+  // display: flex;
+  // flex-direction: column;
+}
+
+.view {
+  position: absolute;
+  height: calc(100% - 2em);
+  width: 100%;
+  top: 2em;
+  left: 0px;
+  background-color: white;
 }
 
 .flex-column {
@@ -25,7 +34,7 @@ body {
 }
 .flex-row {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
 }
 
 label {
@@ -36,17 +45,17 @@ label {
   display: none;
 }
 
-.h2-div h2.b-collapsed:before {
-  content: "+ ";
-  color: #263286;
-  display: inline-block;
-  width: 18px;
-}
 .h2-div h2:before {
-  content: "- ";
+  content: "-";
   color: #263286;
   display: inline-block;
-  width: 18px;
+  // width: 0.7em;
+  padding-right: 0.2em;
+  text-align: center;
+  font-family: monospace;
+}
+.h2-div h2.b-collapsed:before {
+  content: "+";
 }
 
 .b-collapsed:before {
@@ -879,12 +888,14 @@ ul.subformlist {
 #kopfbereich {
   display: flex;
   background-color: #7c9b3b;
-  padding: 8px;
+  padding: 1em;
+  height: 2em;
+  align-items: center;
 }
 
 #settings {
-  margin-left: 2px;
-  margin-right: 2px;
+  padding-left: 0.15em;
+  padding-right: 0.15em;
 }
 
 #layer_list {
@@ -907,11 +918,12 @@ ul.subformlist {
 #map {
   flex-grow: 1;
   position: relative;
+  height: 100%;
+  width: 100%;
   /*
   clear: both;
   position: fixed;
-  height: 100%;
-  width: 100%;
+
   margin: auto;
   */
 }
@@ -1164,4 +1176,20 @@ li.pointer:hover {
 
 .item-info-layer {
   display: block;
+}
+
+.db-deltas table {
+  text-align: left;
+  font-size: 0.4em;
+}
+
+.db-deltas td {
+  vertical-align: top;
+}
+.db-deltas th {
+  font-weight: bold;
+}
+
+.conf-panel {
+  padding-bottom: 0.2em;
 }

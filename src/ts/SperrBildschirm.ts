@@ -1,4 +1,29 @@
-import { kvm, Kvm } from "./app";
+import { kvm } from "./app";
+import { alert as nativeAlert } from "./Util";
+
+function objectToString(err: Object) {
+  let s = "";
+  if (err instanceof Error) {
+    s = err.message || "";
+    if (err.cause) {
+      if (err.cause instanceof Error) {
+        s += "\nUrsache:" + objectToString(err.cause);
+      } else if (err.cause instanceof Object) {
+        s += objectToString(err.cause);
+      }
+    }
+  } else if (err instanceof Object) {
+    Object.keys(err).forEach((key) => {
+      const v = err[key];
+      if (v instanceof Object) {
+        s += "\n" + key + ": " + objectToString(v);
+      } else {
+        s += "\n" + key + ": " + v;
+      }
+    });
+  }
+  return s;
+}
 
 class SperrBildschirm {
   private sperrDiv: HTMLElement;
@@ -39,26 +64,25 @@ class SperrBildschirm {
     this.sperrDivContent.innerHTML = "";
   }
 
-  close(msg?: string) {
+  async close(msg?: string, o?: Object) {
     if (msg) {
-      navigator.notification.confirm(
-        msg,
-        (buttonIndex) => {
-          if (buttonIndex == 1) {
-            this.sperrDiv.style.display = "none";
-          }
-        },
-        "Laden",
-        ["OK"]
-      );
-    } else {
-      this.sperrDiv.style.display = "none";
-      this.sperrDivContent.innerHTML = "";
+      msg = msg.replaceAll("\\n", "\n");
+      msg = msg.replaceAll("<br>", "\n");
+      msg = msg.replaceAll('"', '"');
+
+      if (o instanceof Object) {
+        msg += objectToString(o);
+      }
+
+      await nativeAlert(msg, null, "ok");
     }
+    this.sperrDiv.style.display = "none";
+    this.sperrDivContent.innerHTML = "";
   }
 
   show(msg?: string) {
     this.sperrDiv.style.display = "block";
+    this.sperrDiv.style.zIndex = "999";
     if (msg) {
       this.tick(`<b>${msg}</b>`, false);
     }

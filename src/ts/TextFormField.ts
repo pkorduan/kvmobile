@@ -36,7 +36,7 @@ export class TextFormField implements Field {
   //     return this.settings[key];
   // }
 
-  setValue(val) {
+  async setValue(val) {
     //console.log("TextFormField " + this.settings.name + " setValue with value: %o", val);
     if (kvm.coalesce(val, "") == "" && this.settings.default) {
       val = this.settings.default;
@@ -58,12 +58,7 @@ export class TextFormField implements Field {
       val = null;
     }
 
-    if (
-      this.settings.form_element_type == "UserID" &&
-      (action == "" ||
-        this.settings.options == "" ||
-        action.toLowerCase() == this.settings.options.toLowerCase())
-    ) {
+    if (this.settings.form_element_type == "UserID" && (action == "" || this.settings.options == "" || action.toLowerCase() == this.settings.options.toLowerCase())) {
       val = kvm.store.getItem("userId");
     }
 
@@ -72,13 +67,10 @@ export class TextFormField implements Field {
 
   bindEvents() {
     //console.log('TextFormField.bindEvents');
-    $("#featureFormular input[id=" + this.settings.index + "]").on(
-      "keyup",
-      function () {
-        if (!$("#saveFeatureButton").hasClass("active-button")) {
-          $("#saveFeatureButton").toggleClass("active-button inactive-button");
-        }
+    $("#featureFormular input[id=" + this.settings.index + "]").on("keyup", function () {
+      if (!$("#saveFeatureButton").hasClass("active-button")) {
+        $("#saveFeatureButton").toggleClass("active-button inactive-button");
       }
-    );
+    });
   }
 }

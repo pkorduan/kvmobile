@@ -27,7 +27,7 @@ export type OptionsAttributtes = {
   requires_value?: any;
 };
 
-export type AttributeSetting = {
+export interface AttributeSetting {
   index?: number;
   name?: string;
   real_name?: string;
@@ -49,12 +49,12 @@ export type AttributeSetting = {
   vcheck_operator?: string;
   vcheck_value?: string;
   options?: string;
-  enums?: OptionsAttributtes[] | string;
+  enums?: OptionsAttributtes[];
   required_by?: any;
   requires?: any;
   stelleId?: string;
   layerId?: string;
-};
+}
 
 export class Attribute {
   settings: AttributeSetting;
@@ -73,7 +73,7 @@ export class Attribute {
     return this;
   }
 
-  get(key) {
+  get<K extends keyof AttributeSetting>(key: K): AttributeSetting[K] {
     return this.settings[key];
   }
 

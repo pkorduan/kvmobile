@@ -117,7 +117,7 @@ export class MapLibreLayer extends LLayer {
     console.log("remove layer %s (%s)", this.get("title"), this.get("id"));
     //console.log('Entferne layer div aus layer options list.');
     $("#layer_" + this.getGlobalId()).remove();
-    kvm.controls.layers.removeLayer(this);
+    kvm.controls.layerCtrl.removeLayer(this);
     //console.log('Entferne layer von map');
     kvm.map.removeLayer(this);
     //console.log('Lösche activeLayer von kvm layers array');
@@ -257,6 +257,7 @@ export class MapLibreLayer extends LLayer {
    */
   appendToApp() {
     sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Füge Layer zur App hinzu.`);
+    console.error("MapLibreLayer.appendToApp");
     const index = kvm.getActiveStelle().getLayerDrawingIndex(this);
     if (index == 0) {
       $("#layer_list").prepend(this.getListItem());
@@ -266,7 +267,7 @@ export class MapLibreLayer extends LLayer {
     }
     this.bindLayerEvents(this.getGlobalId());
     //    kvm.map.addLayer(this.layerGroup);
-    kvm.controls.layers.addOverlay(this, `<span id="layerCtrLayerDiv_${this.getGlobalId()}">${this.title}</span>`);
+    kvm.controls.layerCtrl.addOverlay(this, `<span id="layerCtrLayerDiv_${this.getGlobalId()}">${this.title}</span>`);
     kvm.addLayer(<any>this);
   }
 
@@ -291,6 +292,8 @@ export class MapLibreLayer extends LLayer {
   }
 
   activate() {
+    console.error("wwww activate");
+
     (<any>$("input[value=" + this.getGlobalId() + "]")[0]).checked = true;
     $(".layer-functions-button, .layer-functions-div").hide();
     $("#layer_" + this.getGlobalId() + " > .layer-functions-button").show();
@@ -303,6 +306,8 @@ export class MapLibreLayer extends LLayer {
    * Erzeugt die Events für die Auswahl, Synchronisierung und das Zurücksetzen von Layern
    */
   bindLayerEvents(layerGlobalId) {
+    console.error("wwww activate");
+    return;
     console.log("bindLayerEvents for layerGlobalId: %s", layerGlobalId);
     // Schaltet alle layer function button events zunächst aus.
     $(".layer-function-button").off();
