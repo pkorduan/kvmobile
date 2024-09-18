@@ -16,6 +16,10 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 
 # Change log
 
+## 1.18.3
+- Bugfix
+  - Lade Daten von nicht sync-Layern neu bei geänderter Datenversion
+
 ## 1.18.2
 
 - Bugfix

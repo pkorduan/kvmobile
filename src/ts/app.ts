@@ -304,11 +304,21 @@ class Kvm {
     for (let i = 0; i < layers.length; i++) {
       const layer = layers[i];
       try {
-        console.log(`Starte Synchronisieren des Layers: "${layer.title}"`);
-        await layer.syncImages();
-        // console.error(`Bilder des Layers ${layer.title} wurden synchronisiert`);
-        await layer.syncData();
-        // console.error(`Daten des Layers ${layer.title} wurden synchronisiert`);
+        if (layer.get('sync') === '0') {
+          const oldDataVersion = layer.get('data_version');
+          await layer.requestDataVersion();
+          if (oldDataVersion !== layer.get('data_version')) {
+            await layer.clearData();
+            await layer.requestData();
+          }
+        }
+        else {
+          console.log(`Starte Synchronisieren des Layers: "${layer.title}"`);
+          await layer.syncImages();
+          // console.error(`Bilder des Layers ${layer.title} wurden synchronisiert`);
+          await layer.syncData();
+          // console.error(`Daten des Layers ${layer.title} wurden synchronisiert`);
+        }
       } catch (ex) {
         console.error(`Fehler beim Synchronisieren des Layers: "${layer.title}".`, ex);
         const fehler = ex.message || JSON.stringify(ex);

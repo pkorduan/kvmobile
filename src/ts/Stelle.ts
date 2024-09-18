@@ -535,6 +535,7 @@ export class Stelle {
           } else {
             console.log(`Erzeuge einen normales Layer-Objekt für Layer ${layerSetting.title}`);
             const layer = new Layer(this, layerSetting);
+            await layer.dropDataTable();
             await layer.createTable();
             layer.appendToApp();
             layer.saveToStore();

@@ -912,6 +912,26 @@ export class Layer {
     return selectExpressions;
   }
 
+  async requestDataVersion() {
+    console.log('Layer %s: requestDataVersion', this.title);
+    const url = this.getDataVersionUrl();
+    kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Frage Layerversion ab mit URL: ${url}`);
+    const filename = "data_version_layer_" + this.getGlobalId() + ".json";
+    const fileEntry = await Util.download(url, cordova.file.dataDirectory + filename);
+    const txt = await Util.readFileAsString(fileEntry);
+    console.log("Download Ergebnis: %s", txt);
+    const response = JSON.parse(txt);
+    console.log("Download Object: %o", response);
+    if (("success" in response && !response.success)) {
+      kvm.msg(response.msg, `Fehler beim Laden der Datenversion vom Layer ${this.title} auf dem Server.`);
+      return 0;
+    }
+    if ("dataVersion" in response && response.dataVersion != this.get('data_version')) {
+      console.log(`Setze data_version von layer ${this.title} auf den neuen Wert: ${response.dataVersion}`);
+      this.set('data_version', response.dataVersion);
+    }
+  }
+
   /**
    * Function request layer data from server
    * writeData >
@@ -1552,8 +1572,8 @@ export class Layer {
     return sql.replace(this.getPostgresTableName(), this.getSqliteTableName());
   }
 
-  /*
-   * Delete all features from layer, store, feature list, map and its data in the database table and deltas
+  /**
+   * Delete all features from layer, store, feature list, map and its data in the database table,
    * and also lastVersionNr of the layer to make the way free for a new initial download
    */
   async clearData() {
@@ -1578,8 +1598,9 @@ export class Layer {
       );
       console.error("Fehler clearData", ex);
     }
-
-    await this.clearDeltas("all");
+    if (this.settings.sync === '1') {
+      await this.clearDeltas("all");
+    }
     this._features = new Map();
     $("#featurelistBody").html("");
     if (this.layerGroup) {
@@ -4303,6 +4324,15 @@ export class Layer {
     // get all data as new base for deltas
     url += "&go=Daten_Export_Exportieren&without_filter=1&export_format=GeoJSONPlus&all=1&epsg=4326";
     console.log(this.get("title") + ": Hole initial alle Daten mit Url: %s", url);
+    return url;
+  }
+
+  getDataVersionUrl() {
+    console.log(this.get("title") + ": Layer.getDataVersionUrl");
+    let url = this.stelle.settings.url;
+    const file = this.stelle.getUrlFile(url);
+    url += `${file}go=mobile_get_data_version&Stelle_ID=${this.stelle.get('Stelle_ID')}&login_name=${this.stelle.get('login_name')}&passwort=${encodeURIComponent(this.stelle.get('passwort'))}&selected_layer_id=${this.get('id')}`;
+    console.log(this.get("title") + ": Hole Datenversion mit Url: %s", url);
     return url;
   }
 
