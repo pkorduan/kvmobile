@@ -178,7 +178,7 @@ export const Mapper = {
             function (location) {
                 var latlng = L.latLng(location.coords.latitude, location.coords.longitude);
                 // console.log("trigger geomChanged mit latlng: %o", latlng);
-                $(document).trigger("geomChanged", [{ geom: kvm.activeLayer.activeFeature.aLatLngsToWkx([latlng]) }]);
+               // $(document).trigger("geomChanged", [{ geom: kvm.activeLayer.activeFeature.aLatLngsToWkx([latlng]) }]);
             }.bind(this)
         );
     },

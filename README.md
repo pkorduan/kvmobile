@@ -15,6 +15,14 @@ Doku zu kvmobile: https://kvwmap.de/index.php/kvmobile
 Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.de/public/kvmobile/
 
 # Change log
+## 1.19.0
+- Features
+  - Möglichkeit zur Datenerfassung mit nur einem Layerparameter.
+  - Replace $EXPORT in Query
+  - Größe der Linien oder Polygon-Geometrie an aktuelle Zoomstufe angepasst.
+## 1.18.4
+- Bugfix
+  - GPS-Tracking ausschalten wenn ein existierendes Feature editier wird.
 
 ## 1.18.3
 - Bugfix

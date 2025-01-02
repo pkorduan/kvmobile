@@ -358,7 +358,7 @@ export class Stelle {
         layer.updateTable(); // includes DROP TABLE IF EXISTS, appendToApp(), activate(), this.sortOverlays(), saveToStore(), readData()
       } else {
         kvm.log("Fehlerausgabe von parseLayerResult!", 4);
-        kvm.msg(resultObj.errMsg, "2");
+        kvm.msg(resultObj.errMsg, `Layer ID: ${layerId}`);
       }
     } catch (ex) {
       console.error(`Fehler beim reloadLayer`, ex);

@@ -452,7 +452,7 @@ export class Layer {
         //console.log("Layer.readData result: " + JSON.stringify(rs));
         const numRows = rs.rows.length;
 
-        //console.log("  readData) " + numRows + " Datensätze gelesen, erzeuge Featureliste neu...");
+        // console.log("  readData) " + numRows + " Datensätze gelesen, erzeuge Featureliste neu...");
         this.numFeatures = numRows;
 
         this._features = new Map();
@@ -2340,6 +2340,7 @@ export class Layer {
 
     if (this.hasGeometry) {
       if (feature.geom) {
+        kvm.controller.mapper.clearWatch();
         this.startEditing();
       } else {
         if ($("#newPosSelect").val() == 1) {
@@ -2389,8 +2390,16 @@ export class Layer {
     }
   }
 
+  /**
+   * Function create and return a geometry at latlng pos pending on
+   * layers geometry_type and size on current zoom level.
+   * @param LatLngExpression latlng 
+   * @returns Array Of latlng sequenz.
+   */
   getStartGeomAtLatLng(latlng: LatLngExpression) {
-    const startGeomSize = 0.0002;
+    const currentZoomLevel = kvm.map.getZoom();
+    const baseGeomSize = 200;
+    const startGeomSize = baseGeomSize / Math.pow(2, currentZoomLevel);
     let startGeom;
 
     if (this.get("geometry_type") == "Point") {
@@ -2427,8 +2436,8 @@ export class Layer {
           { lat: latlng[0] + startGeomSize, lng: latlng[1] + startGeomSize },
           { lat: latlng[0] + startGeomSize, lng: latlng[1] - startGeomSize },
           { lat: latlng[0] - startGeomSize, lng: latlng[1] - startGeomSize },
-          { lat: latlng[0] - startGeomSize, lng: latlng[1] + startGeomSize },
-          { lat: latlng[0] + startGeomSize, lng: latlng[1] + startGeomSize },
+          { lat: latlng[0] - startGeomSize, lng: latlng[1] + startGeomSize }
+          // { lat: latlng[0] + startGeomSize, lng: latlng[1] + startGeomSize },
         ],
       ];
     }
