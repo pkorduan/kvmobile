@@ -15,6 +15,22 @@ Doku zu kvmobile: https://kvwmap.de/index.php/kvmobile
 Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.de/public/kvmobile/
 
 # Change log
+## 1.19.3
+- Features
+  - Die Funktion gdi_conditional_next_val liefert 1 wenn kein Wert ermittelt werden konnte.
+  - Kameraeinstellungen werden behalten
+  - Berücksichtigung des Editiersperreattributes
+## 1.19.2
+- Maintainance
+  - Bezeichnung der App auf kvmobile korrigiert.
+  - Konfiguration Streuobst (ohne Zusatz) hinzugefügt.
+- Bugfix
+  - Eigenständige vcheckAttributes für dataView and form fields
+  - Leere nur lesbare Attribute ausblenden, die anderen aber nicht einblenden. Das passiert schon bei vcheckattributes
+## 1.19.1
+- Bugfix
+  - Attribute mit privilege null werden gar nicht erst dargestellt.
+  - Attribute die leer sind und nur lesbar werden ausgeblendet.
 ## 1.19.0
 - Features
   - Möglichkeit zur Datenerfassung mit nur einem Layerparameter.

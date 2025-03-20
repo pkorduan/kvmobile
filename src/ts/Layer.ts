@@ -135,6 +135,8 @@ export class Layer {
   hasDeletePrivilege: boolean;
   hasGeometry: boolean;
   hasDocumentAttribute: boolean = false;
+  hasEditiersperreAttribute: boolean = false;
+  editiersperreAttribute: Attribute;
   numExecutedDeltas: number;
   isLoaded: boolean = false;
   isActive: boolean = false;
@@ -215,6 +217,10 @@ export class Layer {
       }, <{ [key: string]: number }>{});
 
       this.hasDocumentAttribute = this.attributes.some((a) => a.get("form_element_type") === "Dokument");
+      this.hasEditiersperreAttribute = this.attributes.some((a) => a.get("form_element_type") === "Editiersperre");
+      if (this.hasEditiersperreAttribute) {
+        this.editiersperreAttribute = this.attributes.find((a) => a.get('form_element_type') === 'Editiersperre');
+      }
       // this.hasDocumentAttribute =
       //     this.attributes.filter((a) => {
       //         return a.get("form_element_type") == "Dokument";
@@ -314,7 +320,7 @@ export class Layer {
 
     const sql = this.extentSql(kvm.replaceParams(subLayer.settings.query), where, "", "", "", filter);
 
-    console.log(`Read Vorschaudatensätze für Layer ${subLayer.title} with sql ${sql}`);
+    // console.log(`Read Vorschaudatensätze für Layer ${subLayer.title} with sql ${sql}`);
     // Das folgende geht noch nicht weil die Tabellen nicht so benannt sind  wie in sqlite
     //let sql = `${this.settings.query} AND ${filter.join(' AND ')}`;
     vorschauElement.empty();
@@ -1738,7 +1744,7 @@ export class Layer {
   // }
 
   createFeatureForm() {
-    kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Erzeuge Featureformular neu.`);
+    console.log(`${this.title}:<br>&nbsp;&nbsp;Erzeuge Featureformular neu.`);
     $("#formular").empty();
     $("#formular")
       .append('<h1 id="featureFormHeader" style="margin-left: 5px;">' + this.title + "</h1>")
@@ -1755,7 +1761,9 @@ export class Layer {
           if (attr.get("arrangement") == "0") {
             attrGrpBody.append('<div style="clear: both">');
           }
-          attrGrpBody.append(attr.withLabel());
+          if (attr.get('privilege')) {
+            attrGrpBody.append(attr.withLabel());
+          }
         });
         attributeGroup.div.append(attrGrpHead).append(attrGrpBody);
         $("#featureFormular").append(attributeGroup.div);
@@ -1786,7 +1794,7 @@ export class Layer {
           const attributeId = $(evt.target).attr("id");
           const attribute = kvm.activeLayer.attributes[attributeId];
           console.log("Attribute: %s changed to value: %s", attribute.get("name"), attribute.formField.getValue());
-          kvm.activeLayer.vcheckAttributes(attribute.get("name"), attribute.formField.getValue());
+          kvm.activeLayer.vcheckAttributes(attribute.get("name"), attribute.formField.getValue(), 'form');
         });
       }
     }
@@ -1811,7 +1819,9 @@ export class Layer {
             if (attr.get("arrangement") == "0") {
               attrGrpBody.append('<div style="clear: both">');
             }
-            attrGrpBody.append(attr.viewField.withLabel());
+            if (attr.get('privilege')) {
+              attrGrpBody.append(attr.viewField.withLabel());
+            }
             attr.viewField.bindEvents();
           }
         });
@@ -1820,7 +1830,6 @@ export class Layer {
       }
     });
     $(".attribute-group-header").on("click", (evt) => {
-      console.log("attribute-group-header");
       $(evt.target).toggleClass("b-expanded b-collapsed");
       $(evt.target).next().toggle();
     });
@@ -1830,8 +1839,11 @@ export class Layer {
    * This function check if the attributes that are visibility dependend
    * from attriubte attribute_name must be visible or not with the given attribute_value
    * and change the visibility in dataView and form if neccesary.
+   * @param String attribute_name
+   * @param String attribute_value
+   * @param String fieldType ('dataView'|'form')
    */
-  vcheckAttributes(attribute_name, attribute_value) {
+  vcheckAttributes(attribute_name, attribute_value, fieldType) {
     this.attributes.map((attr) => {
       let visible = true;
       if (attr.get("vcheck_attribute") == attribute_name) {
@@ -1853,24 +1865,31 @@ export class Layer {
             break;
         }
         if (visible) {
-          $(`#dataViewFieldDiv_${attr.get("index")}, #formFieldDiv_${attr.get("index")}`).show();
+          console.log(`Schalte #${fieldType}FieldDiv_${attr.get("index")} von Attribut ${attr.get('name')} sichtbar wegen ${attribute_name} ${attr.get('vcheck_operator')} ${attr.get("vcheck_value")}`);
+          $(`#${fieldType}FieldDiv_${attr.get("index")}`).show();
         } else {
-          $(`#dataViewFieldDiv_${attr.get("index")}, #formFieldDiv_${attr.get("index")}`).hide();
+          console.log(`Schalte #${fieldType}FieldDiv_${attr.get("index")} von Attribut ${attr.get('name')} unsichtbar wegen ${attribute_name} ${attr.get('vcheck_operator')} ${attr.get("vcheck_value")}`);
+          $(`#${fieldType}FieldDiv_${attr.get("index")}`).hide();
         }
-        //console.log(`Attribute: ${attr.get('name')} is ${(visible ? 'visible' : 'hidden')} because (${attr.get('vcheck_attribute')}: ${attribute_value}) ${attr.get('vcheck_operator')} ${attr.get('vcheck_value')}`);
+        if (attr.get('name') == 'sorte_id') {
+          const field = $(`#${fieldType}FieldDiv_${attr.get("index")}`);
+          console.log(`Attribute: ${attr.get('name')} display is: ${field.css('display')} because (${attr.get('vcheck_attribute')}: ${attribute_value}) ${attr.get('vcheck_operator')} ${attr.get('vcheck_value')}`);
+        }
       }
     });
-    this.attributeGroups.forEach((attrGrp) => {
-      if (
-        attrGrp.attributeIds.every((attributeId) => {
-          return $(`#dataViewFieldDiv_${attributeId}`).css("display") === "none";
-        })
-      ) {
-        attrGrp.div.hide();
-      } else {
-        attrGrp.div.show();
-      }
-    });
+    if (fieldType === 'dataView') {
+      this.attributeGroups.forEach((attrGrp) => {
+        if (
+          attrGrp.attributeIds.every((attributeId) => {
+            return $(`#dataViewFieldDiv_${attributeId}`).css("display") === "none";
+          })
+        ) {
+          attrGrp.div.hide();
+        } else {
+          attrGrp.div.show();
+        }
+      });
+    }
   }
 
   getIcon() {
@@ -1901,9 +1920,13 @@ export class Layer {
         const key = attr.get("name");
         const val = feature.getDataValue(key) == "null" ? null : feature.getDataValue(key);
         if (attr.hasVisibilityDependency()) {
-          kvm.activeLayer.vcheckAttributes(key, val);
+          kvm.activeLayer.vcheckAttributes(key, val, 'dataView');
         }
         attr.viewField.setValue(val);
+        if (val === null && attr.get('privilege') == 0) {
+          // Blende Attribute aus, die keinen Wert haben und nur lesbar sind.
+          $(`#dataViewFieldDiv_${attr.get("index")}`).hide();
+        }
       });
 
     //this.selectFeature(feature, true);
@@ -1911,6 +1934,12 @@ export class Layer {
       $("#newAfterCreateDiv").show();
     } else {
       $("#newAfterCreateDiv").hide();
+    }
+    if (this.hasEditiersperreAttribute && feature.getDataValue(this.editiersperreAttribute.get('name'))) {
+      $('#editFeatureButton').hide();
+    }
+    else {
+      $('#editFeatureButton').show();
     }
   }
 
@@ -1930,12 +1959,17 @@ export class Layer {
       //console.log("Set %s %s: %s", attr.get("form_element_type"), key, val);
       //console.log('Set Value of feature: %s in formField: %s for key: %s with value: %s', JSON.stringify(this), attr.formField.constructor.name, key, val);
       attr.formField.setValue(val);
+      if (val === null && attr.get('privilege') == 0) {
+        // Blende Attribute aus, die keinen Wert haben und nur lesbar sind.
+        $(`#formFieldDiv_${attr.get("index")}`).hide();
+      }
+
       if (kvm.coalesce(attr.get("required_by"), "") != "") {
         const required_by_idx = kvm.activeLayer.attribute_index[attr.get("required_by")];
         (<any>kvm.activeLayer.attributes[required_by_idx].formField).filter_by_required(attr.get("name"), val);
       }
       if (attr.hasVisibilityDependency()) {
-        kvm.activeLayer.vcheckAttributes(attr.get("name"), val);
+        kvm.activeLayer.vcheckAttributes(attr.get("name"), val, 'form');
       }
     });
     if (feature.geom) {
@@ -2110,7 +2144,7 @@ export class Layer {
         ${feature.getLabelValue()}<br>
         <div id="popupFunctions_${this.getGlobalId()}">
           ${
-            this.hasEditPrivilege
+            this.hasEditPrivilege && !(this.hasEditiersperreAttribute && feature.getDataValue(this.editiersperreAttribute.get('name')))
               ? `<a
                 class="edit-feature"
                 href="#"

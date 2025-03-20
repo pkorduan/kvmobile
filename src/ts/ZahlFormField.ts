@@ -56,8 +56,8 @@ export class ZahlFormField implements Field {
           sql = kvm.nextval(layer.get("schema_name"), layer.get("table_name"), this.settings.name);
         }
         if (this.settings.default.startsWith("gdi_conditional_nextval")) {
-          // function call looks like this: gdi_conditional_next_val('kob', 'baum', 'id_nr', 'user_id = $user_id')
-          sql = kvm.gdi_conditional_next_val(
+          // function call looks like this: gdi_conditional_nextval('kob', 'baum', 'id_nr', 'user_id = $user_id')
+          sql = kvm.gdi_conditional_nextval(
             this.settings.default.match(/'(.*?)'/)[1], // schema: 1. Argument in quotas
             this.settings.default
               .split(",")[1]

@@ -321,7 +321,7 @@ class Kvm {
         }
       } catch (ex) {
         console.error(`Fehler beim Synchronisieren des Layers: "${layer.title}".`, ex);
-        const fehler = ex.message || JSON.stringify(ex);
+        const fehler = ex.message || ex.response.msg;
         navigator.notification.alert(`Fehler beim Synchronisieren des Layers: "${layer.title}". Ursache:  ${fehler}`, () => {}, "Synchronisierungsfehler");
       }
     }
@@ -1240,6 +1240,18 @@ class Kvm {
     $("#mapSettings_startCenterLon").val(this.mapSettings.startCenterLon);
   }
 
+  initImageSettings() {
+    if (kvm.store.hasOwnProperty("cameraOptionsQuality")) {
+      kvm.config.cameraOptionsQuality = kvm.store.getItem("cameraOptionsQuality");
+    }
+    else {
+      if (!kvm.config.cameraOptionsQuality) {
+        kvm.config.cameraOptionsQuality = 75;
+      }
+      kvm.store.setItem("cameraOptionsQuality", kvm.config.cameraOptionsQuality);
+    }
+  }
+
   initViewSettings() {
     // console.log("initViewSettings");
     kvm.config.viewAfterCreate = (kvm.store.hasOwnProperty("viewAfterCreate") ? kvm.store.getItem("viewAfterCreate") : kvm.config.viewAfterCreate) || "last";
@@ -2011,6 +2023,7 @@ class Kvm {
 
     $("#cameraOptionsQualitySlider").on("input", function () {
       $("#cameraOptionsQuality").html((<any>this).value);
+      kvm.store.setItem("cameraOptionsQuality", (<any>this).value);
     });
 
     $("#minTrackDistanceSlider").on("input", function () {
@@ -2644,7 +2657,7 @@ class Kvm {
         if ($("#historyFilter").is(":checked")) {
           $("#restoreFeatureButton").show();
         } else {
-          if (kvm.activeLayer.hasEditPrivilege) {
+          if (kvm.activeLayer.hasEditPrivilege && !(kvm.activeLayer.hasEditiersperreAttribute && kvm.activeLayer.activeFeature.getDataValue(kvm.activeLayer.editiersperreAttribute.get('name')))) {
             // erstmal rausgenommen weil es zu Fehler führen kann.
             // klären was mit den die Kopiert wird passiert beim Speichern und Sync.
             // $("#editFeatureButton, #tplFeatureButton").show();
@@ -2932,10 +2945,10 @@ class Kvm {
     return sql;
   }
 
-  gdi_conditional_next_val(schema_name, table_name, column_name, condition) {
+  gdi_conditional_nextval(schema_name, table_name, column_name, condition) {
     const sql = `
       SELECT
-        max(${column_name}) + 1 AS next_val
+        COALESCE(max(${column_name}), 0) + 1 AS next_val
       FROM
         ${schema_name}_${table_name}
       WHERE

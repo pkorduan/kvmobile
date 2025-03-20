@@ -46,7 +46,7 @@ export class SubFormFKFormField implements Field {
 				name="${this.attribute.settings.name}"
 				value=""
 				disabled
-        style="width:80%"
+        style="display: none"
 			/>`);
 
     this.linkElement = $(`
