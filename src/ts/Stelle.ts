@@ -528,10 +528,17 @@ export class Stelle {
         for (let layerSetting of resultObj.layers) {
           if (layerSetting.vector_tile_url) {
             console.log(`Erzeuge einen VectorTile Layer-Objekt für Layer ${layerSetting.title}`);
-            const layer = new MapLibreLayer(layerSetting, true, this);
-            layer.appendToApp();
-            layer.saveToStore();
-            this.finishLayerReading(layer);
+            let layer
+            try {
+              layer = new MapLibreLayer(layerSetting, true, this);
+              layer.appendToApp();
+            }
+            catch ({ name, message }) {
+              const msg = `Fehler beim Erzeugen des Layers ${layerSetting.title}`;
+              kvm.msg(`${msg} Errortyp: ${name} Meldung: ${message}`, "Ladefehler");
+              layer.saveToStore();
+              this.finishLayerReading(layer);
+            }
           } else {
             console.log(`Erzeuge einen normales Layer-Objekt für Layer ${layerSetting.title}`);
             const layer = new Layer(this, layerSetting);

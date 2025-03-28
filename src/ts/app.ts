@@ -321,7 +321,7 @@ class Kvm {
         }
       } catch (ex) {
         console.error(`Fehler beim Synchronisieren des Layers: "${layer.title}".`, ex);
-        const fehler = ex.message || ex.response.msg;
+        const fehler = ex.message || JSON.stringify(ex);
         navigator.notification.alert(`Fehler beim Synchronisieren des Layers: "${layer.title}". Ursache:  ${fehler}`, () => {}, "Synchronisierungsfehler");
       }
     }
