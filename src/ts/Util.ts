@@ -36,11 +36,11 @@ export async function executeSQL(db: SQLitePlugin.Database, statement: string, p
       statement,
       params,
       (results) => resolve(results),
-      (err) =>
-        reject({
-          message: `Fehler beim Ausführen der SQL-Anweisung ${statement}`,
-          cause: err,
-        })
+      (error) => {
+        const msg = `Fehler beim Ausführen der SQL-Anweisung.\n${statement}`;
+        console.log(`executeSQL ${msg}`);
+        reject(new Error(msg));
+      }
     );
   });
 }
@@ -55,9 +55,10 @@ export async function tableExists(db: SQLitePlugin.Database, tablename: string):
         console.log(`Tabelle ${tablename} existiert`);
         resolve(results.rows.length === 1);
       },
-      (err) => {
-        console.error("error in exists table: ", err);
-        reject(err);
+      (error) => {
+        const msg = `Fehler bei der Abfrage ob es die Tabelle sqlite_master gibt. ${error.message}`;
+        console.error(`tableExists ${msg}`);
+        reject(new Error(msg));
       }
     );
   });
@@ -106,11 +107,9 @@ export async function writeData(dir: string, file: string, dataObj: Blob | strin
                 resolve(fileEntry);
               };
               fileWriter.onerror = (e) => {
-                console.error(`Fehler beim Schreiben der Datei "${file}" in das Verzeichnis "${dir}".`, e);
-                reject({
-                  message: `Fehler beim Schreiben der Datei "${file}" in das Verzeichnis "${dir}".`,
-                  cause: e,
-                });
+                const msg = `Fehler beim Schreiben der Datei "${file}" in das Verzeichnis "${dir}".`;
+                console.error(msg);
+                reject(new Error(msg));
                 // console.log("Failed file write: " + e.toString());
                 // const msg =
                 //   "Fehler beim Erzeugen der Delta-Datei, die geschickt werden soll.";
@@ -127,19 +126,17 @@ export async function writeData(dir: string, file: string, dataObj: Blob | strin
               fileWriter.write(dataObj);
             },
             (fileError) => {
-              reject({
-                message: `Fehler beim Erzeugen des FileWriter von Entry nativeUrl=${fileEntry.nativeURL} name=${fileEntry.name}`,
-                cause: fileError,
-              });
+              const msg = `Fehler beim Erzeugen des FileWriter von Entry nativeUrl=${fileEntry.nativeURL} name=${fileEntry.name}`;
+              console.error(msg);
+              reject(new Error(msg));
             }
           );
         });
       },
       (fileError) => {
-        reject({
-          message: `Fehler in resolveLocalFileSystemURL nativeUrl=${dir}`,
-          cause: fileError,
-        });
+        const msg = `Fehler in resolveLocalFileSystemURL nativeUrl=${dir}`;
+        console.error(msg);
+        reject(new Error(msg));
       }
     );
   });

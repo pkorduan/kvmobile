@@ -94,6 +94,7 @@ type LayerEntry = {
 class Kvm {
   // Buffer: require("buffer").Buffer,
   // wkx: require("wkx"),
+  autoSync: boolean = true;
   controls: any = {};
   controller: {
     // files: typeof FileUtils;
@@ -130,7 +131,7 @@ class Kvm {
   logFileEntry: FileEntry;
   userId: string;
   userName: string;
-
+  appUrl: string = 'https://gdi-service.de/public/kvmobile/';
   dataModelChanges: { layer: Layer; new_version: string }[];
 
   // showItem: <(p:any)=>void>undefined,
@@ -190,7 +191,7 @@ class Kvm {
       for (let attrNr = 0; attrNr < attributes.length; attrNr++) {
         const attr = attributes[attrNr];
         if (attr.settings.form_element_type === "SubFormEmbeddedPK") {
-          console.info(layer.getGlobalId() + "=>" + attr.getGlobalSubLayerId());
+          // console.info(layer.getGlobalId() + "=>" + attr.getGlobalSubLayerId());
           subLayerIds.push(attr.getGlobalSubLayerId());
         }
       }
@@ -206,9 +207,9 @@ class Kvm {
       }
     }
 
-    for (let i = 0; i < tree.length; i++) {
-      console.info(tree[i].id + " " + tree[i].parent);
-    }
+    // for (let i = 0; i < tree.length; i++) {
+    //   console.info(tree[i].id + " " + tree[i].parent);
+    // }
 
     const emptyFct = (array: any[]) => {
       return (
@@ -241,18 +242,19 @@ class Kvm {
       }
     }
 
-    for (let i = 0; i < sorted.length; i++) {
-      console.info(sorted[i]);
-    }
+    // for (let i = 0; i < sorted.length; i++) {
+    //   console.info(sorted[i]);
+    // }
 
     return sorted.map((id) => this.getLayer(id));
   }
 
   /*
-   * fügt das Feature zum Layer hinzu, existiert ein Feature mit der gleichen Id wird es ersetzt
+   * Fügt das Layer Objekt zur Liste der Layer der App hinzu.
+   * Existiert es bereits mit der gleichen Id wird es ersetzt.
    *
-   * @param feature
-   * @returns
+   * @param Layer layer
+   * @returns void
    */
   addLayer(layer: Layer) {
     // console.error(`xxx app.addLayer ${layer.getGlobalId()} ${layer.title}`);
@@ -262,8 +264,15 @@ class Kvm {
     this._layers.delete(layer.getGlobalId());
   }
 
+  autoSyncCheckBoxChanged() {
+    const inputElement = <HTMLInputElement>document.getElementById("autoSyncCheckBox");
+    kvm.autoSync = inputElement.checked;
+    document.getElementById('syncLayerButtonDiv').hidden = kvm.autoSync;
+    kvm.store.setItem('autoSync', kvm.autoSync.toString());
+  }
+
   bttnSyncLayersClicked(evt: MouseEvent) {
-    console.error(`bttnSyncLayersClicked`);
+    // console.error(`bttnSyncLayersClicked`);
     // const layer = kvm.activeLayer;
 
     $("#sperr_div_content").html("");
@@ -297,12 +306,13 @@ class Kvm {
   }
 
   async syncLayers() {
-    console.error(`syncLayers activeLayer="${this.activeLayer?.title}"`);
+    console.log(`syncLayers activeLayer="${this.activeLayer?.title}"`);
 
     const layers = kvm.getLayersSortedByUpdateOrder();
     const activeLayerId = this.activeLayer.getGlobalId();
     for (let i = 0; i < layers.length; i++) {
       const layer = layers[i];
+      console.log(`Sync Layer ${layer.title}`);
       try {
         if (layer.get('sync') === '0') {
           const oldDataVersion = layer.get('data_version');
@@ -319,12 +329,14 @@ class Kvm {
           await layer.syncData();
           // console.error(`Daten des Layers ${layer.title} wurden synchronisiert`);
         }
-      } catch (ex) {
-        console.error(`Fehler beim Synchronisieren des Layers: "${layer.title}".`, ex);
-        const fehler = ex.message || JSON.stringify(ex);
-        navigator.notification.alert(`Fehler beim Synchronisieren des Layers: "${layer.title}". Ursache:  ${fehler}`, () => {}, "Synchronisierungsfehler");
+      } catch (error) {
+        console.log('catch in syncLayers erreicht.');
+        const msg = `Fehler beim Synchronisieren des Layers: "${layer.title}". Meldung: ${error.message}`;
+        console.error(msg);
+        navigator.notification.alert(msg, () => {}, "Synchronisierungsfehler");
       }
     }
+    console.log('Nach Schleife');
 
     const activeLayerEntry = Array.from(this._layers).find((entry) => entry[1].getGlobalId() === activeLayerId);
     if (activeLayerEntry) {
@@ -549,87 +561,146 @@ class Kvm {
   async onDeviceReady() {
     try {
       window.open = <any>cordova.InAppBrowser.open; // oder casten mit window.open = cordova['InAppBrowser'].open;
-    } catch ({ name, message }) {
-      console.error(`TypeError: ${name} Message: ${message}`);
-      alert(`Die App muss ein mal geschlossen und neu gestartet werden!`);
-    }
-    await prepareBackgrounLayer();
-    kvm.store = window.localStorage;
-    // console.log("onDeviceReady");
-    const foundConfiguration = configurations.filter(function (c) {
-      return c.name == (kvm.store.getItem("configName") ? kvm.store.getItem("configName") : "Standard");
-    });
-    if (foundConfiguration.length == 0) {
-      kvm.config = configurations[0];
-    } else {
-      kvm.config = foundConfiguration[0];
-    }
-
-    this.db = window.sqlitePlugin.openDatabase(
-      {
-        name: kvm.config.dbname + ".db",
-        location: "default",
-        androidDatabaseImplementation: 2,
-      },
-      function (db) {
-        //kvm.log('Lokale Datenbank geöffnet.', 3);
-        $("#dbnameText").html(kvm.config.dbname + ".db");
-        kvm.initSecuritySettings();
-        if (kvm.store.getItem("fingerprintAuth") == "true") {
-          FingerprintAuth.isAvailable(
-            function (result: any) {
-              console.log("FingerprintAuth available: " + JSON.stringify(result));
-              // Check the docs to know more about the encryptConfig object
-              const encryptConfig = {
-                clientId: "myAppName",
-                username: "currentUser",
-                password: "currentUserPassword",
-                maxAttempts: 5,
-                locale: "de_DE",
-                dialogTitle: "Authentifizierung mit Fingerabdruck",
-                dialogMessage: "Lege Finger auf den Sensor",
-                dialogHint: "Diese Methode ist nur Verfügbar mit Fingerabdrucksensor",
-              }; // See config object for required parameters
-
-              // Set config and success callback
-              //https://www.npmjs.com/package/cordova-plugin-android-fingerprint-auth
-              FingerprintAuth.encrypt(
-                encryptConfig,
-                function (_fingerResult) {
-                  //console.log("successCallback(): " + JSON.stringify(_fingerResult));
-                  if (_fingerResult.withFingerprint) {
-                    //console.log("Successfully encrypted credentials.");
-                    //console.log("Encrypted credentials: " + result.token);
-                    kvm.startApplication();
-                  } else if (_fingerResult.withBackup) {
-                    //console.log("Authenticated with backup password");
-                    kvm.startApplication();
-                  }
-                  // Error callback
-                },
-                function (err) {
-                  if (err === "Cancelled") {
-                    //console.log("FingerprintAuth Dialog Cancelled!");
-                  } else {
-                    kvm.msg("FingerprintAuth Error: " + err, "Fehler");
-                  }
-                }
-              );
-            },
-            function () {
-              //console.log("isAvailableError(): " + message);
-              // TODO
-              kvm.startApplication();
-            }
-          );
-        } else {
-          kvm.startApplication();
-        }
-      },
-      function (error) {
-        kvm.msg("Open database ERROR: " + error["message"], "Fehler");
+      await prepareBackgrounLayer();
+      kvm.store = window.localStorage;
+      // console.log("onDeviceReady");
+      // Setzt die config die zuletzt im store stand oder Standard
+      const foundConfiguration = configurations.filter(function (c) {
+        return c.name == (kvm.store.getItem("configName") ? kvm.store.getItem("configName") : "Standard");
+      });
+      if (foundConfiguration.length == 0) {
+        kvm.config = configurations[0];
+      } else {
+        kvm.config = foundConfiguration[0];
       }
-    );
+
+      this.db = window.sqlitePlugin.openDatabase(
+        {
+          name: kvm.config.dbname + ".db",
+          location: "default",
+          androidDatabaseImplementation: 2,
+        },
+        function (db) {
+          //kvm.log('Lokale Datenbank geöffnet.', 3);
+          $("#dbnameText").html(kvm.config.dbname + ".db");
+          kvm.initSecuritySettings();
+          if (kvm.store.getItem("fingerprintAuth") == "true") {
+            FingerprintAuth.isAvailable(
+              function (result: any) {
+                console.log("FingerprintAuth available: " + JSON.stringify(result));
+                // Check the docs to know more about the encryptConfig object
+                const encryptConfig = {
+                  clientId: "myAppName",
+                  username: "currentUser",
+                  password: "currentUserPassword",
+                  maxAttempts: 5,
+                  locale: "de_DE",
+                  dialogTitle: "Authentifizierung mit Fingerabdruck",
+                  dialogMessage: "Lege Finger auf den Sensor",
+                  dialogHint: "Diese Methode ist nur Verfügbar mit Fingerabdrucksensor",
+                }; // See config object for required parameters
+
+                // Set config and success callback
+                //https://www.npmjs.com/package/cordova-plugin-android-fingerprint-auth
+                FingerprintAuth.encrypt(
+                  encryptConfig,
+                  function (_fingerResult) {
+                    //console.log("successCallback(): " + JSON.stringify(_fingerResult));
+                    if (_fingerResult.withFingerprint) {
+                      //console.log("Successfully encrypted credentials.");
+                      //console.log("Encrypted credentials: " + result.token);
+                      kvm.startApplication();
+                    } else if (_fingerResult.withBackup) {
+                      //console.log("Authenticated with backup password");
+                      kvm.startApplication();
+                    }
+                    // Error callback
+                  },
+                  function (err) {
+                    if (err === "Cancelled") {
+                      //console.log("FingerprintAuth Dialog Cancelled!");
+                    } else {
+                      kvm.msg(`Die Entsperrung des Gerätes funktioniert nicht! Bezeichnung: ${err.name} Meldung: ${err.message}`, 'Startfehler');
+                    }
+                  }
+                );
+              },
+              function () {
+                //console.log("isAvailableError(): " + message);
+                // TODO
+                kvm.startApplication();
+              }
+            );
+          } else {
+            kvm.startApplication();
+          }
+        },
+        function (error) {
+          kvm.msg("Open database ERROR: " + error["message"], "Fehler");
+        }
+      );
+    }
+    catch (error) {
+      const msg = `Die Anwendung startet nicht korrekt! Meldung: ${error.message}`;
+      kvm.msg(msg, 'Startfehler');
+    }
+  }
+
+  /**
+   * Download the new App and request the user to install it
+   * If user confirm, save and reset settings and database first.
+   */
+  async checkAppVersion() {
+    try {
+      const response = await fetch(kvm.appUrl);
+      if (!response.ok) {
+        throw new Error(`Die Seite ${kvm.appUrl} zur Ermittlung der letzten Programmversion konnte nicht abgefragt werden. Status-code: ${response.status} ${response.statusText}`);
+      }
+  
+      const result = await response.text();
+      const versions = Array.from(result.matchAll(/kvmobile-(\d+\.\d+\.\d+)\.apk/g)).map(match => match[1]);
+      const latestVersionNumber = versions.sort((a, b) => {
+        const pa = a.split('.').map(Number);
+        const pb = b.split('.').map(Number);
+        for (let i = 0; i < 3; i++) {
+          if (pa[i] > pb[i]) return 1;
+          if (pa[i] < pb[i]) return -1;
+        }
+        return 0;
+      }).pop();
+      console.log("Latest App-Version:", latestVersionNumber);
+
+      if (latestVersionNumber != kvm.versionNumber) {
+      // if (true) {
+        navigator.notification.confirm(
+          `Es ist eine neue App-Version ${latestVersionNumber} vorhanden.`,
+          kvm.openUpdatePage,
+          'Update-Info',
+          ['Später','zur Download-Seite']
+        );
+      }
+    } catch (error) {
+      console.error('Fehler in checkAppVersion %o', error);
+      throw new Error(`Fehler beim Abfragen der letzten App-Version! Typ: ${error.name} Fehler: ${error.message}`);
+    }
+  }
+
+  openUpdatePage(button) {
+    if (button === 2) {
+      window.open(kvm.appUrl, '_system');
+    }
+  }
+  /**
+   * Function to compare semantic versions
+   */
+  compareVersions(a, b) {
+    const pa = a.split('.').map(Number);
+    const pb = b.split('.').map(Number);
+    for (let i = 0; i < 3; i++) {
+      if (pa[i] > pb[i]) return 1;
+      if (pa[i] < pb[i]) return -1;
+    }
+    return 0;
   }
 
   /**
@@ -655,6 +726,8 @@ class Kvm {
    *    - Anzeigen, dass layer nicht synchronisiert werden können
    */
   async startApplication() {
+    // Biete den Update an wenn eine neue Version vorliegt.
+    this.checkAppVersion();
     let activeView = ["settings", "map", "featurelist"].includes(kvm.store.getItem("activeView")) ? kvm.store.getItem("activeView") : "featurelist";
     kvm.userId = kvm.store.getItem("userId");
     kvm.userName = kvm.store.getItem("userName");
@@ -713,8 +786,10 @@ class Kvm {
       this.saveTile = async function (key: IDBValidKey, val: any) {
         return (await dbPromise).put("keyval", val, key);
       };
-    } catch ({ name, message }) {
-      kvm.msg("Fehler beim Lesen des activeView und Title! Fehlertyp: " + name + " Fehlermeldung: " + message);
+    } catch (error) {
+      const msg = `Fehler beim Lesen des activeView und Titel! ${error.message}`;
+      kvm.msg(msg, 'App-Start');
+      return false;
     }
 
     try {
@@ -732,8 +807,13 @@ class Kvm {
       this.initColorSelector();
       this.initStatusFilter();
       this.initLocalBackupPath();
-    } catch ({ name, message }) {
-      kvm.msg("Fehler beim initieren der Anwendungskomponenten! Fehlertyp: " + name + " Fehlermeldung: " + message);
+      this.initAutoSync();
+    }
+    catch (error) {
+      const msg = `Fehler beim initieren der Anwendungskomponenten! ${error.message}`;
+      console.error(msg);
+      kvm.msg(msg, 'App-Start');
+      return false;
     }
 
     let stelle: Stelle = undefined;
@@ -747,8 +827,12 @@ class Kvm {
         stelle = new Stelle(activeStelleSettings);
         stelle.viewSettings();
         stelle.activate();
-      } catch ({ name, message }) {
-        kvm.msg("Fehler beim setzen der aktiven Stelle id: " + activeStelleId + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
+      }
+      catch (error) {
+        const msg = `Fehler beim Setzen der aktiven Stelle id: ${activeStelleId} ${error.message}`;
+        console.error(msg);
+        kvm.msg(msg, 'App-Start');
+        return false;
       }
 
       if (this.store.getItem("layerIds_" + activeStelleId)) {
@@ -759,48 +843,76 @@ class Kvm {
         stelle.numLayers = layerIds.length;
         kvm.openSperrDiv("Lade Layerdaten.");
         for (let layerId of layerIds) {
-          //console.log('Lade Layersettings for layerId: %s', layerId);
           const layerSettings = this.store.getItem("layerSettings_" + activeStelleId + "_" + layerId);
           if (layerSettings != null) {
             const settings = JSON.parse(layerSettings);
+            console.log(`Lade Layer ${settings.title}`);
             if (settings.vector_tile_url) {
               const layer = new MapLibreLayer(settings, true, stelle);
+              console.log(`${layer.get('title')} only appendToApp`);
               layer.appendToApp();
               stelle.finishLayerReading(layer);
             } else {
               const layer = new Layer(stelle, settings);
-              this.addLayer(layer);
+              // this.addLayer(layer); Kann weg, weil es in appendToApp passiert
               layer.appendToApp();
               if (layer.get("id") == kvm.store.getItem("activeLayerId")) {
                 layer.isActive = true;
                 // kvm.addLayer(layer);
                 kvm.activeLayer = layer;
               }
-              if (navigator.onLine && layer.hasSyncPrivilege && layer.get("autoSync")) {
+              if (navigator.onLine && layer.hasSyncPrivilege && kvm.autoSync) {
                 if (layer.hasEditPrivilege) {
                   try {
-                    console.log("Layer " + layer.title + ": SyncData with local deltas if exists.");
+                    console.log(`${layer.get('title')} syncData sync bidirectional`);
                     layer.syncData();
-                  } catch ({ name, message }) {
-                    kvm.msg("Fehler beim synchronisieren des Layers id: " + layer.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
+                  }
+                  catch (error) {
+                    const msg = `Fehler beim synchronisieren des Layers "${layer.get('title')}" ${error.message}`;
+                    console.error(msg);
+                    kvm.msg(msg, 'App-Start');
+                    return false;
                   }
                   try {
                     console.log("Layer " + layer.title + ": SyncImages with local images if exists.");
                     layer.syncImages();
-                  } catch ({ name, message }) {
-                    kvm.msg("Fehler beim synchronisieren der Bilder des Layers id: " + layer.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
                   }
-                } else {
-                  console.log("Layer " + layer.title + ": Only get deltas from server.");
+                  catch (error) {
+                    const msg = `Fehler beim synchronisieren der Bilder des Layers "${layer.get('title')}" ${error.message}`;
+                    console.error(msg);
+                    kvm.msg(msg, 'App-Start');
+                    return false;
+                  }
+                }
+                else {
+                  // console.log("Layer " + layer.title + ": Only get deltas from server.");
                   try {
-                    layer.sendDeltas({ rows: [] });
-                  } catch ({ name, message }) {
-                    kvm.msg("Fehler beim senden der Deltas des Layers id: " + layer.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
+                    console.log(`${layer.get('title')} sendDeltas sync only to get new data`);
+                    // layer.sendDeltas({ rows: [] });
+                    const sendDeltasResponse = await layer.sendDeltas({ rows: [] });
+                    if (sendDeltasResponse.success) {
+                      await layer.applyDeltas(sendDeltasResponse);
+                    }
+                  }
+                  catch (error) {
+                    const msg = `Fehler beim senden der Deltas des Layers "${layer.get('title')}" ${error.message}`;
+                    console.error(msg);
+                    kvm.msg(msg, 'App-Start');
+                    return false;
                   }
                 }
               } else {
-                console.log("Layer " + layer.title + ": Only read data from local database.");
-                await layer.readData(); // include drawFeatures
+                // console.log("Layer " + layer.title + ": Only read data from local database.");
+                try {
+                  console.log(`${layer.get('title')} readData`);
+                  await layer.readData(); // include drawFeatures
+                }
+                catch (error) {
+                  const msg = `Fehler beim lesen der Daten des Layers "${layer.get('title')}" ${error.message}`;
+                  console.error(msg);
+                  kvm.msg(msg, 'App-Start');
+                  return false;
+                }
               }
             }
           }
@@ -1224,6 +1336,17 @@ class Kvm {
     $("#localBackupPath").val(localBackupPath);
   }
 
+  /**
+   * Set autoSync to false if it is in store and there set to false,
+   * else set always to true. 
+   */
+  initAutoSync() {
+    kvm.autoSync = !(kvm.store.getItem('autoSync') && JSON.parse(kvm.store.getItem('autoSync')) === false);
+    const inputElement = <HTMLInputElement>document.getElementById('autoSyncCheckBox');
+    inputElement.checked = kvm.autoSync;
+    document.getElementById('syncLayerButtonDiv').hidden = kvm.autoSync;
+  }
+
   initMapSettings() {
     if (!(this.mapSettings = JSON.parse(kvm.store.getItem("mapSettings")))) {
       this.saveMapSettings(kvm.config.mapSettings);
@@ -1295,15 +1418,18 @@ class Kvm {
       //this.saveBackgroundLayerSettings(kvm.config.backgroundLayerSettings);
       kvm.backgroundLayerSettings.forEach((l, i) => {
         $("#backgroundLayerSettingsDiv").append('<div id="backgroundLayerDiv_' + i + '"><b>' + l.label + '</b><br>URL:<br><input id="backgroundLayerURL_' + i + '" type="text" value="' + l.url + '"></input></div>');
-        if (l.params.layers) {
-          $("#backgroundLayerDiv_" + i).append('<br>Layer:<br><input id="backgroundLayerLayer_' + i + '" type="text" value="' + l.params.layers + '" style="font-size: 20px;"></input>');
-        }
+        $("#backgroundLayerDiv_" + i).append('<br>Layer:<br><input id="backgroundLayerLayer_' + i + '" type="text" value="' + (l.params.layers == undefined ? '' : l.params.layers) + '" style="font-size: 20px;"></input>');
+        $("#backgroundLayerDiv_" + i).append(`<br>Type:<br><select id="backgroundLayerType_${i}" style="font-size: 20px">
+          <option value="wms" ${(l.type == 'wms' ? ' selected' : '')}>WMS</option>
+          <option value="tile" ${(l.type == 'tile' ? ' selected' : '')}>Tile Layer</option>
+          <option value="bing" ${(l.type == 'bing' ? ' selected' : '')}>Bing Map</option>
+        </select>`);
       });
       $("#backgroundLayersTextarea").val(kvm.store.getItem("backgroundLayerSettings"));
       this.backgroundLayers = [];
       // for (var i = 0; i < 2; ++i) {
       for (let i = 0; i < this.backgroundLayerSettings.length; ++i) {
-        // console.log(this.backgroundLayerSettings[i]);
+        console.log(this.backgroundLayerSettings[i]);
         this.backgroundLayers.push(new BackgroundLayer(this.backgroundLayerSettings[i]));
       }
     } catch (error) {
@@ -1313,6 +1439,10 @@ class Kvm {
     }
   }
 
+  /**
+   * Speicher die Hintergrundeinstellungen in app Variable und im Store
+   * @param backgroundLayerSettings 
+   */
   saveBackgroundLayerSettings(backgroundLayerSettings: any[]) {
     this.backgroundLayerSettings = backgroundLayerSettings;
     kvm.store.setItem("backgroundLayerSettings", JSON.stringify(backgroundLayerSettings));
@@ -1629,22 +1759,39 @@ class Kvm {
       //kvm.map.setBackgroundLayerOnline();
     });
 
+    /**
+     * Setze die URL der Hintergrundlayer in den Einstellungen wieder auf die Werte aus der config und
+     * übernehme die Einstellungen der config in den Store.
+     */
     $("#resetBackgroundLayerSettingsButton").on("click", function () {
       kvm.config.backgroundLayerSettings.forEach((l, i) => {
         $("#backgroundLayerURL_" + i).val(l.url);
-        if (l.params.layers) {
-          $("#backgroundLayerLayer_" + i).val(l.params.layers);
-        }
+        $("#backgroundLayerLayer_" + i).val(l.params.layers != undefined ? l.params.layers : '');
+        $("backgroundLayerType_" + i).val(l.type);
       });
       kvm.saveBackgroundLayerSettings(kvm.config.backgroundLayerSettings);
       kvm.msg("Einstellung zu Hintergrundlayern aus config Datei erfolgreich wiederhergestellt.");
     });
 
+    /**
+     * Übernehme die Hintergrundlayer URL und Layer (falls vorhanden) in die aktuellen Einstellungen
+     * und speichere diese im Store.
+     */
     $("#changeBackgroundLayerSettingsButton").on("click", function () {
       kvm.backgroundLayerSettings.forEach((l, i) => {
         l.url = <string>$("#backgroundLayerURL_" + i).val();
-        if (l.params.layers) {
-          l.params.layers = <string>$("#backgroundLayerLayer_" + i).val();
+        console.log(`URL für Hintergrundlayer ${i} gesetzt: ${l.url}`);
+        const layers = <string>$("#backgroundLayerLayer_" + i).val();
+        if (layers != '') {
+          l.params.layers = layers;
+        }
+        const type = <string>$("#backgroundLayerType_" + i).val();
+        console.log('backgroundLayerType: ' + type);
+        if (type == 'wms' || type == 'bing') {
+          l.type = type;
+          if (type == 'wms') {
+            l.params.format = 'image/png'
+          }
         }
       });
       console.log("Neue BackgroundLayerSettings: ", kvm.backgroundLayerSettings);
@@ -1652,22 +1799,26 @@ class Kvm {
       kvm.msg("Einstellung zu Hintergrundlayern übernommen. Diese werden erst nach einem Neustart der Anwendung wirksam!");
     });
 
-    $("#loadBackgroundLayerButton").on("click", function (evt) {
-      navigator.notification.confirm(
-        "Wollen Sie die Daten des Hintergrundlayers für den aktuellen Kartenausschnitt runterladen und lokal speichern?",
-        function (buttonIndex) {
-          if (buttonIndex == 1) {
-            console.log("download backgroundlayer on event", evt.target);
-            // ja
-            //						kvm.backgroundLayers[i].downloadData();
-          } else {
-            console.log("Background layer nicht runterladen.");
-          }
-        },
-        "Kacheln für Hintergrundlayer runterladen",
-        ["ja", "nein"]
-      );
-    });
+    /**
+     * Funktion läd die Kacheln der Hintergrundkarten für den aktuellen Ausschnitt
+     * Derzeit aktiviert, weil zu viele Daten. Beschränkung erforderlich.
+     */
+    // $("#loadBackgroundLayerButton").on("click", function (evt) {
+    //   navigator.notification.confirm(
+    //     "Wollen Sie die Daten des Hintergrundlayers für den aktuellen Kartenausschnitt runterladen und lokal speichern?",
+    //     function (buttonIndex) {
+    //       if (buttonIndex == 1) {
+    //         console.log("download backgroundlayer on event", evt.target);
+    //         // ja
+    //         //						kvm.backgroundLayers[i].downloadData();
+    //       } else {
+    //         console.log("Background layer nicht runterladen.");
+    //       }
+    //     },
+    //     "Kacheln für Hintergrundlayer runterladen",
+    //     ["ja", "nein"]
+    //   );
+    // });
 
     $("#localBackupPath").on("change", function () {
       // TODO Bug??
@@ -2180,6 +2331,7 @@ class Kvm {
     }
 
     document.getElementById("syncLayerButton").addEventListener("click", (evt) => this.bttnSyncLayersClicked(evt));
+    document.getElementById("autoSyncCheckBox").addEventListener('change', (evt) => this.autoSyncCheckBoxChanged());
 
     $("#featurelistHeading").on("click", (evt) => {
       if (kvm.activeLayer.hasActiveFeature()) {

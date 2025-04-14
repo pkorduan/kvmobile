@@ -225,9 +225,9 @@ export class Stelle {
     if (this.loadAllLayers) {
       if (this.numLayersLoaded < this.numLayers - 1) {
         this.numLayersLoaded += 1;
-        kvm.tick(`${layer.title}:<br>&nbsp;&nbsp;${this.numLayersLoaded} Layer geladen. Noch ${this.numLayers - this.numLayersLoaded} Layer zu laden.`);
+        // kvm.tick(`${layer.title}:<br>&nbsp;&nbsp;${this.numLayersLoaded} Layer geladen. Noch ${this.numLayers - this.numLayersLoaded} Layer zu laden.`);
       } else {
-        kvm.tick(`${layer.title}:<br>&nbsp;&nbsp;Laden beeendet.`);
+        // kvm.tick(`${layer.title}:<br>&nbsp;&nbsp;Laden beeendet.`);
         this.numLayersLoaded = 0;
         this.loadAllLayers = false;
         this.tableNames = this.getTableNames();
@@ -242,14 +242,13 @@ export class Stelle {
   }
 
   finishLayerReading(layer: Layer | MapLibreLayer) {
-    // console.log("finishLayerReading: readAllLayers= %s, numLayersRead=%s, numLayers=%s", this.readAllLayers, this.numLayersRead, this.numLayers);
-    // console.log(`finishLayerReading ${layer.title}`);
+    console.log(`${layer.title} finishLayerReading readAllLayers=${this.readAllLayers}, numLayersRead=${this.numLayersRead}, numLayers=${this.numLayers}`);
     if (this.readAllLayers) {
       if (this.numLayersRead < this.numLayers - 1) {
         this.numLayersRead += 1;
         kvm.tick(`${layer.title}:<br>&nbsp;&nbsp;${this.numLayersRead} Layer geladen. Noch ${this.numLayers - this.numLayersRead} Layer zu laden.`);
       } else {
-        kvm.tick(`${layer.title}:<br>&nbsp;&nbsp;Laden beeendet.`);
+        // kvm.tick(`${layer.title}:<br>&nbsp;&nbsp;Laden beeendet.`);
         this.numLayersRead = 0;
         this.readAllLayers = false;
         const globalLayerId = `${kvm.store.getItem("activeStelleId")}_${kvm.store.getItem("activeLayerId")}`;
@@ -265,7 +264,7 @@ export class Stelle {
         kvm.closeSperrDiv("");
       }
     } else {
-      kvm.tick(layer.title + ": Laden beeendet.");
+      // kvm.tick(layer.title + ": Laden beeendet.");
       this.sortOverlays();
       layer.activate();
       this.tableNames = this.getTableNames();
@@ -334,27 +333,27 @@ export class Stelle {
       const filename = cordova.file.dataDirectory + "layers_stelle_" + this.get("id") + ".json";
       //filename = 'temp_file.json',
       const url = this.getLayerUrl();
-      kvm.tick(`Download Layerdaten der Stelle.`);
+      // kvm.tick(`Download Layerdaten der Stelle.`);
       console.log("Download Layerdaten von Stelle mit url: %s", kvm.replacePassword(url));
       //kvm.log("Speicher die Datei auf dem Gerät in Datei: " + filename);
 
       const fileEntry = await download(url, filename);
-      kvm.tick("Download der Layerdaten abgeschlossen.");
+      // kvm.tick("Download der Layerdaten abgeschlossen.");
       const fileContent = await readFileAsString(fileEntry);
 
       const resultObj = <LayerRequestResponse>kvm.parseLayerResult(fileContent);
 
       if (resultObj.success) {
-        kvm.tick(`${kvm.activeLayer.title}:<br>&nbsp;&nbsp;Download erfolgreich.`);
+        // kvm.tick(`${kvm.activeLayer.title}:<br>&nbsp;&nbsp;Download erfolgreich.`);
         //console.log('resultObj: %o', resultObj);
         const layerSettings = resultObj.layers.find((layer) => {
           return layer["id"] == layerId;
         });
-        kvm.tick(`${kvm.activeLayer.title}:<br>&nbsp;&nbsp;Entferne Layer von App.`);
+        // kvm.tick(`${kvm.activeLayer.title}:<br>&nbsp;&nbsp;Entferne Layer von App.`);
         kvm.activeLayer.removeFromApp(); // includes removeFromStore()
         //console.log("Erzeuge neuen Layer");
         const layer = new Layer(kvm.activeStelle, layerSettings);
-        kvm.tick(`${layer.title}:<br>&nbsp;&nbsp;Lege Layer an.`);
+        // kvm.tick(`${layer.title}:<br>&nbsp;&nbsp;Lege Layer an.`);
         layer.updateTable(); // includes DROP TABLE IF EXISTS, appendToApp(), activate(), this.sortOverlays(), saveToStore(), readData()
       } else {
         kvm.log("Fehlerausgabe von parseLayerResult!", 4);
@@ -431,7 +430,7 @@ export class Stelle {
     if (index == -1) {
       index = sortedLayers.length;
     }
-    console.log("%s: Stelle.getLayerDrawingIndex return index: %s", layer.get("title"), index);
+    // console.log("%s: Stelle.getLayerDrawingIndex return index: %s", layer.get("title"), index);
     return index;
   }
 
@@ -470,26 +469,26 @@ export class Stelle {
 
     const url = this.getLayerUrl();
 
-    kvm.tick("Starte Download der Layerdaten der Stelle");
+    // kvm.tick("Starte Download der Layerdaten der Stelle");
     console.log("Download Layerdaten der Stelle mit url: ", kvm.replacePassword(url));
 
     const fileEntry = await download(url, filename);
-    kvm.tick("Download der Layerdaten abgeschlossen.");
+    // kvm.tick("Download der Layerdaten abgeschlossen.");
     const fileContent = await readFileAsString(fileEntry);
     const resultObj = <LayerRequestResponse>kvm.parseLayerResult(fileContent);
 
     if (resultObj.success) {
-      kvm.tick("Downloadergebnis ist fehlerfrei.");
+      // kvm.tick("Downloadergebnis ist fehlerfrei.");
       //console.log('resultObj: %o', resultObj);
 
       // remove existing layers
       // ToDo Hier prüfen was genau gelöscht werden soll, auch die Tabellen?
-      kvm.tick("Entferne existierende Layer aus der Anwendung.");
+      // kvm.tick("Entferne existierende Layer aus der Anwendung.");
 
       document.getElementById("layer_list").innerHTML = "";
       if ("layerIds_" + kvm.activeStelle.get("id") in kvm.store) {
         const layerIds = <string[]>JSON.parse(kvm.store["layerIds_" + kvm.activeStelle.get("id")]);
-        kvm.tick("Lösche folgende Layer:");
+        // kvm.tick("Lösche folgende Layer:");
         // layerIds.map((id) => {
         //   let globalId = kvm.activeStelle.get("id") + "_" + id;
         //   if (kvm.getLayer(globalId)) {
@@ -520,7 +519,7 @@ export class Stelle {
       this.numLayers = resultObj.layers.length;
 
       if (this.numLayers > 0) {
-        kvm.tick("Lege Layer neu an.");
+        // kvm.tick("Lege Layer neu an.");
         // Sortiere Layer settings nach drawing order
         resultObj.layers = resultObj.layers.sort((a, b) => (parseInt(a.drawingorder) > parseInt(b.drawingorder) ? 1 : -1));
         // add requested layers

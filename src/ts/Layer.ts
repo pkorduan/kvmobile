@@ -181,10 +181,10 @@ export class Layer {
     this.hasDeletePrivilege = this.getDeletePrivilege();
     this.hasGeometry = this.settings.geometry_attribute ? true : false;
     if (typeof this.get("syncVersion") === "undefined") {
-      console.log("Setze syncVersion der LayerSettings auf aktuelle runningSyncVersion des Layers: ", this.runningSyncVersion);
+      // console.log("Setze syncVersion der LayerSettings auf aktuelle runningSyncVersion des Layers: ", this.runningSyncVersion);
       this.set("syncVersion", this.runningSyncVersion);
     } else {
-      console.log(`Setze runningSyncVersion von Layer ${this.title} auf syncVersion des Layers: ${this.get("syncVersion")}`);
+      // console.log(`Setze runningSyncVersion von Layer ${this.title} auf syncVersion des Layers: ${this.get("syncVersion")}`);
       this.runningSyncVersion = this.get("syncVersion");
     }
     this.layerGroup = new LayerGroup([], {
@@ -331,7 +331,7 @@ export class Layer {
         // console.log("Layer.readVorschauAttributes");
         const numRows = rs.rows.length;
 
-        console.log(numRows + " Vorschaudatensätze gelesen.");
+        // console.log(numRows + " Vorschaudatensätze gelesen.");
         if (numRows == 0) {
           vorschauElement.html("keine");
         } else {
@@ -389,7 +389,7 @@ export class Layer {
    * ] > readData
    */
   async readData(limit: any = 50000, offset: any = 0, order: any = "") {
-    kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Lese Daten aus Datenbank.`);
+    // kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Lese Daten aus Datenbank.`);
     // console.log(`readData ${this.title}`);
     //  order = (this.get('name_attribute') != '' ? this.get('name_attribute') : this.get('id_attribute'));
 
@@ -483,12 +483,14 @@ export class Layer {
             // TODO !!!!
             this.addFeature(new Feature(item, this, false));
             //console.log('Feature ' + i + ': %o', this.features.get(item[this.get('id_attribute')]));
-          } catch (e) {
-            console.error(e);
-            kvm.msg("Fehler beim Erzeugen des Feature mit id: " + item[this.get("id_attribute")] + "! Fehlertyp: " + e.name + " Fehlermeldung: " + e.message);
+          } catch (error) {
+            const msg = `Fehler beim Erzeugen des Feature mit id: ${item[this.get("id_attribute")]}! Typ: ${error.name} Meldung: ${error.message}`;
+            console.error(`readData catch addFeature ${msg}`);
+            kvm.msg(msg);
+            throw new Error(msg);
           }
         }
-        kvm.tick(`${this.title}:<br>&nbsp;&nbsp;${this._features.size} Features erzeugt.`);
+        // kvm.tick(`${this.title}:<br>&nbsp;&nbsp;${this._features.size} Features erzeugt.`);
 
         //console.log("Check if syncLayerIcon exists");
         if ($("#syncLayerIcon_" + this.getGlobalId()) && $("#syncLayerIcon_" + this.getGlobalId()).hasClass("fa-spinner")) {
@@ -518,15 +520,17 @@ export class Layer {
         } catch ({ name, message }) {
           kvm.msg("Fehler beim Beenden des Ladens des Layers id: " + this.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
         }
-      } catch (ex) {
-        console.error("Error in readData", ex);
+      } catch (error) {
+        const msg = `Fehler Beim Lesen der Daten aus der lokalen Datenbank ${error.message}`;
+        console.error(`readData ${msg}`);
+        throw new Error(msg);
       }
-    } catch (sqlerror) {
-      console.error(sqlerror, this);
-      console.error(sql);
-      const msg = `Fehler bei der Abfrage der Daten für den Layer ${this.title} aus lokaler Datenbank. Fehler: ${sqlerror.message}`;
+    } catch (error) {
+      const msg = `Fehler bei der Abfrage der Daten für den Layer ${this.title} aus lokaler Datenbank. Fehler: ${error.message}`;
+      console.error(`readData ${sql} ${msg}`);
       kvm.log(msg);
       kvm.closeSperrDiv(msg);
+      throw new Error(msg);
     }
   }
 
@@ -534,7 +538,7 @@ export class Layer {
    * create the list of features in list view at once
    */
   createFeatureList() {
-    kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Erzeuge Featureliste.`);
+    // kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Erzeuge Featureliste.`);
     //console.log("createFeatureList for layer %s", this.get("title"));
     //kvm.log("Erzeuge die Liste der Datensätze neu.");
     $("#featurelistHeading").html(this.get("alias") ? this.get("alias") : this.get("title"));
@@ -568,7 +572,7 @@ export class Layer {
    */
   async writeData(items) {
     // console.log("Layer %s: Schreibe %s Datensätze in die lokale Datebank.", this.title, items.length);
-    kvm.tick("Schreibe Layerdaten in Datenbank.");
+    // kvm.tick("Schreibe Layerdaten in Datenbank.");
     const keys = this.getTableColumns().join(", ");
     const values =
       "(" +
@@ -603,15 +607,16 @@ export class Layer {
     //console.log("Schreibe Daten mit Sql: " + sql.substring(0, 1000));
     try {
       await Util.executeSQL(kvm.db, sql);
-    } catch (ex) {
+    } catch (error) {
+      const msg = `Fehler beim Schreiben des Layers "${this.title}" ${error.message}`;
       this.set("syncVersion", 0);
       $("#syncVersionSpan_" + this.getGlobalId()).html("0");
-      kvm.log("Fehler beim Zugriff auf die Datenbank: " + ex, 1);
-      alert("Fehler beim Zugriff auf die Datenbank: " + ex.message);
-      throw { message: `Fehler beim Schreiben des Layers ${this.title}`, cause: ex };
+      console.error(`writeData catch exececuteSQL ${msg}`);
+      alert(msg);
+      throw new Error(msg);
     }
 
-    kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Daten erfolgreich in Datenbank geschrieben.`);
+    // kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Daten erfolgreich in Datenbank geschrieben.`);
     this.isLoaded = true; // Layer successfully loaded. All other requestData calls will only sync
     if (parseInt(this.get("sync"))) {
       console.log("Setze layerSettings syncVersion auf Layer.runningSyncVersion: ", this.runningSyncVersion);
@@ -691,9 +696,11 @@ export class Layer {
           kvm.msg("Fehler beim Anlegen der Tabellen für den Layer: " + layer.get("title") + " " + error.message);
         }
       );
-    } catch ({ name, message }) {
-      console.error(`Fehler in Funktion createTable: ${name} Message: ${message}`);
-      kvm.msg(`Fehler beim Anlegen der Tabelle mit sql: ${sql} Fehler: ${name} Message: ${message}`, "Datenbank");
+    } catch (error) {
+      const msg = `Fehler beim Anlegen der Tabelle mit sql: ${sql} Fehler: ${error.name} Message: ${error.message}`;
+      console.error(`createTableOrg ${msg}`);
+      kvm.msg(msg, "Datenbank");
+      throw new Error(msg);
     }
   }
 
@@ -785,21 +792,21 @@ export class Layer {
         const tableName = this.getSqliteTableName();
         const sql = "DROP TABLE IF EXISTS " + tableName;
 
-        kvm.tick("Lösche Tabelle " + tableName);
+        // kvm.tick("Lösche Tabelle " + tableName);
         //console.log("Lösche Tabelle " + tableName);
         tx.executeSql(
           sql,
           [],
           (tx, res) => {
-            kvm.tick("Tabelle " + this.getSqliteTableName() + " erfolgreich gelöscht.");
+            // kvm.tick("Tabelle " + this.getSqliteTableName() + " erfolgreich gelöscht.");
             const sql = this.getCreateTableSql();
             kvm.log("Erzeuge neue Tabelle mit sql: " + sql, 3);
-            kvm.tick("Erzeuge neue Tabelle " + this.getSqliteTableName());
+            // kvm.tick("Erzeuge neue Tabelle " + this.getSqliteTableName());
             tx.executeSql(
               sql,
               [],
               (tx, res) => {
-                kvm.tick("Tabelle erfolgreich angelegt.");
+                // kvm.tick("Tabelle erfolgreich angelegt.");
                 // update layer name in layerlist for this layer
                 this.appendToApp();
                 //this.activate();
@@ -921,7 +928,7 @@ export class Layer {
   async requestDataVersion() {
     console.log('Layer %s: requestDataVersion', this.title);
     const url = this.getDataVersionUrl();
-    kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Frage Layerversion ab mit URL: ${url}`);
+    // kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Frage Layerversion ab mit URL: ${url}`);
     const filename = "data_version_layer_" + this.getGlobalId() + ".json";
     const fileEntry = await Util.download(url, cordova.file.dataDirectory + filename);
     const txt = await Util.readFileAsString(fileEntry);
@@ -954,7 +961,7 @@ export class Layer {
 
     const url = this.isLoaded ? this.getSyncUrl() : this.getDataUrl();
 
-    kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Frage Layerdaten ab mit URL: ${url}`);
+    // kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Frage Layerdaten ab mit URL: ${url}`);
 
     const fileEntry = await Util.download(url, cordova.file.dataDirectory + filename);
     const txt = await Util.readFileAsString(fileEntry);
@@ -971,7 +978,7 @@ export class Layer {
     }
     console.log("Layer %s: Anzahl empfangene Datensätze: %s", this.title, collection.features.length);
     console.log("Layer " + this.get("title") + ": Version in Response: " + collection.lastDeltaVersion);
-    kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Empfangene Datensätze ${collection.features.length}`);
+    // kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Empfangene Datensätze ${collection.features.length}`);
     if ("lastDeltaVersion" in collection) {
       console.log("Setze runningSyncVersion auf collection.lastDeltaVersion: ", collection.lastDeltaVersion);
       this.runningSyncVersion = collection.lastDeltaVersion;
@@ -1075,11 +1082,11 @@ export class Layer {
   async sendDeltas(deltas: { rows: { version: string; sql: string }[] }) {
     return new Promise<SendDeltasResponse>(async (resolve, reject) => {
       try {
-        if (deltas.rows.length > 0) {
-          kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Sende Änderungen zum Server.`);
-        } else {
-          kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Frage Änderungen vom Server ab.`);
-        }
+        // if (deltas.rows.length > 0) {
+        //   kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Sende Änderungen zum Server.`);
+        // } else {
+        //   kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Frage Änderungen vom Server ab.`);
+        // }
         // kvm.writeLog(`Syncronisiere Layer ${this.title} mit folgendem Delta: ${JSON.stringify(deltas)}`);
         const dataObj = new Blob([JSON.stringify(deltas)], {
           type: "application/json",
@@ -1093,12 +1100,10 @@ export class Layer {
 
         const response = <SendDeltasResponse>JSON.parse(fileUploadResult.response);
         resolve(response);
-      } catch (ex) {
-        console.error(`Fehler beim Erstellen oder Senden der Deltas für den Layer "${this.title}"`, ex);
-        reject({
-          message: `Fehler beim Erstellen oder Senden der Deltas für den Layer "${this.title}"`,
-          cause: ex,
-        });
+      } catch (error) {
+        const msg = `Fehler beim Erstellen oder Senden der Deltas für den Layer "${this.title}"! ${error.message}`;
+        console.error(`sendDeltas ${msg}`);
+        throw new Error(msg);
       }
     });
 
@@ -1157,6 +1162,11 @@ export class Layer {
   //   });
   // }
 
+  /**
+   * Upload the deltas from fileEntry to server
+   * @param fileEntry 
+   * @returns 
+   */
   async _upload(fileEntry: FileEntry): Promise<FileUploadResult> {
     // const fileURL = fileEntry.toURL();
     const fileURL = fileEntry.nativeURL;
@@ -1206,6 +1216,11 @@ export class Layer {
     return Util.upload(fileURL, encodeURI(server), options);
   }
 
+  /**
+   * Wenn Antwort erfolgreich war, führe die empfangenen deltas in der Datenbank aus falls es welche gibt und
+   * lese anschließend die Daten von der Datenbank mit readData.
+   * @param response
+   */
   async applyDeltas(response: SendDeltasResponse) {
     // console.log(`applyDeltas Layer: ${this.title}`);
     // const response = JSON.parse(fileUploadResult.response);
@@ -1229,7 +1244,7 @@ export class Layer {
       if (this.numReturnedDeltas > 0) {
         const msg = `${this.numReturnedDeltas} Änderungen von Daten auf dem Server gefunden. Die Datenbank wurde gesichert und die Änderungen in die lokale Datenbank eingespielt.`;
         kvm.writeLog(msg);
-        kvm.msg(msg, "Datenänderung");
+        kvm.msg(msg, `Datenänderung Layer ${this.get('title')}`);
         // TODO backupDatabase auch nur ein mal machen wenn irgend ein Delta gekommen ist (Weiß man aber vorher nicht ob irgend ein layer ein Delta bekommen wird.)
         // Wenn ein mal ein backDatabase gemacht wurde bei den anderen layern in der gleichen syncLayers Runde nicht mehr ausführen.
         kvm.backupDatabase();
@@ -1238,7 +1253,7 @@ export class Layer {
             return kvm.coalesce(value.sql, "") == "";
           })
         ) {
-          await this.readData($("#limit").val(), $("#offset").val());
+          // Do nothing because all delta sql are empty
         } else {
           try {
             for (let delta of response.deltas) {
@@ -1254,8 +1269,10 @@ export class Layer {
                 // );
               }
             }
-          } catch (ex) {
-            throw new Error(`Fehler beim Schreiben der Deltas in die DB - Layer ${this.title}:<br>&nbsp;&nbsp;${ex}`, { cause: ex });
+          } catch (error) {
+            const msg = `Fehler beim Schreiben der Deltas in die Datenbank. ${error.message}`;
+            console.error(`applyDeltas ${msg}`);
+            throw new Error(msg);
           }
 
           const newVersion = parseInt(response.syncData[response.syncData.length - 1].push_to_version);
@@ -1264,7 +1281,6 @@ export class Layer {
           await this.clearDeltas("sql");
           console.log(this.get("title") + ": call readData after execDelta");
           kvm.writeLog(`Layer ${this.get("title")}: ${this.numExecutedDeltas} Deltas vom Server auf Client ausgeführt.`);
-          await this.readData($("#limit").val(), $("#offset").val());
         }
       } else {
         if (response.syncData.length > 0) {
@@ -1276,10 +1292,12 @@ export class Layer {
             await this.clearDeltas("sql");
           }
         }
-        await this.readData($("#limit").val(), $("#offset").val());
       }
+      await this.readData($("#limit").val(), $("#offset").val());
     } else {
-      throw Error(`Sync-Fehler Layer ${this.title}:<br>&nbsp;&nbsp;${response.msg}`);
+      const msg = `Sync-Fehler Layer ${this.title}:<br>&nbsp;&nbsp;${response.msg}`;
+      console.error(`applyDeltas response.success false ${msg}`);
+      throw new Error(msg);
     }
   }
 
@@ -1302,7 +1320,7 @@ export class Layer {
     // console.log(`syncImages Layer: ${this.title}`);
     if (this.hasEditPrivilege) {
       //kvm.log("Layer.syncImages", 4);
-      kvm.tick(`${this.title}:<br>&nbsp;&nbsp; Starte Synchronisation der Bilder mit dem Server.`, false);
+      // kvm.tick(`${this.title}:<br>&nbsp;&nbsp; Starte Synchronisation der Bilder mit dem Server.`, false);
       const sql = `
       SELECT
         *
@@ -1403,18 +1421,19 @@ export class Layer {
           kvm.closeSperrDiv(err_msg);
         }
       } catch (error) {
-        const err_msg = "Fehler beim Hochladen der Bilddatei.";
-        console.error("%s Fehler: %o Response: %o", err_msg, error, fileUploadResult);
-        kvm.log(err_msg + " error: " + JSON.stringify(error));
-        kvm.closeSperrDiv(err_msg + " Kann Antwort vom Server nicht parsen: " + JSON.stringify(fileUploadResult));
+        const msg = `Fehler beim Hochladen der Bilddatei. ${error.message}`;
+        console.error(`sendNewImage ${msg}`);
+        kvm.closeSperrDiv(`${msg} Kann Antwort vom Server nicht parsen: ${JSON.stringify(fileUploadResult)}`);
+        throw new Error(msg);
       }
     } catch (error) {
-      console.error("err: %o", error);
+      const msg = `Fehler beim Hochladen der Datei: ${error.name} Meldung: ${error.message}`;
+      console.error(`sendNewImage ${msg}`);
       if (icon.hasClass("fa-spinner")) {
         icon.toggleClass("fa-upload fa-spinner fa-spin");
       }
-      const msg = "Fehler beim Hochladen der Datei: " + error.code + " source: " + error.code;
       kvm.closeSperrDiv(msg);
+      throw new Error(msg);
     }
 
     // when the upload has been finished
@@ -1504,11 +1523,11 @@ export class Layer {
     // console.log(`syncData Layer: ${this.title}`);
     return new Promise<void>(async (resolve, reject) => {
       try {
-        kvm.tick(`${this.title}:<br>&nbsp;&nbsp; Starte Synchronisation der Daten mit dem Server.`);
+        kvm.tick(`${this.title}:<br>&nbsp;&nbsp; Starte Synchronisation`);
         //kvm.log("Layer.syncData", 3);
         const tableName = this.getSqliteTableName();
 
-        kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Starte Synchronisation mit Server.`);
+        // kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Starte Synchronisation mit Server.`);
 
         const deltas: { rows: { version: string; sql: string }[] } = {
           rows: [],
@@ -1528,9 +1547,7 @@ export class Layer {
         ";
           // kvm.log("Layer.syncData: query deltas with sql: " + sql, 3);
           const rs = await Util.executeSQL(kvm.db, sql);
-
           const numRows = rs.rows.length;
-
           for (let i = 0; i < numRows; i++) {
             // kvm.log("Push item " + i + " to deltas. sql: " + rs.rows.item(i).delta, 4);
             deltas.rows.push({
@@ -1551,11 +1568,11 @@ export class Layer {
             response: sendDeltasResponse,
           });
         }
-      } catch (ex) {
-        reject({
-          message: ``,
-          cause: ex,
-        });
+      }
+      catch (error) {
+        const msg = `in der Funktion syncData ${error.message}`;
+        console.error(`syncData catch ${msg}`);
+        reject(new Error(msg));
       }
     });
 
@@ -1593,16 +1610,11 @@ export class Layer {
       //console.log('removeItem %o', 'layerSettings_' + this.getGlobalId());
       //kvm.store.removeItem('layerSettings_' + this.getGlobalId());
       $("#numDatasetsText_" + this.getGlobalId()).html("keine");
-    } catch (ex) {
-      navigator.notification.confirm(
-        "Fehler bei Löschen der Layerdaten!\nFehlercode: \nMeldung: " + ex.message,
-        function (buttonIndex) {
-          // ToDo handling choices after error
-        },
-        "Datenbank",
-        ["Abbruch"]
-      );
-      console.error("Fehler clearData", ex);
+    }
+    catch (error) {
+      const msg = `Fehler bei Löschen der Layerdaten!\nFehlercode: ${error.name}\nMeldung: ${error.message}`;
+      console.error(`clearData ${msg}`);
+      throw new Error(msg);
     }
     if (this.settings.sync === '1') {
       await this.clearDeltas("all");
@@ -1657,8 +1669,9 @@ export class Layer {
                     */
         })
         .catch((error: Error) => {
-          reject({ message: "Fehler beim Löschen der Deltas!", cause: error });
-          console.error("TODO: ErrorMsg and update GUI");
+          const msg = `Fehler beim Löschen der Deltas! ${error.message}`; 
+          console.error(`clearDeltas ${msg}`);
+          reject(new Error(msg));
           // kvm.log("Fehler beim Löschen der Deltas!", 1);
           // const icon = $("#clearLayerIcon_" + this.getGlobalId());
           // if (icon.hasClass("fa-spinner")) {
@@ -1802,7 +1815,7 @@ export class Layer {
 
   createDataView() {
     console.log("Layer.createDataView");
-    kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Erzeuge Sachdatenanzeige neu.`);
+    // kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Erzeuge Sachdatenanzeige neu.`);
     $("#dataView").empty();
     $("#dataView").append(`<h1 style="margin-left: 5px;">${this.title}</h1>`).append('<div id="dataViewDiv">');
     this.attributeGroups.forEach((attributeGroup) => {
@@ -1865,15 +1878,15 @@ export class Layer {
             break;
         }
         if (visible) {
-          console.log(`Schalte #${fieldType}FieldDiv_${attr.get("index")} von Attribut ${attr.get('name')} sichtbar wegen ${attribute_name} ${attr.get('vcheck_operator')} ${attr.get("vcheck_value")}`);
+          // console.log(`Schalte #${fieldType}FieldDiv_${attr.get("index")} von Attribut ${attr.get('name')} sichtbar wegen ${attribute_name} ${attr.get('vcheck_operator')} ${attr.get("vcheck_value")}`);
           $(`#${fieldType}FieldDiv_${attr.get("index")}`).show();
         } else {
-          console.log(`Schalte #${fieldType}FieldDiv_${attr.get("index")} von Attribut ${attr.get('name')} unsichtbar wegen ${attribute_name} ${attr.get('vcheck_operator')} ${attr.get("vcheck_value")}`);
+          // console.log(`Schalte #${fieldType}FieldDiv_${attr.get("index")} von Attribut ${attr.get('name')} unsichtbar wegen ${attribute_name} ${attr.get('vcheck_operator')} ${attr.get("vcheck_value")}`);
           $(`#${fieldType}FieldDiv_${attr.get("index")}`).hide();
         }
         if (attr.get('name') == 'sorte_id') {
           const field = $(`#${fieldType}FieldDiv_${attr.get("index")}`);
-          console.log(`Attribute: ${attr.get('name')} display is: ${field.css('display')} because (${attr.get('vcheck_attribute')}: ${attribute_value}) ${attr.get('vcheck_operator')} ${attr.get('vcheck_value')}`);
+          // console.log(`Attribute: ${attr.get('name')} display is: ${field.css('display')} because (${attr.get('vcheck_attribute')}: ${attribute_value}) ${attr.get('vcheck_operator')} ${attr.get('vcheck_value')}`);
         }
       }
     });
@@ -2003,7 +2016,7 @@ export class Layer {
    */
   drawFeatures() {
     // console.error(`xxx Layer.drawFeatures ${this.getGlobalId()}`, this);
-    kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Zeichne ${this._features.size} Features neu.`);
+    // kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Zeichne ${this._features.size} Features neu.`);
     const layerRenderer = undefined; //new L.SVG();
 
     this._features.forEach((feature) => {
@@ -2062,16 +2075,21 @@ export class Layer {
           // layer_id abfragen und in Feature als layerId speichern
           feature.layerId = this.layerGroup.getLayerId(vectorLayer);
         }
-      } catch (ex) {
-        kvm.msg("Fehler beim Zeichnen des Feature Id: " + feature.id + " in layer id: " + feature.globalLayerId + "! Fehlertyp: " + ex.name + " Fehlermeldung: " + ex.message);
-        console.error("Fehler beim Zeichnen des Feature Id: " + feature.id + " in layer id: " + feature.globalLayerId, ex);
+      } catch (error) {
+        const msg = `Fehler beim Zeichnen des Feature Id: ${feature.id} in layer id: ${feature.globalLayerId}! Fehlertyp: ${error.name} Fehlermeldung: ${error.message}`;
+        console.error(`drawFeatures ${msg}`);
+        kvm.msg(msg);
+        throw new Error(msg);
       }
     });
     try {
       this.layerGroup.setZIndex(parseInt(this.settings.drawingorder));
       this.layerGroup.addTo(kvm.map);
-    } catch ({ name, message }) {
-      kvm.msg("Fehler beim Hinzufügen der Layergruppe in Layer id: " + this.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
+    }
+    catch (error) {
+      const msg = `Fehler beim Hinzufügen der Layergruppe in Layer id: ${this.getGlobalId()}! Fehlertyp: ${error.name} Fehlermeldung: ${error.message}`;
+      kvm.msg(msg);
+      throw new Error(msg);
     }
     // console.log("activeLayer after drawFeatures of Layer Id: ", this.getGlobalId());
   }
@@ -2130,7 +2148,7 @@ export class Layer {
    */
   selectActiveLayerInControl() {
     //console.log("selectActiveLayerInControl layer: ", this.title);
-    kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Schalte Layer in Karte ein.`);
+    // kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Schalte Layer in Karte ein.`);
     if (kvm.activeLayer) {
       $(".leaflet-control-layers-overlays span").removeClass("active-layer");
       $("#layerCtrLayerDiv_" + kvm.activeLayer.getGlobalId()).addClass("active-layer");
@@ -2822,8 +2840,10 @@ export class Layer {
           this.afterCreateDataset(rs);
         })
         .catch((reason) => {
-          console.error("Etwas ist schief gegangen: ", reason);
-          kvm.msg("Etwas ist schief gegangen: " + JSON.stringify(reason));
+          const msg = `Etwas ist schief gegangen: ${JSON.stringify(reason)}`;
+          console.error(`runInsertStrategy ${msg}`);
+          kvm.msg(msg);
+          throw new Error(msg);
         });
     }
   }
@@ -2992,8 +3012,11 @@ export class Layer {
           // console.log("resolved runUpdateStrategy");
           this.afterUpdateDataset(rs);
         })
-        .catch((reason) => {
-          kvm.msg("Etwas ist schief gegangen: " + JSON.stringify(reason));
+        .catch((error) => {
+          const msg = `Etwas ist schief gegangen: ${error.message}`
+          console.error(`runUpdateStrategy ${msg}`);
+          kvm.msg(msg);
+          throw new Error(msg);
         });
     }
   }
@@ -3060,8 +3083,10 @@ export class Layer {
           kvm.msg("Fehler beim Aktualisieren des Datensatzes! Fehler: " + (<any>err).code + "\nMeldung: " + err.message, "Fehler");
         });
       }
-    } catch (ex) {
-      console.error("Error in updateDataset", ex);
+    } catch (error) {
+      const msg = `Fehler beim Update des Datensatzes ${error.message}`;
+      console.error(`updateDataset ${msg}`);
+      throw new Error(msg);
     }
   }
 
@@ -3124,8 +3149,10 @@ export class Layer {
       $("#numDatasetsText_" + this.getGlobalId()).html(`${this._features.size}`);
       //kvm.closeSperrDiv(`${layer.title}: Update des Datensatzes erfolgreich beendet.`);
       kvm.closeSperrDiv();
-    } catch (ex) {
-      console.error("Error in afterUpdateDataset", ex);
+    } catch (error) {
+      const msg = `Fehler nach dem Update des Datensatzes ${error.message}`;
+      console.error(`afterUpdateDataset ${msg}`);
+      throw new Error(msg);
     }
   }
 
@@ -3163,8 +3190,11 @@ export class Layer {
         // console.log("resolved runDeleteStrategy");
         this.afterDeleteDataset(rs);
       })
-      .catch((reason) => {
-        kvm.msg("Etwas ist schief gegangen: " + JSON.stringify(reason));
+      .catch((error) => {
+        const msg = `Etwas ist schief gegangen: ${error.message}`;
+        console.error(`runDeleteStrategy ${error.message}`);
+        kvm.msg(msg);
+        // throw new Error(msg);
       });
   }
 
@@ -3201,6 +3231,7 @@ export class Layer {
    */
   afterDeleteDataset(rs) {
     console.log("afterDeleteDataset");
+    // throw new Error('Fehler in afterDeleteDataset absichtlich verursacht wegen debug');
     let layerId = this.activeFeature.layerId;
     let parentLayerId = this.parentLayerId;
     let parentFeatureId = this.parentFeatureId;
@@ -3286,8 +3317,10 @@ export class Layer {
         console.log(`Fehler beim Schreiben der Deltas ${sql} Fehler: ${JSON.stringify(err)}`);
         kvm.msg(`Fehler beim Schreiben der Deltas ${sql} Fehler: ${JSON.stringify(err)}`, "Änderung Speichern");
       });
-    } catch (ex) {
-      console.error("Error in writeDelta", ex);
+    } catch (error) {
+      const msg = `Fehler beim Schreiben der Deltas ${error.message}`;
+      console.error(`writeDelta ${msg}`);
+      throw new Error(msg);
     }
   }
 
@@ -3384,8 +3417,10 @@ export class Layer {
       kvm.db.executeSql(sql, [], layer[this.next.succFunc].bind(this.next), function (err) {
         kvm.msg("Fehler beim Lesen des Datensatzes aus der Datenbank! Fehler: " + (<any>err).code + "\nMeldung: " + err.message, "Fehler");
       });
-    } catch (ex) {
-      console.error("Fehler in readDataset", ex);
+    } catch (error) {
+      const msg = `Fehler beim Lesen des Datensatzes ${error.message}`;
+      console.error(`readDataset ${msg}`);
+      throw new Error(msg);
     }
   }
 
@@ -3688,8 +3723,8 @@ export class Layer {
    * Do not read data for listing and mapping
    */
   appendToApp() {
-    // console.log(`xxx appendoApp ${this.getGlobalId()} ${this.title}`);
-    kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Füge Layer zur App hinzu.`);
+    // console.log(`appendToApp ${this.getGlobalId()} ${this.title}`);
+    // kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Füge Layer zur App hinzu.`);
     try {
       const index = kvm.activeStelle.getLayerDrawingIndex(this);
       if (index == 0) {
@@ -3716,9 +3751,11 @@ export class Layer {
         kvm.controls.layers.addOverlay(this.layerGroup, '<span id="layerCtrLayerDiv_' + this.getGlobalId() + '">' + this.title + "</span>");
       }
       kvm.addLayer(this);
-    } catch (ex) {
-      kvm.msg(`Fehler beim Hinzufügen des Layers ${this.title} zur Anwendung! Fehlertyp: ${ex.name} Fehlermeldung: ${ex.message}`);
-      console.error(`Fehler beim Hinzufügen des Layers ${this.title} zur Anwendung!`, ex);
+    } catch (error) {
+      const msg = `Fehler beim Hinzufügen des Layers ${this.title} zur Anwendung! Typ: ${error.name} Fehlermeldung: ${error.message}`;
+      kvm.msg(msg);
+      console.error(`appendToApp ${msg}`);
+      throw new Error(msg);
     }
   }
 
@@ -3755,7 +3792,7 @@ export class Layer {
             $("#clearLayerIcon_" + this.getGlobalId()).toggleClass("fa-ban fa-spinner fa-spin");
             this.clearData()
               .catch((reason) => {
-                Util.showAlert("Fehler bei Löschen der Layerdaten!\nFehlercode: \nMeldung: " + reason.message);
+                Util.showAlert("Fehler bei Löschen der Layerdaten!\nMeldung: " + reason.message);
                 console.error("Fehler clearData", reason);
               })
               .finally(() => {
@@ -3916,10 +3953,11 @@ export class Layer {
                     console.log(`Bilder des Layers ${layer.title} wurden synchronisiert,`);
                     await layer.syncData();
                     console.log(`Daten des Layers ${layer.title} wurden synchronisiert,`);
-                  } catch (ex) {
-                    console.error(`Fehler beim Synchronisieren des Layers: "${layer.title}".`, ex);
-                    const fehler = ex.message || JSON.stringify(ex);
-                    navigator.notification.alert(`Fehler beim Synchronisieren des Layers: "${layer.title}". Ursache:  ${fehler}`, () => {}, "Synchronisationsfehler");
+                  } catch (error) {
+                    const msg = `Fehler beim Synchronisieren des Layers: "${layer.title}". ${error.message}`;
+                    console.error(`bindLayerEvents ${msg}`);
+                    navigator.notification.alert(msg, () => {}, "Synchronisationsfehler");
+                    throw new Error(msg);
                   }
                 }
                 $("#sperr_div").hide();
@@ -3980,7 +4018,7 @@ export class Layer {
               $("#clearLayerIcon_" + this.getGlobalId()).toggleClass("fa-ban fa-spinner fa-spin");
               this.clearData()
                 .catch((reason) => {
-                  Util.showAlert("Fehler bei Löschen der Layerdaten!\nFehlercode: \nMeldung: " + reason.message);
+                  Util.showAlert("Fehler bei Löschen der Layerdaten!\nMeldung: " + reason.message);
                   console.error("Fehler clearData", reason);
                 })
                 .finally(() => {
@@ -4018,10 +4056,11 @@ export class Layer {
               kvm.openSperrDiv("Layer neu laden");
               try {
                 await kvm.activeStelle.reloadLayer(this.get("id"));
-              } catch (ex) {
-                alert("Fehler beim Einlesen der heruntergeladenen Datei. Prüfen Sie die URL und Parameter, die für den Download verwendet werden.");
-                kvm.log("Fehler beim lesen der Datei: ", ex);
-                console.error(`Fehler`, ex);
+              } catch (error) {
+                const msg = `Fehler beim Einlesen der heruntergeladenen Datei. Prüfen Sie die URL und Parameter, die für den Download verwendet werden. ${error.message}`;
+                alert(msg);
+                console.error(`bindLayerEvents catch reloadLayer ${msg}`);
+                throw new Error(msg);
               }
               kvm.closeSperrDiv();
             }
@@ -4155,7 +4194,7 @@ export class Layer {
       kvm.map.closePopup();
       kvm.store.setItem("layerFilter", "");
       kvm.store.setItem("sortAttribute", "");
-      kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Setze Layer aktiv.`);
+      // kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Setze Layer aktiv.`);
       this.activate();
       $("#sperr_div").hide();
       // include loading filter, sort, data view, form and readData
@@ -4163,7 +4202,7 @@ export class Layer {
   }
 
   getLayerListItem() {
-    console.log(`### getLayerListItem ${this.title}`);
+    // console.log(`### getLayerListItem ${this.title}`);
     const div = createHtmlElement("div", null, "layer-list-div");
     div.id = `layer_${this.getGlobalId()}`;
     const radioInput = createHtmlElement("input", div);
@@ -4436,7 +4475,7 @@ export class Layer {
   }
 
   refresh() {
-    kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Datenanzeige auffrischen.`);
+    // kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Datenanzeige auffrischen.`);
     this.activate();
   }
 
@@ -4485,7 +4524,7 @@ export class Layer {
       var layerFilter = kvm.store.getItem("layerFilter");
       if (layerFilter) {
         try {
-          kvm.tick("Lade Layerfilter.");
+          // kvm.tick("Lade Layerfilter.");
           this.loadLayerFilterValues(JSON.parse(layerFilter));
         } catch ({ name, message }) {
           kvm.msg("Fehler beim Laden der Filterwerte im Layer id: " + this.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
@@ -4493,7 +4532,7 @@ export class Layer {
       }
 
       // Set sortAttribute
-      kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Setze Sortieroptionen.`);
+      // kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Setze Sortieroptionen.`);
       $('#anzeigeSortSelect option[value!=""]').remove();
       $.each(this.attributes, function (key, value) {
         $("#anzeigeSortSelect").append($('<option value="' + value.settings.name + '">' + value.settings.alias + "</option>"));
@@ -4518,11 +4557,14 @@ export class Layer {
       }
       try {
         this.createDataView();
-      } catch ({ name, message }) {
-        kvm.msg("Fehler beim Erzeugen der Datenansicht im Layer id: " + this.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
+      }
+      catch (error) {
+        const msg = `Fehler beim Erzeugen der Datenansicht im Layer id: ${this.getGlobalId()}! Fehlertyp: ${error.name} Meldung: ${error.message}`;
+        console.error(`catch createDataView in activate ${msg}`);
+        kvm.msg(msg);
       }
 
-      kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Aktiviere Layer in Layerliste.`);
+      // kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Aktiviere Layer in Layerliste.`);
       (<any>$("input[name=activeLayerId]")).checked = false;
       (<any>$("input[value=" + this.getGlobalId() + "]")[0]).checked = true;
       $(".layer-functions-button, .layer-functions-div").hide();

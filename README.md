@@ -15,6 +15,14 @@ Doku zu kvmobile: https://kvwmap.de/index.php/kvmobile
 Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.de/public/kvmobile/
 
 # Change log
+## 1.19.4
+- Features
+  - Auswahl von Layer und Type für Hintergrundkarten möglich.
+  - Option zum Einstellen der automatischen Layersynchronisierung.
+  - Deutlich weniger Meldungen 
+- Bugfix
+  - Fehler bei Meldung im Catch.
+  - Fehlendes Laden von Daten nach sendDeltas und hängen nach Sync.
 ## 1.19.3
 - Features
   - Die Funktion gdi_conditional_next_val liefert 1 wenn kein Wert ermittelt werden konnte.

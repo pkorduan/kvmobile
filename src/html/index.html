@@ -194,20 +194,25 @@ child-src * 'self' blob: http:
       <h2 id="h2_layer" class="b-collapsed">Layer</h2>
     </div>
     <div>
-        <button id="requestLayersButton" class="settings-button" style="display: none;">
-          <i class="fa fa-download" aria-hidden="true"></i> Layer abfragen
-        </button>
-        <div style="clear: both"></div>
-        <div id="layer_list">
-        </div>
-      
-      <div style="margin-top: 10px;">
-      <button
-        class="sync-layer-button settings-button active-button layer-function-button"
-        id="syncLayerButton"
-      ><i class="fa fa-refresh" aria-hidden="true"></i>
-      </button> Layer mit Server synchronisieren
-      </div>  
+      <button id="requestLayersButton" class="settings-button" style="display: none;">
+         <i class="fa fa-download" aria-hidden="true"></i> Layer abfragen
+      </button>
+      <div style="clear: both"></div>
+      <div id="layer_list">
+      </div>
+
+      <div id="autoSyncLayerDiv" style="margin-top: 10px;">
+        <hr>
+        <input id="autoSyncCheckBox" type="checkbox" style="margin: 10px 0px 10px 8px"/> Layer automatisch synchronisieren
+      </div>
+
+      <div id="syncLayerButtonDiv" style="margin-top: 10px;">
+        <button
+          class="sync-layer-button settings-button active-button layer-function-button"
+          id="syncLayerButton"
+        ><i class="fa fa-refresh" aria-hidden="true"></i></button> Layer synchronisieren
+      </div>
+
     </div>
     <hr>
 
@@ -432,9 +437,9 @@ child-src * 'self' blob: http:
         <button id="changeBackgroundLayerSettingsButton" class="settings-button">
           <i class="fa fa-regular fa-floppy-disk" aria-hidden="true"></i> Speichern
         </button>
-        <button id="loadBackgroundLayerButton" class="settings-button">
+        <!--button id="loadBackgroundLayerButton" class="settings-button">
           <i class="fa fa-download" aria-hidden="true"></i> Download
-        </button>
+        </button//-->
       </div>
       <hr>
 

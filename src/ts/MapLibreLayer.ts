@@ -255,7 +255,7 @@ export class MapLibreLayer extends LLayer {
      * Do not read data for listing and mapping
      */
     appendToApp() {
-        kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Füge Layer zur App hinzu.`);
+        // kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Füge Layer zur App hinzu.`);
         const index = kvm.activeStelle.getLayerDrawingIndex(this);
         if (index == 0) {
             $("#layer_list").prepend(this.getListItem());
@@ -320,7 +320,7 @@ export class MapLibreLayer extends LLayer {
             if (kvm.activeLayer) {
                 kvm.activeLayer.deactivate();
             }
-            kvm.tick(`${layer.title}:<br>&nbsp;&nbsp;Setze Layer aktiv.`);
+            // kvm.tick(`${layer.title}:<br>&nbsp;&nbsp;Setze Layer aktiv.`);
             layer.activate(); // include loading filter, sort, data view, form and readData
         });
 
