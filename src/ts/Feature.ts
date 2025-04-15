@@ -492,7 +492,11 @@ export class Feature {
       }
       // kvm.viewMap.set(zoomLevel, layer.getLatLng())
     } else {
-      kvm.map.setZoom(18);
+      if (this.editableLayer && this.layer.settings.geometry_type != "Point") {
+        kvm.map.fitBounds(this.editableLayer.getBounds());
+      } else {
+        kvm.map.setZoom(18);
+      }
       if (startLatLng) {
         kvm.map.panTo(startLatLng);
       }
