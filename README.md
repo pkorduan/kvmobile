@@ -16,9 +16,26 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 
 # Change log
 
-## 1.19.0
+## 1.19.0 rtr
 
 - Hausekeeping
+
+## 1.19.0
+
+- Features
+  - Möglichkeit zur Datenerfassung mit nur einem Layerparameter.
+  - Replace $EXPORT in Query
+  - Größe der Linien oder Polygon-Geometrie an aktuelle Zoomstufe angepasst.
+
+## 1.18.4
+
+- Bugfix
+  - GPS-Tracking ausschalten wenn ein existierendes Feature editier wird.
+
+## 1.18.3
+
+- Bugfix
+  - Lade Daten von nicht sync-Layern neu bei geänderter Datenversion
 
 ## 1.18.2
 

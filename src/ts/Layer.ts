@@ -880,6 +880,26 @@ export class Layer extends PropertyChangeSupport {
     return selectExpressions;
   }
 
+  async requestDataVersion() {
+    console.log("Layer %s: requestDataVersion", this.title);
+    const url = this.getDataVersionUrl();
+    kvm.tick(`${this.title}:<br>&nbsp;&nbsp;Frage Layerversion ab mit URL: ${url}`);
+    const filename = "data_version_layer_" + this.getGlobalId() + ".json";
+    const fileEntry = await Util.download(url, cordova.file.dataDirectory + filename);
+    const txt = await Util.readFileAsString(fileEntry);
+    console.log("Download Ergebnis: %s", txt);
+    const response = JSON.parse(txt);
+    console.log("Download Object: %o", response);
+    if ("success" in response && !response.success) {
+      kvm.msg(response.msg, `Fehler beim Laden der Datenversion vom Layer ${this.title} auf dem Server.`);
+      return 0;
+    }
+    if ("dataVersion" in response && response.dataVersion != this.get("data_version")) {
+      console.log(`Setze data_version von layer ${this.title} auf den neuen Wert: ${response.dataVersion}`);
+      this.set("data_version", response.dataVersion);
+    }
+  }
+
   /**
    * Function request layer with the last_delta_version data from server and writes the data to database
    */
@@ -926,8 +946,8 @@ export class Layer extends PropertyChangeSupport {
     await this.writeData(collection.features);
   }
 
-  /*
-   * Delete all features from layer, store, feature list, map and its data in the database table and deltas
+  /**
+   * Delete all features from layer, store, feature list, map and its data in the database table,
    * and also lastVersionNr of the layer to make the way free for a new initial download
    */
   async clearData() {
@@ -1557,6 +1577,7 @@ export class Layer extends PropertyChangeSupport {
 
     if (this.hasGeometry) {
       if (feature.geom) {
+        kvm.controller.mapper.clearWatch();
         this.startEditing();
       } else {
         if (kvm.mapSettings.newPosSelect == 1) {
@@ -1606,8 +1627,16 @@ export class Layer extends PropertyChangeSupport {
     }
   }
 
+  /**
+   * Function create and return a geometry at latlng pos pending on
+   * layers geometry_type and size on current zoom level.
+   * @param LatLngExpression latlng
+   * @returns Array Of latlng sequenz.
+   */
   getStartGeomAtLatLng(latlng: LatLngExpression) {
-    const startGeomSize = 0.0002;
+    const currentZoomLevel = kvm.map.getZoom();
+    const baseGeomSize = 200;
+    const startGeomSize = baseGeomSize / Math.pow(2, currentZoomLevel);
     let startGeom;
 
     if (this.get("geometry_type") == "Point") {
@@ -1645,7 +1674,7 @@ export class Layer extends PropertyChangeSupport {
           { lat: latlng[0] + startGeomSize, lng: latlng[1] - startGeomSize },
           { lat: latlng[0] - startGeomSize, lng: latlng[1] - startGeomSize },
           { lat: latlng[0] - startGeomSize, lng: latlng[1] + startGeomSize },
-          { lat: latlng[0] + startGeomSize, lng: latlng[1] + startGeomSize },
+          // { lat: latlng[0] + startGeomSize, lng: latlng[1] + startGeomSize },
         ],
       ];
     }
