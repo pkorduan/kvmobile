@@ -72,6 +72,7 @@
   "dependencies": {
     "@awesome-cordova-plugins/background-geolocation": "^6.7.0",
     "@maplibre/maplibre-gl-leaflet": "^0.0.20",
+    "braces": "^3.0.3",
     "buffer": "^6.0.3",
     "idb": "^8.0.0",
     "jquery": "^3.7.1",
