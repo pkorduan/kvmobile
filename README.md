@@ -16,19 +16,47 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 
 # Change log
 
-## 1.19.0 rtr
+## 1.20.0
+- Maintainance
+  - Merge der Änderungen von Peter in Master von Ralf mit Synchronisation in develop
 
-- Hausekeeping
+## 1.19.4
+- Features
+  - Auswahl von Layer und Type für Hintergrundkarten möglich.
+  - Option zum Einstellen der automatischen Layersynchronisierung.
+  - Deutlich weniger Meldungen 
+- Bugfix
+  - Fehler bei Meldung im Catch.
+  - Fehlendes Laden von Daten nach sendDeltas und hängen nach Sync.
+
+## 1.19.3
+- Features
+  - Die Funktion gdi_conditional_nextval liefert 1 wenn kein Wert ermittelt werden konnte.
+  - Kameraeinstellungen werden behalten
+  - Berücksichtigung des Editiersperreattributes
+
+## 1.19.2
+- Maintainance
+  - Bezeichnung der App auf kvmobile korrigiert.
+  - Konfiguration Streuobst (ohne Zusatz) hinzugefügt.
+- Bugfix
+  - Eigenständige vcheckAttributes für dataView and form fields
+  - Leere nur lesbare Attribute ausblenden, die anderen aber nicht einblenden. Das passiert schon bei vcheckattributes
+
+## 1.19.1
+- Bugfix
+  - Attribute mit privilege null werden gar nicht erst dargestellt.
+  - Attribute die leer sind und nur lesbar werden ausgeblendet.
 
 ## 1.19.0
-
 - Features
   - Möglichkeit zur Datenerfassung mit nur einem Layerparameter.
   - Replace $EXPORT in Query
   - Größe der Linien oder Polygon-Geometrie an aktuelle Zoomstufe angepasst.
+- Maintainance
+  - Anpassungen zur Verbesserung der Synchronisierung von Ralf im develop
 
 ## 1.18.4
-
 - Bugfix
   - GPS-Tracking ausschalten wenn ein existierendes Feature editier wird.
 

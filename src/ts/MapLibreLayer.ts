@@ -191,7 +191,7 @@ export class MapLibreLayer extends LLayer {
       const glMap: maplibreMap = (MapLibreLayer.maplibreGLMap = gl.getMaplibreMap());
       console.info("addMBTiles2 " + this.url, MapLibreLayer.maplibreGLMap);
       glMap.on("load", (o: any) => {
-        console.error("MAPLIBRE map loaded", o);
+        // console.error("MAPLIBRE map loaded", o);
       });
     } else {
       fetch(this.url).then((data) =>
@@ -257,7 +257,7 @@ export class MapLibreLayer extends LLayer {
    */
   appendToApp() {
     sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Füge Layer zur App hinzu.`);
-    console.error("MapLibreLayer.appendToApp");
+    // console.error("MapLibreLayer.appendToApp");
     const index = kvm.getActiveStelle().getLayerDrawingIndex(this);
     if (index == 0) {
       $("#layer_list").prepend(this.getListItem());
@@ -292,7 +292,7 @@ export class MapLibreLayer extends LLayer {
   }
 
   activate() {
-    console.error("wwww activate");
+    // console.error("wwww activate");
 
     (<any>$("input[value=" + this.getGlobalId() + "]")[0]).checked = true;
     $(".layer-functions-button, .layer-functions-div").hide();
@@ -306,7 +306,7 @@ export class MapLibreLayer extends LLayer {
    * Erzeugt die Events für die Auswahl, Synchronisierung und das Zurücksetzen von Layern
    */
   bindLayerEvents(layerGlobalId) {
-    console.error("wwww activate");
+    // console.error("wwww activate");
     return;
     console.log("bindLayerEvents for layerGlobalId: %s", layerGlobalId);
     // Schaltet alle layer function button events zunächst aus.

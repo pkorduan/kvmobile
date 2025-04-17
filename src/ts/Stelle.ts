@@ -266,7 +266,7 @@ export class Stelle {
   }
 
   async setLayerParam(key: string, value: string) {
-    console.error(`setLayerParams ${key}=$${value}`);
+    // console.error(`setLayerParams ${key}=$${value}`);
     this._layerParams[key] = value;
     kvm.store.setItem("layerParams_" + this.get("ID"), JSON.stringify(this._layerParams));
     for (const layer of kvm.getLayers()) {
@@ -279,30 +279,68 @@ export class Stelle {
    * @param sql
    * @returns
    */
-  replaceParams(sql: string) {
-    if (typeof sql === "string") {
-      const layerParams = this.settings.layer_params;
-      Object.keys(layerParams).forEach((layerParam) => {
-        const searchString = "$" + layerParam;
-        // const replaceString = layerParams[layerParam].current_value || layerParams[layerParam].default_value;
-        const replaceString = kvm.getActiveStelle().getLayerParam(layerParam);
+  // replaceParams(sql: string) {
+  //   if (typeof sql === "string") {
+  //     const layerParams = this.settings.layer_params;
+  //     Object.keys(layerParams).forEach((layerParam) => {
+  //       const searchString = "$" + layerParam;
+  //       // const replaceString = layerParams[layerParam].current_value || layerParams[layerParam].default_value;
+  //       const replaceString = kvm.getActiveStelle().getLayerParam(layerParam);
 
-        sql = sql.replaceAll(searchString, replaceString);
+  //       sql = sql.replaceAll(searchString, replaceString);
 
-        // if (str.includes(`$${layerParam}`)) {
-        //   const regExp = new RegExp(`\\$${layerParam}`, "g");
-        //   str = str.replace(regExp, $(`#${layerParam}`).val().toString());
-        //   // console.log(`LayerParameter $${layerParam} in Text ersetzt: "${str}"`);
-        // }
-      });
-      // console.log(`Check if $USER_ID is in Text: "${str}"`);
-      if (sql.includes("$USER_ID")) {
-        const regExp = new RegExp(`\\$USER_ID`, "g");
-        sql = sql.replace(regExp, kvm.userId);
-        // console.log(`$USER_ID in Text ersetzt mit ${kvm.userId}: "${str}"`);
-      }
+  //       // if (str.includes(`$${layerParam}`)) {
+  //       //   const regExp = new RegExp(`\\$${layerParam}`, "g");
+  //       //   str = str.replace(regExp, $(`#${layerParam}`).val().toString());
+  //       //   // console.log(`LayerParameter $${layerParam} in Text ersetzt: "${str}"`);
+  //       // }
+  //     });
+  //     // console.log(`Check if $USER_ID is in Text: "${str}"`);
+  //     if (sql.includes("$USER_ID")) {
+  //       const regExp = new RegExp(`\\$USER_ID`, "g");
+  //       sql = sql.replace(regExp, kvm.userId);
+  //       // console.log(`$USER_ID in Text ersetzt mit ${kvm.userId}: "${str}"`);
+  //     }
+  //   }
+  //   return sql;
+  // }
+  replaceParams(str: string) {
+    if (typeof str === "undefined" || str === null || str === '') {
+      return '';
     }
-    return sql;
+    let replacedString = str;
+    let regExp: RegExp;
+    const layerParams = this.settings.layer_params;
+    Object.keys(layerParams).forEach((layerParam) => {
+      // console.log(`Check if layerParam $${layerParam} is in Text: "${str}"`);
+      if (str.includes(`$${layerParam}`)) {
+        regExp = new RegExp(`\\$${layerParam}`, "g");
+        str = str.replace(regExp, this.getLayerParam(layerParam));
+        // console.log(`LayerParameter $${layerParam} in Text ersetzt: "${str}"`);
+      }
+    });
+    // console.log(`Check if $USER_ID is in Text: "${str}"`);
+    if (str.includes("$USER_ID")) {
+      regExp = new RegExp(`\\$USER_ID`, "g");
+      str = str.replace(regExp, kvm.userId);
+      // console.log(`$USER_ID in Text ersetzt mit ${kvm.userId}: "${str}"`);
+    }
+    if (str.includes("$STELLE_ID")) {
+      regExp = new RegExp(`\\$STELLE_ID`, "g");
+      str = str.replace(regExp, kvm.getActiveStelle().get("ID"));
+      // console.log(`$STELLE_ID in Text ersetzt mit ${kvm.activeStelle.get('ID')}: "${str}"`);
+    }
+    if (str.includes("$CLIENT_ID")) {
+      regExp = new RegExp(`\\$CLIENT_ID`, "g");
+      str = str.replace(regExp, device.uuid);
+      // console.log(`$CLIENT_ID in Text ersetzt mit ${device.uuid}: "${str}"`);
+    }
+    if (str.includes("$EXPORT")) {
+      regExp = new RegExp(`\\$EXPORT`, "g");
+      str = str.replace(regExp, '1 = 2');
+      // console.log(`$EXPORT in Text ersetzt mit false: "${str}"`);
+    }
+    return str;
   }
 
   // /*
@@ -511,7 +549,7 @@ export class Stelle {
         // TODO
       } else {
         kvm.log("Fehlerausgabe von parseLayerResult!", 4);
-        kvm.msg(resultObj.errMsg, "2");
+        kvm.msg(resultObj.errMsg,  `Layer ID: ${layerId}`);
       }
     } catch (ex) {
       console.error(`Fehler beim reloadLayer`, ex);
@@ -650,7 +688,7 @@ export class Stelle {
    * 	requestData
    */
   async requestLayers(layerRequestResult?: LayerRequestResponse) {
-    console.error(`Layer.requestLayers for stelle: ${this.get("Bezeichnung")} last_delta_version=${layerRequestResult?.last_delta_version}`, this, layerRequestResult);
+    // console.error(`Layer.requestLayers for stelle: ${this.get("Bezeichnung")} last_delta_version=${layerRequestResult?.last_delta_version}`, this, layerRequestResult);
     sperrBildschirm.tick("Starte Download der Layerdaten der Stelle");
 
     if (!layerRequestResult) {
@@ -691,6 +729,7 @@ export class Stelle {
           try {
             if (layerSetting.vector_tile_url) {
               console.log(`Erzeuge einen VectorTile Layer-Objekt für Layer ${layerSetting.title}`);
+              
               const layer = new MapLibreLayer(layerSetting, true, this);
               layer.appendToApp();
               layer.saveToStore();
@@ -698,6 +737,8 @@ export class Stelle {
             } else {
               console.log(`Erzeuge einen normales Layer-Objekt für Layer ${layerSetting.title}`);
               const layer = new Layer(this, layerSetting);
+              // ToDo Ralf: Prüfen ob dropDataTabel() notwendig ist.
+              await layer.dropDataTable();
               await layer.createTable();
               await layer.requestData(this._lastDeltaVersion); // Das ist neu: Daten werden gleich geladen nach dem Anlegen in der Stelle
               await layer.readData();
@@ -728,7 +769,7 @@ export class Stelle {
   }
 
   async clearLayers() {
-    console.error("stelle.clearLayers");
+    // console.error("stelle.clearLayers");
     this._tableNames = [];
     if (this._layerSettings) {
       for (const layerSetting of this._layerSettings) {
@@ -924,7 +965,7 @@ export class Stelle {
         await this.clearImageDelta(deltaRow);
       } else {
         if (!img) {
-          console.error("Bild: file war leer.", 4);
+          // console.error("Bild: file war leer.", 4);
           await this.clearImageDelta(deltaRow);
         } else {
           throw new Error(`Beim Löschen des Bildes "${img}" meldet der Server nicht erfolreich. Antwort: ${JSON.stringify(json)}`);
@@ -1113,7 +1154,7 @@ export class Stelle {
   }
 
   async applyDeltas(response: SendDeltasResponse) {
-    console.error(`applyDeltas`, response);
+    // console.error(`applyDeltas`, response);
     // const response = JSON.parse(fileUploadResult.response);
 
     if (response.success) {

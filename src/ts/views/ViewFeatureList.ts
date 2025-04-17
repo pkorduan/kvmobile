@@ -72,7 +72,7 @@ export class ViewFeatureList extends View {
   }
 
   setActiveLayer(layer: Layer) {
-    console.error(`ViewFeatureList.setActiveLayer ${layer?.title}`);
+    console.log(`ViewFeatureList.setActiveLayer ${layer?.title}`);
     if (layer === this.activeLayer) {
       return;
     }
@@ -98,7 +98,7 @@ export class ViewFeatureList extends View {
   }
 
   private update(evt: PropertyChangeEvent) {
-    // console.error(`ViewFeatureList.update ${this.activeLayer?.title}`, evt);
+    // console.log(`ViewFeatureList.update ${this.activeLayer?.title}`, evt);
     this.addFeatures(this.activeLayer);
   }
 
@@ -106,7 +106,7 @@ export class ViewFeatureList extends View {
    * create the list of features in list view at once
    */
   private addFeatures(layer: Layer) {
-    // console.error("createFeatureList");
+    // console.log("createFeatureList");
     this.featurelistBody.innerHTML = "";
     const doc = document.createDocumentFragment();
 

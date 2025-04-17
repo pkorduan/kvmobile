@@ -26,7 +26,7 @@ export async function getGpsStatus(timeout: number) {
 
 getGpsStatus(5000)
   .then((geolocationPosition) => {
-    console.error("gpsStatus", geolocationPosition);
+    console.log("gpsStatus", geolocationPosition);
     GpsStatus.status = "GPS vorhanden und funktioniert";
     GpsStatus.geolocationPosition = geolocationPosition;
     GpsStatus.ok = true;

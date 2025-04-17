@@ -279,13 +279,13 @@ export class BilderFormField implements Field {
         kvm.msg("Keine Aufnahme gemacht! " + message);
       },
       {
-        // TODO
-        quality: <number>$("#cameraOptionsQualitySlider").val(),
-        correctOrientation: $("#cameraOptionsCorrectOrientation").is(":checked"),
-        allowEdit: $("#cameraOptionsAllowEdit").is(":checked"),
+        // TODO Add aditional options to edit or change orientation
+        quality: kvm.getConfigurationOption('cameraOptionsQuality'),
+        saveToPhotoAlbum: kvm.getConfigurationOption('cameraOptionsSaveToPhotoAlbum'),
+        correctOrientation: false, // $("#cameraOptionsCorrectOrientation").is(":checked"),
+        allowEdit: false, // $("#cameraOptionsAllowEdit").is(":checked"),
         sourceType: Camera.PictureSourceType.CAMERA,
         destinationType: Camera.DestinationType.FILE_URI,
-        saveToPhotoAlbum: $("#cameraOptionsSaveToPhotoAlbum").is(":checked"),
       }
     );
   }

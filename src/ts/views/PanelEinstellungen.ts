@@ -16,7 +16,7 @@ abstract class PanelEinstellungen {
     const dom = (this.domHeader = <HTMLElement>document.getElementById(nodeId));
     PanelEinstellungen.id2panel.set(nodeId, this);
     if (dom) {
-      console.error("xxxxx", nodeId, this);
+      // console.log("xxxxx", nodeId, this);
       dom.addEventListener("click", () => {
         if (!dom.classList.toggle("b-collapsed")) {
           if (PanelEinstellungen.currentPanel) {
@@ -38,6 +38,7 @@ abstract class PanelEinstellungen {
     console.info("show", this);
     this.domHeader.scrollIntoView();
   }
+
   hide(): void {
     console.info("hide", this);
   }
@@ -195,7 +196,7 @@ export class Server extends PanelEinstellungen {
   setStelle(stelle: Stelle) {
     //kvm.log("ServerSettings.viewSettings", 4);
     if (stelle !== this.stelle) {
-      console.error(`setStelle(${stelle?.get("ID")})`);
+      console.log(`setStelle(${stelle?.get("ID")})`);
       this.stelle = stelle;
       // this.kvwmapServerIdField.value = stelle?.get("ID") || "";
       this.kvwmapServerNameField.value = stelle?.get("name") || "";
@@ -392,15 +393,15 @@ export class Layers extends PanelEinstellungen {
       }
     }
     kvm.addEventListener(Kvm.EVENTS.ACTIVE_LAYER_CHANGED, (evt) => {
-      console.error("Kvm.EVENTS.ACTIVE_LAYER_CHANGED", evt);
+      console.log("Kvm.EVENTS.ACTIVE_LAYER_CHANGED", evt);
       this.setActiveLayer(evt.newValue);
     });
     kvm.addEventListener(Kvm.EVENTS.LAYER_ADDED, (evt) => {
-      console.error("Kvm.EVENTS.LAYER_ADDED", evt);
+      console.log("Kvm.EVENTS.LAYER_ADDED", evt);
       this.appendLayer(evt.newValue);
     });
     kvm.addEventListener(Kvm.EVENTS.LAYER_REMOVED, (evt) => {
-      console.error("Kvm.EVENTS.LAYER_REMOVED", evt);
+      console.log("Kvm.EVENTS.LAYER_REMOVED", evt);
       this.removeLayer(evt.oldValue);
     });
     this.setActiveLayer(kvm.getActiveLayer());
@@ -410,7 +411,11 @@ export class Layers extends PanelEinstellungen {
     } else {
       document.getElementById("syncLayerButtonTxt").innerHTML = "Layer mit Server synchronisieren";
     }
-    document.getElementById("syncLayerButton").addEventListener("click", (evt) => this.bttnSyncLayersClicked(evt));
+    document.getElementById("syncLayerButton").addEventListener('click', (evt) => this.bttnSyncLayersClicked(evt));
+    document.getElementById("autoSyncCheckBox").addEventListener('change', (evt) => this.autoSyncCheckBoxChanged());
+    const autoSync = kvm.getConfigurationOption('autoSync') === true;
+    (<HTMLInputElement>document.getElementById('autoSyncCheckBox')).checked = autoSync;
+    (<HTMLElement>document.getElementById('syncLayerButtonDiv')).hidden = autoSync;
   }
 
   async requestLayers() {
@@ -427,13 +432,17 @@ export class Layers extends PanelEinstellungen {
   }
 
   show() {
-    console.error("showLayers");
+    console.log("showLayers");
     super.show();
     this.setActiveLayer(kvm.getActiveLayer());
+    // ToDo Ralf: show wird beim laden nicht aufgerufen.
+    const autoSync = kvm.getConfigurationOption('autoSync') === true;
+    (<HTMLInputElement>document.getElementById('autoSyncCheckBox')).checked = autoSync;
+    (<HTMLElement>document.getElementById('syncLayerButtonDiv')).hidden = autoSync;
   }
 
   async bttnSyncLayersClicked(evt: MouseEvent) {
-    console.error(`bttnSyncLayersClicked`);
+    console.log(`bttnSyncLayersClicked`);
     // const layer = kvm._activeLayer;
     if (this.layerId2layerListIem.size === 0) {
       this.requestLayers();
@@ -460,12 +469,18 @@ export class Layers extends PanelEinstellungen {
     }
   }
 
+  async autoSyncCheckBoxChanged() {
+    const inputElement = <HTMLInputElement>document.getElementById("autoSyncCheckBox");
+    kvm.setConfigurationOption('autoSync', inputElement.checked);
+    document.getElementById('syncLayerButtonDiv').hidden = kvm.getConfigurationOption('autoSync');
+  }
+
   appendLayer(layer: Layer) {
     if (this.layerId2layerListIem.size === 0) {
       document.getElementById("syncLayerButtonTxt").innerHTML = "Layer mit Server synchronisieren";
     }
 
-    console.error(`PanelLayer.appendLayer(${layer.title})`);
+    console.log(`PanelLayer.appendLayer(${layer.title})`);
     console.log(`### getLayerListItem ${layer.title}`);
     const dom = createHtmlElement("div", null, "layer-list-div");
     dom.id = `layer_${layer.getGlobalId()}`;
@@ -559,11 +574,11 @@ export class Layers extends PanelEinstellungen {
 }
 
 export class LayerParams extends PanelEinstellungen {
-  layer_prams_list: HTMLElement;
+  layer_params_list: HTMLElement;
 
   constructor() {
     super("h2_layerparams");
-    this.layer_prams_list = <HTMLElement>document.getElementById("layer_prams_list");
+    this.layer_params_list = <HTMLElement>document.getElementById("layer_params_list");
     kvm.addEventListener(Kvm.EVENTS.ACTIVE_STELLE_CHANGED, (evt) => {
       this.setStelle(evt.newValue);
     });
@@ -571,14 +586,14 @@ export class LayerParams extends PanelEinstellungen {
 
   setStelle(stelle: Stelle) {
     // layerParamSettings, layerParams = []) {
-    console.error("PanelEinstellungen.LayerParams.setStelle", stelle?.settings?.layer_params);
+    console.log("PanelEinstellungen.LayerParams.setStelle", stelle?.settings?.layer_params);
     const layer_params = stelle?.settings?.layer_params;
-    this.layer_prams_list.innerHTML = "";
+    this.layer_params_list.innerHTML = "";
     if (layer_params) {
       for (const key of Object.keys(layer_params)) {
         const layerParam = layer_params[key];
         const selectValue = stelle.getLayerParam(key);
-        const el = createHtmlElement("div", this.layer_prams_list, "form-label");
+        const el = createHtmlElement("div", this.layer_params_list, "form-label");
         const label = createHtmlElement("label", el);
         label.innerHTML = layerParam.alias;
         const select = createHtmlElement("select", el);
@@ -602,7 +617,7 @@ export class LayerParams extends PanelEinstellungen {
 
     // let layerParamsDiv = $("#h2_layerparams").parent();
     // if (layerParamSettings && Object.keys(layerParamSettings).length > 0) {
-    //   let layerParamsList = $("#layer_prams_list");
+    //   let layerParamsList = $("#layer_params_list");
     //   layerParamsList.html("");
     //   Object.keys(layerParamSettings).forEach((key) => {
     //     let paramSetting = layerParamSettings[key];
@@ -668,7 +683,7 @@ export class AnzeigeFilter extends PanelEinstellungen {
 
   constructor(setting: any = {}, layer?: Layer) {
     super("h2_anzeigefilter");
-    console.error(`newAnzeigeFilter`, setting, layer);
+    console.log(`newAnzeigeFilter`, setting, layer);
     this.setting = setting;
 
     const fctInptHandler = () => {
@@ -1074,7 +1089,8 @@ export class Bildaufnahme extends PanelEinstellungen {
 
       const quality = parseInt(cameraOptionsQualitySlider.value);
       cameraOptionsQuality.innerHTML = quality.toString();
-      kvm.setCameraOption(quality, cameraOptionsSaveToPhotoAlbum.checked);
+      kvm.setConfigurationOption('cameraOptionsSaveToPhotoAlbum', cameraOptionsSaveToPhotoAlbum.checked);
+      kvm.setConfigurationOption('cameraOptionsQuality', quality);
     };
     cameraOptionsQualitySlider.addEventListener("input", fctInput);
     cameraOptionsSaveToPhotoAlbum.addEventListener("input", fctInput);
@@ -1348,7 +1364,7 @@ export class GPSStatus extends PanelEinstellungen {
 
   show(): void {
     super.show();
-    console.error("cccccc1");
+    console.log("cccccc1");
     if (navigator.geolocation) {
       this.watchId = navigator.geolocation.watchPosition(
         (evt) => this.onlocationfound(evt),
@@ -1362,7 +1378,7 @@ export class GPSStatus extends PanelEinstellungen {
   }
 
   hide(): void {
-    console.error("cccccc2");
+    console.log("cccccc2");
     if (this.watchId) {
       console.info("watchId=" + this.watchId);
       navigator.geolocation.clearWatch(this.watchId);

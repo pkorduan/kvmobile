@@ -17,7 +17,7 @@ export abstract class View {
     this.dom.style.zIndex = "1";
   }
   hide() {
-    console.error("View.hide " + this.id);
+    console.log("View.hide " + this.id);
     this.dom.style.display = "none";
   }
 }

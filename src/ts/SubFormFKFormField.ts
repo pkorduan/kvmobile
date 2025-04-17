@@ -40,6 +40,7 @@ export class SubFormFKFormField implements Field {
     this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
     let globalParentLayerId = this.attribute.getGlobalParentLayerId();
     let vorschauOption = this.attribute.getVorschauOption();
+    // ToDo prüfen ob display none korrekt ist.
     this.element = $(`
       <input
 				type="text"
@@ -47,7 +48,7 @@ export class SubFormFKFormField implements Field {
 				name="${this.attribute.settings.name}"
 				value=""
 				disabled
-        style="width:80%"
+        style="display: none"
 			/>`);
 
     this.linkElement = $(`

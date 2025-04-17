@@ -254,7 +254,7 @@ export class SelectAutoFormField implements Field {
   showOptionPane() {
     this.optionsPane.innerHTML = "";
     const f = (evt: Event) => {
-      console.error("showOptionPane clicked", evt);
+      // console.error("showOptionPane clicked", evt);
       if (evt.target !== this.txtField) {
         document.removeEventListener("click", f);
         this.removeOptionPane();

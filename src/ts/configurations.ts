@@ -40,7 +40,10 @@ export type Configuration = {
   fontSize: string;
   minTrackDistance: number;
   kvwmapServerId: number;
+  cameraOptionsQuality: number;
+  cameraOptionsSaveToPhotoAlbum: boolean;
   kvwmapServerName: string;
+  autoSync?: boolean;
   markerStyles: {
     [key: string]: { color: string; weight: number; fill: boolean; fillOpacity: number; fillColor: string };
   };
@@ -97,6 +100,8 @@ export const configurations: Configuration[] = [
     fontSize: "24px",
     minTrackDistance: 5,
     kvwmapServerId: 1,
+    cameraOptionsQuality: 75,
+    cameraOptionsSaveToPhotoAlbum: true,
     kvwmapServerName: "kvwmap",
     markerStyles: {
       "0": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#dd8181" },
@@ -258,6 +263,8 @@ export const configurations: Configuration[] = [
     fontSize: "24px",
     minTrackDistance: 5,
     kvwmapServerId: 1,
+    cameraOptionsQuality: 75,
+    cameraOptionsSaveToPhotoAlbum: true,
     kvwmapServerName: "kvwmap",
     markerStyles: {
       "0": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#dd8181" },
@@ -342,6 +349,8 @@ export const configurations: Configuration[] = [
     fontSize: "24px",
     minTrackDistance: 5,
     kvwmapServerId: 1,
+    cameraOptionsQuality: 75,
+    cameraOptionsSaveToPhotoAlbum: true,
     kvwmapServerName: "kvwmap",
     markerStyles: {
       "0": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#dd8181" },
@@ -416,6 +425,8 @@ export const configurations: Configuration[] = [
     fontSize: "24px",
     minTrackDistance: 5,
     kvwmapServerId: 1,
+    cameraOptionsQuality: 75,
+    cameraOptionsSaveToPhotoAlbum: true,
     kvwmapServerName: "kvwmap",
     markerStyles: {
       "0": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#dd8181" },
@@ -467,6 +478,8 @@ export const configurations: Configuration[] = [
     fontSize: "24px",
     minTrackDistance: 5,
     kvwmapServerId: 1,
+    cameraOptionsQuality: 75,
+    cameraOptionsSaveToPhotoAlbum: true,
     kvwmapServerName: "kvwmap",
     markerStyles: {
       "0": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#dd8181" },
@@ -629,6 +642,8 @@ export const configurations: Configuration[] = [
     fontSize: "24px",
     minTrackDistance: 5,
     kvwmapServerId: 1,
+    cameraOptionsQuality: 75,
+    cameraOptionsSaveToPhotoAlbum: true,
     kvwmapServerName: "kvwmap",
     markerStyles: {
       "0": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#dd8181" },
@@ -793,6 +808,8 @@ export const configurations: Configuration[] = [
     fontSize: "24px",
     minTrackDistance: 5,
     kvwmapServerId: 1,
+    cameraOptionsQuality: 75,
+    cameraOptionsSaveToPhotoAlbum: true,
     kvwmapServerName: "kvwmap",
     markerStyles: {
       "0": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#dd8181" },
@@ -877,6 +894,8 @@ export const configurations: Configuration[] = [
     fontSize: "24px",
     minTrackDistance: 5,
     kvwmapServerId: 1,
+    cameraOptionsQuality: 75,
+    cameraOptionsSaveToPhotoAlbum: true,
     kvwmapServerName: "kvwmap",
     markerStyles: {
       "0": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#dd8181" },
@@ -1036,7 +1055,7 @@ export const configurations: Configuration[] = [
     ],
   }, // GDI-Service
   {
-    name: "Streuobst KOB",
+    name: "Streuobst",
     dbname: "kvmobile",
     fingerprintAuth: false,
     confirmSaveNew: false,
@@ -1062,6 +1081,8 @@ export const configurations: Configuration[] = [
     fontSize: "24px",
     minTrackDistance: 5,
     kvwmapServerId: 1,
+    cameraOptionsQuality: 75,
+    cameraOptionsSaveToPhotoAlbum: true,
     kvwmapServerName: "kvwmap",
     markerStyles: {
       "0": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#dd8181" },
@@ -1072,7 +1093,7 @@ export const configurations: Configuration[] = [
     mapSettings: {
       newPosSelect: 1,
       minZoom: 8,
-      maxZoom: 18,
+      maxZoom: 20,
       startZoom: 8,
       west: 5.81839,
       south: 47.53976,
@@ -1102,13 +1123,93 @@ export const configurations: Configuration[] = [
         label: "Luftbilder",
         online: true,
         type: "bing",
+        url: "https://learn.microsoft.com/en-us/bingmaps/rest-services/directly-accessing-the-bing-maps-tiles",
         params: {
           BING_KEY: "AqPPMA0XK54KqnsEpK_wSbcg4laDT0eqrS3c-XrMKhW10FJODMwETRJp5nbYPb-u",
           attribution: "© 2024 Microsoft Corporation",
         },
       },
     ],
-  },
+  }, // Streuobst
+  {
+    name: "Streuobst KOB",
+    dbname: "kvmobile",
+    fingerprintAuth: false,
+    confirmSaveNew: false,
+    viewAfterCreate: "formular",
+    viewAfterUpdate: "dataView",
+    newAfterCreate: false,
+    /*
+     * Beispiele für Pfade in denen Bilder gespeichert werden
+     * file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/
+     * file:///storage/BA82-4AA9/Android/data/de.gdiservice.kvmobile/cache/
+     * emulated/0 wird als default in den Einstellungen gesetzt
+     * der Nutzer kann die Angabe unter Einstellungen setzen
+     * wenn das erste Foto gespeichert wird mit dem Camera Plugin, wird
+     * der verwendete Pfad ermittelt und die Einstellung überschrieben.
+     */
+    //  localImgPath: 'file:///storage/' + 'BAB2-4AA9' + '/Android/data/de.gdiservice.kvmobile/cache/',
+    localImgPath: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/",
+    localTilePath: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/",
+    localBackupPath: "file:///storage/emulated/0/Documents/",
+    projZone: 33,
+    logLevel: 4,
+    debug: true,
+    fontSize: "24px",
+    minTrackDistance: 5,
+    kvwmapServerId: 1,
+    cameraOptionsQuality: 75,
+    cameraOptionsSaveToPhotoAlbum: true,
+    kvwmapServerName: "kvwmap",
+    markerStyles: {
+      "0": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#dd8181" },
+      "1": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#465dc0" },
+      "2": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#23a325" },
+      "3": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#26a7f1" },
+    },
+    mapSettings: {
+      newPosSelect: 1,
+      minZoom: 8,
+      maxZoom: 20,
+      startZoom: 8,
+
+       
+      west: 7.38648,
+      south: 47.48946,
+      east: 10.52808,
+      north: 49.82763,
+      startCenterLat: 48.78621,
+      startCenterLon: 9.02783,
+    },
+    kvwmapServerUrl: "https://mvbio.de/streuobst",
+    kvwmapServerLoginName: "",
+    kvwmapServerPasswort: "",
+    backgroundLayerSettings: [
+      {
+        layer_id: 1,
+        label: "BaseMap DE",
+        online: true,
+        type: "wms",
+        url: "https://sgx.geodatenzentrum.de/wms_basemapde",
+        params: {
+          layers: "de_basemapde_web_raster_farbe",
+          format: "image/png",
+          attribution: "Basemap DE dl-de/by-2-0",
+        },
+      },
+      {
+        layer_id: 2,
+        label: "Luftbilder",
+        online: true,
+        type: "bing",
+        url: "https://learn.microsoft.com/en-us/bingmaps/rest-services/directly-accessing-the-bing-maps-tiles",
+        params: {
+          BING_KEY: "AqPPMA0XK54KqnsEpK_wSbcg4laDT0eqrS3c-XrMKhW10FJODMwETRJp5nbYPb-u",
+          attribution: "© 2024 Microsoft Corporation",
+        },
+      },
+    ],
+  }, // Streuobst KOB
   {
     name: "Streuobst MV",
     dbname: "kvmobile",
@@ -1136,6 +1237,8 @@ export const configurations: Configuration[] = [
     fontSize: "24px",
     minTrackDistance: 5,
     kvwmapServerId: 1,
+    cameraOptionsQuality: 75,
+    cameraOptionsSaveToPhotoAlbum: true,
     kvwmapServerName: "kvwmap",
     markerStyles: {
       "0": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#dd8181" },

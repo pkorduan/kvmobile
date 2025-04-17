@@ -149,8 +149,9 @@ export class Menu {
     // $("#showSettings, #showFeatureList, #showMap").show();
     if ($("#historyFilter").is(":checked")) {
       $("#restoreFeatureButton").show();
-    } else {
-      if (this.app.getActiveLayer()?.hasEditPrivilege) {
+    }
+    else {
+      if (this.app.getActiveLayer()?.hasEditPrivilege && !this.app.getActiveFeature().hasEditiersperre) {
         // erstmal rausgenommen weil es zu Fehler führen kann.
         // klären was mit den die Kopiert wird passiert beim Speichern und Sync.
         // $("#editFeatureButton, #tplFeatureButton").show();

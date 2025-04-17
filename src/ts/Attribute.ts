@@ -166,10 +166,16 @@ export class Attribute {
    * Return the option for Vorschau
    * Return "datum bearbeiter K kontrolluuid" from this sample attribute options string
    * 832,baumuuid,datum bearbeiter K kontrolluuid;no_new_window
+   * //ToDo: Vorschauattribut ist bei SubFormFK nicht vorgesehen hinter dem zweiten Komma.
    * @returns string
    */
   getVorschauOption() {
-    return this.settings.options.split(";")[0].split(",")[2];
+    let vorschauOption = this.settings.options.split(";")[0].split(",")[2];
+    if (typeof vorschauOption == 'undefined') {
+      const layer = kvm.getLayer(this.getGlobalParentLayerId());
+      vorschauOption = (layer ? layer.title : 'zurück');
+    }
+    return vorschauOption;
   }
 
   getViewField() {
@@ -516,7 +522,7 @@ export class Attribute {
     }
 
     const formField = <any>this.formField;
-    if (this.get("form_element_type") == "SubFormEmbeddedPK" && this.get("privilege") > "0") {
+    if (this.get("form_element_type") == "SubFormEmbeddedPK" && this.get("privilege") && this.get("privilege") > "0") {
       return $(`<div id="formFieldDiv_${this.get("index")}" class="form-field-rows">`)
         .append(
           $('<div class="form-label">').append(labelDiv).append(`
@@ -531,10 +537,13 @@ export class Attribute {
         )
         .append(valueDiv.append(formField.element));
     } else {
-      return $(`<div id="formFieldDiv_${this.get("index")}" class="form-field-rows" ${this.getArrangementStyle()}>`)
-        .append("linkElement" in formField ? formField.linkElement : "")
-        .append($('<div class="form-label">').append(labelDiv))
-        .append(valueDiv.append(formField.element));
+      let div = $(`<div id="formFieldDiv_${this.get("index")}" class="form-field-rows" ${this.getArrangementStyle()}>`)
+        .append("linkElement" in formField ? formField.linkElement : "");
+      if (this.get('form_element_type') !== 'SubFormFK') {
+        div.append($('<div class="form-label">').append(labelDiv));
+      }
+      div.append(valueDiv.append(formField.element));
+      return div;
     }
   }
 

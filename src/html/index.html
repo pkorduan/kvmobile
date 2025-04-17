@@ -136,11 +136,17 @@ child-src * 'self' blob: http:
         <div class="conf-panel">
           <div style="clear: both"></div>
           <div id="layer_list"></div>
-          <div style="margin-top: 10px; display: flex; align-items: stretch">
+
+          <div id="autoSyncLayerDiv" style="margin-top: 10px;">
+            <hr>
+            <input id="autoSyncCheckBox" type="checkbox" style="margin: 10px 0px 10px 8px"/> Layer automatisch synchronisieren
+          </div>
+
+          <div id="syncLayerButtonDiv" style="margin-top: 10px; align-items: stretch">
             <button class="sync-layer-button settings-button active-button layer-function-button" id="syncLayerButton">
               <i class="fa fa-refresh" aria-hidden="true"></i>
             </button>
-            <span id="syncLayerButtonTxt" style="display: flex; align-items: center">Layer mit Server synchronisieren</span>
+            <span id="syncLayerButtonTxt" style="align-items: center">Layer synchronisieren</span>
           </div>
         </div>
       </div>
@@ -148,7 +154,7 @@ child-src * 'self' blob: http:
 
       <div class="h2-div">
         <h2 id="h2_layerparams" class="b-collapsed">Layerparameter</h2>
-        <div id="layer_prams_list" class="conf-panel"></div>
+        <div id="layer_params_list" class="conf-panel"></div>
       </div>
       <hr />
 
@@ -265,7 +271,8 @@ child-src * 'self' blob: http:
             <div class="settings-label">Starten bei Zeile:</div>
             <input type="number" id="offset" value="" size="5" />
             <div style="clear: both"></div>
-            Nur historische Datensätze: <input id="historyFilter" type="checkbox" /> Nur eigene Datensätze: <input id="userIdFilter" type="checkbox" />
+            Nur historische Datensätze: <input id="historyFilter" type="checkbox" /><br>
+            Nur eigene Datensätze: <input id="userIdFilter" type="checkbox" />
             <div style="clear: both"></div>
             <input id="runFilterButton" type="button" value="Anwenden" class="settings-button" style="margin-top: 5px" />
             <input id="toggleFilterDivButton" type="button" value="mehr" class="settings-button" />
@@ -585,7 +592,7 @@ child-src * 'self' blob: http:
           <div class="conf-panel">
             Nach neuen Updates suchen.
             <p>
-              Der nachstehende Link öffnet eine Web-Seite im Standardbrowser Ihres Gerätes mit den letzten Versionen von kvwmobile.<br />
+              Der nachstehende Link öffnet eine Web-Seite im Standardbrowser Ihres Gerätes mit den letzten Versionen von kvmobile.<br />
               Zum aktualisieren der App laden Sie die apk-Datei mit der höchsten Versionsnummer herunter.<br />
               Bestätigen Sie mit "OK" dass Sie die Datei behalten möchten wenn Sie gefragt werden.<br />
               Klicken Sie dann auf "Öffnen" und stellen Sie wenn Sie gefragt werden ein, dass Sie der Quelle vertrauen.<br />

@@ -1,0 +1,2 @@
+- Funktion: Layer automatisch synchronisieren wenn Option gesetzt ist. Wird berücksichtigt in app.startApplication
+Methode Layer.syncLayers wird nur über bttnSyncLayersClicked ausgeführt, müsste aber auch in app.startApplication berücksichtigt werden. syncLayers benutzt auch die Funktion requestDataVersion und Layer.getDataVersionUrl(), die sonst nirgens verwendet wird.

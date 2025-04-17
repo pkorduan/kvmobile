@@ -24,7 +24,7 @@ export class ViewFormular extends View {
   }
 
   update(f: Feature) {
-    console.error(`ViewFormular.update Feature ${f?.layer.title}`, f);
+    // console.error(`ViewFormular.update Feature ${f?.layer.title}`, f);
     this.feature = f;
     // this._update(f.layer);
     this._updateFeature(f);

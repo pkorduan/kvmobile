@@ -120,7 +120,7 @@ export class Kvm extends PropertyChangeSupport {
   logFileEntry: FileEntry;
   userId: string;
   userName: string;
-
+  appUrl: string = 'https://gdi-service.de/public/kvmobile/';
   menu: Menu;
   gpsStatus: { status: string; geolocationPosition: GeolocationPosition; ok: boolean };
   networkStatus = NetworkStatus;
@@ -166,8 +166,9 @@ export class Kvm extends PropertyChangeSupport {
   getActiveFeature() {
     return this._activeFeature;
   }
+
   setActiveFeature(feature: Feature) {
-    console.error(`zzz app.setActiveFeature ${feature?.layer?.title}`, feature, this._activeFeature);
+    // console.error(`zzz app.setActiveFeature ${feature?.layer?.title}`, feature, this._activeFeature);
     if (this._activeFeature === feature) {
       return;
     }
@@ -635,6 +636,64 @@ export class Kvm extends PropertyChangeSupport {
   }
 
   /**
+   * Download the new App and request the user to install it
+   * If user confirm, save and reset settings and database first.
+   */
+  async checkAppVersion() {
+    try {
+      const response = await fetch(kvm.appUrl);
+      if (!response.ok) {
+        throw new Error(`Die Seite ${kvm.appUrl} zur Ermittlung der letzten Programmversion konnte nicht abgefragt werden. Status-code: ${response.status} ${response.statusText}`);
+      }
+  
+      const result = await response.text();
+      const versions = Array.from(result.matchAll(/kvmobile-(\d+\.\d+\.\d+)\.apk/g)).map(match => match[1]);
+      const latestVersionNumber = versions.sort((a, b) => {
+        const pa = a.split('.').map(Number);
+        const pb = b.split('.').map(Number);
+        for (let i = 0; i < 3; i++) {
+          if (pa[i] > pb[i]) return 1;
+          if (pa[i] < pb[i]) return -1;
+        }
+        return 0;
+      }).pop();
+      console.log("Latest App-Version:", latestVersionNumber);
+
+      if (latestVersionNumber != kvm.versionNumber) {
+      // if (true) {
+        navigator.notification.confirm(
+          `Es ist eine neue App-Version ${latestVersionNumber} vorhanden.`,
+          kvm.openUpdatePage,
+          'Update-Info',
+          ['Später','zur Download-Seite']
+        );
+      }
+    } catch (error) {
+      console.error('Fehler in checkAppVersion %o', error);
+      throw new Error(`Fehler beim Abfragen der letzten App-Version! Typ: ${error.name} Fehler: ${error.message}`);
+    }
+  }
+
+  openUpdatePage(button) {
+    if (button === 2) {
+      window.open(kvm.appUrl, '_system');
+    }
+  }
+
+  /**
+   * Function to compare semantic versions
+   */
+  compareVersions(a, b) {
+    const pa = a.split('.').map(Number);
+    const pb = b.split('.').map(Number);
+    for (let i = 0; i < 3; i++) {
+      if (pa[i] > pb[i]) return 1;
+      if (pa[i] < pb[i]) return -1;
+    }
+    return 0;
+  }
+
+  /**
    * function do neccessary things when the application start
    * load several data, status and settings and update the GUI with up to date values
    * load last active stelle, associated layer, last active layer and overlays
@@ -657,6 +716,7 @@ export class Kvm extends PropertyChangeSupport {
    *    - Anzeigen, dass layer nicht synchronisiert werden können
    */
   async startApplication() {
+    this.checkAppVersion();
     let activeView = ["settings", "map", "featurelist"].includes(kvm.store.getItem("activeView")) ? kvm.store.getItem("activeView") : "featurelist";
 
     this.views = [(this.viewEinstellungen = new ViewEinstellungen(this)), (this.viewLoggings = new ViewLoggings(this)), (this.viewFeatureList = new ViewFeatureList(this)), (this.viewMap = new ViewMap(this)), (this.ViewDataView = new ViewDataView(this)), (this.ViewFormular = new ViewFormular(this))];
@@ -790,8 +850,15 @@ export class Kvm extends PropertyChangeSupport {
                   }
                 }
               } else {
-                console.log("Layer " + layer.title + ": Only read data from local database.");
-                await layer.readData(); // include drawFeatures
+                try {
+                  console.log("Layer " + layer.title + ": Only read data from local database.");
+                  await layer.readData(); // include drawFeatures
+                }
+                catch (error) {
+                  const msg = `Fehler beim lesen der Daten des Layers "${layer.get('title')}" ${error.message}`;
+                  console.error(error);
+                  kvm.msg(msg, 'App-Start');
+                }
               }
               if (layer.get("id") == kvm.store.getItem("activeLayerId")) {
                 layer.isActive = true;
@@ -803,11 +870,11 @@ export class Kvm extends PropertyChangeSupport {
           stelle.sortOverlays();
           stelle.sortLayers();
         } else {
-          kvm.msg("Noch keine Layer vorhanden. Bitte Rufen Sie die Funktion Layer abrufen auf.");
+          kvm.msg("Noch keine Layer vorhanden. Bitte wählen Sie die Konfiguration aus, setzen Nutzername und Passwort und fragen Stelle und Layer vom Server ab.");
           PanelEinstellungen.show("layer");
         }
       } else {
-        kvm.msg("Noch keine Layer vorhanden. Bitte Rufen Sie die Funktion Layer abrufen auf.");
+        kvm.msg("Noch keine Layer vorhanden. Bitte wählen Sie die Konfiguration aus, setzen Nutzername und Passwort und fragen Stelle und Layer vom Server ab.");
         PanelEinstellungen.show("layer");
       }
     } else {
@@ -839,7 +906,7 @@ export class Kvm extends PropertyChangeSupport {
   }
 
   reloadFeatures() {
-    console.error("app.reloadFeatures");
+    // console.error("app.reloadFeatures");
     this._layers.forEach((layer) => {
       layer.readData();
     });
@@ -1495,11 +1562,6 @@ export class Kvm extends PropertyChangeSupport {
     if (kvm._activeLayer) kvm._activeLayer.readData(getValueOfElement("limit"), getValueOfElement("offset"));
   }
 
-  setCameraOption(quality: number, saveInPhotoAlbum: boolean) {
-    // TODO
-    console.error(`setCameraOption(${quality}, ${saveInPhotoAlbum})`);
-  }
-
   downloadBackgroundLayer(bl: BackgroundLayerSetting) {
     navigator.notification.confirm(
       "Alle Vektorkacheln vom Projektgebiet herunterladen? Vergewissern Sie sich, dass Sie in einem Netz mit guter Anbindung sind.",
@@ -1580,7 +1642,7 @@ export class Kvm extends PropertyChangeSupport {
 
   async deleteFeatureButtonClicked(ect: MouseEvent) {
     //kvm.log("Klick auf deleteFeatureButton.", 4);
-    console.error(`deleteFeatureButtonClicked ${this.getActiveLayer()?.activeFeature}`);
+    // console.error(`deleteFeatureButtonClicked ${this.getActiveLayer()?.activeFeature}`);
     if (kvm._activeLayer?.hasDeletePrivilege) {
       sperrBildschirm.show();
       const deleteConfirmed = await Util.confirm("Datensatz wirklich Löschen?", "", "ja", "nein");
@@ -2395,7 +2457,7 @@ export class Kvm extends PropertyChangeSupport {
   activateFeature(layerId: string, featureId: string) {
     const layer = kvm.getLayer(layerId);
     const feature = layer.getFeature(featureId);
-    console.error(`kvm.activateFeature ${layerId}=>${layer?.title} ${featureId}=>${feature}`);
+    // console.error(`kvm.activateFeature ${layerId}=>${layer?.title} ${featureId}=>${feature}`);
     this.setActiveFeature(feature);
     // if (feature) {
     //   layer.activateFeature(feature, false);
@@ -2534,7 +2596,7 @@ export class Kvm extends PropertyChangeSupport {
   // loadLayerParams(layerParamSettings, layerParams = []) {
   //   let layerParamsDiv = $("#h2_layerparams").parent();
   //   if (layerParamSettings && Object.keys(layerParamSettings).length > 0) {
-  //     let layerParamsList = $("#layer_prams_list");
+  //     let layerParamsList = $("#layer_params_list");
   //     layerParamsList.html("");
   //     Object.keys(layerParamSettings).forEach((key) => {
   //       let paramSetting = layerParamSettings[key];
@@ -2575,7 +2637,7 @@ export class Kvm extends PropertyChangeSupport {
   //   // Set changed param to kvm Object
   //   kvm.layerParams[paramElement.name] = $(paramElement).val();
   //   // Save all params in store
-  //   const selectFields = $("#layer_prams_list select");
+  //   const selectFields = $("#layer_params_list select");
   //   const layerParams = {};
   //   selectFields.each((index, selectField: any) => {
   //     layerParams[selectField.name] = $(selectField).val();
@@ -2816,10 +2878,10 @@ export class Kvm extends PropertyChangeSupport {
     return sql;
   }
 
-  gdi_conditional_next_val(schema_name, table_name, column_name, condition) {
+  gdi_conditional_nextval(schema_name, table_name, column_name, condition) {
     const sql = `
       SELECT
-        max(${column_name}) + 1 AS next_val
+        COALESCE(max(${column_name}), 0) + 1 AS next_val
       FROM
         ${schema_name}_${table_name}
       WHERE

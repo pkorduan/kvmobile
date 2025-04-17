@@ -100,6 +100,10 @@ export class Feature {
     return typeof this.data !== "undefined" && typeof this.data[attributeName] != "undefined" ? this.data[attributeName] : null;
   }
 
+  hasEditiersperre() {
+    return this.layer.hasEditiersperreAttribute && this.getDataValue(this.layer.editiersperreAttribute.get('name'));
+  }
+
   setEditable(editable) {
     if (editable) {
       console.log("Setze feature: %s editierbar.", this.id);
@@ -515,7 +519,7 @@ export class Feature {
    * @param boolean zoom Wenn Feature eine Geometrie hat und zoom=true wird auch auf das Feature gezoomt.
    */
   activate(zoom: boolean) {
-    console.error(`zzz feature.activate ${this.layer?.title}`, this);
+    // console.error(`zzz feature.activate ${this.layer?.title}`, this);
     // if (!this.layer.isActive) {
     //   this.layer.activate();
     // }
@@ -529,7 +533,7 @@ export class Feature {
         this.leafletLayer.setStyle(this.layer.getSelectedStyle(this.getStyle()));
         this.leafletLayer.bindPopup(this.layer.getPopup(this)).openPopup();
         this.leafletLayer.on("popupclose", (evt) => {
-          console.error("popupclose", evt);
+          // console.error("popupclose", evt);
         });
         if (zoom) {
           this.zoomTo(zoom);
@@ -554,7 +558,7 @@ export class Feature {
    */
   deactivate() {
     // Beende das Anlegen eines neuen Features
-    console.error(`zzz feature.deactivate ${this.layer?.title}`, this);
+    // console.error(`zzz feature.deactivate ${this.layer?.title}`, this);
     if (this.editableLayer) {
       kvm.map.removeLayer(this.editableLayer);
     }

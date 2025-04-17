@@ -136,7 +136,7 @@ export class GeometrieFormField implements Field {
      *   exclude: Die Variante zum setzen der Geometrie nicht verwenden
      */
     $(document).on("geomChanged", function (event, options) {
-      console.error("geomChanged", event, options);
+      // console.error("geomChanged", event, options);
       const feature = kvm.getActiveLayer().activeFeature;
       const geom = options.geom;
       const exclude = options.exclude;

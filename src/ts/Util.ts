@@ -373,7 +373,7 @@ export function pointToUnderlineName(sql: string, schema: string, table: string)
 
 export async function getSpatialLiteVersion(db: SQLitePlugin.Database) {
   try {
-    const rs = await executeSQL(this.db, "SELECT spatialite_version() as version");
+    const rs = await executeSQL(db, "SELECT spatialite_version() as version");
     return <string>rs.rows.item(0).version;
   } catch (err) {
     return "Kann nicht ermittelt werden. Fehler: " + err.message;
@@ -381,7 +381,7 @@ export async function getSpatialLiteVersion(db: SQLitePlugin.Database) {
 }
 export async function getSqliteVersion(db: SQLitePlugin.Database) {
   try {
-    const rs = await executeSQL(this.db, "SELECT sqlite_version() as version");
+    const rs = await executeSQL(db, "SELECT sqlite_version() as version");
     return <string>rs.rows.item(0).version;
   } catch (err) {
     return "Kann nicht ermittelt werden. Fehler: " + err.message;
