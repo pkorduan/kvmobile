@@ -267,6 +267,9 @@ export class Stelle {
 
   async setLayerParam(key: string, value: string) {
     // console.error(`setLayerParams ${key}=$${value}`);
+    if (typeof this._layerParams === 'undefined') {
+      this._layerParams = {};
+    }
     this._layerParams[key] = value;
     kvm.store.setItem("layerParams_" + this.get("ID"), JSON.stringify(this._layerParams));
     for (const layer of kvm.getLayers()) {

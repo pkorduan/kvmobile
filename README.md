@@ -18,8 +18,12 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 
 ## 1.20.0
 - Maintainance
-  - Merge der Änderungen von Peter in Master von Ralf mit Synchronisation in develop
-
+  - Merge der Änderungen von Peter in den Master von Ralf mit Synchronisation in develop
+- Features
+  - Neuer Hintergrundlayer mit Luftbilder aus WMS.
+  - ToDo: Die Synchronisierung startet nach jedem Speichern der Datensätze.
+- Bugfix
+  - Fix stelle.setLayerParam(key, value) error if _layerParams is undefined
 ## 1.19.4
 - Features
   - Auswahl von Layer und Type für Hintergrundkarten möglich.
