@@ -1,5 +1,5 @@
 import { kvm } from "./app";
-import { alert as nativeAlert } from "./Util";
+import { alertNav as nativeAlert, alertOverlay } from "./Util";
 
 function objectToString(err: Object) {
   let s = "";
@@ -65,6 +65,7 @@ class SperrBildschirm {
   }
 
   async close(msg?: string, o?: Object) {
+    console.trace("close", msg, o);
     if (msg) {
       msg = msg.replaceAll("\\n", "\n");
       msg = msg.replaceAll("<br>", "\n");
@@ -73,8 +74,8 @@ class SperrBildschirm {
       if (o instanceof Object) {
         msg += objectToString(o);
       }
-
-      await nativeAlert(msg, null, "ok");
+      // await nativeAlert(msg, null, "ok");
+      await alertOverlay(msg, null, "ok");
     }
     this.sperrDiv.style.display = "none";
     this.sperrDivContent.innerHTML = "";

@@ -1,5 +1,5 @@
 import { AttributeSetting } from "./Attribute";
-import { Field } from "./Field";
+import { AbstractField, Field } from "./Field";
 import { kvm } from "./app";
 import { createHtmlElement } from "./Util";
 
@@ -14,51 +14,50 @@ import { createHtmlElement } from "./Util";
  *     </div>
  *   </div>
  */
-export class DateTimeFormField implements Field {
-  settings: AttributeSetting;
-  element: JQuery<HTMLElement>;
-  selector: string;
+export class DateTimeFormField extends AbstractField implements Field {
+  element: HTMLInputElement;
 
   constructor(formId: string, settings: AttributeSetting) {
-    //console.log('Erzeuge DateTimeFormField with settings %o', settings);
-    this.settings = settings;
-    this.selector = "#" + formId + " input[id=" + this.settings.index + "]";
-    this.element = $(`<input
-      type="datetime-local"
-      id="${this.settings.index}"
-      name="${this.settings.name}"
-      value=""
-      ${this.settings.privilege == "0" ? " disabled" : ""}
-    />`);
+    super(formId, settings);
+
+    this.element = createHtmlElement("input");
+    this.element.type = "datetime-local";
+    this.element.id = String(this.settings.index);
+    this.element.name = this.settings.name;
+    this.element.disabled = this.settings.privilege == "0";
+
+    this.element.addEventListener("click", () => {
+      this._value = this.element.checked ? "t" : "f";
+      this.fireChanged();
+    });
   }
 
-  // get(key) {
-  //     return this.settings[key];
-  // }
-
   async setValue(val) {
-    // console.log('DateTimeFormField setVal val: -%s-', val);
+    console.log("DateTimeFormField setVal val: -%s-", val);
+    this._value = val;
+    this._oldValue = val;
+
     var val = kvm.coalesce(val, "");
     if (val != "") {
       val = this.toISO(val);
     }
-    // kvm.log("DateTimeFormField " + this.get("name") + " setValue with value: " + JSON.stringify(val), 4);
-    this.element.val(val);
+    this.element.value = val;
   }
 
-  getValue(action = "") {
-    // kvm.log("DateTimeFormField.getValue", 4);
-    let val = this.element.val();
-    if (typeof val === "undefined" || val == "") {
-      val = null;
-    } else {
-      val += (<String>val).split(":").length < 3 ? ":00" : "";
-    }
-    return val;
-  }
+  // getValue(action = "") {
+  //   // kvm.log("DateTimeFormField.getValue", 4);
+  //   return this.value;
+  //   let val = this.element.value;
+  //   if (typeof val === "undefined" || val == "") {
+  //     val = null;
+  //   } else {
+  //     val += (<String>val).split(":").length < 3 ? ":00" : "";
+  //   }
+  //   return val;
+  // }
 
   getFormattedValue(val) {
-    var datetime = new Date(val);
+    const datetime = new Date(val);
     return datetime.toLocaleDateString() + " " + datetime.toLocaleTimeString();
   }
 
@@ -67,14 +66,14 @@ export class DateTimeFormField implements Field {
     return kvm.now("T", "");
   }
 
-  bindEvents() {
-    //console.log('DateTimeFormField.bindEvents');
-    $("#featureFormular input[id=" + this.settings.index + "]").on("change", function () {
-      if (!$("#saveFeatureButton").hasClass("active-button")) {
-        $("#saveFeatureButton").toggleClass("active-button inactive-button");
-      }
-    });
-  }
+  // bindEvents() {
+  //   //console.log('DateTimeFormField.bindEvents');
+  //   // $("#featureFormular input[id=" + this.settings.index + "]").on("change", function () {
+  //   //   if (!$("#saveFeatureButton").hasClass("active-button")) {
+  //   //     $("#saveFeatureButton").toggleClass("active-button inactive-button");
+  //   //   }
+  //   // });
+  // }
 
   toISO(datetime) {
     return datetime.replace(/\//g, "-").replace(" ", "T");
@@ -83,5 +82,9 @@ export class DateTimeFormField implements Field {
   fromISO(datetime) {
     // kvm.log("konvert " + this.get("name") + " datetime: " + datetime, 4);
     return typeof datetime == "string" ? datetime.replace(/-/g, "/").replace("T", " ").replace("Z", "") : null;
+  }
+
+  getDom(): HTMLElement {
+    return this.element;
   }
 }

@@ -1,5 +1,5 @@
 import { AttributeSetting } from "./Attribute";
-import { Field } from "./Field";
+import { AbstractField } from "./Field";
 import { kvm } from "./app";
 import { createHtmlElement } from "./Util";
 /*
@@ -13,59 +13,39 @@ import { createHtmlElement } from "./Util";
  *     </div>
  *   </div>
  */
-export class TextfeldFormField implements Field {
-  settings: AttributeSetting;
-  selector: string;
-  element: JQuery<HTMLElement>;
+export class TextfeldFormField extends AbstractField {
+  element: HTMLTextAreaElement;
 
   constructor(formId: string, settings: AttributeSetting) {
-    this.settings = settings;
-    this.selector = "#" + formId + " textarea[id=" + this.settings.index + "]";
-    this.element = $(
-      '\
-        <textarea\
-          id="' +
-        this.settings.index +
-        '"\
-          name="' +
-        this.settings.name +
-        '"\
-          rows="3"' +
-        (this.settings.privilege == "0" ? " disabled" : "") +
-        "\
-        >\
-        </textarea>"
-    );
+    super(formId, settings);
+    console.log("TextfeldFormField", settings);
+    this.element = createHtmlElement("textarea");
+    this.element.id = String(this.settings.index);
+    this.element.name = this.settings.name;
+    const disabled = (this.element.disabled = this.settings.privilege == "0");
+    if (!disabled) {
+      this.element.addEventListener("keyup", () => {
+        this._value = this.element.value || null;
+        this.fireChanged();
+      });
+    }
   }
-  // get(key) {
-  //     return this.settings[key];
-  // }
 
-  async setValue(val) {
-    //console.log('TextFormField.setValue with value: ' + val);
+  async setValue(val: string) {
+    console.log("TextFormField.setValue with value: " + val);
+    this._oldValue = val;
     if (kvm.coalesce(val, "") == "" && this.settings.default) {
       val = this.settings.default;
     }
-
-    this.element.val(val == null || val == "null" ? "" : val);
+    this._oldValue = val;
+    this.element.value = val == null || val == "null" ? "" : val;
   }
 
   getValue(action = "") {
-    var val = this.element.val();
-
-    if (typeof val === "undefined" || val == "") {
-      val = null;
-    }
-
-    return val;
+    return this._value;
   }
 
-  bindEvents() {
-    //console.log('TextfeldFormField.bindEvents');
-    $("#featureFormular textarea[id=" + this.settings.index + "]").on("keyup", function () {
-      if (!$("#saveFeatureButton").hasClass("active-button")) {
-        $("#saveFeatureButton").toggleClass("active-button inactive-button");
-      }
-    });
+  getDom(): HTMLElement {
+    return this.element;
   }
 }

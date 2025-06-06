@@ -4,6 +4,7 @@ import { kvm } from "./app";
 import { Layer } from "./Layer";
 import { Klasse } from "./Klasse";
 import { createHtmlElement } from "./Util";
+import { Mapper } from "./controller/mapper";
 
 /*
  * Klasse zum Vorhalten der Datenobjekte zur Laufzeit der Anwendung
@@ -101,7 +102,7 @@ export class Feature {
   }
 
   hasEditiersperre() {
-    return this.layer.hasEditiersperreAttribute && this.getDataValue(this.layer.editiersperreAttribute.get('name'));
+    return this.layer.hasEditiersperreAttribute && this.getDataValue(this.layer.editiersperreAttribute.get("name"));
   }
 
   setEditable(editable) {
@@ -225,7 +226,8 @@ export class Feature {
 
     if (oldGeom != this.newGeom) {
       // console.log("Neuer Wert wurde gesetzt. Löse Trigger geomChanged mit exclude wkx aus.");
-      $(document).trigger("geomChanged", [{ geom: this.newGeom, exclude: "wkx" }]);
+      document.dispatchEvent(new CustomEvent("geomChanged", { detail: { geom: this.newGeom, exclude: "wkx" } }));
+      // $(document).trigger("geomChanged", [{ geom: this.newGeom, exclude: "wkx" }]);
     }
   }
   oldGeom(arg0: string, oldGeom: any, newGeom: any) {
@@ -250,7 +252,8 @@ export class Feature {
         } else {
           this.editableLayer.setLatLngs(newLatLngs);
         }
-        $(document).trigger("geomChanged", [{ geom: geom, exclude: "latlngs" }]);
+        document.dispatchEvent(new CustomEvent("geomChanged", { detail: { geom: this.newGeom, exclude: "latlngs" } }));
+        // $(document).trigger("geomChanged", [{ geom: geom, exclude: "latlngs" }]);
       }
       // console.log("Neue latLngs für die Editable Geometry in der Karte: %o", newLatLngs);
     }
@@ -272,7 +275,8 @@ export class Feature {
     if (this.layer.settings.geometry_type == "Point") {
       // ToDo hier ggf. den Geometrietyp auch aus this.geometry_type auslesen und nicht aus der übergebenen geom
       // Problem dann, dass man die Funktion nur benutzen kann für den Geometrietype des activen Layer
-      const coordsLevelDeep = kvm.controller.mapper.coordsLevelsDeep[geom.toWkt().split("(")[0].toUpperCase()];
+      console.info("geom.toWkt() ='" + geom.toWkt() + "'");
+      const coordsLevelDeep = Mapper.coordsLevelsDeep[geom.toWkt().split("(")[0].toUpperCase()];
       return coordsLevelDeep == 0 ? GeoJSON.coordsToLatLng(geom.toGeoJSON().coordinates) : GeoJSON.coordsToLatLngs(geom.toGeoJSON().coordinates, coordsLevelDeep);
     } else if (this.layer.settings.geometry_type == "Line") {
       if (geom.constructor.name === "LineString") {

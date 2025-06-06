@@ -1,5 +1,5 @@
 import { AttributeSetting } from "./Attribute";
-import { Field } from "./Field";
+import { AbstractField } from "./Field";
 import { kvm } from "./app";
 import { createHtmlElement } from "./Util";
 
@@ -14,58 +14,47 @@ import { createHtmlElement } from "./Util";
  *     </div>
  *   </div>
  */
-export class DateFormField implements Field {
-  settings: AttributeSetting;
-  selector: string;
-  element: JQuery<HTMLElement>;
+export class DateFormField extends AbstractField {
+  element: HTMLInputElement;
+
   constructor(formId: string, settings: AttributeSetting) {
-    //console.log('Erzeuge DateFormField with settings %o', settings);
-    this.settings = settings;
-    this.selector = "#" + formId + " input[id=" + this.settings.index + "]";
-    this.element = $(`
-      <input
-        type="date"
-        id="${this.settings.index}"
-        name="${this.settings.name}"
-        value=""
-        ${this.settings.privilege == "0" ? " disabled" : ""}
-      />
-    `);
+    super(formId, settings);
+
+    this.element = createHtmlElement("input");
+    this.element.type = "date";
+    this.element.id = String(this.settings.index);
+    this.element.name = this.settings.name;
+    const disabled = (this.element.disabled = this.settings.privilege == "0");
+    if (!disabled) {
+      this.element.addEventListener("change", () => {
+        this._value = this.element.value || null;
+        this.fireChanged();
+      });
+    }
   }
   // get(key: string) {
   //     return this.settings[key];
   // }
   async setValue(val) {
+    this._oldValue = val;
     kvm.log("val: " + val, 4);
     val = kvm.coalesce(val, "");
     if (this.isValidDate(val)) {
       val = this.toISO(val);
     }
     kvm.log("DateFormField " + this.settings.name + " setValue with value: " + JSON.stringify(val), 4);
-    this.element.val(val);
+    this._value = val || null;
+    this.element.value = val;
   }
 
   getValue(action = "") {
     kvm.log("DateFormField.getValue", 4);
-    var val = this.element.val();
-    if (typeof val === "undefined" || val == "") {
-      val = null;
-    }
-    return val;
+    return this._value;
   }
 
   getAutoValue() {
     kvm.log("DateFormField.getAutoValue", 4);
     return kvm.today();
-  }
-
-  bindEvents() {
-    //console.log('DateFormField.bindEvents');
-    $("#featureFormular input[id=" + this.settings.index + "]").on("change", function () {
-      if (!$("#saveFeatureButton").hasClass("active-button")) {
-        $("#saveFeatureButton").toggleClass("active-button inactive-button");
-      }
-    });
   }
 
   toISO(date) {
@@ -132,5 +121,9 @@ export class DateFormField implements Field {
       return false;
     }
     return true;
+  }
+
+  getDom(): HTMLElement {
+    return this.element;
   }
 }

@@ -23,6 +23,7 @@ export class Menu {
   private id2View = new Map<string, View>();
 
   private activeView: View;
+  private activeViewName: ViewName;
   app: Kvm;
 
   constructor(app: Kvm) {
@@ -84,8 +85,8 @@ export class Menu {
     this.tplFeatureButton.addEventListener("click", () => {
       const layer = this.app.getActiveLayer();
       const tplId = layer.activeFeature.id;
-      layer.newFeature();
-      layer.editFeature(tplId);
+      const f = layer.newFeature();
+      layer.editFeature(f);
       layer.loadTplFeatureToForm(tplId);
     });
 
@@ -149,9 +150,8 @@ export class Menu {
     // $("#showSettings, #showFeatureList, #showMap").show();
     if ($("#historyFilter").is(":checked")) {
       $("#restoreFeatureButton").show();
-    }
-    else {
-      if (this.app.getActiveLayer()?.hasEditPrivilege && !this.app.getActiveFeature().hasEditiersperre) {
+    } else {
+      if (this.app.getActiveLayer()?.hasEditPrivilege && !this.app.getActiveFeature().hasEditiersperre()) {
         // erstmal rausgenommen weil es zu Fehler führen kann.
         // klären was mit den die Kopiert wird passiert beim Speichern und Sync.
         // $("#editFeatureButton, #tplFeatureButton").show();
@@ -219,6 +219,7 @@ export class Menu {
         newView = this.id2View.get("settings");
     }
     this.activeView = newView;
+    this.activeViewName = item;
     newView.show();
 
     if (item === "settings") {
@@ -227,9 +228,22 @@ export class Menu {
     // newView.scrollTop(0);
   }
 
+  isActiveView(viewName: ViewName) {
+    return viewName === this.activeViewName;
+  }
+
   private showItems(items: HTMLElement[]) {
     for (const menuItem of this.menuItems) {
       menuItem.style.display = items.includes(menuItem) ? "" : "none";
+    }
+  }
+
+  enableSaveFeatureButton(enable: boolean) {
+    console.log("enableSaveFeatureButton: " + enable);
+    if (enable) {
+      this.saveFeatureButton.classList.remove("inactive-button");
+    } else {
+      this.saveFeatureButton.classList.add("inactive-button");
     }
   }
 }

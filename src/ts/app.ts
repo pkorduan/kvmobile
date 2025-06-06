@@ -19,10 +19,9 @@ import { NetworkStatus } from "./networkStatus";
 import { FileUtils } from "./controller/files";
 import { Mapper } from "./controller/mapper";
 import maplibregl, { MapGeoJSONFeature } from "maplibre-gl";
-import type { FingerprintAuth as FingerprintAuthT } from "cordova-plugin-android-fingerprint-auth";
 import "process";
 import { MapLibreLayer } from "./MapLibreLayer";
-import { Control, DomUtil, ErrorEvent as LErrorEvent, Map as LMap, Point as LPoint, Renderer, SVG } from "leaflet";
+import { Control, DomUtil, LatLngBounds, ErrorEvent as LErrorEvent, Map as LMap, Point as LPoint, Renderer, SVG } from "leaflet";
 import { sperrBildschirm } from "./SperrBildschirm";
 import { Menu, ViewName } from "./Menu";
 import { PropertyChangeEvent, PropertyChangeSupport } from "./Observable";
@@ -54,13 +53,24 @@ require("proj4leaflet");
 
 require("@maplibre/maplibre-gl-leaflet");
 
-declare var FingerprintAuth: typeof FingerprintAuthT;
-
 //export var config: any;
 
 // type LayerEntry = {
 //   [index: string]: Layer;
 // };
+
+type MapSettings = {
+  newPosSelect: any;
+  minZoom: any;
+  maxZoom: any;
+  south: any;
+  west: any;
+  north: any;
+  east: any;
+  startCenterLat: any;
+  startCenterLon: any;
+  startZoom: any;
+};
 
 export class Kvm extends PropertyChangeSupport {
   // Buffer: require("buffer").Buffer,
@@ -82,16 +92,16 @@ export class Kvm extends PropertyChangeSupport {
     betterscale?: any;
     trackControl?: Control.EasyButton;
   } = {};
-  controller: {
+  controller = {
     // files: typeof FileUtils;
-    mapper: typeof Mapper;
+    mapper: new Mapper(),
   };
 
   views: View[] = [];
 
   layerDataLoaded: boolean = false;
   featureListLoaded: boolean = false;
-  mapSettings: any;
+  mapSettings: MapSettings;
   _layers: Map<string, Layer> = new Map();
   overlays = [];
   store: Storage;
@@ -120,7 +130,7 @@ export class Kvm extends PropertyChangeSupport {
   logFileEntry: FileEntry;
   userId: string;
   userName: string;
-  appUrl: string = 'https://gdi-service.de/public/kvmobile/';
+  appUrl: string = "https://gdi-service.de/public/kvmobile/";
   menu: Menu;
   gpsStatus: { status: string; geolocationPosition: GeolocationPosition; ok: boolean };
   networkStatus = NetworkStatus;
@@ -133,7 +143,6 @@ export class Kvm extends PropertyChangeSupport {
 
   constructor() {
     super();
-    this.controller = { mapper: Mapper };
   }
 
   getLayer(layerId: string) {
@@ -192,7 +201,11 @@ export class Kvm extends PropertyChangeSupport {
     console.info(`setActiveStelle ${stelle?.get("ID")}`, stelle);
     const oldStelle = this._activeStelle;
     this._activeStelle = stelle;
-    this.store.setItem("activeStelleId", stelle.get("ID"));
+    if (stelle) {
+      this.store.setItem("activeStelleId", stelle.get("ID"));
+    } else {
+      this.store.removeItem("activeStelleId");
+    }
     this.fire(new PropertyChangeEvent(this, Kvm.EVENTS.ACTIVE_STELLE_CHANGED, oldStelle, stelle));
   }
   getActiveStelle() {
@@ -478,17 +491,16 @@ export class Kvm extends PropertyChangeSupport {
     return { cancel: () => {} };
   }
 
-  init() {
-    console.info(cordova);
-    document.addEventListener("deviceready", () => this.onDeviceReady());
-    /**
-     * if maplibre sees an url like custum:// it will call customProtocolHandler
-     *
-     * customProtocolHandler: (requestParameters: RequestParameters, callback: ResponseCallback<any>) => Cancelable
-     * requestParameters: {url:string, type:json?? }
-     */
-    maplibregl.addProtocol("custom", this.customProtocolHandler);
-  }
+  // init() {
+  //   document.addEventListener("deviceready", () => this.onDeviceReady());
+  //   /**
+  //    * if maplibre sees an url like custum:// it will call customProtocolHandler
+  //    *
+  //    * customProtocolHandler: (requestParameters: RequestParameters, callback: ResponseCallback<any>) => Cancelable
+  //    * requestParameters: {url:string, type:json?? }
+  //    */
+  //   maplibregl.addProtocol("custom", this.customProtocolHandler);
+  // }
 
   /**
    * Diese Funktion schreibt den Text aus variable log die Log-Datei.
@@ -529,110 +541,111 @@ export class Kvm extends PropertyChangeSupport {
         Util.printResultSet("image_deltas", rs);
       }
     } catch (ex) {
-      throw new Error("Initialisierung der Datenbank ist fehlgeschlagen.", ex);
+      console.error("Initialisierung der Datenbank ist fehlgeschlagen.", ex);
+      throw new Error("Initialisierung der Datenbank ist fehlgeschlagen.", { cause: ex });
     }
   }
 
-  async onDeviceReady() {
+  /**
+   * Führt eine FingerPrintAuth durch, wenn konfiguriert
+   * @returns boolean
+   */
+  async authenticate() {
+    let authenticated = false;
+    try {
+      if (window.localStorage.getItem("fingerprintAuth") == "true") {
+        const isFingerprintAuthAvailable = await Util.isFingerprintAuthAvailable();
+        console.debug("isFingerprintAuthAvailable=" + isFingerprintAuthAvailable);
+        authenticated = await Util.encryptFingerPrint(<any>{
+          clientId: "myAppName",
+          username: "currentUser",
+          password: "currentUserPassword",
+          maxAttempts: 5,
+          locale: "de_DE",
+          dialogTitle: "Authentifizierung mit Fingerabdruck",
+          dialogMessage: "Lege Finger auf den Sensor",
+          dialogHint: "Diese Methode ist nur Verfügbar mit Fingerabdrucksensor",
+        });
+        console.debug("encryptFingerPrint=" + authenticated);
+      } else {
+        authenticated = true;
+      }
+    } catch (ex) {
+      throw Error("Fehler bei der Authentifizierung", { cause: ex });
+    }
+    return authenticated;
+  }
+
+  async init() {
+    /**
+     * if maplibre sees an url like custum:// it will call customProtocolHandler
+     *
+     * customProtocolHandler: (requestParameters: RequestParameters, callback: ResponseCallback<any>) => Cancelable
+     * requestParameters: {url:string, type:json?? }
+     */
+    maplibregl.addProtocol("custom", this.customProtocolHandler);
+
     try {
       window.open = <any>cordova.InAppBrowser.open; // oder casten mit window.open = cordova['InAppBrowser'].open;
     } catch ({ name, message }) {
       console.error(`TypeError: ${name} Message: ${message}`);
       alert(`Die App muss ein mal geschlossen und neu gestartet werden!`);
     }
-    await prepareBackgrounLayer();
-    kvm.store = window.localStorage;
-    // console.log("onDeviceReady");
-    const configName = (this._configName = kvm.store.getItem("configName") || "Standard");
-    const foundConfiguration = configurations.find(function (c) {
-      return c.name === configName;
-    });
-    kvm.config = foundConfiguration || configurations[0];
-    for (const k in kvm.config) {
-      const v = kvm.store.getItem(k);
-      if (v) {
-        try {
-          kvm.config[k] = JSON.parse(v);
-          console.log(`Config key="${k}" v="${v}"`);
-        } catch (ex) {
-          kvm.config[k] = v;
-          kvm.store.setItem(k, JSON.stringify(v));
-          console.error(`konnte Config not parsen key="${k}" v="${v}" ${JSON.stringify(v)}`, typeof v);
-        }
+
+    try {
+      const authenticated = await this.authenticate();
+      if (authenticated) {
+        // TODO temp disabled
+        // await this.checkAppVersion();
+        await this.startApplication();
       }
+
+      // await prepareBackgrounLayer();
+      // this.store = window.localStorage;
+      // // console.log("onDeviceReady");
+      // const configName = (this._configName = kvm.store.getItem("configName") || "Standard");
+      // const foundConfiguration = configurations.find(function (c) {
+      //   return c.name === configName;
+      // });
+      // kvm.config = foundConfiguration || configurations[0];
+      // for (const k in kvm.config) {
+      //   const v = kvm.store.getItem(k);
+      //   if (v) {
+      //     try {
+      //       kvm.config[k] = JSON.parse(v);
+      //       console.log(`Config key="${k}" v="${v}"`);
+      //     } catch (ex) {
+      //       kvm.config[k] = v;
+      //       kvm.store.setItem(k, JSON.stringify(v));
+      //       console.error(`konnte Config not parsen key="${k}" v="${v}" ${JSON.stringify(v)}`, typeof v);
+      //     }
+      //   }
+      // }
+
+      // console.info(`setting FontSize ${this.getConfigurationOption("fontSize")}`);
+      // document.body.style.fontSize = this.getConfigurationOption("fontSize");
+
+      // const db = (this.db = await Util.openDatabase(kvm.config.dbname));
+      // await this._initDB(db);
+    } catch (ex) {
+      console.error("Fehler bei der Initialisierung.", ex);
+      Util.alertNav("Fehler bei der Initialisierung.", ex);
     }
 
-    console.info(`setting FontSize ${this.getConfigurationOption("fontSize")}`);
-    document.body.style.fontSize = this.getConfigurationOption("fontSize");
+    // this.db = window.sqlitePlugin.openDatabase(
+    //   {
+    //     name: kvm.config.dbname + ".db",
+    //     location: "default",
+    //     androidDatabaseImplementation: 2,
+    //   },
+    //   (db) => {
+    //     //kvm.log('Lokale Datenbank geöffnet.', 3);
 
-    this.db = window.sqlitePlugin.openDatabase(
-      {
-        name: kvm.config.dbname + ".db",
-        location: "default",
-        androidDatabaseImplementation: 2,
-      },
-      (db) => {
-        //kvm.log('Lokale Datenbank geöffnet.', 3);
-        document.getElementById("dbnameText").innerHTML = kvm.config.dbname + ".db";
-        // kvm.initSecuritySettings();
-
-        this._initDB(db);
-
-        if (kvm.store.getItem("fingerprintAuth") == "true") {
-          FingerprintAuth.isAvailable(
-            function (result: any) {
-              console.log("FingerprintAuth available: " + JSON.stringify(result));
-              // Check the docs to know more about the encryptConfig object
-              const encryptConfig = {
-                clientId: "myAppName",
-                username: "currentUser",
-                password: "currentUserPassword",
-                maxAttempts: 5,
-                locale: "de_DE",
-                dialogTitle: "Authentifizierung mit Fingerabdruck",
-                dialogMessage: "Lege Finger auf den Sensor",
-                dialogHint: "Diese Methode ist nur Verfügbar mit Fingerabdrucksensor",
-              }; // See config object for required parameters
-
-              // Set config and success callback
-              //https://www.npmjs.com/package/cordova-plugin-android-fingerprint-auth
-              FingerprintAuth.encrypt(
-                encryptConfig,
-                function (_fingerResult) {
-                  //console.log("successCallback(): " + JSON.stringify(_fingerResult));
-                  if (_fingerResult.withFingerprint) {
-                    //console.log("Successfully encrypted credentials.");
-                    //console.log("Encrypted credentials: " + result.token);
-                    kvm.startApplication();
-                  } else if (_fingerResult.withBackup) {
-                    //console.log("Authenticated with backup password");
-                    kvm.startApplication();
-                  }
-                  // Error callback
-                },
-                function (err) {
-                  if (err === "Cancelled") {
-                    //console.log("FingerprintAuth Dialog Cancelled!");
-                  } else {
-                    kvm.msg("FingerprintAuth Error: " + err, "Fehler");
-                  }
-                }
-              );
-            },
-            function () {
-              //console.log("isAvailableError(): " + message);
-              // TODO
-              kvm.startApplication();
-            }
-          );
-        } else {
-          kvm.startApplication();
-        }
-      },
-      function (error) {
-        kvm.msg("Open database ERROR: " + error["message"], "Fehler");
-      }
-    );
+    //   },
+    //   function (error) {
+    //     kvm.msg("Open database ERROR: " + error["message"], "Fehler");
+    //   }
+    // );
   }
 
   /**
@@ -645,47 +658,48 @@ export class Kvm extends PropertyChangeSupport {
       if (!response.ok) {
         throw new Error(`Die Seite ${kvm.appUrl} zur Ermittlung der letzten Programmversion konnte nicht abgefragt werden. Status-code: ${response.status} ${response.statusText}`);
       }
-  
+
       const result = await response.text();
-      const versions = Array.from(result.matchAll(/kvmobile-(\d+\.\d+\.\d+)\.apk/g)).map(match => match[1]);
-      const latestVersionNumber = versions.sort((a, b) => {
-        const pa = a.split('.').map(Number);
-        const pb = b.split('.').map(Number);
-        for (let i = 0; i < 3; i++) {
-          if (pa[i] > pb[i]) return 1;
-          if (pa[i] < pb[i]) return -1;
-        }
-        return 0;
-      }).pop();
+      const versions = Array.from(result.matchAll(/kvmobile-(\d+\.\d+\.\d+)\.apk/g)).map((match) => match[1]);
+      const latestVersionNumber = versions
+        .sort((a, b) => {
+          const pa = a.split(".").map(Number);
+          const pb = b.split(".").map(Number);
+          for (let i = 0; i < 3; i++) {
+            if (pa[i] > pb[i]) return 1;
+            if (pa[i] < pb[i]) return -1;
+          }
+          return 0;
+        })
+        .pop();
       console.log("Latest App-Version:", latestVersionNumber);
 
       if (latestVersionNumber != kvm.versionNumber) {
-      // if (true) {
-        navigator.notification.confirm(
-          `Es ist eine neue App-Version ${latestVersionNumber} vorhanden.`,
-          kvm.openUpdatePage,
-          'Update-Info',
-          ['Später','zur Download-Seite']
-        );
+        // if (true) {
+        // navigator.notification.confirm(`Es ist eine neue App-Version ${latestVersionNumber} vorhanden.`, kvm.openUpdatePage, "Update-Info", ["Später", "zur Download-Seite"]);
+        const runLater = await Util.confirm(`Es ist eine neue App-Version ${latestVersionNumber} vorhanden.`, "Update-Info", "Später", "zur Download-Seite");
+        if (!runLater) {
+          window.open(kvm.appUrl, "_system");
+        }
       }
     } catch (error) {
-      console.error('Fehler in checkAppVersion %o', error);
+      console.error("Fehler in checkAppVersion %o", error);
       throw new Error(`Fehler beim Abfragen der letzten App-Version! Typ: ${error.name} Fehler: ${error.message}`);
     }
   }
 
-  openUpdatePage(button) {
-    if (button === 2) {
-      window.open(kvm.appUrl, '_system');
-    }
-  }
+  // openUpdatePage(button) {
+  //   if (button === 2) {
+  //     window.open(kvm.appUrl, "_system");
+  //   }
+  // }
 
   /**
    * Function to compare semantic versions
    */
   compareVersions(a, b) {
-    const pa = a.split('.').map(Number);
-    const pb = b.split('.').map(Number);
+    const pa = a.split(".").map(Number);
+    const pb = b.split(".").map(Number);
     for (let i = 0; i < 3; i++) {
       if (pa[i] > pb[i]) return 1;
       if (pa[i] < pb[i]) return -1;
@@ -716,14 +730,44 @@ export class Kvm extends PropertyChangeSupport {
    *    - Anzeigen, dass layer nicht synchronisiert werden können
    */
   async startApplication() {
-    this.checkAppVersion();
+    await prepareBackgrounLayer();
+    this.store = window.localStorage;
+
+    const configName = (this._configName = kvm.store.getItem("configName") || "Standard");
+    const foundConfiguration = configurations.find(function (c) {
+      return c.name === configName;
+    });
+    kvm.config = foundConfiguration || configurations[0];
+    for (const k in kvm.config) {
+      const v = kvm.store.getItem(k);
+      if (v) {
+        try {
+          kvm.config[k] = JSON.parse(v);
+          console.log(`Config key="${k}" v="${v}"`);
+        } catch (ex) {
+          kvm.config[k] = v;
+          kvm.store.setItem(k, JSON.stringify(v));
+          console.error(`konnte Config not parsen key="${k}" v="${v}" ${JSON.stringify(v)}`, typeof v);
+        }
+      }
+    }
+
+    console.info(`setting FontSize ${this.getConfigurationOption("fontSize")}`);
+    document.body.style.fontSize = this.getConfigurationOption("fontSize");
+
+    const db = (this.db = await Util.openDatabase(kvm.config.dbname));
+    await this._initDB(db);
+
     let activeView = ["settings", "map", "featurelist"].includes(kvm.store.getItem("activeView")) ? kvm.store.getItem("activeView") : "featurelist";
 
     this.views = [(this.viewEinstellungen = new ViewEinstellungen(this)), (this.viewLoggings = new ViewLoggings(this)), (this.viewFeatureList = new ViewFeatureList(this)), (this.viewMap = new ViewMap(this)), (this.ViewDataView = new ViewDataView(this)), (this.ViewFormular = new ViewFormular(this))];
     this.menu = new Menu(this);
 
-    kvm.userId = kvm.store.getItem("userId");
-    kvm.userName = kvm.store.getItem("userName");
+    this.userId = kvm.store.getItem("userId");
+    this.userName = kvm.store.getItem("userName");
+    // } catch (ex) {
+    //   this.errorMesg("Fehler beim Starten", ex);
+    // }
 
     // const layerList = document.getElementById("layer_list");
     // if (layerList) {
@@ -751,8 +795,7 @@ export class Kvm extends PropertyChangeSupport {
     // }
 
     try {
-      kvm.store.getItem("activeView") || "featurelist";
-      // console.log("startApplication");
+      // kvm.store.getItem("activeView") || "featurelist";
 
       const dbPromise = idb.openDB("keyval-store", 1, {
         upgrade(db) {
@@ -761,10 +804,12 @@ export class Kvm extends PropertyChangeSupport {
       });
 
       this.readTile = async function (key: IDBValidKey) {
+        console.info("readT");
         return (await dbPromise).get("keyval", key);
       };
 
       this.saveTile = async function (key: IDBValidKey, val: any) {
+        console.info("saveT");
         return (await dbPromise).put("keyval", val, key);
       };
     } catch ({ name, message }) {
@@ -853,11 +898,10 @@ export class Kvm extends PropertyChangeSupport {
                 try {
                   console.log("Layer " + layer.title + ": Only read data from local database.");
                   await layer.readData(); // include drawFeatures
-                }
-                catch (error) {
-                  const msg = `Fehler beim lesen der Daten des Layers "${layer.get('title')}" ${error.message}`;
+                } catch (error) {
+                  const msg = `Fehler beim lesen der Daten des Layers "${layer.get("title")}" ${error.message}`;
                   console.error(error);
-                  kvm.msg(msg, 'App-Start');
+                  kvm.msg(msg, "App-Start");
                 }
               }
               if (layer.get("id") == kvm.store.getItem("activeLayerId")) {
@@ -1047,8 +1091,11 @@ export class Kvm extends PropertyChangeSupport {
     map.on("zoomend", (evt) => kvm.store.setItem("activeZoom", evt.target.getZoom()));
     map.on("moveend", (evt) => {
       kvm.store.setItem("activeCenter", JSON.stringify(evt.target.getCenter()));
-      if ($("#geolocation_div").is(":visible")) {
-        $("#geolocation_div").html(`${evt.target.getCenter().lat} ${evt.target.getCenter().lng}`);
+      const geolocation_div = document.getElementById("geolocation_div");
+      if (geolocation_div) {
+        geolocation_div.innerHTML = `${evt.target.getCenter().lat} ${evt.target.getCenter().lng}`;
+      } else {
+        console.error("geolocation_div not found");
       }
     });
 
@@ -1056,14 +1103,24 @@ export class Kvm extends PropertyChangeSupport {
     // map.on("locationerror", kvm.onlocationerror);
 
     map.on("locateactivate", (evt) => {
-      $("#geolocation_div").html("Koordinaten");
-      $("#geolocation_div").show();
+      const geolocation_div = document.getElementById("geolocation_div");
+      if (geolocation_div) {
+        geolocation_div.innerHTML = "Koordinaten";
+        geolocation_div.style.display = "";
+      } else {
+        console.error("geolocation_div not found");
+      }
       kvm.mapHint("GPS-Tracking eingeschaltet!");
     });
 
     map.on("locatedeactivate", (evt) => {
-      $("#geolocation_div").hide();
-      $("#geolocation_div").html("");
+      const geolocation_div = document.getElementById("geolocation_div");
+      if (geolocation_div) {
+        geolocation_div.innerHTML = "";
+        geolocation_div.style.display = "none";
+      } else {
+        console.error("geolocation_div not found");
+      }
       kvm.mapHint("GPS-Tracking ausgeschaltet!");
     });
 
@@ -1380,9 +1437,11 @@ export class Kvm extends PropertyChangeSupport {
     return this.mapSettings;
   }
 
-  setMapSetting(settingName: string, value: string) {
+  // setConfigurationOption<K extends keyof Configuration>(optionName: K, value: any) {
+  setMapSetting(settingName: keyof MapSettings, value: string) {
     if (this.mapSettings) {
       this.mapSettings[settingName] = value;
+      this.map.setMaxBounds(new LatLngBounds(new LatLng(this.mapSettings["south"], this.mapSettings["west"]), new LatLng(this.mapSettings["north"], this.mapSettings["east"])));
       console.info(`mapSetting changed: ${settingName}=${value}`);
     }
   }
@@ -1697,10 +1756,15 @@ export class Kvm extends PropertyChangeSupport {
           saveConfirmed = await Util.confirm("Datensatz Speichern?", kvm._activeLayer.title, "Speichern", "Abbruch");
         }
         if (saveConfirmed) {
-          if (action == "insert") {
-            await kvm._activeLayer.runInsertStrategy();
+          const changes = kvm._activeLayer.getAllChanges(action);
+          if (changes?.length > 0) {
+            if (action == "insert") {
+              await kvm._activeLayer.runInsertStrategy(changes);
+            } else {
+              await kvm._activeLayer.runUpdateStrategy(changes);
+            }
           } else {
-            await kvm._activeLayer.runUpdateStrategy();
+            sperrBildschirm.close("Keine Änderungen! Zum Abbrechen verwenden Sie den Button neben Speichern-Button.");
           }
         }
       }
@@ -2232,56 +2296,56 @@ export class Kvm extends PropertyChangeSupport {
     //   $("#minTrackDistance").html((<any>this).value);
     // });
 
-    $("#resetSettingsButton").on("click", function () {
-      navigator.notification.confirm(
-        "Alle lokalen Daten, Änderungen und Einstellungen wirklich Löschen?",
-        function (buttonIndex) {
-          if (buttonIndex == 1) {
-            kvm.deleteDatabase(kvm.db);
-            kvm.db = window.sqlitePlugin.openDatabase(
-              {
-                name: kvm.config.dbname + ".db",
-                location: "default",
-                androidDatabaseImplementation: 2,
-              },
-              (db) => {
-                kvm.msg(`Neue leere Datenbank anglegt!`);
-              },
-              (error) => {
-                kvm.msg(`Fehler beim anlegen der neuen leeren Datenbank: ${error}`);
-              }
-            );
+    // $("#resetSettingsButton").on("click", function () {
+    //   navigator.notification.confirm(
+    //     "Alle lokalen Daten, Änderungen und Einstellungen wirklich Löschen?",
+    //     function (buttonIndex) {
+    //       if (buttonIndex == 1) {
+    //         kvm.deleteDatabase(kvm.db);
+    //         kvm.db = window.sqlitePlugin.openDatabase(
+    //           {
+    //             name: kvm.config.dbname + ".db",
+    //             location: "default",
+    //             androidDatabaseImplementation: 2,
+    //           },
+    //           (db) => {
+    //             kvm.msg(`Neue leere Datenbank anglegt!`);
+    //           },
+    //           (error) => {
+    //             kvm.msg(`Fehler beim anlegen der neuen leeren Datenbank: ${error}`);
+    //           }
+    //         );
 
-            if (kvm._layers.size === 0) {
-              kvm.msg("Keine Layer zum löschen vorhanden.");
-            } else {
-              kvm._layers.forEach((layer) => {
-                console.log("Entferne Layer: %s", layer.get("title"));
-                // TODO
-                // layer.removeFromApp();
-              });
-            }
-            kvm._layers = new Map();
-            $("#layer_list").html("");
-            kvm.setActiveLayer(null);
-            kvm.setActiveStelle(null);
-            window.localStorage.clear();
-            kvm.store = window.localStorage;
-            // kvm.initLocalBackupPath();
-            // kvm.initStatusFilter();
-            //  TODO
-            // kvm.initColorSelector();
-            kvm.msg("Fertig!\nStarten Sie die Anwendung neu und fragen Sie die Stelle und Layer unter Einstellungen neu ab.", "Reset Datenbank und Einstellungen");
-          }
-          if (buttonIndex == 2) {
-            // nein
-            kvm.msg("Ok, nichts passiert!", "Reset Datenbank und Einstellungen");
-          }
-        },
-        "Reset Datenbank und Einstellungen",
-        ["ja", "nein"]
-      );
-    });
+    //         if (kvm._layers.size === 0) {
+    //           kvm.msg("Keine Layer zum löschen vorhanden.");
+    //         } else {
+    //           kvm._layers.forEach((layer) => {
+    //             console.log("Entferne Layer: %s", layer.get("title"));
+    //             // TODO
+    //             // layer.removeFromApp();
+    //           });
+    //         }
+    //         kvm._layers = new Map();
+    //         $("#layer_list").html("");
+    //         kvm.setActiveLayer(null);
+    //         kvm.setActiveStelle(null);
+    //         window.localStorage.clear();
+    //         kvm.store = window.localStorage;
+    //         // kvm.initLocalBackupPath();
+    //         // kvm.initStatusFilter();
+    //         //  TODO
+    //         // kvm.initColorSelector();
+    //         kvm.msg("Fertig!\nStarten Sie die Anwendung neu und fragen Sie die Stelle und Layer unter Einstellungen neu ab.", "Reset Datenbank und Einstellungen");
+    //       }
+    //       if (buttonIndex == 2) {
+    //         // nein
+    //         kvm.msg("Ok, nichts passiert!", "Reset Datenbank und Einstellungen");
+    //       }
+    //     },
+    //     "Reset Datenbank und Einstellungen",
+    //     ["ja", "nein"]
+    //   );
+    // });
 
     if (document.getElementById("downloadBackgroundLayerButton")) {
       document.getElementById("downloadBackgroundLayerButton").addEventListener("click", (evt) => {
@@ -2386,20 +2450,27 @@ export class Kvm extends PropertyChangeSupport {
     FileUtils.copyFile(srcDir, srcFile, dstDir, dstFile, msg);
   }
 
-  deleteDatabase(db) {
-    window.sqlitePlugin.deleteDatabase(
-      {
-        name: kvm.config.dbname + ".db",
-        location: "default",
-      },
-      () => {
-        $("#dbnameText").html("gelöscht");
-        kvm.msg(`Datenbank: gelöscht!`);
-      },
-      (error) => {
-        kvm.msg("Fehler beim Löschen der Datenbank: " + JSON.stringify(error), "Fehler");
-      }
-    );
+  async resetEverything() {
+    await this.clearLayers();
+    console.info("alle Layer entfernt");
+    const dbName = this.getConfigurationOption("dbname");
+    await Util.deleteDatabase(dbName);
+    console.info("db deleted");
+    this.db = await Util.openDatabase(dbName);
+    console.info("db created");
+    // if (this._layers.size === 0) {
+    //   kvm.msg("Keine Layer zum löschen vorhanden.");
+    // } else {
+    //   this._layers.forEach((layer) => {
+    //     console.log("Entferne Layer: %s", layer.get("title"));
+    //   });
+    // }
+    // this._layers = new Map();
+
+    this.setActiveLayer(null);
+    this.setActiveStelle(null);
+    window.localStorage.clear();
+    this.store = window.localStorage;
   }
 
   /**
@@ -2409,7 +2480,7 @@ export class Kvm extends PropertyChangeSupport {
    * Wenn die Editierung in der Karte abgebrochen wird wechsel zur Karte, sonst zur Feature Liste
    */
   cancelEditFeature() {
-    const activeLayer = kvm._activeLayer;
+    const activeLayer = this._activeLayer;
     const activeFeature = activeLayer.activeFeature;
 
     if (activeLayer.hasGeometry) {
@@ -2472,28 +2543,33 @@ export class Kvm extends PropertyChangeSupport {
    * If activeFeature has open changes a confirm dialog comes up.
    * Input form only open if user confirm else nothing happens.
    */
-  newSubFeature(options = { parentLayerId: "", subLayerId: "", fkAttribute: "" }) {
+  async newSubFeature(options = { parentLayerId: "", subLayerId: "", fkAttribute: "" }) {
     if (this._activeLayer && this._activeLayer.activeFeature) {
       const changes = this._activeLayer.collectChanges("update");
       if (changes.length > 0) {
-        navigator.notification.confirm(
-          "Es sind noch offene Änderungen. Diese müssen erst gespeichert werden.",
-          (buttonIndex) => {
-            if (buttonIndex == 1) {
-              // Abbrechen
-            }
-            if (buttonIndex == 2) {
-              // Fortfahren ohne Speichern
-              this._activeLayer.newSubDataSet(options);
-            }
-          },
-          "Formular",
-          ["Abbrechen", "Ohne Speichern Fortfahren"]
-        );
-      } else {
-        this._activeLayer.newSubDataSet(options);
+        const cancel = await Util.confirm("Es sind noch offene Änderungen. Diese müssen erst gespeichert werden.", null, "Abbrechen", "Ohne Speichern Fortfahren");
+        if (cancel) {
+          return;
+        }
       }
-    } else {
+      //     navigator.notification.confirm(
+      //       "Es sind noch offene Änderungen. Diese müssen erst gespeichert werden.",
+      //       (buttonIndex) => {
+      //         if (buttonIndex == 1) {
+      //           // Abbrechen
+      //         }
+      //         if (buttonIndex == 2) {
+      //           // Fortfahren ohne Speichern
+      //           this._activeLayer.newSubDataSet(options);
+      //         }
+      //       },
+      //       "Formular",
+      //       ["Abbrechen", "Ohne Speichern Fortfahren"]
+      //     );
+      //   } else {
+      //     this._activeLayer.newSubDataSet(options);
+      //   }
+      // } else {^
       this._activeLayer.newSubDataSet(options);
     }
   }
@@ -2505,8 +2581,8 @@ export class Kvm extends PropertyChangeSupport {
    * @param layerId
    * @param featureId
    */
-  editFeature(layerId, featureId) {
-    // console.log('editFeature');
+  async editFeature(layerId, featureId) {
+    console.info(`editFeature(${layerId}, ${featureId}`);
     const layer = kvm.getLayer(layerId);
     const feature = layer.getFeature(featureId);
     // ToDo:
@@ -2526,26 +2602,14 @@ export class Kvm extends PropertyChangeSupport {
       layer.parentFeatureId = kvm._activeLayer.activeFeature.id;
       const changes = kvm._activeLayer.collectChanges(kvm._activeLayer.activeFeature.new ? "insert" : "update");
       if (changes.length > 0) {
-        navigator.notification.confirm(
-          "Es sind noch offene Änderungen. Diese müssen erst gespeichert werden.",
-          (buttonIndex) => {
-            if (buttonIndex == 1) {
-              // Abbrechen
-            }
-            if (buttonIndex == 2) {
-              // Fortfahren ohne Speichern
-              layer.editFeature(featureId);
-            }
-          },
-          "Formular",
-          ["Abbrechen", "Ohne Speichern Fortfahren"]
-        );
-      } else {
-        layer.editFeature(featureId);
+        const cancel = await Util.confirm("Es sind noch offene Änderungen. Diese müssen erst gespeichert werden.", "", "Abbrechen", "Ohne Speichern Fortfahren");
+        if (cancel) {
+          return;
+        }
       }
-    } else {
-      layer.editFeature(featureId);
     }
+    this.setActiveFeature(feature);
+    // layer.editFeature(featureId);
   }
 
   // setConnectionStatus() {
@@ -2679,7 +2743,7 @@ export class Kvm extends PropertyChangeSupport {
         break;
       case "formular":
         {
-          layer.editFeature(layer.activeFeature.id);
+          layer.editFeature(layer.activeFeature);
         }
         break;
       case "last":
@@ -2696,6 +2760,9 @@ export class Kvm extends PropertyChangeSupport {
   showView(item: ViewName): void {
     this.menu.activate(item);
     kvm.store.setItem("activeView", item);
+  }
+  isActiveView(item: ViewName): boolean {
+    return this.menu.isActiveView(item);
   }
 
   // collapseAllSettingsDiv() {
@@ -3199,5 +3266,7 @@ window["kvm"] = kvm;
 // }
 
 if (document.readyState === "interactive" || document.readyState === "complete") {
-  kvm.init();
+  document.addEventListener("deviceready", () => {
+    kvm.init();
+  });
 }

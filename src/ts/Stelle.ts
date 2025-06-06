@@ -267,6 +267,9 @@ export class Stelle {
 
   async setLayerParam(key: string, value: string) {
     // console.error(`setLayerParams ${key}=$${value}`);
+    if (!this._layerParams) {
+      this._layerParams = {};
+    }
     this._layerParams[key] = value;
     kvm.store.setItem("layerParams_" + this.get("ID"), JSON.stringify(this._layerParams));
     for (const layer of kvm.getLayers()) {
@@ -305,8 +308,8 @@ export class Stelle {
   //   return sql;
   // }
   replaceParams(str: string) {
-    if (typeof str === "undefined" || str === null || str === '') {
-      return '';
+    if (typeof str === "undefined" || str === null || str === "") {
+      return "";
     }
     let replacedString = str;
     let regExp: RegExp;
@@ -337,7 +340,7 @@ export class Stelle {
     }
     if (str.includes("$EXPORT")) {
       regExp = new RegExp(`\\$EXPORT`, "g");
-      str = str.replace(regExp, '1 = 2');
+      str = str.replace(regExp, "1 = 2");
       // console.log(`$EXPORT in Text ersetzt mit false: "${str}"`);
     }
     return str;
@@ -549,7 +552,7 @@ export class Stelle {
         // TODO
       } else {
         kvm.log("Fehlerausgabe von parseLayerResult!", 4);
-        kvm.msg(resultObj.errMsg,  `Layer ID: ${layerId}`);
+        kvm.msg(resultObj.errMsg, `Layer ID: ${layerId}`);
       }
     } catch (ex) {
       console.error(`Fehler beim reloadLayer`, ex);
@@ -725,11 +728,12 @@ export class Stelle {
         layerRequestResult.layers = layerRequestResult.layers.sort((a, b) => (parseInt(a.drawingorder) > parseInt(b.drawingorder) ? 1 : -1));
         // add requested layers
         console.log("  requestLayers) Füge neu runtergeladene Layer zur Anwendung hinzu.");
+        const dbLayers: Layer[] = [];
         for (const layerSetting of layerRequestResult.layers) {
           try {
             if (layerSetting.vector_tile_url) {
               console.log(`Erzeuge einen VectorTile Layer-Objekt für Layer ${layerSetting.title}`);
-              
+
               const layer = new MapLibreLayer(layerSetting, true, this);
               layer.appendToApp();
               layer.saveToStore();
@@ -741,16 +745,29 @@ export class Stelle {
               await layer.dropDataTable();
               await layer.createTable();
               await layer.requestData(this._lastDeltaVersion); // Das ist neu: Daten werden gleich geladen nach dem Anlegen in der Stelle
-              await layer.readData();
-              // layer.appendToApp();
-              kvm.addLayer(layer);
-              layer.saveToStore();
+              dbLayers.push(layer);
+              // await layer.readData();
+              // // layer.appendToApp();
+              // kvm.addLayer(layer);
+              // layer.saveToStore();
             }
             idsOfLayer.push(this.get("ID") + "_" + layerSetting.id);
           } catch (ex) {
             console.error(`stelle.requestLayers Layer ${layerSetting?.title} schlug fehl.`, ex);
           }
         }
+
+        for (let i = 0; i < dbLayers.length; i++) {
+          const layer = dbLayers[i];
+          try {
+            await layer.readData();
+            kvm.addLayer(layer);
+            layer.saveToStore();
+          } catch (ex) {
+            console.error(`Laden des Layers ${layer.title} schlug fehl.`, ex);
+          }
+        }
+
         this.sortOverlays();
         kvm.store.setItem("layerIds_" + this.get("ID"), JSON.stringify(idsOfLayer));
         kvm.store.setItem("last_delta_version_" + this.get("ID"), JSON.stringify(layerRequestResult.last_delta_version));

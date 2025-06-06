@@ -1,5 +1,6 @@
 import { AttributeSetting } from "./Attribute";
-import { Field } from "./Field";
+import { AbstractField, Field } from "./Field";
+import { createHtmlElement } from "./Util";
 import { kvm } from "./app";
 
 /*
@@ -13,43 +14,27 @@ import { kvm } from "./app";
  *     </div>
  *   </div>
  */
-export class StelleIDFormField implements Field {
-  settings: AttributeSetting;
-  selector: string;
-  element: JQuery<HTMLElement>;
+export class StelleIDFormField extends AbstractField {
+  element: HTMLInputElement;
   constructor(formId: string, settings: AttributeSetting) {
-    //console.log('Erzeuge StelleIDFormField with settings %o', settings);
-    this.settings = settings;
-    this.selector = "#" + formId + " input[id=" + this.settings.index + "]";
-    this.element = $(
-      '\
-        <input\
-        type="text"\
-        id="' +
-        this.settings.index +
-        '"\
-        name="' +
-        this.settings.name +
-        '"\
-        value="" disabled\
-        />'
-    );
+    super(formId, settings);
+    this.element = createHtmlElement("input");
+    this.element.type = "text";
+    this.element.id = String(this.settings.index);
+    this.element.name = this.settings.name;
+    this.element.disabled = true;
   }
-
-  // get(key) {
-  //     return this.settings[key];
-  // }
 
   async setValue(val) {
     if (kvm.coalesce(val, "") == "" && this.settings.default) {
       val = this.settings.default;
     }
-    this.element.val(val == null || val == "null" ? "" : val);
+    this.element.value = val == null || val == "null" ? "" : val;
   }
 
   getValue(action = "") {
     kvm.log("StelleIDFormField.getValue", 4);
-    let val = this.element.val();
+    let val = this.element.value;
     if (typeof val === "undefined" || val == "") {
       return null;
     }
@@ -62,4 +47,8 @@ export class StelleIDFormField implements Field {
   }
 
   bindEvents() {}
+
+  getDom(): HTMLElement {
+    return this.element;
+  }
 }

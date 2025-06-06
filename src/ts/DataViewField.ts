@@ -1,10 +1,9 @@
 import { kvm } from "./app";
 import { createHtmlElement, getWebviewUrl } from "./Util";
-import { Attribute } from "./Attribute";
-import { Field } from "./Field";
+import { Attribute, AttributeSetting } from "./Attribute";
 
-export class DataViewField implements Field {
-  settings: any;
+export class DataViewField {
+  settings: AttributeSetting;
   element: HTMLElement;
   images_div_id: string;
   attribute: Attribute;
@@ -20,7 +19,8 @@ export class DataViewField implements Field {
    *    </div>
    *  </div>
    */
-  constructor(divId, attribute) {
+  // constructor(divId, attribute) {
+  constructor(attribute: Attribute) {
     this.attribute = attribute;
     this.settings = attribute.settings;
     // this.selector = "#" + divId + " > #" + this.get("index");
@@ -29,7 +29,7 @@ export class DataViewField implements Field {
     this.element.id = "dataViewFieldValue_" + this.get("index");
   }
 
-  get(key) {
+  get(key: keyof AttributeSetting) {
     return this.attribute.settings[key];
   }
 
@@ -222,7 +222,7 @@ export class DataViewField implements Field {
     else if (this.get("form_element_type") == "SubFormFK") {
       this.setSubFormFKValue(val);
     } else if (this.get("form_element_type") == "SubFormEmbeddedPK") {
-      let feature = this.attribute.layer.activeFeature;
+      const feature = this.attribute.layer.activeFeature;
       this.attribute.layer.readVorschauAttributes(this.attribute, feature.getDataValue(this.attribute.getPKAttribute()), this.element, "activateFeature");
     } else if (this.get("form_element_type") == "Auswahlfeld") {
       this.setAuswahlfeldValue(val);
@@ -371,33 +371,46 @@ export class DataViewField implements Field {
     });
   }
 
-  withLabel(): JQuery<HTMLElement> {
-    const label = $('<div class="data-view-label">');
+  withLabel(): HTMLElement {
+    const dataViewField = createHtmlElement("div", null, "data-view-field");
+    dataViewField.id = "dataViewFieldDiv_" + this.get("index");
+    if (this.attribute.getArrangementStyle()) {
+      dataViewField.style.cssText = this.attribute.getArrangementStyle();
+    }
+    const label = createHtmlElement("div", dataViewField, "data-view-label");
 
     label.append(this.get("alias") ? this.get("alias") : this.get("name"));
 
-    if (this.get("tooltip")) {
-      label.append('&nbsp;<i class="fa fa-exclamation-circle" style="color: #f57802" onclick="kvm.msg(\'' + this.get("tooltip") + "');\"></i>");
+    if (this.settings.tooltip) {
+      const infoBttn = createHtmlElement("i", label, "fa fa-exclamation-circle");
+      infoBttn.style.color = "#f57802";
+      infoBttn.style.paddingLeft = "0.2rem";
+      infoBttn.addEventListener("click", () => kvm.msg(this.settings.tooltip));
     }
 
-    return $(`<div id="dataViewFieldDiv_${this.get("index")}" class="data-view-field" ${this.attribute.getArrangementStyle()}>`)
-      .append(label)
-      .append(this.element);
+    // return $(`<div id="dataViewFieldDiv_${this.get("index")}" class="data-view-field" ${this.attribute.getArrangementStyle()}>`)
+
+    dataViewField.append(this.element);
+    return dataViewField;
   }
 
-  getWithLabel(): HTMLElement {
-    const dom = createHtmlElement("div", null, "data-view-field");
-    dom.id = `dataViewFieldDiv_${this.get("index")}`;
-    const label = createHtmlElement("div", dom, "data-view-label");
-    label.append(this.get("alias") ? this.get("alias") : this.get("name"));
-    if (this.get("tooltip")) {
-      const tooTippBttn = createHtmlElement("i", label, "fa fa-exclamation-circle");
-      tooTippBttn.style.cssText = "color: #f57802";
-      tooTippBttn.addEventListener("click", () => {
-        kvm.msg(this.get("tooltip"));
-      });
-    }
-    dom.append(this.element);
-    return dom;
+  // getWithLabel(): HTMLElement {
+  //   const dom = createHtmlElement("div", null, "data-view-field");
+  //   dom.id = `dataViewFieldDiv_${this.get("index")}`;
+  //   const label = createHtmlElement("div", dom, "data-view-label");
+  //   label.append(this.get("alias") ? this.get("alias") : this.get("name"));
+  //   if (this.get("tooltip")) {
+  //     const tooTippBttn = createHtmlElement("i", label, "fa fa-exclamation-circle");
+  //     tooTippBttn.style.cssText = "color: #f57802";
+  //     tooTippBttn.addEventListener("click", () => {
+  //       kvm.msg(this.get("tooltip"));
+  //     });
+  //   }
+  //   dom.append(this.element);
+  //   return dom;
+  // }
+
+  getDom(): HTMLElement {
+    return this.element;
   }
 }

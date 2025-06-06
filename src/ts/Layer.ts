@@ -233,7 +233,7 @@ export class Layer extends PropertyChangeSupport {
       this.hasDocumentAttribute = this.attributes.some((a) => a.get("form_element_type") === "Dokument");
       this.hasEditiersperreAttribute = this.attributes.some((a) => a.get("form_element_type") === "Editiersperre");
       if (this.hasEditiersperreAttribute) {
-        this.editiersperreAttribute = this.attributes.find((a) => a.get('form_element_type') === 'Editiersperre');
+        this.editiersperreAttribute = this.attributes.find((a) => a.get("form_element_type") === "Editiersperre");
       }
       // this.hasDocumentAttribute =
       //     this.attributes.filter((a) => {
@@ -349,24 +349,24 @@ export class Layer extends PropertyChangeSupport {
 
     const sql = this.extentSql(this.stelle.replaceParams(subLayer.settings.query), where, "", "", "", filter);
 
-    console.log(`Read Vorschaudatensätze für Layer ${subLayer.title} with sql ${sql}`);
+    console.log(`Read Vorschaudatensätze für Attribute ${attribute.settings.name} Layer ${subLayer.title} with sql`, sql);
     // Das folgende geht noch nicht weil die Tabellen nicht so benannt sind  wie in sqlite
     //let sql = `${this.settings.query} AND ${filter.join(' AND ')}`;
     vorschauElement.innerHTML = "";
+    const vorschauElements = [];
     try {
       const rs = await Util.executeSQL(kvm.db, sql);
       // console.log("Layer.readVorschauAttributes");
       const numRows = rs.rows.length;
 
-      console.log(numRows + " Vorschaudatensätze gelesen.");
-      if (numRows == 0) {
+      console.log(`${numRows} Vorschaudatensätze für Attribute ${attribute.settings.name} Layer ${subLayer.title} gelesen.`);
+      if (numRows === 0) {
         vorschauElement.innerHTML = "keine";
       } else {
         // console.log('vorschauOption: ', vorschauOption);
         // const keys = Object.keys(rs.rows.item(0));
+        const htmlList = Util.createHtmlElement("ul", null, "subFormEmbeddedPKFormField-list");
         const vorschauOptions = vorschauOption.split(" ");
-        // let vorschauElements = [];
-        let vorschauList = "";
         for (let i = 0; i < numRows; i++) {
           const item = rs.rows.item(i);
           const vorschauElements = vorschauOptions.map((elm) => {
@@ -378,10 +378,19 @@ export class Layer extends PropertyChangeSupport {
             }
             return value;
           });
-          // vorschauList = vorschauList + `<li onclick="kvm.${clickFunction}('${subLayerId}', '${item[subLayer.get("id_attribute")]}')" class="pointer">${vorschauElements.join(' ')}<i class="fa fa-arrow-right" aria-hidden="true" style="margin-left: 10px"></i></li>`;
-          vorschauList = `${vorschauList} <li onclick="kvm.${clickFunction}('${subLayerId}', '${item[subLayer.get("id_attribute")]}')" class="pointer">${vorschauElements.join(" ")}<i class="fa fa-arrow-right" aria-hidden="true" style="margin-left: 10px"></i></li>`;
+          // vorschauList = vorschauList + `<li onclick="kvm.${clickFunction}('${subLayerId}', '${item[subLayer.get("id_attribute")]}')" class="pointer">
+          // ${vorschauElements.join(' ')}<i class="fa fa-arrow-right" aria-hidden="true" style="margin-left: 10px"></i></li>`;
+
+          // vorschauList = `${vorschauList} <li onclick="kvm.${clickFunction}('${subLayerId}', '${item[subLayer.get("id_attribute")]}')"
+          // class="pointer">${vorschauElements.join(" ")}<i class="fa fa-arrow-right" aria-hidden="true" style="margin-left: 10px"></i></li>`;
+          const vorschauListItem = Util.createHtmlElement("li", htmlList, "pointer");
+          vorschauListItem.addEventListener("click", () => {
+            kvm[clickFunction](subLayerId, item[subLayer.get("id_attribute")]);
+          });
+          vorschauListItem.innerHTML = vorschauElements.join(" ") + '<i class="fa fa-arrow-right" aria-hidden="true" style="margin-left: 10px"></i>';
         }
-        vorschauElement.innerHTML = '<ul class="subFormEmbeddedPKFormField-list">' + vorschauList + "</ul>";
+        // vorschauElement.innerHTML = '<ul class="subFormEmbeddedPKFormField-list">' + vorschauList + "</ul>";
+        vorschauElement.append(htmlList);
       }
     } catch (error) {
       kvm.log(`Fehler bei der Abfrage der Vorschauattribute mit sql: ${sql} Fehler: ${error.message}`);
@@ -923,7 +932,7 @@ export class Layer extends PropertyChangeSupport {
     console.log(this.get("title") + ": Layer.getDataVersionUrl");
     let url = this.stelle.settings.url;
     const file = Stelle.getUrlFile(url);
-    url += `${file}go=mobile_get_data_version&Stelle_ID=${this.stelle.get('Stelle_ID')}&login_name=${this.stelle.get('login_name')}&passwort=${encodeURIComponent(this.stelle.get('passwort'))}&selected_layer_id=${this.get('id')}`;
+    url += `${file}go=mobile_get_data_version&Stelle_ID=${this.stelle.get("Stelle_ID")}&login_name=${this.stelle.get("login_name")}&passwort=${encodeURIComponent(this.stelle.get("passwort"))}&selected_layer_id=${this.get("id")}`;
     console.log(this.get("title") + ": Hole Datenversion mit Url: %s", url);
     return url;
   }
@@ -999,7 +1008,7 @@ export class Layer extends PropertyChangeSupport {
       );
       console.error("Fehler clearData", ex);
     }
-    if (this.settings.sync === '1') {
+    if (this.settings.sync === "1") {
       await this.clearDeltas("all");
     }
     this._features = new Map();
@@ -1096,35 +1105,173 @@ export class Layer extends PropertyChangeSupport {
     );
   }
 
+  // createFeatureFormOld() {
+  //   // sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Erzeuge Featureformular neu.`);
+  //   $("#formular")
+  //     .empty()
+  //     .append('<h1 id="featureFormHeader" style="margin-left: 5px;">' + this.title + "</h1>")
+  //     .append($('<div id="formDiv">').append('<form id="featureFormular">'));
+  //   const formAttr = this.attributes;
+  //   for (let i = 0; i < formAttr.length; i++) {
+  //     const attr = formAttr[i];
+  //     console.log(`viewAttr: ${attr.get("name")} arrangement: ${attr.get("arrangement")}`);
+  //     if (attr.get("arrangement") == "0") {
+  //       $("#featureFormular").append('<div style="clear: both">');
+  //     }
+  //     // ToDo: testen ob das mit attr.get('privilege') vorher geprüft werden muss ob das angezeigt werden soll
+  //     if (attr.get("privilege")) {
+  //       $("#featureFormular").append(attr.withLabel());
+  //     }
+  //     attr.formField.bindEvents();
+  //     // add change event handler here to avoid redundancy in different bindEvents methods of formField classes
+  //     if (attr.isEditable() && attr.hasVisibilityDependency()) {
+  //       console.log(`Set vcheck event handler for attribute ${attr.get("name")}`);
+  //       $(`${attr.formField.selector}`).on("change", (evt) => {
+  //         const attributeId = $(evt.target).attr("id");
+  //         const attribute = kvm.getActiveLayer().attributes[attributeId];
+  //         console.log("Attribute: %s changed to value: %s", attribute.get("name"), attribute.formField.getValue());
+  //         kvm.getActiveLayer().vcheckAttributes(attribute.get("name"), attribute.formField.getValue(), "form");
+  //       });
+  //     }
+  //   }
+  // }
+
+  // createDataViewOld() {
+  //   console.log("Layer.createDataView");
+  //   sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Erzeuge Sachdatenanzeige neu.`);
+  //   const dataView = document.getElementById("dataView");
+  //   dataView.innerHTML = "";
+  //   $("#dataView").append(`<h1 style="margin-left: 5px;">${this.title}</h1>`).append('<div id="dataViewDiv">');
+  //   this.attributeGroups.forEach((attributeGroup) => {
+  //     if (attributeGroup.attributeIds.length > 0) {
+  //       attributeGroup.div = $('<div class="attribute-group">');
+  //       const attrGrpHead = $(`<div class="attribute-group-header ${attributeGroup.collapsed ? "b-collapsed" : "b-expanded"}">`);
+  //       const attrGrpBody = $(`<div class="attribute-group-body"${attributeGroup.collapsed ? 'style="display: none"' : ""}>`);
+  //       attrGrpHead.append(attributeGroup.name); // befülle group header
+  //       attributeGroup.attributeIds.forEach((attributeId) => {
+  //         let attr = this.attributes[attributeId];
+  //         if (attr.get("type") != "geometry") {
+  //           // befülle group body
+  //           //console.log(`viewAttr: ${attr.get('name')} arrangement: ${attr.get('arrangement')}`);
+  //           if (attr.get("arrangement") == "0") {
+  //             attrGrpBody.append('<div style="clear: both">');
+  //           }
+  //           if (attr.get("privilege")) {
+  //             attrGrpBody.append(attr.viewField.withLabel());
+  //           }
+  //           attr.viewField.bindEvents();
+  //         }
+  //       });
+  //       attributeGroup.div.append(attrGrpHead).append(attrGrpBody);
+  //       $("#dataViewDiv").append(attributeGroup.div);
+  //     }
+  //   });
+  //   $(".attribute-group-header").on("click", (evt) => {
+  //     console.log("attribute-group-header");
+  //     $(evt.target).toggleClass("b-expanded b-collapsed");
+  //     $(evt.target).next().toggle();
+  //   });
+  // }
+
+  // createFeatureFormOhnGr() {
+  //   // sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Erzeuge Featureformular neu.`);
+  //   // $("#formular")
+  //   //   .empty()
+  //   //   .append('<h1 id="featureFormHeader" style="margin-left: 5px;">' + this.title + "</h1>")
+  //   //   .append($('<div id="formDiv">').append('<form id="featureFormular">'));
+
+  //   console.log("Layer.createFeatureForm " + this.get("title") + "  " + this.title, this);
+  //   const dataForm = document.getElementById("formular");
+  //   dataForm.innerHTML = "";
+  //   const h1 = Util.createHtmlElement("h1", dataForm);
+  //   h1.innerText = this.title;
+  //   h1.innerText = this.title + " (FeatureForm)";
+  //   h1.style.cssText = "margin-left: 5px;";
+  //   const formDiv = Util.createHtmlElement("div", dataForm);
+  //   // formDiv.id = "formDiv";
+  //   const form = Util.createHtmlElement("form", formDiv); // id = featureFormular
+  //   form.id = "featureFormular";
+  //   const formAttr = this.attributes;
+  //   for (let i = 0; i < formAttr.length; i++) {
+  //     const attr = formAttr[i];
+  //     console.log(`viewAttr: ${attr.get("name")} arrangement: ${attr.get("arrangement")}`);
+
+  //     if (attr.get("arrangement") == "0") {
+  //       Util.createHtmlElement("div", form, null, { styleText: "clear: both" });
+  //     }
+  //     if (attr.get("privilege")) {
+  //       form.append(attr.withLabelNoJq());
+  //     }
+  //     attr.formField.bindEvents();
+  //     // add change event handler here to avoid redundancy in different bindEvents methods of formField classes
+  //     if (attr.isEditable() && attr.hasVisibilityDependency()) {
+  //       console.log(`Set vcheck event handler for attribute ${attr.get("name")} - ${attr.formField.selector}`, attr.formField);
+  //       // const el = document.querySelector(attr.formField.selector);
+
+  //       if (attr.formField) {
+  //         attr.formField.addChangeListener((formField) => {
+  //           // const attributeId = $(evt.target).attr("id");
+  //           // const attribute = kvm.getActiveLayer().attributes[attributeId];
+  //           console.log("Attribute: %s changed to value: %s", attr.get("name"), attr.formField.getValue());
+  //           kvm.getActiveLayer().vcheckAttributes(attr.get("name"), attr.formField.getValue(), "form");
+  //         });
+  //       }
+  //     }
+  //   }
+  // }
+
   createFeatureForm() {
-    // sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Erzeuge Featureformular neu.`);
-    $("#formular")
-      .empty()
-      .append('<h1 id="featureFormHeader" style="margin-left: 5px;">' + this.title + "</h1>")
-      .append($('<div id="formDiv">').append('<form id="featureFormular">'));
-    const formAttr = this.attributes;
-    for (let i = 0; i < formAttr.length; i++) {
-      const attr = formAttr[i];
-      console.log(`viewAttr: ${attr.get("name")} arrangement: ${attr.get("arrangement")}`);
-      if (attr.get("arrangement") == "0") {
-        $("#featureFormular").append('<div style="clear: both">');
-      }
-      // ToDo: testen ob das mit attr.get('privilege') vorher geprüft werden muss ob das angezeigt werden soll
-      if (attr.get('privilege')) {
-        $("#featureFormular").append(attr.withLabel());
-      }
-      attr.formField.bindEvents();
-      // add change event handler here to avoid redundancy in different bindEvents methods of formField classes
-      if (attr.isEditable() && attr.hasVisibilityDependency()) {
-        console.log(`Set vcheck event handler for attribute ${attr.get("name")}`);
-        $(`${attr.formField.selector}`).on("change", (evt) => {
-          const attributeId = $(evt.target).attr("id");
-          const attribute = kvm.getActiveLayer().attributes[attributeId];
-          console.log("Attribute: %s changed to value: %s", attribute.get("name"), attribute.formField.getValue());
-          kvm.getActiveLayer().vcheckAttributes(attribute.get("name"), attribute.formField.getValue(), 'form');
+    console.log("Layer.createFeatureForm " + this.get("title") + "  " + this.title, this);
+    const dataForm = document.getElementById("formular");
+    dataForm.innerHTML = "";
+    const h1 = Util.createHtmlElement("h1", dataForm);
+    h1.innerText = this.title;
+    h1.innerText = this.title + " (FeatureForm)";
+    h1.style.cssText = "margin-left: 5px;";
+    const formDiv = Util.createHtmlElement("div", dataForm);
+    // formDiv.id = "formDiv";
+    const form = Util.createHtmlElement("form", formDiv); // id = featureFormular
+    form.id = "featureFormular";
+    this.attributeGroups.forEach((attributeGroup) => {
+      if (attributeGroup.attributeIds.length > 0) {
+        const attrGroupDiv = (attributeGroup.div = Util.createHtmlElement("div", form, "attribute-group" + (attributeGroup.collapsed ? " collapsed" : "")));
+
+        const attrGrpHead = Util.createHtmlElement("div", attrGroupDiv, "attribute-group-header");
+        attrGrpHead.addEventListener("click", () => {
+          attrGroupDiv.classList.toggle("collapsed");
+        });
+        const attrGrpBody = Util.createHtmlElement("div", attrGroupDiv, "attribute-group-body");
+        attrGrpHead.append(attributeGroup.name);
+        attributeGroup.attributeIds.forEach((attributeId) => {
+          const formAttr = this.attributes;
+          const attr = this.attributes[attributeId];
+          // const attr = formAttr[i];
+          console.log(`viewAttr: ${attr.get("name")} arrangement: ${attr.get("arrangement")}`);
+
+          if (attr.get("arrangement") == "0") {
+            Util.createHtmlElement("div", form, null, { styleText: "clear: both" });
+          }
+          if (attr.get("privilege")) {
+            attrGrpBody.append(attr.withLabelNoJq());
+          }
+          attr.formField.bindEvents?.();
+          // add change event handler here to avoid redundancy in different bindEvents methods of formField classes
+          if (attr.isEditable() && attr.hasVisibilityDependency()) {
+            console.log(`Set vcheck event handler for attribute ${attr.get("name")} - ${attr.formField.selector}`, attr.formField);
+            // const el = document.querySelector(attr.formField.selector);
+
+            if (attr.formField) {
+              attr.formField.addChangeListener((formField) => {
+                // const attributeId = $(evt.target).attr("id");
+                // const attribute = kvm.getActiveLayer().attributes[attributeId];
+                console.log("Attribute: %s changed to value: %s", attr.get("name"), attr.formField.getValue());
+                kvm.getActiveLayer().vcheckAttributes(attr.get("name"), attr.formField.getValue(), "form");
+              });
+            }
+          }
         });
       }
-    }
+    });
   }
 
   createDataView() {
@@ -1132,12 +1279,19 @@ export class Layer extends PropertyChangeSupport {
     sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Erzeuge Sachdatenanzeige neu.`);
     const dataView = document.getElementById("dataView");
     dataView.innerHTML = "";
-    $("#dataView").append(`<h1 style="margin-left: 5px;">${this.title}</h1>`).append('<div id="dataViewDiv">');
+    const h1 = Util.createHtmlElement("h1", dataView);
+    h1.innerText = this.title + " (DataView)";
+    const dataViewContent = Util.createHtmlElement("div", dataView);
+    // $("#dataView").append(`<h1 style="margin-left: 5px;">${this.title}</h1>`).append('<div id="dataViewDiv">');
     this.attributeGroups.forEach((attributeGroup) => {
       if (attributeGroup.attributeIds.length > 0) {
-        attributeGroup.div = $('<div class="attribute-group">');
-        const attrGrpHead = $(`<div class="attribute-group-header ${attributeGroup.collapsed ? "b-collapsed" : "b-expanded"}">`);
-        const attrGrpBody = $(`<div class="attribute-group-body"${attributeGroup.collapsed ? 'style="display: none"' : ""}>`);
+        const attrGroupDiv = (attributeGroup.div = Util.createHtmlElement("div", dataViewContent, "attribute-group" + (attributeGroup.collapsed ? " collapsed" : "")));
+
+        const attrGrpHead = Util.createHtmlElement("div", attrGroupDiv, "attribute-group-header");
+        attrGrpHead.addEventListener("click", () => {
+          attrGroupDiv.classList.toggle("collapsed");
+        });
+        const attrGrpBody = Util.createHtmlElement("div", attrGroupDiv, "attribute-group-body");
         attrGrpHead.append(attributeGroup.name); // befülle group header
         attributeGroup.attributeIds.forEach((attributeId) => {
           let attr = this.attributes[attributeId];
@@ -1145,23 +1299,24 @@ export class Layer extends PropertyChangeSupport {
             // befülle group body
             //console.log(`viewAttr: ${attr.get('name')} arrangement: ${attr.get('arrangement')}`);
             if (attr.get("arrangement") == "0") {
-              attrGrpBody.append('<div style="clear: both">');
+              // ToDo
+              // attrGrpBody.append('<div style="clear: both">');
             }
-            if (attr.get('privilege')) {
+            if (attr.get("privilege")) {
               attrGrpBody.append(attr.viewField.withLabel());
             }
             attr.viewField.bindEvents();
           }
         });
-        attributeGroup.div.append(attrGrpHead).append(attrGrpBody);
-        $("#dataViewDiv").append(attributeGroup.div);
+        // attributeGroup.div.append(attrGrpHead).append(attrGrpBody);
+        // $("#dataViewDiv").append(attributeGroup.div);
       }
     });
-    $(".attribute-group-header").on("click", (evt) => {
-      console.log("attribute-group-header");
-      $(evt.target).toggleClass("b-expanded b-collapsed");
-      $(evt.target).next().toggle();
-    });
+    // $(".attribute-group-header").on("click", (evt) => {
+    //   console.log("attribute-group-header");
+    //   $(evt.target).toggleClass("b-expanded b-collapsed");
+    //   $(evt.target).next().toggle();
+    // });
   }
 
   /**
@@ -1171,8 +1326,9 @@ export class Layer extends PropertyChangeSupport {
    * @param String attribute_name
    * @param String attribute_value
    * @param String fieldType ('dataView'|'form')
-  */
+   */
   vcheckAttributes(attribute_name, attribute_value, fieldType) {
+    console.info(`vcheckAttributes(${attribute_name}). ${attribute_value}, ${fieldType}`);
     this.attributes.map((attr) => {
       let visible = true;
       if (attr.get("vcheck_attribute") == attribute_name) {
@@ -1194,28 +1350,30 @@ export class Layer extends PropertyChangeSupport {
             break;
         }
         if (visible) {
-          console.log(`Schalte #${fieldType}FieldDiv_${attr.get("index")} von Attribut ${attr.get('name')} sichtbar wegen ${attribute_name} ${attr.get('vcheck_operator')} ${attr.get("vcheck_value")}`);
+          console.log(`Schalte #${fieldType}FieldDiv_${attr.get("index")} von Attribut ${attr.get("name")} sichtbar wegen ${attribute_name} ${attr.get("vcheck_operator")} ${attr.get("vcheck_value")}`);
           $(`#${fieldType}FieldDiv_${attr.get("index")}`).show();
         } else {
-          console.log(`Schalte #${fieldType}FieldDiv_${attr.get("index")} von Attribut ${attr.get('name')} unsichtbar wegen ${attribute_name} ${attr.get('vcheck_operator')} ${attr.get("vcheck_value")}`);
+          console.log(`Schalte #${fieldType}FieldDiv_${attr.get("index")} von Attribut ${attr.get("name")} unsichtbar wegen ${attribute_name} ${attr.get("vcheck_operator")} ${attr.get("vcheck_value")}`);
           $(`#${fieldType}FieldDiv_${attr.get("index")}`).hide();
         }
-        if (attr.get('name') == 'sorte_id') {
+        if (attr.get("name") == "sorte_id") {
           const field = $(`#${fieldType}FieldDiv_${attr.get("index")}`);
-          console.log(`Attribute: ${attr.get('name')} display is: ${field.css('display')} because (${attr.get('vcheck_attribute')}: ${attribute_value}) ${attr.get('vcheck_operator')} ${attr.get('vcheck_value')}`);
+          console.log(`Attribute: ${attr.get("name")} display is: ${field.css("display")} because (${attr.get("vcheck_attribute")}: ${attribute_value}) ${attr.get("vcheck_operator")} ${attr.get("vcheck_value")}`);
         }
       }
     });
-    if (fieldType === 'dataView') {
+    if (fieldType === "dataView") {
       this.attributeGroups.forEach((attrGrp) => {
         if (
           attrGrp.attributeIds.every((attributeId) => {
             return $(`#dataViewFieldDiv_${attributeId}`).css("display") === "none";
           })
         ) {
-          attrGrp.div.hide();
+          // TODO
+          // attrGrp.div.hide();
         } else {
-          attrGrp.div.show();
+          // TODO
+          // attrGrp.div.show();
         }
       });
     }
@@ -1249,10 +1407,10 @@ export class Layer extends PropertyChangeSupport {
         const key = attr.get("name");
         const val = feature.getDataValue(key) == "null" ? null : feature.getDataValue(key);
         if (attr.hasVisibilityDependency()) {
-          kvm.getActiveLayer().vcheckAttributes(key, val, 'dataView');
+          kvm.getActiveLayer().vcheckAttributes(key, val, "dataView");
         }
         attr.viewField.setValue(val);
-        if (val === null && attr.get('privilege') == '0') {
+        if (val === null && attr.get("privilege") == "0") {
           // Blende Attribute aus, die keinen Wert haben und nur lesbar sind.
           $(`#dataViewFieldDiv_${attr.get("index")}`).hide();
         }
@@ -1264,11 +1422,10 @@ export class Layer extends PropertyChangeSupport {
     } else {
       $("#newAfterCreateDiv").hide();
     }
-    if (this.hasEditiersperreAttribute && feature.getDataValue(this.editiersperreAttribute.get('name'))) {
-      $('#editFeatureButton').hide();
-    }
-    else {
-      $('#editFeatureButton').show();
+    if (this.hasEditiersperreAttribute && feature.getDataValue(this.editiersperreAttribute.get("name"))) {
+      $("#editFeatureButton").hide();
+    } else {
+      $("#editFeatureButton").show();
     }
   }
 
@@ -1277,54 +1434,78 @@ export class Layer extends PropertyChangeSupport {
    * - Setzt das Feature als activeFeature im Layer
    * - Startet das GPS-Tracking
    */
-  loadFeatureToForm(feature: Feature, options = { editable: false }) {
+  async loadFeatureToForm(feature: Feature, options = { editable: false }) {
     // console.log("Layer.loadFeature %o ToForm with options: %o", feature, options);
-    // console.error(`layer.loadFeatureToForm layer=´${this.title}`, feature.getDataValue(this.settings.id_attribute));
+    console.error(`layer.loadFeatureToForm layer=´${this.title}`, feature.getDataValue(this.settings.id_attribute));
     this._activeFeature = feature;
 
-    $.map(this.attributes, function (attr) {
+    // this.attributes.forEach((attr, idx) => async {^
+    for (const attr of this.attributes) {
       const attrName = attr.get("name");
       const val = feature.getDataValue(attrName) == "null" ? null : feature.getDataValue(attrName);
 
       //console.log("Set %s %s: %s", attr.get("form_element_type"), key, val);
       //console.log('Set Value of feature: %s in formField: %s for key: %s with value: %s', JSON.stringify(this), attr.formField.constructor.name, key, val);
-      attr.formField.setValue(val);
+      await attr.formField.setValue(val);
       if (val === null && !attr.isEditable()) {
+        attr.formField.getDom().style.display = "none";
         // Blende Attribute aus, die keinen Wert haben und nur lesbar sind.
-        $(`#formFieldDiv_${attr.get("index")}`).hide();
+        // $(`#formFieldDiv_${attr.get("index")}`).hide();
       }
       if (kvm.coalesce(attr.get("required_by"), "") != "") {
+        // TODO rtr
         const required_by_idx = kvm.getActiveLayer().attribute_index[attr.get("required_by")];
+        console.info("FormField=" + kvm.getActiveLayer().attributes[required_by_idx].formField, this === kvm.getActiveLayer());
         (<any>kvm.getActiveLayer().attributes[required_by_idx].formField).filter_by_required(attr.get("name"), val);
       }
       if (attr.hasVisibilityDependency()) {
-        kvm.getActiveLayer().vcheckAttributes(attr.get("name"), val, 'form');
-      }
-    });
-    if (feature.geom) {
-      $("#geom_wkt").val(feature.geom.toWkt());
-      $("#goToGpsPositionButton").show();
-      if (options.editable) {
-        kvm.controller.mapper.watchGpsAccuracy();
+        // TODO rtr
+        kvm.getActiveLayer().vcheckAttributes(attr.get("name"), val, "form");
       }
     }
+
+    // $.map(this.attributes, function (attr) {
+    //   const attrName = attr.get("name");
+    //   const val = feature.getDataValue(attrName) == "null" ? null : feature.getDataValue(attrName);
+
+    //   //console.log("Set %s %s: %s", attr.get("form_element_type"), key, val);
+    //   //console.log('Set Value of feature: %s in formField: %s for key: %s with value: %s', JSON.stringify(this), attr.formField.constructor.name, key, val);
+    //   attr.formField.setValue(val);
+    //   if (val === null && !attr.isEditable()) {
+    //     // Blende Attribute aus, die keinen Wert haben und nur lesbar sind.
+    //     $(`#formFieldDiv_${attr.get("index")}`).hide();
+    //   }
+    //   if (kvm.coalesce(attr.get("required_by"), "") != "") {
+    //     const required_by_idx = kvm.getActiveLayer().attribute_index[attr.get("required_by")];
+    //     (<any>kvm.getActiveLayer().attributes[required_by_idx].formField).filter_by_required(attr.get("name"), val);
+    //   }
+    //   if (attr.hasVisibilityDependency()) {
+    //     kvm.getActiveLayer().vcheckAttributes(attr.get("name"), val, "form");
+    //   }
+    // });
+
+    // TODO RTR offen
+    // if (feature.geom) {
+    //   $("#geom_wkt").val(feature.geom.toWkt());
+    //   $("#goToGpsPositionButton").show();
+    //   if (options.editable) {
+    //     kvm.controller.mapper.watchGpsAccuracy();
+    //   }
+    // }
   }
 
-  loadTplFeatureToForm(tplId: string) {
-    //console.log("Layer.loadTplFeatureToForm.");
+  async loadTplFeatureToForm(tplId: string) {
+    console.log("Layer.loadTplFeatureToForm.");
     const feature = this.getFeature(tplId);
-    $.map(
-      this.attributes,
-      (attr) => {
-        const attrName = attr.get("name");
-        const val = feature.getDataValue(attrName); // this is here the tplFeature
+    for (const attr of this.attributes) {
+      const attrName = attr.get("name");
+      const val = feature.getDataValue(attrName); // this is here the tplFeature
 
-        if (!["uuid", "version", this.settings.geometry_attribute].includes(attrName)) {
-          //console.log('Set %s %s: %s', attr.get('form_element_type'), key, val);
-          attr.formField.setValue(val);
-        }
-      } // .bind(this.features.get(tplId))
-    );
+      if (!["uuid", "version", this.settings.geometry_attribute].includes(attrName)) {
+        //console.log('Set %s %s: %s', attr.get('form_element_type'), key, val);
+        await attr.formField.setValue(val);
+      }
+    } // .bind(this.features.get(tplId))
   }
 
   /**
@@ -1381,7 +1562,7 @@ export class Layer extends PropertyChangeSupport {
         }
       } catch (error) {
         const msg = `Fehler beim Zeichnen des Feature Id: ${feature.id} in layer id: ${feature.globalLayerId}! Fehlertyp: ${error.name} Fehlermeldung: ${error.message}`;
-        console.error(`drawFeatures ${msg}`);
+        console.error(`drawFeatures ${msg}`, error);
         kvm.msg(msg);
         throw new Error(msg);
       }
@@ -1389,8 +1570,7 @@ export class Layer extends PropertyChangeSupport {
     try {
       this.layerGroup.setZIndex(parseInt(this.settings.drawingorder));
       this.layerGroup.addTo(kvm.map);
-    }
-    catch (error) {
+    } catch (error) {
       const msg = `Fehler beim Hinzufügen der Layergruppe in Layer id: ${this.getGlobalId()}! Fehlertyp: ${error.name} Fehlermeldung: ${error.message}`;
       kvm.msg(msg);
       throw new Error(msg);
@@ -1622,10 +1802,12 @@ export class Layer extends PropertyChangeSupport {
    * Activate Feature before if exists and not already active.
    * @param featureId
    */
-  editFeature(featureId: string): void;
+  // editFeature(featureId: string): void;
   editFeature(feature: Feature): void;
-  editFeature(f: string | Feature) {
-    const feature = typeof f === "string" ? this.getFeature(f) : f;
+  editFeature(feature: Feature): void {
+    // editFeature(f: string | Feature) {
+    // const feature = typeof f === "string" ? this.getFeature(f) : f;
+
     console.error(`zzz Layer.editFeature of layer ${this.title}`, feature);
 
     if (!this.isActive) {
@@ -1791,8 +1973,8 @@ export class Layer extends PropertyChangeSupport {
 
     feature.zoomTo(true, startLatLng);
 
-    $("#deleteFeatureButton").hide();
-    if (this.hasGeometry && !$("#dataView").is(":visible") && !$("#formular").is(":visible")) {
+    // $("#deleteFeatureButton").hide();
+    if (this.hasGeometry && !kvm.isActiveView("dataView") && !kvm.isActiveView("formular")) {
       //console.log('Map is Visible, keep panel map open.');
       kvm.showView("mapEdit");
     } else {
@@ -2059,6 +2241,7 @@ export class Layer extends PropertyChangeSupport {
         // }.bind({ geometry_attribute: this.get("geometry_attribute"), id_attribute: this.get("id_attribute") })
       })
       .filter((change) => change);
+    console.info("changes:", changes);
 
     return changes;
   }
@@ -2144,7 +2327,7 @@ export class Layer extends PropertyChangeSupport {
     if (kvm.getConfigurationOption("newAfterCreate")) {
       console.log("option newAfterCreate is on");
       this.newFeature(rs.rows.item(0));
-      this.editFeature(this.activeFeature.id);
+      this.editFeature(this.activeFeature);
     } else {
       this.loadFeatureToView(this.activeFeature);
       kvm.showNextItem(kvm.getConfigurationOption("viewAfterCreate"), this);
@@ -2160,8 +2343,7 @@ export class Layer extends PropertyChangeSupport {
    * @param array changes Data from the activeFeature for the update
    * @param function The callback function for success
    */
-  async runUpdateStrategy() {
-    const changes = this.getAllChanges("update");
+  async runUpdateStrategy(changes: AttributteDelta[]) {
     if (changes?.length > 0) {
       const delta = this.getUpdateDelta(changes);
       await this._processImageChanges(changes);
@@ -2181,18 +2363,16 @@ export class Layer extends PropertyChangeSupport {
    * @param array changes Data from the activeFeature for the new dataset
    * @param function The callback function for success
    */
-  async runInsertStrategy() {
-    const changes = this.getAllChanges("insert");
+  async runInsertStrategy(changes: AttributteDelta[]) {
     if (changes?.length > 0) {
       const delta = this.getInsertDelta(changes);
       await this._processImageChanges(changes);
       try {
         const rs = await LayerDBJobs.runInsert(this._activeFeature, delta);
         this.afterCreateDataset(rs);
-      }
-      catch (error) {
+      } catch (error) {
         const msg = `Fehler in Funktion nach dem Anlegen des Datensatzes in runInsertStrategy ${error.message}`;
-        console.error(msg)
+        console.error(msg);
         throw new Error(msg);
       }
     }
@@ -2212,11 +2392,7 @@ export class Layer extends PropertyChangeSupport {
   getAllChanges(type: "update" | "insert") {
     let changes = this.collectChanges(type);
 
-    if (changes.length === 0) {
-      const msg = "Keine Änderungen! Zum Abbrechen verwenden Sie den Button neben Speichen.";
-      sperrBildschirm.close(msg);
-      //kvm.msg(msg);
-    } else {
+    if (changes.length > 0) {
       kvm.alog("Changes gefunden: ", changes, 4);
       // const dokumentAttributeNames = this.getDokumentAttributeNames();
       // const imgChanges = changes.filter((change) => {
@@ -2227,9 +2403,8 @@ export class Layer extends PropertyChangeSupport {
       //   this.createImgDeltas(imgChanges);
       // }
       changes = this.addAutoChanges(changes, type);
-
-      return changes;
     }
+    return changes;
   }
 
   /**
@@ -2529,26 +2704,26 @@ export class Layer extends PropertyChangeSupport {
    * bzw. auf den Stand bringen als wäre er neu geladen. Wird weiter oben schon in callback von click on saveFeatureButton gemacht.
    *
    */
-  execSql(sql, successFunc) {
-    console.log(this.get("title") + ": Führe Änderungen vom Server auf dem Client aus: %s", sql);
-    kvm.db.executeSql(
-      sql,
-      [],
-      successFunc.bind(this),
-      function (error) {
-        const msg = "Fehler bei der Speicherung der Änderungen aus dem Formular!\nFehlercode: " + error.code + "\nMeldung: " + error.message;
-        kvm.log(msg);
-        navigator.notification.confirm(
-          msg,
-          function (buttonIndex) {
-            // ToDo handling choices after error
-          },
-          "Datenbank",
-          ["Abbruch"]
-        );
-      }.bind(this)
-    );
-  }
+  // execSql(sql, successFunc) {
+  //   console.log(this.get("title") + ": Führe Änderungen vom Server auf dem Client aus: %s", sql);
+  //   kvm.db.executeSql(
+  //     sql,
+  //     [],
+  //     successFunc.bind(this),
+  //     function (error) {
+  //       const msg = "Fehler bei der Speicherung der Änderungen aus dem Formular!\nFehlercode: " + error.code + "\nMeldung: " + error.message;
+  //       kvm.log(msg);
+  //       navigator.notification.confirm(
+  //         msg,
+  //         function (buttonIndex) {
+  //           // ToDo handling choices after error
+  //         },
+  //         "Datenbank",
+  //         ["Abbruch"]
+  //       );
+  //     }.bind(this)
+  //   );
+  // }
 
   // ToDo getInsertDelta schreiben und ggf. auch in createDelta verwenden.
   // Prüfen ob values auch so wie in collectChanges erzeugt werden können oder dort wieder verwendet werden kann.
@@ -3142,8 +3317,8 @@ export class Layer extends PropertyChangeSupport {
     subLayer.parentFeatureId = parentLayer.activeFeature.id;
     subLayer.specifiedValues[options.fkAttribute] = parentLayer.activeFeature.id;
     subLayer.activate();
-    subLayer.newFeature();
-    subLayer.editFeature(subLayer.activeFeature.id);
+    const feature = subLayer.newFeature();
+    subLayer.editFeature(feature);
     // kvm.closeSperrDiv(`Neues Formular für Layer ${subLayer.title} geladen.`);
     sperrBildschirm.close();
   }

@@ -4,7 +4,7 @@ import { FileUtils } from "../controller/files";
 import { AttributFilter, Layer } from "../Layer";
 import { sperrBildschirm } from "../SperrBildschirm";
 import { RequestStellenResponse, Stelle } from "../Stelle";
-import { createHtmlElement, removeOptions, setValueOfElement, getSqliteVersion, getSpatialLiteVersion, download, readFileAsString, executeSQL, confirm } from "../Util";
+import { createHtmlElement, removeOptions, setValueOfElement, getSqliteVersion, getSpatialLiteVersion, download, readFileAsString, executeSQL, confirm, deleteDatabase, openDatabase } from "../Util";
 
 abstract class PanelEinstellungen {
   domHeader: HTMLElement;
@@ -98,17 +98,27 @@ export class Konfiguration extends PanelEinstellungen {
     }
   }
 
-  private selectFieldChanged() {
-    navigator.notification.confirm(
-      "Wollen Sie wirklich die Konfiguration ändern? Dabei gehen alle lokalen Änderungen verloren, die Layer und Einstellungen werden gelöscht und die Anwendung wird mit den Default-Werten der anderen Konfiguration neu gestartet!",
-      (buttonIndex) => {
-        if (buttonIndex === 1) {
-          kvm.setConfiguration(this.selectField.value);
-        }
-      },
-      "Konfiguration",
-      ["Ja", "Abbruch"]
-    );
+  show() {
+    super.show();
+    const activeConf = kvm.store.getItem("configName");
+    if (!activeConf) {
+      const option = createHtmlElement("option", this.selectField);
+      option.value = "-1";
+      option.innerHTML = "Bitte w&auml;hlen";
+      option.selected = true;
+    } else {
+      this.selectField.value = activeConf;
+    }
+  }
+
+  private async selectFieldChanged() {
+    if (this.selectField.value != "-1") {
+      const confirmed = await confirm("Wollen Sie wirklich die Konfiguration ändern? Dabei gehen alle lokalen Änderungen verloren, die Layer und Einstellungen werden gelöscht und die Anwendung wird mit den Default-Werten der anderen Konfiguration neu gestartet!", "Konfiguration", "Ja", "Abbruch");
+      if (confirmed) {
+        kvm.setConfiguration(this.selectField.value);
+        show("server");
+      }
+    }
   }
 
   setKonfigurations() {}
@@ -411,11 +421,11 @@ export class Layers extends PanelEinstellungen {
     } else {
       document.getElementById("syncLayerButtonTxt").innerHTML = "Layer mit Server synchronisieren";
     }
-    document.getElementById("syncLayerButton").addEventListener('click', (evt) => this.bttnSyncLayersClicked(evt));
-    document.getElementById("autoSyncCheckBox").addEventListener('change', (evt) => this.autoSyncCheckBoxChanged());
-    const autoSync = kvm.getConfigurationOption('autoSync') === true;
-    (<HTMLInputElement>document.getElementById('autoSyncCheckBox')).checked = autoSync;
-    (<HTMLElement>document.getElementById('syncLayerButtonDiv')).hidden = autoSync;
+    document.getElementById("syncLayerButton").addEventListener("click", (evt) => this.bttnSyncLayersClicked(evt));
+    document.getElementById("autoSyncCheckBox").addEventListener("change", (evt) => this.autoSyncCheckBoxChanged());
+    const autoSync = kvm.getConfigurationOption("autoSync") === true;
+    (<HTMLInputElement>document.getElementById("autoSyncCheckBox")).checked = autoSync;
+    (<HTMLElement>document.getElementById("syncLayerButtonDiv")).hidden = autoSync;
   }
 
   async requestLayers() {
@@ -436,9 +446,9 @@ export class Layers extends PanelEinstellungen {
     super.show();
     this.setActiveLayer(kvm.getActiveLayer());
     // ToDo Ralf: show wird beim laden nicht aufgerufen.
-    const autoSync = kvm.getConfigurationOption('autoSync') === true;
-    (<HTMLInputElement>document.getElementById('autoSyncCheckBox')).checked = autoSync;
-    (<HTMLElement>document.getElementById('syncLayerButtonDiv')).hidden = autoSync;
+    const autoSync = kvm.getConfigurationOption("autoSync") === true;
+    (<HTMLInputElement>document.getElementById("autoSyncCheckBox")).checked = autoSync;
+    (<HTMLElement>document.getElementById("syncLayerButtonDiv")).hidden = autoSync;
   }
 
   async bttnSyncLayersClicked(evt: MouseEvent) {
@@ -471,8 +481,8 @@ export class Layers extends PanelEinstellungen {
 
   async autoSyncCheckBoxChanged() {
     const inputElement = <HTMLInputElement>document.getElementById("autoSyncCheckBox");
-    kvm.setConfigurationOption('autoSync', inputElement.checked);
-    document.getElementById('syncLayerButtonDiv').hidden = kvm.getConfigurationOption('autoSync');
+    kvm.setConfigurationOption("autoSync", inputElement.checked);
+    document.getElementById("syncLayerButtonDiv").hidden = kvm.getConfigurationOption("autoSync");
   }
 
   appendLayer(layer: Layer) {
@@ -1089,8 +1099,8 @@ export class Bildaufnahme extends PanelEinstellungen {
 
       const quality = parseInt(cameraOptionsQualitySlider.value);
       cameraOptionsQuality.innerHTML = quality.toString();
-      kvm.setConfigurationOption('cameraOptionsSaveToPhotoAlbum', cameraOptionsSaveToPhotoAlbum.checked);
-      kvm.setConfigurationOption('cameraOptionsQuality', quality);
+      kvm.setConfigurationOption("cameraOptionsSaveToPhotoAlbum", cameraOptionsSaveToPhotoAlbum.checked);
+      kvm.setConfigurationOption("cameraOptionsQuality", quality);
     };
     cameraOptionsQualitySlider.addEventListener("input", fctInput);
     cameraOptionsSaveToPhotoAlbum.addEventListener("input", fctInput);
@@ -1450,18 +1460,21 @@ export class Database extends PanelEinstellungen {
     const showDeltasButton = (this.showDeltasButton = <HTMLButtonElement>document.getElementById("showDeltasButton"));
     this.showDeltasWaiting = <HTMLElement>document.getElementById("showDeltasWaiting");
     const hideDeltasButton = (this.hideDeltasButton = <HTMLButtonElement>document.getElementById("hideDeltasButton"));
-    const showDeltasDiv = (this.showDeltasDiv = <HTMLElement>document.getElementById("showDeltasDiv"));
+    // const showDeltasDiv = (this.showDeltasDiv = <HTMLElement>document.getElementById("showDeltasDiv"));
 
     const showImageDeltasButton = (this.showImageDeltasButton = <HTMLButtonElement>document.getElementById("showImageDeltasButton"));
     this.showImageDeltasWaiting = <HTMLElement>document.getElementById("showImageDeltasWaiting");
     const hideImageDeltasButton = (this.hideImageDeltasButton = <HTMLButtonElement>document.getElementById("hideImageDeltasButton"));
-    const showImageDeltasDiv = (this.showImageDeltasDiv = <HTMLElement>document.getElementById("showImageDeltasDiv"));
+    // const showImageDeltasDiv = (this.showImageDeltasDiv = <HTMLElement>document.getElementById("showImageDeltasDiv"));
 
     const localBackupPath = <HTMLInputElement>document.getElementById("localBackupPath");
     localBackupPath.value = kvm.getConfigurationOption("localBackupPath");
     localBackupPath.addEventListener("change", () => {
       kvm.setConfigurationOption("localBackupPath", localBackupPath.value);
     });
+
+    const spanDbnameText = <HTMLElement>document.getElementById("dbnameText");
+    spanDbnameText.innerText = kvm.getConfigurationOption("dbname");
 
     const saveDatabaseButton = <HTMLButtonElement>document.getElementById("saveDatabaseButton");
     saveDatabaseButton.addEventListener("click", () => {
@@ -1478,6 +1491,7 @@ export class Database extends PanelEinstellungen {
     });
 
     const resetSettingsButton = <HTMLButtonElement>document.getElementById("resetSettingsButton");
+    resetSettingsButton.addEventListener("click", () => this.resetSettingsButtonClicked());
 
     const saveImagesButton = <HTMLButtonElement>document.getElementById("saveImagesButton");
     saveImagesButton.addEventListener("click", () => {
@@ -1517,6 +1531,39 @@ export class Database extends PanelEinstellungen {
     this.showImageDeltasButton.style.display = "";
     this.showImageDeltasDiv.style.display = "none";
     this.showDeltasDiv.innerHTML = "";
+  }
+
+  async resetSettingsButtonClicked() {
+    const deleteConfirmed = await confirm("Alle lokalen Daten, Änderungen und Einstellungen wirklich Löschen?", "Reset Datenbank und Einstellungen", "ja", "nein");
+    if (deleteConfirmed) {
+      await kvm.resetEverything();
+      // const dbName = kvm.getConfigurationOption("dbname");
+      // await deleteDatabase(dbName);
+      // kvm.db = await openDatabase(dbName);
+
+      // if (kvm._layers.size === 0) {
+      //     kvm.msg("Keine Layer zum löschen vorhanden.");
+      // } else {
+      //     kvm._layers.forEach((layer) => {
+      //       console.log("Entferne Layer: %s", layer.get("title"));
+      //       // TODO
+      //       // layer.removeFromApp();
+      //     });
+      //   }
+      //   kvm._layers = new Map();
+      //   $("#layer_list").html("");
+      //   kvm.setActiveLayer(null);
+      //   kvm.setActiveStelle(null);
+      //   window.localStorage.clear();
+      //   kvm.store = window.localStorage;
+      //   // kvm.initLocalBackupPath();
+      //   // kvm.initStatusFilter();
+      //   //  TODO
+      //   // kvm.initColorSelector();
+      kvm.msg("Fertig!\nStarten Sie die Anwendung neu und fragen Sie die Stelle und Layer unter Einstellungen neu ab.", "Reset Datenbank und Einstellungen");
+    } else {
+      kvm.msg("Ok, nichts passiert!", "Reset Datenbank und Einstellungen");
+    }
   }
 
   async showDeltas() {

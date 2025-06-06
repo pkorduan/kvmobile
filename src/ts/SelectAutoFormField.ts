@@ -28,7 +28,13 @@ export class SelectAutoFormField implements Field {
   filteredOptions: OptionsAttributtes[];
 
   val: any;
+
+  private _value: any;
+  private _oldValue: any;
+
   txtField: HTMLInputElement;
+
+  lsts: { (src: Field, hasChanged: boolean): void }[] = [];
 
   constructor(formId: string, settings: AttributeSetting) {
     this.settings = settings;
@@ -53,7 +59,10 @@ export class SelectAutoFormField implements Field {
    * @param any val
    */
   async setValue(val: any) {
-    // console.log("SelectFormField.setValue with value: " + val);
+    this._value = val;
+    this._oldValue = val;
+
+    console.log("SelectFormField.setValue with value: " + val);
     if (kvm.coalesce(val, "") == "" && this.settings.default) {
       val = this.settings.default;
     }
@@ -169,7 +178,7 @@ export class SelectAutoFormField implements Field {
     for (let i = 0; i < options.length; i++) {
       const opt = document.createElement("option");
       opt.value = options[i].value;
-      opt.text = options[i].output;
+      opt.innerHTML = options[i].output;
       selectField.add(opt);
     }
     selectField.addEventListener("change", (ev) => {
@@ -240,9 +249,7 @@ export class SelectAutoFormField implements Field {
   private internalSet(value: string | string[]) {
     // console.log("_set", value);
     this.setValue(value);
-    if (!$("#saveFeatureButton").hasClass("active-button")) {
-      $("#saveFeatureButton").toggleClass("active-button inactive-button");
-    }
+    this.fireChanged();
   }
 
   removeOptionPane() {
@@ -281,14 +288,33 @@ export class SelectAutoFormField implements Field {
   }
 
   updateRequiredBy() {
+    console.info('updateRequiredBy this.settings.layerId="' + this.settings.layerId + '"');
     if (this.settings.required_by) {
       const required_by_idx = kvm.getActiveLayer().attribute_index[this.settings.required_by];
-      console.log("Select Feld %s hat abhängiges Auswahlfeld %s", this.settings.name, this.settings.required_by);
+      console.log("Select Feld %s hat abhängiges Auswahlfeld %s", this.settings.name, this.settings.required_by, kvm.getActiveLayer().attributes[required_by_idx]);
       (<any>kvm.getActiveLayer().attributes[required_by_idx].formField).filter_by_required(this.settings.name, this.getValue());
     }
   }
 
   bindEvents() {
     console.log("SelectAutoFormField.bindEvents");
+  }
+
+  getDom(): HTMLElement {
+    return this.element;
+  }
+
+  hasChanged(): boolean {
+    return this._value !== this._oldValue;
+  }
+
+  addChangeListener(lst: (src: Field, hasChanged: boolean) => void) {
+    this.lsts.push(lst);
+  }
+
+  fireChanged() {
+    for (let i = 0; i < this.lsts.length; i++) {
+      this.lsts[i](this, this.hasChanged());
+    }
   }
 }

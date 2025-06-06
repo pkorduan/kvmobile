@@ -63,7 +63,7 @@ export async function runDelete(feature: Feature, delta: { action: "delete"; sql
       await writeDelta(feature, delta);
       resolve();
     } catch (ex) {
-      reject(ex);
+      reject(new Error("Fehler beim Löschen des Feature " + feature, { cause: ex }));
     }
   });
 }
@@ -273,7 +273,7 @@ async function readDataset(layer: Layer) {
   const id_attribute = layer.get("id_attribute");
   const featureId = layer.activeFeature.getDataValue(id_attribute);
   const sql = layer.extentSql(kvm.getActiveStelle().replaceParams(layer.settings.query), [`${layer.settings.table_alias}.${id_attribute} = '${featureId}'`, `${layer.settings.table_alias}.endet IS NULL`]);
-  console.log("LayerDBJobs->readDataset: ", sql);
+  console.log("LayerDBJobs->readDataset: ", [sql]);
   return executeSQL(kvm.db, sql);
 }
 

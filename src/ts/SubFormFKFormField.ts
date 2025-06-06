@@ -12,10 +12,11 @@ import { createHtmlElement } from "./Util";
  */
 export class SubFormFKFormField implements Field {
   settings: AttributeSetting;
-  element: JQuery<HTMLElement>;
-  linkElement: JQuery<HTMLElement>;
+  // element: HTMLInputElement;
+  linkElement: HTMLElement;
   attribute: Attribute;
   selector: string;
+  value: string;
 
   /**
    * create a SubFormFK form field in the structure
@@ -35,27 +36,46 @@ export class SubFormFKFormField implements Field {
    *   </div>
    */
   constructor(formId: string, attribute: Attribute) {
+    console.info(`new SubFormFKFormField(${formId}, ${attribute.settings.name})`);
     this.attribute = attribute;
     this.settings = attribute.settings;
     this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
     let globalParentLayerId = this.attribute.getGlobalParentLayerId();
     let vorschauOption = this.attribute.getVorschauOption();
     // ToDo prüfen ob display none korrekt ist.
-    this.element = $(`
-      <input
-				type="text"
-				id="${this.attribute.settings.index}"
-				name="${this.attribute.settings.name}"
-				value=""
-				disabled
-        style="display: none"
-			/>`);
+    // this.element = createHtmlElement("input");
+    // this.element.type = "text";
+    // this.element.id = String(this.attribute.settings.index);
+    // this.element.name = this.attribute.settings.name;
+    // this.element.disabled = true;
+    // this.element.style.display = "none";
 
-    this.linkElement = $(`
-      <div onclick="kvm.editFeature('${globalParentLayerId}', document.getElementById('${this.attribute.settings.index}').value)" class="link-element">
-        <i class="fa fa-arrow-left" aria-hidden="true" style="margin-right: 10px"></i> ${vorschauOption}
-      </div>
-    `);
+    // $(`
+    //   <input
+    // 		type="text"
+    // 		id="${this.attribute.settings.index}"
+    // 		name="${this.attribute.settings.name}"
+    // 		value=""
+    // 		disabled
+    //     style="display: none"
+    // 	/>`);
+
+    this.linkElement = createHtmlElement("div", null, "link-element");
+    this.linkElement.addEventListener("click", () => {
+      const layer = kvm.getLayer(globalParentLayerId);
+      console.info(`SubFormFKFormField.clicked ${layer?.title} ${this.value}`);
+      kvm.editFeature(globalParentLayerId, this.value);
+    });
+    const bttn = createHtmlElement("i", this.linkElement, "fa fa-arrow-left");
+    bttn.ariaHidden = "true";
+    bttn.style.cssText = "margin-right: 10px";
+    this.linkElement.append(vorschauOption);
+    // $(`
+    //   <div onclick="kvm.editFeature('${globalParentLayerId}', document.getElementById('${this.attribute.settings.index}').value)"
+    //   class="link-element">
+    //     <i class="fa fa-arrow-left" aria-hidden="true" style="margin-right: 10px"></i> ${vorschauOption}
+    //   </div>
+    // `);
     // $(`
     //   <div onclick="kvm.editFeature('${globalParentLayerId}', document.getElementById('${this.get("index")}').value)" class="link-element">
     //     <i class="fa fa-arrow-left" aria-hidden="true" style="margin-right: 10px"></i> ${vorschauOption}
@@ -138,13 +158,13 @@ export class SubFormFKFormField implements Field {
             if (typeof rs.rows.item(i).geom != "undefined" && rs.rows.item(i).geom != "") {
               featureId = rs.rows.item(i)[pkLayer.get("id_attribute")];
               kvm.mapHint(`Übergeordnetes Objekt ${pkLayer.getFeature(featureId).getDataValue(pkLayer.get("name_attribute"))} aus Layer ${pkLayer.title} über Markerposition ermittelt.`, 5000);
-              this.element.val(featureId);
+              this.value = featureId;
               break;
             }
           }
           if (featureId == "") {
             kvm.mapHint(`Der Marker liegt nicht im räumlichen Bereich eines Objektes vom Layers ${pkLayer.title}.`, 5000);
-            this.element.val(this.get("default"));
+            this.value = this.get("default");
           }
         } catch (err) {
           console.error(`Fehler bei der räumlichen Suche eines Objektes im Layer ${pkLayer.title}`, err);
@@ -152,25 +172,26 @@ export class SubFormFKFormField implements Field {
         }
       }
     } else {
-      this.element.val(val == null || val == "null" ? "" : val);
+      this.value = val == null || val == "null" ? "" : val;
     }
   }
 
   getValue(action = "") {
     console.log("SubFormFKFormField.getValue");
-    var val = this.element.val();
+    return this.value;
+    // var val = this.element.value;
 
-    if (typeof val === "undefined" || val == "") {
-      val = null;
-    }
+    // if (typeof val === "undefined" || val == "") {
+    //   val = null;
+    // }
 
-    return val;
+    // return val;
   }
 
   getAutoValue() {
-    return this.element.val();
-    // const attributeName = this.attribute.get('name');
-    // return this.attribute.layer.activeFeature.getDataValue(attributeName);
+    // return this.element.value;
+    const attributeName = this.attribute.get("name");
+    return this.attribute.layer.activeFeature.getDataValue(attributeName);
   }
 
   /**
@@ -180,12 +201,11 @@ export class SubFormFKFormField implements Field {
     return this.attribute.settings.options.split(";")[0].split(",")[0];
   }
 
-  bindEvents() {
-    //console.log('TextfeldFormField.bindEvents');
-    /*        $("#featureFormular textarea[id=" + this.get("index") + "]").on("keyup", function () {
-          if (!$("#saveFeatureButton").hasClass("active-button")) {
-              $("#saveFeatureButton").toggleClass("active-button inactive-button");
-          }
-      });*/
+  hasChanged(): boolean {
+    return false;
+  }
+
+  getDom(): HTMLElement {
+    return this.linkElement;
   }
 }

@@ -1,8 +1,6 @@
-import { Layer } from "../Layer";
 import { Kvm } from "../app";
 import { Feature } from "../Feature";
 import { View } from "./View";
-import { sperrBildschirm } from "../SperrBildschirm";
 import { createHtmlElement } from "../Util";
 
 export class ViewDataView extends View {

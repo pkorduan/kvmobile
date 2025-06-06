@@ -1,5 +1,6 @@
 import { AttributeSetting } from "./Attribute";
-import { Field } from "./Field";
+import { AbstractField, Field } from "./Field";
+import { createHtmlElement } from "./Util";
 import { kvm } from "./app";
 /*
  * create a text form field in the structure
@@ -12,36 +13,33 @@ import { kvm } from "./app";
  *     </div>
  *   </div>
  */
-export class TextFormField implements Field {
-  settings: AttributeSetting;
-  selector: string;
-  element: JQuery<HTMLElement>;
+export class TextFormField extends AbstractField implements Field {
+  element: HTMLInputElement;
 
   constructor(formId: string, settings: AttributeSetting) {
-    //console.log('Erzeuge TextformField with settings %o', settings);
-    this.settings = settings;
-    this.selector = "#" + formId + " input[id=" + this.settings.index + "]";
-    this.element = $(`
-      <input
-        type="text"
-        id="${this.settings.index}"
-        name="{this.settings.name}"
-        value=""
-        ${this.settings.privilege == "0" ? " disabled" : ""}
-      />
-    `);
+    super(formId, settings);
+
+    this.element = createHtmlElement("input");
+    this.element.type = "text";
+    this.element.id = String(this.settings.index);
+    this.element.name = this.settings.name;
+    const disabled = (this.element.disabled = this.settings.privilege == "0");
+    if (!disabled) {
+      this.element.addEventListener("input", () => {
+        this._value = this.element.value || null;
+        this.fireChanged();
+      });
+    }
   }
 
-  // get(key) {
-  //     return this.settings[key];
-  // }
-
-  async setValue(val) {
-    //console.log("TextFormField " + this.settings.name + " setValue with value: %o", val);
+  async setValue(val: string) {
+    console.log("TextFormField " + this.settings.name + " setValue with value: %o", val);
+    this._oldValue = val;
     if (kvm.coalesce(val, "") == "" && this.settings.default) {
       val = this.settings.default;
     }
-    this.element.val(val == null || val == "null" ? "" : val);
+    this._value = val;
+    this.element.value = val == null || val == "null" ? "" : val;
   }
 
   /*
@@ -52,7 +50,7 @@ export class TextFormField implements Field {
    */
   getValue(action = "") {
     //console.log('TextFormField.getValue');
-    let val = this.element.val();
+    let val = this.element.value;
 
     if (typeof val === "undefined" || val == "") {
       val = null;
@@ -65,12 +63,7 @@ export class TextFormField implements Field {
     return val;
   }
 
-  bindEvents() {
-    //console.log('TextFormField.bindEvents');
-    $("#featureFormular input[id=" + this.settings.index + "]").on("keyup", function () {
-      if (!$("#saveFeatureButton").hasClass("active-button")) {
-        $("#saveFeatureButton").toggleClass("active-button inactive-button");
-      }
-    });
+  getDom(): HTMLElement {
+    return this.element;
   }
 }

@@ -1,59 +1,36 @@
 import { AttributeSetting } from "./Attribute";
-import { Field } from "./Field";
+import { AbstractField, Field } from "./Field";
 import { createHtmlElement } from "./Util";
 
-export class CheckboxFormField implements Field {
-  settings: AttributeSetting;
-  selector: string;
-  element: JQuery<HTMLElement>;
+export class CheckboxFormField extends AbstractField implements Field {
+  element: HTMLInputElement;
 
   constructor(formId: string, settings: AttributeSetting) {
-    this.settings = settings;
-    this.selector = "#" + formId + " input[id=" + this.settings.index + "]";
-    this.element = $(
-      '\
-        <input\
-          type="checkbox"\
-          id="' +
-        this.settings.index +
-        '"\
-          name="' +
-        this.settings.name +
-        '"' +
-        (this.settings.privilege == "0" ? " disabled" : "") +
-        "\
-        />"
-    );
+    super(formId, settings);
+
+    this.element = createHtmlElement("input");
+    this.element.type = "checkbox";
+    this.element.id = String(this.settings.index);
+    this.element.name = this.settings.name;
+    this.element.disabled = this.settings.privilege == "0";
+
+    this.element.addEventListener("click", () => {
+      this._value = this.element.checked ? "t" : "f";
+      this.fireChanged();
+    });
   }
 
-  // get(key) {
-  //     return this.settings[key];
-  // }
+  async setValue(val: string) {
+    this._oldValue = val;
 
-  async setValue(val) {
-    //console.log('CheckboxFormField.setValue with value: ' + val);
     if (!val && this.settings.default) {
       val = this.settings.default;
     }
-
-    this.element.val(val);
-    this.element.prop("checked", false);
-    if (val == "t") {
-      this.element.prop("checked", true);
-    }
+    this.element.checked = val == "t";
+    this._value = val;
   }
 
-  getValue(action = "") {
-    // console.log('CheckboxFormField.getValue');
-    return this.element.prop("checked") ? "t" : this.element.val() == "" ? null : "f";
-  }
-
-  bindEvents() {
-    //console.log('CheckboxFormField.bindEvents');
-    $("#featureFormular input[id=" + this.settings.index + "]").on("change", function () {
-      if (!$("#saveFeatureButton").hasClass("active-button")) {
-        $("#saveFeatureButton").toggleClass("active-button inactive-button");
-      }
-    });
+  getDom(): HTMLElement {
+    return this.element;
   }
 }

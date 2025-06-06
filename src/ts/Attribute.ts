@@ -20,6 +20,7 @@ import { Field } from "./Field";
 import { Layer } from "./Layer";
 import { createHtmlElement } from "./Util";
 import { kvm } from "./app";
+import { styleText } from "util";
 
 export type OptionsAttributtes = {
   value: any;
@@ -40,11 +41,23 @@ export interface AttributeSetting {
   nullable?: any;
   saveable?: string;
   form_element_type?: string;
+  /**
+   * Ausrichtung
+   * 0 = unten dem Vorhergehenden
+   * 1 = neben dem Vorhegehenden
+   */
   arrangement?: string;
   labeling?: string;
-  privilege?: string;
+  /**
+   * 0 = nur lesen (ro)
+   * 1 = editierend (rw)
+   */
+  privilege?: "0" | "1";
   default?: string;
   visible?: string;
+  /**
+   * name eines Attributes
+   */
   vcheck_attribute?: string;
   vcheck_operator?: string;
   vcheck_value?: string;
@@ -100,7 +113,9 @@ export class Attribute {
   getArrangementStyle() {
     const succesor = this.getSuccessor();
     if ((succesor && succesor.get("arrangement") == "1") || this.get("arrangement") == "1") {
-      return 'style="float: left"';
+      // rtr
+      //return 'style="float: left"';
+      return "float: left";
     } else {
       return "";
     }
@@ -171,19 +186,19 @@ export class Attribute {
    */
   getVorschauOption() {
     let vorschauOption = this.settings.options.split(";")[0].split(",")[2];
-    if (typeof vorschauOption == 'undefined') {
+    if (typeof vorschauOption == "undefined") {
       const layer = kvm.getLayer(this.getGlobalParentLayerId());
-      vorschauOption = (layer ? layer.title : 'zurück');
+      vorschauOption = layer ? layer.title : "zurück";
     }
     return vorschauOption;
   }
 
   getViewField() {
-    return new DataViewField("dataViewDiv", this);
+    return new DataViewField(this);
   }
 
   getFormField(): Field {
-    // console.log("Attribute.getFormField attr: " + this.get("name") + " type: " + this.get("type") + " form_element_type: " + this.get("form_element_type"));
+    console.log("Attribute.getFormField attr: " + this.get("name") + " type: " + this.get("type") + " form_element_type: " + this.get("form_element_type"));
     let field: Field;
 
     switch (this.get("form_element_type")) {
@@ -221,7 +236,7 @@ export class Attribute {
         field = new ZahlFormField("featureFormular", this.settings);
         break;
       case "Geometrie":
-        field = new GeometrieFormField("featureFormular", this.settings);
+        field = new GeometrieFormField("featureFormular", this.settings, this.layer.settings.geometry_type);
         break;
       case "Dokument":
         field = new BilderFormField("featureFormular", this.settings);
@@ -463,6 +478,98 @@ export class Attribute {
     return slValue;
   }
 
+  withLabelNoJq() {
+    const labelDiv = createHtmlElement("label");
+    labelDiv.htmlFor = "this.formField.settings.name";
+    labelDiv.innerText = (this.formField.settings.alias ? this.formField.settings.alias : this.formField.settings.name) + (this.settings.nullable == 0 ? "*" : "");
+
+    if (this.formField.settings.tooltip) {
+      const infoBttn = createHtmlElement("i", labelDiv, "fa fa-exclamation-circle");
+      infoBttn.style.color = "#f57802";
+      infoBttn.style.paddingLeft = "0.2rem";
+      infoBttn.addEventListener("click", () => kvm.msg(this.formField.settings.tooltip));
+    }
+
+    const valueDiv = createHtmlElement("div", null, "form-value");
+
+    // if (this.get("form_element_type") == "Geometrie") {
+    //   if (this.layer.settings.geometry_type == "Point") {
+    //     valueDiv.innerHTML =
+    //       '<i id="saveGpsPositionButton" class="fa fa-map-marker fa-2x" aria-hidden="true" style="margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>\
+    //     <svg onclick="kvm.msg(\'Die GPS-Genauigkeit beträgt ca. \' + Math.round(kvm.controller.mapper.getGPSAccuracy()) + \' Meter.\')" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="28" height="28" version="1.1">\
+    //       <g id="gps-signal-icon" class="gps-signal-level-0" transform="scale(1 -1) translate(0 -28)">\
+    //         <rect class="bar-1" x="0" y="0" width="4" height="4" />\
+    //         <rect class="bar-2" x="6" y="0" width="4" height="10" />\
+    //         <rect class="bar-3" x="12" y="0" width="4" height="16" />\
+    //         <rect class="bar-4" x="18" y="0" width="4" height="22" />\
+    //         <rect class="bar-5" x="24" y="0" width="4" height="28" />\
+    //       </g>\
+    //     </svg>\
+    //     <i id="goToGpsPositionButton" class="fa fa-pencil fa-2x" aria-hidden="true" style="float: right; margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>\
+    //     <!--input type="text" id="geom_wkt" value=""//-->';
+    //   } else {
+    //     valueDiv.innerHTML = '<textarea cols="40" rows="5" id="geom_wkt"></textarea>';
+    //   }
+    // }
+
+    // if (this.get("form_element_type") == "Dokument") {
+    //   if (this.get("privilege") === "1") {
+    //     const takePictureButton = createHtmlElement("i", valueDiv, "fa fa-camera fa-2x");
+    //     takePictureButton.id = `takePictureButton_${this.get("index")}`;
+    //     takePictureButton.style.cssText = "color: rgb(38, 50, 134); margin: 5px 10px 15px 0px";
+
+    //     const loadPictureFromPhotolibrary = createHtmlElement("i", valueDiv, "fa fa-image fa-2x");
+    //     loadPictureFromPhotolibrary.id = `loadPictureFromPhotolibrary_${this.get("index")}`;
+    //     loadPictureFromPhotolibrary.style.cssText = "color: rgb(38, 50, 134); margin: 0px 0px 14px 9px";
+
+    //     const dropAllPictureButton = createHtmlElement("i", valueDiv, "fa fa-trash fa-2x");
+    //     dropAllPictureButton.id = `dropAllPictureButton_${this.get("index")}`;
+    //     dropAllPictureButton.style.cssText = "color: rgb(238, 50, 50); float: right; display: none;";
+    //   }
+
+    //   // const imagesDiv = createHtmlElement("div", valueDiv, "images-div");
+    //   // imagesDiv.id = (<any>this.formField).images_div_id;
+    // }
+
+    const formField = this.formField;
+    const div = createHtmlElement("div", null, "form-field-rows");
+    div.id = `formFieldDiv_${this.get("index")}"`;
+
+    if (this.get("form_element_type") == "SubFormEmbeddedPK" && this.get("privilege") && this.get("privilege") > "0") {
+      console.info(`Attribute.withLabel ${this.get("form_element_type")}`);
+      const divFormLabel = createHtmlElement("div", div, "form-label");
+      divFormLabel.appendChild(labelDiv);
+      const bttn = createHtmlElement("input", divFormLabel);
+      bttn.id = "new_sub_data_set";
+      bttn.type = "button";
+      bttn.value = "Neu";
+      bttn.addEventListener("click", () => {
+        kvm.newSubFeature({
+          parentLayerId: this.getGlobalLayerId(),
+          subLayerId: this.getGlobalSubLayerId(),
+          fkAttribute: this.getFKAttribute(),
+        });
+      });
+
+      bttn.style.cssText = "float: right; padding: 2px; margin-right: 5px";
+      divFormLabel.append(valueDiv);
+      valueDiv.append(formField.getDom());
+    } else {
+      div.style.cssText = this.getArrangementStyle();
+      if (formField instanceof SubFormFKFormField) {
+        div.append(formField.linkElement);
+      }
+      // div.append("linkElement" in formField ? formField.linkElement : "");
+      if (this.get("form_element_type") !== "SubFormFK") {
+        const fL = createHtmlElement("div", div, "form-label");
+        div.append(labelDiv);
+      }
+      div.append(valueDiv);
+      valueDiv.append(formField.getDom());
+    }
+    return div;
+  }
+
   withLabel() {
     let labelDiv = $('<label for="' + this.formField.settings.name + '">')
       .append(this.formField.settings.alias ? this.formField.settings.alias : this.formField.settings.name)
@@ -472,8 +579,8 @@ export class Attribute {
     if (this.get("form_element_type") == "Geometrie") {
       if (this.layer.settings.geometry_type == "Point") {
         valueDiv.append(
-          '<i id="saveGpsPositionButton" class="fa fa-map-marker fa-2x" aria-hidden="true" style="margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>\
-        <svg onclick="kvm.msg(\'Die GPS-Genauigkeit beträgt ca. \' + Math.round(kvm.controller.mapper.getGPSAccuracy()) + \' Meter.\')" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="28" height="28" version="1.1">\
+          '<i id="rtr2saveGpsPositionButton" class="fa fa-map-marker fa-2x" aria-hidden="true" style="margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>\
+        <svg id="rtr2showGpsGenauigkeitButton" onclick="kvm.msg(\'Die GPS-Genauigkeit beträgt ca. \' + Math.round(kvm.controller.mapper.getGPSAccuracy()) + \' Meter.\')" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="28" height="28" version="1.1">\
           <g id="gps-signal-icon" class="gps-signal-level-0" transform="scale(1 -1) translate(0 -28)">\
             <rect class="bar-1" x="0" y="0" width="4" height="4" />\
             <rect class="bar-2" x="6" y="0" width="4" height="10" />\
@@ -482,7 +589,7 @@ export class Attribute {
             <rect class="bar-5" x="24" y="0" width="4" height="28" />\
           </g>\
         </svg>\
-        <i id="goToGpsPositionButton" class="fa fa-pencil fa-2x" aria-hidden="true" style="float: right; margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>\
+        <i id="rtr2goToGpsPositionButton" class="fa fa-pencil fa-2x" aria-hidden="true" style="float: right; margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>\
         <!--input type="text" id="geom_wkt" value=""//-->'
         );
       }
@@ -537,9 +644,8 @@ export class Attribute {
         )
         .append(valueDiv.append(formField.element));
     } else {
-      let div = $(`<div id="formFieldDiv_${this.get("index")}" class="form-field-rows" ${this.getArrangementStyle()}>`)
-        .append("linkElement" in formField ? formField.linkElement : "");
-      if (this.get('form_element_type') !== 'SubFormFK') {
+      let div = $(`<div id="formFieldDiv_${this.get("index")}" class="form-field-rows" ${this.getArrangementStyle()}>`).append("linkElement" in formField ? formField.linkElement : "");
+      if (this.get("form_element_type") !== "SubFormFK") {
         div.append($('<div class="form-label">').append(labelDiv));
       }
       div.append(valueDiv.append(formField.element));

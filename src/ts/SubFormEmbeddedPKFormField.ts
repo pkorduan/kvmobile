@@ -21,16 +21,21 @@ import { createHtmlElement } from "./Util";
  *   </div>
  */
 export class SubFormEmbeddedPKFormField implements Field {
+  // TODO
   settings: AttributeSetting;
   selector: string;
   element: HTMLElement;
   attribute: Attribute;
 
+  lsts: { (src: Field, hasChanged: boolean): void }[] = [];
+
   constructor(formId: string, attribute: Attribute) {
+    console.info(`new SubFormEmbeddedPKFormField(${formId}, ${attribute.settings.name})`);
     this.attribute = attribute;
     this.settings = attribute.settings;
     this.selector = "#" + formId + " input[id=" + attribute.settings.index + "]";
     this.element = createHtmlElement("div");
+    this.element.id = "xxxxxxxxxxxxxxx";
   }
 
   // get(key) {
@@ -48,7 +53,8 @@ export class SubFormEmbeddedPKFormField implements Field {
     this.element.innerHTML = "";
     if (feature.new) {
       $("#new_sub_data_set").hide();
-      this.element.append("<span>Können erst angelegt werden wenn der neue Datensatz gespeichert ist.</span>");
+      const span = createHtmlElement("span", this.element);
+      span.innerText = "Können erst angelegt werden wenn der neue Datensatz gespeichert ist.";
     } else {
       $("#new_sub_data_set").show();
       this.attribute.layer.readVorschauAttributes(this.attribute, feature.getDataValue(this.attribute.getPKAttribute()), this.element, "editFeature");
@@ -57,12 +63,22 @@ export class SubFormEmbeddedPKFormField implements Field {
 
   getValue(action = "") {}
 
-  bindEvents() {
-    //console.log('TextfeldFormField.bindEvents');
-    /*        $("#featureFormular textarea[id=" + this.get("index") + "]").on("keyup", function () {
-          if (!$("#saveFeatureButton").hasClass("active-button")) {
-              $("#saveFeatureButton").toggleClass("active-button inactive-button");
-          }
-      });*/
+  getDom(): HTMLElement {
+    console.info("yyyyy");
+    return this.element;
+  }
+
+  hasChanged() {
+    return false;
+  }
+
+  addChangeListener(lst: (src: Field, hasChanged: boolean) => void) {
+    this.lsts.push(lst);
+  }
+
+  fireChanged() {
+    for (let i = 0; i < this.lsts.length; i++) {
+      this.lsts[i](this, this.hasChanged());
+    }
   }
 }

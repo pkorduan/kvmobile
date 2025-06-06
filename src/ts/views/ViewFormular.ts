@@ -4,6 +4,9 @@ import { Feature } from "../Feature";
 import { sperrBildschirm } from "../SperrBildschirm";
 import { createHtmlElement } from "../Util";
 import { View } from "./View";
+import * as Util from "../Util";
+import { Menu } from "../Menu";
+import { Attribute } from "../Attribute";
 
 export class ViewFormular extends View {
   header: HTMLHeadingElement;
@@ -24,10 +27,81 @@ export class ViewFormular extends View {
   }
 
   update(f: Feature) {
-    // console.error(`ViewFormular.update Feature ${f?.layer.title}`, f);
+    console.error(`ViewFormular.update Feature ${f?.layer.title}`, f);
     this.feature = f;
     // this._update(f.layer);
     this._updateFeature(f);
+  }
+
+  _createForm(layer: Layer) {
+    this.dom.innerHTML = "";
+    const h1 = Util.createHtmlElement("h1", this.dom);
+    h1.innerText = layer.title;
+    h1.innerText = layer.title + " (FeatureForm)";
+    h1.style.cssText = "margin-left: 5px;";
+    this.app.menu.enableSaveFeatureButton(false);
+    const formDiv = Util.createHtmlElement("div", this.dom);
+    // formDiv.id = "formDiv";
+    const form = Util.createHtmlElement("form", formDiv); // id = featureFormular
+    form.id = "featureFormular";
+    layer.attributeGroups.forEach((attributeGroup) => {
+      if (attributeGroup.attributeIds.length > 0) {
+        const attrGroupDiv = (attributeGroup.div = Util.createHtmlElement("div", form, "attribute-group" + (attributeGroup.collapsed ? " collapsed" : "")));
+
+        const attrGrpHead = Util.createHtmlElement("div", attrGroupDiv, "attribute-group-header");
+        attrGrpHead.addEventListener("click", () => {
+          attrGroupDiv.classList.toggle("collapsed");
+        });
+        const attrGrpBody = Util.createHtmlElement("div", attrGroupDiv, "attribute-group-body");
+        attrGrpHead.append(attributeGroup.name);
+        attributeGroup.attributeIds.forEach((attributeId) => {
+          const attr = layer.attributes[attributeId];
+          console.log(`viewAttr: ${attr.get("name")} arrangement: ${attr.get("arrangement")}`);
+
+          if (attr.get("arrangement") == "0") {
+            Util.createHtmlElement("div", form, null, { styleText: "clear: both" });
+          }
+          if (attr.get("privilege")) {
+            attrGrpBody.append(attr.withLabelNoJq());
+          }
+          attr.formField.bindEvents?.();
+          // add change event handler here to avoid redundancy in different bindEvents methods of formField classes
+
+          // if (attr.isEditable() && attr.hasVisibilityDependency()) {
+          if (attr.isEditable()) {
+            console.log(`Set vcheck event handler for attribute ${attr.get("name")} - ${attr.formField.selector}`, attr.formField);
+            // const el = document.querySelector(attr.formField.selector);
+
+            if (attr.formField) {
+              attr.formField.addChangeListener((formField) => {
+                // const attributeId = $(evt.target).attr("id");
+                // const attribute = kvm.getActiveLayer().attributes[attributeId];
+                const hasChanged = this.hasChanged();
+                console.log("Attribute: %s changed to value: %s fromChanged=%s", attr.get("name"), attr.formField.getValue(), hasChanged);
+                this.app.menu.enableSaveFeatureButton(this.hasChanged());
+                if (attr.hasVisibilityDependency()) {
+                  layer.vcheckAttributes(attr.get("name"), attr.formField.getValue(), "form");
+                }
+              });
+            }
+          }
+        });
+      }
+    });
+  }
+
+  private hasChanged(): boolean {
+    const layer = this.feature.layer;
+    for (const attr of layer.attributes) {
+      const changed = attr.formField.getValue() != this.feature.getDataValue(attr.settings.name);
+      if (changed) {
+        // if (attr.formField.hasChanged()) {
+        // console.info(`hasChanged01: "${attr.formField.settings.name}" ${(<any>attr.formField)._oldValue} => ${(<any>attr.formField)._value}`);
+        console.info(`hasChanged02: "${attr.formField.settings.name}" ${attr.formField.getValue()} => ${this.feature.getDataValue(attr.settings.name)}`);
+        return true;
+      }
+    }
+    return false;
   }
 
   show() {
@@ -101,10 +175,16 @@ export class ViewFormular extends View {
   //   }
   // }
 
-  private _updateFeature(f: Feature) {
+  private async _updateFeature(f: Feature) {
     if (f) {
-      f.layer.createFeatureForm();
-      f.layer.loadFeatureToForm(f, { editable: false });
+      try {
+        this._createForm(f.layer);
+        // f.layer.loadFeatureToForm(f, { editable: false });
+        // f.layer.createFeatureForm();
+        await f.layer.loadFeatureToForm(f, { editable: false });
+      } catch (ex) {
+        await Util.showError("Fehler beim Aktivieren des Features", ex);
+      }
     }
   }
 }

@@ -1,5 +1,8 @@
 /// <reference types="cordova-plugin-file" />
 
+import type { FingerprintAuth as FingerprintAuthI, FingerprintAuthConfig, FingerprintAuthEncryptSuccess, FingerprintAuthIsAvailableSuccess, IFingerprintAuthErrors } from "cordova-plugin-android-fingerprint-auth";
+declare var FingerprintAuth: typeof FingerprintAuthI;
+
 export type AsyncFunction<T> = (params?: any) => Promise<T>;
 
 export async function checksum(obj: any) {
@@ -87,17 +90,50 @@ export function printResultSet(headline: string, rs: SQLitePlugin.Results) {
   console.info(s);
 }
 
+export async function openDatabase(dbname: String) {
+  return new Promise<SQLitePlugin.Database>((resolve, reject) => {
+    window.sqlitePlugin.openDatabase(
+      {
+        name: dbname + ".db",
+        location: "default",
+        androidDatabaseImplementation: 2,
+      },
+      (db) => {
+        resolve(db);
+      },
+      (error) => {
+        reject(Error('Fehler beim Anlegen der Datenbank "${dbname}"', { cause: error }));
+      }
+    );
+  });
+}
+
+export async function deleteDatabase(dbname: String) {
+  console.error("deleteDatabase");
+  return new Promise<boolean>((resolve, reject) => {
+    window.sqlitePlugin.deleteDatabase(
+      {
+        name: dbname + ".db",
+        location: "default",
+      },
+      () => {
+        resolve(true);
+      },
+      (error) => {
+        reject(Error('Fehler beim Löschen der Datenbank "${dbname}"', { cause: error }));
+      }
+    );
+  });
+}
+
 export async function executeSQL(db: SQLitePlugin.Database, statement: string, params?: any[]): Promise<SQLitePlugin.Results> {
+  // console.error("executeSQL", statement, params);
   return new Promise<SQLitePlugin.Results>((resolve, reject) => {
     db.executeSql(
       statement,
       params,
       (results) => resolve(results),
-      (err) =>
-        reject({
-          message: `Fehler beim Ausführen der SQL-Anweisung ${statement}`,
-          cause: err,
-        })
+      (err) => reject(Error(`Fehler beim Ausführen der SQL-Anweisung ${statement}`, { cause: err }))
     );
   });
 }
@@ -114,7 +150,7 @@ export async function tableExists(db: SQLitePlugin.Database, tablename: string):
       },
       (err) => {
         console.error("error in exists table: ", err);
-        reject(err);
+        reject(Error(`Fehler beim Testen, ib die Tabelle ${tablename} existiert`, { cause: err }));
       }
     );
   });
@@ -142,8 +178,8 @@ export async function fileExists(url: string): Promise<boolean> {
         resolve(fileEntry.isFile || fileEntry.isDirectory);
       },
       (e: FileError) => {
-        resolve(false);
         console.log("could not resolve: " + url, e);
+        reject(e);
       }
     );
   });
@@ -164,10 +200,7 @@ export async function writeData(dir: string, file: string, dataObj: Blob | strin
               };
               fileWriter.onerror = (e) => {
                 console.error(`Fehler beim Schreiben der Datei "${file}" in das Verzeichnis "${dir}".`, e);
-                reject({
-                  message: `Fehler beim Schreiben der Datei "${file}" in das Verzeichnis "${dir}".`,
-                  cause: e,
-                });
+                reject(Error(`Fehler beim Schreiben der Datei "${file}" in das Verzeichnis "${dir}".`, { cause: e }));
                 // console.log("Failed file write: " + e.toString());
                 // const msg =
                 //   "Fehler beim Erzeugen der Delta-Datei, die geschickt werden soll.";
@@ -184,19 +217,13 @@ export async function writeData(dir: string, file: string, dataObj: Blob | strin
               fileWriter.write(dataObj);
             },
             (fileError) => {
-              reject({
-                message: `Fehler beim Erzeugen des FileWriter von Entry nativeUrl=${fileEntry.nativeURL} name=${fileEntry.name}`,
-                cause: fileError,
-              });
+              reject(Error(`Fehler beim Erzeugen des FileWriter von Entry nativeUrl=${fileEntry.nativeURL} name=${fileEntry.name}`, { cause: fileError }));
             }
           );
         });
       },
       (fileError) => {
-        reject({
-          message: `Fehler in resolveLocalFileSystemURL nativeUrl=${dir}`,
-          cause: fileError,
-        });
+        reject(Error(`Fehler in resolveLocalFileSystemURL nativeUrl=${dir}`, { cause: fileError }));
       }
     );
   });
@@ -210,17 +237,14 @@ export async function readFileAsString(fileEntry: FileEntry, encoding?: string) 
         resolve(<string>reader.result);
       };
       reader.onerror = (ev) => {
-        reject({ message: "Fehler beim Lesen des Blobs", cause: ev });
+        reject(Error("Fehler beim Lesen des Blobs", { cause: ev }));
       };
       reader.readAsText(file);
     };
 
-    fileEntry.file(fileReadFct, (error) =>
-      reject({
-        message: `Fehler beim Laden der Datei: ${fileEntry.name}.`,
-        cause: error,
-      })
-    );
+    fileEntry.file(fileReadFct, (error) => {
+      reject(Error(`Fehler beim Laden der Datei: ${fileEntry.name}.`, { cause: error }));
+    });
   });
 }
 
@@ -245,7 +269,7 @@ export function download(fileURL: string, localFile: string, trustAllHosts?: boo
       fileURL,
       localFile,
       (result: FileEntry) => resolve(result),
-      (error: FileTransferError) => reject({ message: "Fehler beim Download", cause: error }),
+      (error: FileTransferError) => reject(Error("Fehler beim Download", { cause: error })),
       trustAllHosts,
       options
     );
@@ -286,7 +310,8 @@ export async function confirm(message: string, title?: string, okButtonText?: st
   });
 }
 
-export async function alert(message: string, title?: string, okButtonText?: string) {
+export async function alertNav(message: string, title?: string, okButtonText?: string) {
+  console.info(message);
   return new Promise<void>((resolve, reject) => {
     navigator.notification.alert(
       message,
@@ -299,6 +324,42 @@ export async function alert(message: string, title?: string, okButtonText?: stri
   });
 }
 
+export async function alertOverlay(message: string, title?: string, okButtonText?: string) {
+  console.trace("Util.alert");
+  const div = document.createElement("div");
+  div.className = "msg-background";
+  const msgDiv = createHtmlElement("div", div, "msg-pane");
+  const msgTitle = createHtmlElement("div", msgDiv, "msg-title");
+  msgTitle.innerText = title || "";
+  const msgTextWrapper = createHtmlElement("div", msgDiv, "msg-text-wrapper");
+  const msgText = createHtmlElement("div", msgTextWrapper, "msg-text");
+  msgText.innerText = message;
+  const okBttn = createHtmlElement("button", msgDiv, "msg-button");
+  okBttn.innerText = okButtonText || "ok";
+  okBttn.addEventListener("click", () => {
+    div.remove();
+  });
+  document.body.appendChild(div);
+}
+
+export async function showError(msg: string, ex: Error | any) {
+  console.trace("errorMesg", msg, ex);
+
+  if (ex) {
+    let indent = "\t";
+    while (ex) {
+      msg += "\nUrsache:\n";
+      if (ex instanceof Error) {
+        // msg += indent + ex.message + "\n";
+        msg += ex.stack;
+      } else {
+        msg += indent + JSON.stringify(ex);
+      }
+      ex = ex.cause;
+    }
+  }
+  await alertOverlay(msg, "Fehler", "ok");
+}
 // export async function runStrategy(fcts: AsyncFunction<any>[], paramOfFirsFct: any) {
 //     const results = [];
 //     return new Promise((resolve, reject) => {
@@ -393,4 +454,60 @@ export async function getSqliteVersion(db: SQLitePlugin.Database) {
  */
 export function toggle(el: HTMLElement) {
   el.style.display = el.style.display === "none" ? "" : "none";
+}
+
+export function isFingerprintAuthAvailable() {
+  return new Promise<boolean>((resolve, reject) => {
+    FingerprintAuth.isAvailable(
+      (result: FingerprintAuthIsAvailableSuccess) => {
+        console.log("FingerprintAuth available: " + JSON.stringify(result));
+        resolve(result.isAvailable);
+      },
+      function (error: string) {
+        reject(error);
+      }
+    );
+  });
+}
+
+export function encryptFingerPrint(encryptConfig: FingerprintAuthConfig) {
+  return new Promise<boolean>((resolve, reject) => {
+    FingerprintAuth.encrypt(
+      encryptConfig,
+      function (_fingerResult: FingerprintAuthEncryptSuccess) {
+        //console.log("successCallback(): " + JSON.stringify(_fingerResult));
+        if (_fingerResult.withFingerprint) {
+          resolve(true);
+        } else if (_fingerResult.withBackup) {
+          resolve(true);
+        }
+        resolve(false);
+      },
+      function (err: IFingerprintAuthErrors) {
+        if (err === "FINGERPRINT_CANCELLED") {
+          resolve(false);
+        } else {
+          reject("FingerprintAuth Error: " + err);
+        }
+      }
+    );
+  });
+}
+
+export function TraceElementChange() {
+  const callback = (mutationList: MutationRecord[], observer: MutationObserver) => {
+    for (const mutation of mutationList) {
+      if (mutation.type === "childList") {
+        console.log("A child node has been added or removed.", mutation.addedNodes);
+      } else if (mutation.type === "attributes") {
+        console.log(`The ${mutation.attributeName} attribute was modified.`);
+      }
+    }
+  };
+
+  // Create an observer instance linked to the callback function
+  const observer = new MutationObserver(callback);
+
+  // Start observing the target node for configured mutations
+  observer.observe(document.body, { attributes: true, childList: true, subtree: true });
 }

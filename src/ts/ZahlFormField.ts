@@ -1,5 +1,5 @@
 import { AttributeSetting } from "./Attribute";
-import { Field } from "./Field";
+import { AbstractField, Field } from "./Field";
 import { kvm } from "./app";
 import { createHtmlElement } from "./Util";
 
@@ -14,36 +14,30 @@ import { createHtmlElement } from "./Util";
  *     </div>
  *   </div>
  */
-export class ZahlFormField implements Field {
-  settings: AttributeSetting;
-  selector: string;
-  element: JQuery<HTMLElement>;
+export class ZahlFormField extends AbstractField implements Field {
+  element: HTMLInputElement;
+
   constructor(formId: string, settings: AttributeSetting) {
-    //console.log('Erzeuge ZahlFormField with settings %o', settings);
-    this.settings = settings;
-    this.selector = "#" + formId + " input[id=" + this.settings.index + "]";
-    this.element = $(
-      '\
-        <input\
-        type="number"\
-        id="' +
-        this.settings.index +
-        '"\
-        name="' +
-        this.settings.name +
-        '"\
-        value=""' +
-        (this.settings.privilege == "0" ? " disabled" : "") +
-        "\
-        />"
-    );
+    super(formId, settings);
+
+    this.element = createHtmlElement("input");
+    this.element.type = "number";
+    this.element.id = String(this.settings.index);
+    this.element.name = this.settings.name;
+    const disabled = (this.element.disabled = this.settings.privilege == "0");
+    if (!disabled) {
+      this.element.addEventListener("change", () => {
+        this._value = this.element.value;
+        this.fireChanged();
+      });
+    }
   }
-  // get(key) {
-  //     return this.settings[key];
-  // }
 
   async setValue(val) {
-    // console.log(`Attribute: ${this.get('name')} ZahlFormField.setValue with value: ${val}`);
+    console.log(`Attribute: ${this.settings.name} ZahlFormField.setValue with value: ${val}`);
+
+    this._oldValue = val;
+
     const _attribute = this;
     const layer = kvm.getLayer(`${this.settings.stelleId}_${this.settings.layerId}`);
     let sql = "";
@@ -86,29 +80,30 @@ export class ZahlFormField implements Field {
               if (rs.rows.length == 1) {
                 next_val = rs.rows.item(0).next_val;
                 console.log("ZahlFormField " + _attribute.settings.name + " setValue to nextValue: %s", next_val);
-                _attribute.element.val(next_val);
+                _attribute.element.value = String(next_val);
               }
             },
             (err) => {
               console.log("Fehler bei Ermittlung des max Value von Attribute: %s. Fehler: %o", _attribute.settings.name, err);
-              _attribute.element.val(1);
+              _attribute.element.value = "1";
             }
           );
         }
       } else if (this.settings.nullable == 0 && this.settings.form_element_type != "Time") {
         // sonstige Pflichtattribute außer Zeit, diese werden erst beim Speichern gesetzt.
-        if (kvm.coalesce(val, "") == "") {
+        if (kvm.coalesce(val, "") == "" && this.settings.default) {
           val = this.settings.default;
         }
       }
     }
+    this._value = val;
     // console.log("ZahlFormField " + this.get("name") + " set value = %s", val == null || val == "null" ? "" : val);
-    this.element.val(val == null || val == "null" ? "" : val);
+    this.element.value = val == null || val == "null" ? "" : val;
   }
 
   getValue(action = "") {
     //console.log('ZahlFormField.getValue');
-    var val = this.element.val();
+    var val = this.element.value;
 
     if (typeof val === "undefined" || val == "") {
       val = null;
@@ -116,12 +111,7 @@ export class ZahlFormField implements Field {
     return val;
   }
 
-  bindEvents() {
-    // console.log('ZahlFormField.bindEvents');
-    $("#featureFormular input[id=" + this.settings.index + "]").on("keyup", function () {
-      if (!$("#saveFeatureButton").hasClass("active-button")) {
-        $("#saveFeatureButton").toggleClass("active-button inactive-button");
-      }
-    });
+  getDom(): HTMLElement {
+    return this.element;
   }
 }
