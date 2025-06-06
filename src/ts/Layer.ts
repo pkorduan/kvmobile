@@ -2332,6 +2332,7 @@ export class Layer extends PropertyChangeSupport {
       this.loadFeatureToView(this.activeFeature);
       kvm.showNextItem(kvm.getConfigurationOption("viewAfterCreate"), this);
     }
+    // ToDo: Layer gleich syncronisieren
     // kvm.closeSperrDiv(`${this.title}: Datensatz gespeichert.`);
     // sperrBildschirm.close();
   }
@@ -2463,6 +2464,8 @@ export class Layer extends PropertyChangeSupport {
       kvm.controller.mapper.clearWatch();
       // $("#numDatasetsText_" + this.getGlobalId()).html(`${this._features.size}`);
       //kvm.closeSperrDiv(`${layer.title}: Update des Datensatzes erfolgreich beendet.`);
+
+      // ToDo: Layer gleich syncronisieren
     } catch (ex) {
       throw new Error("Error in afterUpdateDataset", ex);
     }
@@ -2525,6 +2528,8 @@ export class Layer extends PropertyChangeSupport {
     //console.log('Blende Sperrdiv aus');
     // Sperrdiv entfernen
     sperrBildschirm.close(`${this.title}: Datensatz erfolgreich gelöscht.`);
+
+    // ToDo: Layer gleich syncronisieren
     //kvm.msg(this.succMsg, "Hinweis");
   }
 

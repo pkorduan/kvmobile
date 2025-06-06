@@ -1120,13 +1120,27 @@ export const configurations: Configuration[] = [
       },
       {
         layer_id: 2,
-        label: "Luftbilder",
+        label: "Luftbilder Bing",
         online: true,
         type: "bing",
         url: "https://learn.microsoft.com/en-us/bingmaps/rest-services/directly-accessing-the-bing-maps-tiles",
         params: {
           BING_KEY: "AqPPMA0XK54KqnsEpK_wSbcg4laDT0eqrS3c-XrMKhW10FJODMwETRJp5nbYPb-u",
           attribution: "© 2024 Microsoft Corporation",
+        },
+      },
+      {
+        layer_id: 3,
+        label: "Luftbilder WMS",
+        online: true,
+        type: "wms",
+        url: "https://mvbio.de/ows/luftbilder?TRANSPARENT=true",
+        params: {
+          layers: "Luftbilder",
+          format: "image/png",
+          transparent: "true",
+          attribution: "OpenData der Länder",
+          maxZoom: 20
         },
       },
     ],
