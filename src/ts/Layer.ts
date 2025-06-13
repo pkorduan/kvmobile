@@ -1323,9 +1323,9 @@ export class Layer extends PropertyChangeSupport {
    * This function check if the attributes that are visibility dependend
    * from attriubte attribute_name must be visible or not with the given attribute_value
    * and change the visibility in dataView and form if neccesary.
-   * @param String attribute_name
-   * @param String attribute_value
-   * @param String fieldType ('dataView'|'form')
+   * @param attribute_name
+   * @param attribute_value
+   * @param fieldType ('dataView'|'form')
    */
   vcheckAttributes(attribute_name, attribute_value, fieldType) {
     console.info(`vcheckAttributes(${attribute_name}). ${attribute_value}, ${fieldType}`);
@@ -1795,15 +1795,14 @@ export class Layer extends PropertyChangeSupport {
     return feature;
   }
 
+  // editFeature(featureId: string): void;
   /**
    * Show feature with featureId in edit form if featureId is not yet in layers feature list take the activeFeature.
    * Its the case when a new feature has been created but is not saved allready.
    * Activate Layer before if not already active.
    * Activate Feature before if exists and not already active.
-   * @param featureId
+   * @param feature
    */
-  // editFeature(featureId: string): void;
-  editFeature(feature: Feature): void;
   editFeature(feature: Feature): void {
     // editFeature(f: string | Feature) {
     // const feature = typeof f === "string" ? this.getFeature(f) : f;
@@ -1876,7 +1875,7 @@ export class Layer extends PropertyChangeSupport {
   /**
    * Function create and return a geometry at latlng pos pending on
    * layers geometry_type and size on current zoom level.
-   * @param LatLngExpression latlng
+   * @param latlng LatLngExpression
    * @returns Array Of latlng sequenz.
    */
   getStartGeomAtLatLng(latlng: LatLngExpression) {
@@ -2341,8 +2340,7 @@ export class Layer extends PropertyChangeSupport {
    * Function make an backup of the dataset if not exists allready,
    * update it in the local database and
    * create the appropriated delta dataset in the deltas table
-   * @param array changes Data from the activeFeature for the update
-   * @param function The callback function for success
+   * @param changes Data from the activeFeature for the update
    */
   async runUpdateStrategy(changes: AttributteDelta[]) {
     if (changes?.length > 0) {
@@ -2361,8 +2359,7 @@ export class Layer extends PropertyChangeSupport {
   /**
    * Function create a dataset in the local database and
    * create the appropriated delta dataset in the deltas table
-   * @param array changes Data from the activeFeature for the new dataset
-   * @param function The callback function for success
+   * @param changes Data from the activeFeature for the new dataset
    */
   async runInsertStrategy(changes: AttributteDelta[]) {
     if (changes?.length > 0) {
@@ -2411,8 +2408,8 @@ export class Layer extends PropertyChangeSupport {
   /**
    * Function add auto values for attributes of formular_element_type User, UserID and Time and attributes
    * with name user_name, updated_at_client and created_at pending on action and option insert or update
-   * @param array changes The array of changes made in formular
-   * @param string action insert or update used to determine if auto value shall be created pending on option of the attribute
+   * @param changes The array of changes made in formular
+   * @param action insert or update used to determine if auto value shall be created pending on option of the attribute
    * @return array The array of changes including the auto values
    */
   addAutoChanges(changes: AttributteDelta[], action: string): AttributteDelta[] {
@@ -2475,7 +2472,6 @@ export class Layer extends PropertyChangeSupport {
    * Function make an backup of the dataset if not exists allready,
    * delete it in the local database and
    * create and remove the appropriated delta datasets in the deltas table
-   * @param function The callback function for success
    */
   async runDeleteStrategy() {
     try {
@@ -2535,7 +2531,7 @@ export class Layer extends PropertyChangeSupport {
 
   /**
    * function return insert delta based on changes of a dataset
-   * @param array changes
+   * @param changes
    * @return object The insert delta object.
    */
   getInsertDelta(changes: AttributteDelta[]): { action: "insert"; sql: string } {
@@ -2619,10 +2615,6 @@ export class Layer extends PropertyChangeSupport {
     return delta;
   }
 
-  /**
-   * Delete all sql update deltas from activeFeature and other (insert or delete) deltas
-   * @param string this.other Delete also this other deltas
-   */
   // deleteDeltas(rs) {
   //   console.log("deleteDeltas");
   //   const layer = this.context;
@@ -3221,13 +3213,14 @@ export class Layer extends PropertyChangeSupport {
    * - Wenn dieser Layer gesynct wurde und aktiv ist
    */
   activate() {
-    // console.log(`activate ${this.title}`);
+    console.error(`Layer.activate ${this.title}`);
     // console.error("Setze Layer " + this.get("title") + " (" + (this.get("alias") ? this.get("alias") : "kein Aliasname") + ") aktiv.");
     try {
       this.isActive = true;
 
       if (this.hasGeometry) {
         this.selectActiveLayerInControl();
+        /*
         $("input:checkbox.leaflet-control-layers-selector").map(function (i, e) {
           const layerLegendName = $(e).next().html();
           if (layerLegendName.includes(kvm.getActiveLayer().title)) {
@@ -3240,6 +3233,7 @@ export class Layer extends PropertyChangeSupport {
             }
           }
         });
+        */
       }
     } catch (ex) {
       console.error("Fehler in activate", ex);

@@ -469,12 +469,15 @@ export class Layers extends PanelEinstellungen {
       const confirmed = await confirm("Jetzt lokale Änderungen Daten und Bilder, falls vorhanden, zum Server schicken, Änderungen vom Server holen und lokal einspielen? Wenn Änderungen vom Server kommen wird die lokale Datenbank vorher automatisch gesichert.", "Layer mit Server synchronisieren", "ja", "nein");
       if (confirmed) {
         try {
-          await kvm.syncLayers();
+          const result = await kvm.syncLayers();
+          kvm.msg(`Es wurden\n${result.sendDataDeltas} Datensätze gesendet\n${result.addedImages} Bilder wurden hinzugefügt\n${result.addedImages} Bilder wurden gelöscht`);
           sperrBildschirm.close();
         } catch (ex) {
           console.error("Fehler beim Synchronisieren", ex);
           sperrBildschirm.close("Fehler beim Synchronisieren: ", ex);
         }
+      } else {
+        sperrBildschirm.close();
       }
     }
   }

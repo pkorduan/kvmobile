@@ -334,8 +334,8 @@ export class Kvm extends PropertyChangeSupport {
     // merken, um nach der Synchronisierung den Layer wieder auszuwählen
     const activeLayerId = this._activeLayer ? this._activeLayer.getGlobalId() : null;
 
-    await this._activeStelle.syncImages();
-    await this._activeStelle.syncData();
+    const syncResultImages = await this._activeStelle.syncImages();
+    const syncResultData = await this._activeStelle.syncData();
 
     // const layerStatus = await this._activeStelle.checkLayerVersions();
     // if (layerStatus.hasChanges()) {
@@ -350,14 +350,20 @@ export class Kvm extends PropertyChangeSupport {
         activeLayer.activate();
       }
     }
+
+    return {
+      deletedImages: syncResultImages.deletedImages,
+      addedImages: syncResultImages.addedImages,
+      sendDataDeltas: syncResultData,
+    };
   }
 
   /**
    * function return all urls to fetch vector tiles in box with lower left corner p1
    * to upper right corner p2 for zoom level zoom
-   * @param LatLngExpression p1
-   * @param LatLngExpression p2
-   * @param integer zoom
+   * @param p1 LatLngExpression
+   * @param p2 LatLngExpression
+   * @param zoom integer zoom
    */
   getTilesUrls(p1: LatLngExpression, p2: LatLngExpression, zoom: number, orgUrl: string) {
     const coordArray = this.getTilesCoord(p1, p2, zoom),
@@ -505,7 +511,7 @@ export class Kvm extends PropertyChangeSupport {
   /**
    * Diese Funktion schreibt den Text aus variable log die Log-Datei.
    * Die Log-Datei ist in kvm.openLogFile() definiert worden.
-   * @param str
+   * @param log
    * @returns
    */
   async writeLog(log: any) {
@@ -629,7 +635,7 @@ export class Kvm extends PropertyChangeSupport {
       // await this._initDB(db);
     } catch (ex) {
       console.error("Fehler bei der Initialisierung.", ex);
-      Util.alertNav("Fehler bei der Initialisierung.", ex);
+      Util.alertNative("Fehler bei der Initialisierung.", ex);
     }
 
     // this.db = window.sqlitePlugin.openDatabase(
@@ -2651,78 +2657,6 @@ export class Kvm extends PropertyChangeSupport {
     });
   }
 
-  /**
-   * Function load the given layer parameter to the settings field for layerparamer
-   * Set the currently selected or default value and set it also in kvm.layerParams
-   * @param layerParamSettings
-   * @param layerParams
-   */
-  // loadLayerParams(layerParamSettings, layerParams = []) {
-  //   let layerParamsDiv = $("#h2_layerparams").parent();
-  //   if (layerParamSettings && Object.keys(layerParamSettings).length > 0) {
-  //     let layerParamsList = $("#layer_params_list");
-  //     layerParamsList.html("");
-  //     Object.keys(layerParamSettings).forEach((key) => {
-  //       let paramSetting = layerParamSettings[key];
-  //       let savedValue = key in layerParams ? layerParams[key] : null; // übernehme gespeicherten Wert wenn er existiert
-  //       kvm.layerParams[key] = savedValue || paramSetting.default_value; // setze gespeicherten oder wenn leer dann den default Wert.
-
-  //       let labelElement = $(`<div class="form-label><label for="${key}">${paramSetting.alias}</label></div>`);
-  //       let valueElement = $(`
-  //         <div class="form-value">
-  //           <select id="${key}" name="${key}" onchange="kvm.saveLayerParams(this)">
-  //             ${paramSetting.options
-  //               .map((option) => {
-  //                 return `<option value="${option.value}"${kvm.layerParams[key] == option.value ? " selected" : ""}>${option.output}</option>`;
-  //               })
-  //               .join("")}
-  //           </select>
-  //         </div>
-  //       `);
-  //       layerParamsList.append(labelElement).append(valueElement);
-  //     });
-  //     layerParamsDiv.show();
-  //   } else {
-  //     layerParamsDiv.hide();
-  //   }
-  // }
-
-  // setLayerParam(key: string, value: string) {
-  //   console.error(`setLayerParams ${key}=$${value}`);
-  //   this.layerParams[key] = value;
-  //   this.store.setItem(`layerParams_${kvm._activeStelle.get("ID")}`, JSON.stringify(this.layerParams));
-  //   kvm._layers.forEach((layer) => {
-  //     layer.readData();
-  //   });
-  // }
-
-  // saveLayerParams(paramElement) {
-  //   // console.log("saveLayerParams");
-  //   // Set changed param to kvm Object
-  //   kvm.layerParams[paramElement.name] = $(paramElement).val();
-  //   // Save all params in store
-  //   const selectFields = $("#layer_params_list select");
-  //   const layerParams = {};
-  //   selectFields.each((index, selectField: any) => {
-  //     layerParams[selectField.name] = $(selectField).val();
-  //   });
-  //   kvm.store.setItem(`layerParams_${kvm._activeStelle.get("ID")}`, JSON.stringify(layerParams));
-  //   const limit = getValueOfElement("limit");
-  //   const offset = getValueOfElement("offset");
-  //   kvm._layers.forEach((layer) => {
-  //     try {
-  //       layer.readData(limit, offset);
-  //     } catch (ex) {
-  //       console.error(`Fehler reading layer ${layer?.title}`);
-  //     }
-  //   });
-  //   // kvm._activeLayer.readData($("#limit").val(), $("#offset").val());
-  // }
-
-  // showActiveItem() {
-  //   return this.showItem(["settings", "map", "featurelist"].includes(kvm.store.getItem("activeView")) ? kvm.store.getItem("activeView") : "featurelist");
-  // }
-
   showNextItem(viewAfter: string, layer: Layer): void {
     // console.log(`showNextItem ${viewAfter}`);
     switch (viewAfter) {
@@ -3042,11 +2976,11 @@ export class Kvm extends PropertyChangeSupport {
 
   /**
    * function return true if path is the path of the file
-   * @params string file The complete path with filename of the file
-   * @params string path The path to check if the file path match
+   * @param file The complete path with filename of the file
+   * @param path The path to check if the file path match
    * @return boolean true if file has path
    */
-  hasFilePath(file, path) {
+  hasFilePath(file: string, path: string): boolean {
     const fileDir = (file.match(/(.*)[\/\\]/)[1] || "/") + "/";
     return fileDir == path;
   }
@@ -3114,10 +3048,10 @@ export class Kvm extends PropertyChangeSupport {
 
   /**
    * Function return a quotation mark if the given database type has to be used as string and requires quotation marks
-   * @params string type The database type of an attribute
+   * @param type - The database type of an attribute
    * @return string If it is a string returns a single quotation mark "'" if not or unknown returns an empty string ""
    */
-  bracketForType(type) {
+  bracketForType(type: string): string {
     return ["bpchar", "varchar", "text", "date", "timestamp", "geometry"].indexOf(type) > -1 ? "'" : "";
   }
 

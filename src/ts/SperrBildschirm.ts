@@ -1,5 +1,5 @@
 import { kvm } from "./app";
-import { alertNav as nativeAlert, alertOverlay } from "./Util";
+import { alertNative as nativeAlert, alertOverlay } from "./Util";
 
 function objectToString(err: Object) {
   let s = "";

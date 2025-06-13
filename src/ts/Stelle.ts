@@ -277,11 +277,6 @@ export class Stelle {
     }
   }
 
-  /**
-   * errsetzt die LayerParams in den SQL-Anweisungen
-   * @param sql
-   * @returns
-   */
   // replaceParams(sql: string) {
   //   if (typeof sql === "string") {
   //     const layerParams = this.settings.layer_params;
@@ -307,6 +302,11 @@ export class Stelle {
   //   }
   //   return sql;
   // }
+  /**
+   * errsetzt die LayerParams in den SQL-Anweisungen
+   * @param str
+   * @returns
+   */
   replaceParams(str: string) {
     if (typeof str === "undefined" || str === null || str === "") {
       return "";
@@ -851,7 +851,7 @@ export class Stelle {
    * kann das Bild auch in der Liste der Bilder und somit auch deren Metadaten gelöscht werden.
    *
    */
-  async syncImages() {
+  async syncImages(): Promise<{ deletedImages: number; addedImages: number }> {
     console.log(`syncImages`);
 
     try {
@@ -864,16 +864,23 @@ export class Stelle {
 
       if (numRows > 0) {
         //kvm.log(numRows + " deltas gefunden.", 3);
+        let deletedImages = 0;
+        let addedImages = 0;
         for (let i = 0; i < numRows; i++) {
           const deltaRow = <DeltaImageRow>rs.rows.item(i);
           if (deltaRow.action === "insert") {
             await this.sendNewImage(deltaRow);
+            addedImages++;
           }
           if (deltaRow.action === "delete") {
             //kvm.log('Lösche Bild auf dem Server mit SQL: ' + rs.rows.item(i).delta, 3);
             await this.sendDropImage(deltaRow);
+            deletedImages++;
           }
+          return { deletedImages: deletedImages, addedImages: addedImages };
         }
+      } else {
+        return { deletedImages: 0, addedImages: 0 };
       }
     } catch (ex) {
       console.error("Fehler beim synchronisieren der Bilder", ex);
@@ -1071,9 +1078,9 @@ export class Stelle {
    * Hat sich die Layerstruktur geändert werden alle Layer neu geladen.
    * @returns Promise<void>
    */
-  async syncData(): Promise<void> {
+  async syncData(): Promise<number> {
     console.log(`syncData`);
-    return new Promise<void>(async (resolve, reject) => {
+    return new Promise<number>(async (resolve, reject) => {
       try {
         sperrBildschirm.tick(`Starte Synchronisation der Daten mit dem Server.`);
 
@@ -1124,13 +1131,13 @@ export class Stelle {
               }
             }
           } else {
-            reject(new Error("Negative Antwort auf Upload der Deltas", { cause: { response: sendDeltasResponse } }));
+            reject(new Error("Negative Antwort auf Upload der Deltas", { cause: { response: sendDeltasResponse, deltas: deltas } }));
           }
         } else {
           await this.requestLayers(layerRequestResult);
         }
 
-        resolve();
+        resolve(numRows);
       } catch (ex) {
         reject({
           message: ``,
@@ -1143,7 +1150,7 @@ export class Stelle {
   async _upload(fileEntry: FileEntry): Promise<FileUploadResult> {
     // const fileURL = fileEntry.toURL();
     const fileURL = fileEntry.nativeURL;
-    console.log(`going to upload deltas fileURL: "${fileURL}"`);
+    console.log(`going to upload deltas fileURL: "${fileURL}`);
 
     const url = this.get("url");
     const file = Stelle.getUrlFile(url);
@@ -1167,6 +1174,7 @@ export class Stelle {
       mimeType: "application/json",
     };
 
+    console.log(`going to upload deltas fileURL: "${fileURL} to url: "${url}"`, options);
     return Util.upload(fileURL, encodeURI(server), options);
   }
 

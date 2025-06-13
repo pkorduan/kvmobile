@@ -3,7 +3,7 @@
 import type { FingerprintAuth as FingerprintAuthI, FingerprintAuthConfig, FingerprintAuthEncryptSuccess, FingerprintAuthIsAvailableSuccess, IFingerprintAuthErrors } from "cordova-plugin-android-fingerprint-auth";
 declare var FingerprintAuth: typeof FingerprintAuthI;
 
-export type AsyncFunction<T> = (params?: any) => Promise<T>;
+// export type AsyncFunction<T> = (params?: any) => Promise<T>;
 
 export async function checksum(obj: any) {
   const data = new TextEncoder().encode(JSON.stringify(obj));
@@ -170,6 +170,38 @@ export async function resolveLocalFileSystemURL(url: string) {
   });
 }
 
+export function getFileErrorAsText(code: number) {
+  switch (code) {
+    case FileError.ABORT_ERR:
+      return "ABORT_ERR";
+    case FileError.ENCODING_ERR:
+      return "ENCODING_ERR";
+    case FileError.INVALID_MODIFICATION_ERR:
+      return "INVALID_MODIFICATION_ERR";
+    case FileError.INVALID_STATE_ERR:
+      return "INVALID_STATE_ERR";
+    case FileError.NOT_READABLE_ERR:
+      return "NOT_READABLE_ERR";
+    case FileError.NO_MODIFICATION_ALLOWED_ERR:
+      return "NO_MODIFICATION_ALLOWED_ERR";
+    case FileError.PATH_EXISTS_ERR:
+      return "PATH_EXISTS_ERR";
+    case FileError.QUOTA_EXCEEDED_ERR:
+      return "QUOTA_EXCEEDED_ERR";
+    case FileError.SECURITY_ERR:
+      return "SECURITY_ERR";
+    case FileError.SYNTAX_ERR:
+      return "SYNTAX_ERR";
+    default:
+      return "unkwown";
+  }
+}
+
+/**
+ *
+ * @param {string} url must start with file://tsdoc
+ * @returns {Promise<boolean>}
+ */
 export async function fileExists(url: string): Promise<boolean> {
   return new Promise<boolean>((resolve, reject) => {
     window.resolveLocalFileSystemURL(
@@ -178,8 +210,10 @@ export async function fileExists(url: string): Promise<boolean> {
         resolve(fileEntry.isFile || fileEntry.isDirectory);
       },
       (e: FileError) => {
-        console.log("could not resolve: " + url, e);
-        reject(e);
+        if (e.code === FileError.NOT_FOUND_ERR) {
+          resolve(false);
+        }
+        reject(new Error(getFileErrorAsText(e.code) + " in fileExists"));
       }
     );
   });
@@ -289,13 +323,13 @@ export async function showAlert(message: string, title?: string, buttonName?: st
   });
 }
 /**
- * gibt ein Promise zurück mit dem true, wenn der ok-Button geklickt wurde
+ * Shows a confirmation dialog box
  *
  * @param message
- * @param title Titel des Dialoges
+ * @param title Titel des Dialoges Default: "Confirm"
  * @param okButtonText
  * @param rejectButtonText
- * @returns
+ * @returns {Promise<boolean>} true if ok button is chosen
  */
 export async function confirm(message: string, title?: string, okButtonText?: string, rejectButtonText?: string) {
   return new Promise<boolean>((resolve, reject) => {
@@ -309,8 +343,15 @@ export async function confirm(message: string, title?: string, okButtonText?: st
     );
   });
 }
-
-export async function alertNav(message: string, title?: string, okButtonText?: string) {
+/**
+ * Shows a alert box using cordava navigator.notification.alert
+ *
+ * @param message
+ * @param title Titel des Dialoges Default: "Alert"
+ * @param buttonText Default: "oK"
+ * @returns {Promise<void>}
+ */
+export async function alertNative(message: string, title?: string, buttonText?: string): Promise<void> {
   console.info(message);
   return new Promise<void>((resolve, reject) => {
     navigator.notification.alert(
@@ -319,7 +360,7 @@ export async function alertNav(message: string, title?: string, okButtonText?: s
         resolve();
       },
       title,
-      okButtonText || "ok"
+      buttonText || "ok"
     );
   });
 }

@@ -15,7 +15,7 @@ export class BilderFormField extends AbstractField {
   hiddenElement: HTMLInputElement;
 
   takePictureButton: HTMLElement;
-  loadPictureFromPhotolibrary: HTMLElement;
+  loadPictureFromPhotolibraryBttn: HTMLElement;
   dropAllPictureButton: HTMLElement;
 
   // moveFile: (srcFile, dstDir) => void;
@@ -33,10 +33,10 @@ export class BilderFormField extends AbstractField {
       takePictureButton.id = "takePictureButton_" + this.settings.index;
       takePictureButton.addEventListener("click", (ev) => this.takePicture(ev));
 
-      const loadPictureFromPhotolibrary = (this.loadPictureFromPhotolibrary = createHtmlElement("i", this.element, "fa fa-image fa-2x"));
-      loadPictureFromPhotolibrary.style.cssText = "color: rgb(38, 50, 134); margin: 0px 0px 14px 9px";
-      loadPictureFromPhotolibrary.id = "loadPictureFromPhotolibrary_" + this.settings.index;
-      loadPictureFromPhotolibrary.addEventListener("click", (ev) => this.floadPictureFromPhotolibrary(ev));
+      const loadPictureFromPhotolibraryBttn = (this.loadPictureFromPhotolibraryBttn = createHtmlElement("i", this.element, "fa fa-image fa-2x"));
+      loadPictureFromPhotolibraryBttn.style.cssText = "color: rgb(38, 50, 134); margin: 0px 0px 14px 9px";
+      loadPictureFromPhotolibraryBttn.id = "loadPictureFromPhotolibrary_" + this.settings.index;
+      loadPictureFromPhotolibraryBttn.addEventListener("click", (ev) => this.loadPictureFromPhotolibrary(ev));
 
       const dropAllPictureButton = (this.dropAllPictureButton = createHtmlElement("i", this.element, "fa fa-trash fa-2x"));
       dropAllPictureButton.style.cssText = "color: rgb(238, 50, 50); float: right; display: none;";
@@ -74,14 +74,15 @@ export class BilderFormField extends AbstractField {
 
   /* Assign the value of the feature to the form field as it is in the database and
    * create corresponding form and view elements.
+   * example: {/var/www/data_streuobst/upload/bilder_kob_baum/1000068112.jpg,/var/www/data_streuobst/upload/bilder_kob_baum/1000068320.jpggghsd}
    * @params any set to '' if val is undefined, null, 'null' or NAN
    */
-  async setValue(kvwmapFilePath: string) {
-    console.log("BilderFormField.setValue kvwmapFilePath=" + kvwmapFilePath);
+  async setValue(pics: string) {
+    console.log("BilderFormField.setValue kvwmapFilePath=" + pics);
     // console.log("BilderFormField.setValue with value: " + val);
-    this._oldValue = kvwmapFilePath;
+    this._oldValue = pics;
 
-    const val = kvm.coalesce(kvwmapFilePath, "");
+    const val = kvm.coalesce(pics, "");
     // let images;
     // let localFile;
     // let remoteFile;
@@ -145,7 +146,7 @@ export class BilderFormField extends AbstractField {
    * otherwise src is equal to name
    */
   async addImage(nativeURL: string, name = "") {
-    // console.log("BilderFormField.addimage", nativeURL, name);
+    console.log("BilderFormField.addImage", nativeURL, name);
     name = name == "" ? nativeURL : name;
     console.log("BilderFormField: Add Image with src: %s and name: %s", nativeURL, name);
     const webviewUrl = await getWebviewUrl(nativeURL);
@@ -210,13 +211,22 @@ export class BilderFormField extends AbstractField {
    * Remove the image tag witch have this src and
    * the corresponding path from hidden formfield
    */
-  dropImage(imgDiv) {
-    const imageField = this.element;
-    const src = imgDiv.attr("src");
-    // activeLayer = kvm.activeLayer,
-    // sql = "";
-
+  dropImage(imgDiv: HTMLElement) {
+    const src = imgDiv.dataset.src;
     kvm.log("BilderFormField.dropImage img: " + src, 4);
+    console.log("BilderFormField.dropImage img: " + src, 4);
+
+    const curValue = this.hiddenElement.value;
+    const arr = kvm.removeBrackes(curValue).split(",");
+    const newArr: string[] = [];
+    for (let path of arr) {
+      if (path.indexOf(src.substring(src.lastIndexOf("/") + 1)) < 0) {
+        newArr.push(path);
+      }
+    }
+    const newValue = kvm.addBraces(newArr.join(","));
+
+    this.hiddenElement.value = newValue;
     // ToDo implement this function and bind to delte choice of after dialog from image click
     // remove image string from field value
     // imageField.value = (
@@ -230,8 +240,8 @@ export class BilderFormField extends AbstractField {
     // );
 
     // imageField.trigger("change");
-    this.fireChanged();
     imgDiv.remove();
+    this.fireChanged();
   }
 
   bindEvents() {
@@ -270,17 +280,21 @@ export class BilderFormField extends AbstractField {
    * capture a picture
    */
   takePicture(evt: Event) {
-    // console.log("takePicture", evt);
+    console.log("takePicture", evt);
     // kvm.log("BilderFormField.takePicture: " + JSON.stringify(evt), 4);
 
     navigator.camera.getPicture(
       (fileURL) => {
-        kvm.log("this.addImage(" + fileURL + ");", 4);
+        kvm.log("this.takePicture(" + fileURL + ");", 4);
 
         if (kvm.hasFilePath(fileURL, kvm.getConfigurationOption("localImgPath"))) {
           this.addImgNameToVal(kvm.localToServerPath(fileURL));
-          getWebviewUrl(fileURL).then((webviewUrl) => this.addImage(webviewUrl));
+          getWebviewUrl(fileURL).then((webviewUrl) => {
+            console.info(`takePicture fileURL=${fileURL} webviewUrl=${webviewUrl}`);
+            this.addImage(webviewUrl);
+          });
         } else {
+          console.info(`takePicture moveFile fileURL=${fileURL}`);
           this.moveFile(fileURL, kvm.getConfigurationOption("localImgPath"));
         }
         $("#featureFormular input[name=bilder_updated_at]").val(kvm.now("T", "")).show();
@@ -304,26 +318,32 @@ export class BilderFormField extends AbstractField {
   /**
    * capture a picture
    */
-  floadPictureFromPhotolibrary(evt: Event) {
+  loadPictureFromPhotolibrary(evt: Event) {
     // console.log("takePicture", evt);
-    kvm.log("BilderFormField.takePicture: " + JSON.stringify(evt), 4);
+    kvm.log("BilderFormField.loadPictureFromPhotolibrary: " + JSON.stringify(evt), 4);
     navigator.camera.getPicture(
       (fileURL) => {
-        kvm.log("this.addImage(" + fileURL + ");", 4);
-        const ffileURL = "file://" + fileURL;
-        kvm.log("this.addImage(" + fileURL + ");", 4);
-        fileExists(fileURL).then((exists) => {
-          console.log("File 1" + ffileURL + "  exist => " + exists);
-
-          if (kvm.hasFilePath(ffileURL, kvm.getConfigurationOption("localImgPath"))) {
-            this.addImgNameToVal(kvm.localToServerPath(ffileURL));
-            getWebviewUrl(ffileURL).then((webviewUrl) => this.addImage(webviewUrl));
-          } else {
-            this.moveFile(ffileURL, kvm.getConfigurationOption("localImgPath"));
-          }
-
-          $("#featureFormular input[name=bilder_updated_at]").val(kvm.now("T", "")).show();
+        console.log("this.loadPictureFromPhotolibrary(" + fileURL + ")");
+        const ffileURL = "file://" + fileURL + "gghsd";
+        fileExists(ffileURL).then((exists) => {
+          console.info(`file ${ffileURL} ${exists}`);
+          this.moveFile(ffileURL, kvm.getConfigurationOption("localImgPath"));
         });
+        // getWebviewUrl(fileURL).then((webviewUrl) => {
+        //   console.info(`loadPictureFromPhotolibrary getWebviewUrl=${webviewUrl}`);
+        //   this.addImage(webviewUrl);
+        // });
+        //   console.log("File 1" + ffileURL + "  exist => " + exists);
+
+        //   if (kvm.hasFilePath(ffileURL, kvm.getConfigurationOption("localImgPath"))) {
+        //     this.addImgNameToVal(kvm.localToServerPath(ffileURL));
+        //     getWebviewUrl(ffileURL).then((webviewUrl) => this.addImage(webviewUrl));
+        //   } else {
+        //     this.moveFile(ffileURL, kvm.getConfigurationOption("localImgPath"));
+        //   }
+
+        //  $("#featureFormular input[name=bilder_updated_at]").val(kvm.now("T", "")).show();
+        //});
       },
       (message) => {
         kvm.msg("Keine Aufnahme gemacht! " + message);

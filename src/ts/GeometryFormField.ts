@@ -3,7 +3,7 @@ import { kvm } from "./app";
 import * as wkx from "wkx";
 import { AbstractField, Field } from "./Field";
 import { AttributeSetting } from "./Attribute";
-import { alertNav, confirm, createHtmlElement } from "./Util";
+import { alertNative, confirm, createHtmlElement } from "./Util";
 /*
  * create a geometry form field in the structure
  *   <div class="form-field">
@@ -158,7 +158,7 @@ export class GeometrieFormField extends AbstractField implements Field {
         }
       },
       (error) => {
-        alertNav("Es kann keine GPS-Position bestimmt werden. Schalten Sie die GPS Funktion auf Ihrem Gerät ein, suchen Sie einen Ort unter freiem Himmel auf und versuchen Sie es dann noch einmal.", "GPS-Position");
+        alertNative("Es kann keine GPS-Position bestimmt werden. Schalten Sie die GPS Funktion auf Ihrem Gerät ein, suchen Sie einen Ort unter freiem Himmel auf und versuchen Sie es dann noch einmal.", "GPS-Position");
       },
       {
         maximumAge: 2000, // duration to cache current position
