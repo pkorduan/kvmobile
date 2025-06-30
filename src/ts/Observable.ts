@@ -3,7 +3,7 @@ export interface ObservableEvent {
 }
 
 export interface Listener<T extends ObservableEvent> {
-  (event: T): void;
+  (event: T): Promise<any> | any;
 }
 
 export class PropertyChangeEvent implements ObservableEvent {
@@ -82,32 +82,33 @@ export class ObservableSupport<T extends ObservableEvent> {
     }
   }
 
-  _fire(event: ObservableEvent, lstn: Listener<T>[]) {
+  async _fire(event: ObservableEvent, lstn: Listener<T>[]) {
     if (lstn) {
       for (let index = 0; index < lstn.length; index++) {
-        lstn[index].call(this, event);
+        // console.info(lstn[index]);
+        await lstn[index].call(this, event);
       }
     }
   }
 
-  fire(event: ObservableEvent) {
+  async fire(event: ObservableEvent) {
     if (this.mapPropToLstn) {
       if (event instanceof PropertyChangeEvent) {
-        this._fire(event, this.mapPropToLstn.get(event.prop));
+        await this._fire(event, this.mapPropToLstn.get(event.prop));
       } else {
-        this._fire(event, this.mapPropToLstn.get(event.type));
+        await this._fire(event, this.mapPropToLstn.get(event.type));
       }
     }
-    this._fire(event, this.lstn);
+    await this._fire(event, this.lstn);
   }
 }
 
 export class PropertyChangeSupport extends ObservableSupport<PropertyChangeEvent> {
-  set(prop: any, value: any) {
+  async set(prop: any, value: any) {
     const oldValue = this[prop];
     if (oldValue !== value) {
       this[prop] = value;
-      this.fire(new PropertyChangeEvent(this, prop, oldValue, value));
+      await this.fire(new PropertyChangeEvent(this, prop, oldValue, value));
     }
   }
 }

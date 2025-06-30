@@ -973,11 +973,12 @@ export class Stelle {
         device_id: device.uuid,
         Stelle_ID: this.get("Stelle_ID"),
         login_name: this.get("login_name"),
-        passwort: this.get("passwort"),
+        passwort: encodeURIComponent(this.get("passwort")),
         selected_layer_id: deltaRow.layer_id,
         go: "mobile_delete_images",
         images: img,
       });
+
       const filename = cordova.file.dataDirectory + "temp.json";
       const fileEntry = await download(url, filename);
 

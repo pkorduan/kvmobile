@@ -73,19 +73,23 @@ export class Menu {
       layer.editFeature(layer.activeFeature);
     });
 
-    this.newFeatureButton.addEventListener("click", () => {
+    this.newFeatureButton.addEventListener("click", async () => {
       sperrBildschirm.show();
-      const layer = this.app.getActiveLayer();
-      const newFeature = layer.newFeature();
-      // layer.editFeature(layer.activeFeature.id);
-      layer.editFeature(newFeature);
-      sperrBildschirm.close();
+      try {
+        const layer = this.app.getActiveLayer();
+        const newFeature = await layer.newFeature();
+        await layer.editFeature(newFeature);
+        sperrBildschirm.close();
+      } catch (error) {
+        console.error(error);
+        sperrBildschirm.close("Fehler beim Anlegen eines neuen Features", error);
+      }
     });
 
-    this.tplFeatureButton.addEventListener("click", () => {
+    this.tplFeatureButton.addEventListener("click", async () => {
       const layer = this.app.getActiveLayer();
       const tplId = layer.activeFeature.id;
-      const f = layer.newFeature();
+      const f = await layer.newFeature();
       layer.editFeature(f);
       layer.loadTplFeatureToForm(tplId);
     });

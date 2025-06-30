@@ -59,7 +59,7 @@ export class Mapper {
   editableLayer: L.Marker | L.Polyline | L.Polygon;
 
   constructor() {
-    this.watchGpsAccuracy();
+    // this.watchGpsAccuracy();
   }
 
   createEditable(feature: Feature) {
@@ -80,6 +80,7 @@ export class Mapper {
         weight: 3,
         opacity: 0.7,
       }).addTo(kvm.map);
+      // TODO Peter fragen
       $("#trackControl").parent().show();
     } else if (feature.layer.settings.geometry_type == "Polygon") {
       this.editableLayer = L.polygon(feature.wkxToLatLngs(), {
@@ -152,6 +153,7 @@ export class Mapper {
       (geoLocation) => {
         //        kvm.log('Set new geo location accuracy', 4);
         console.info("geoLocation", geoLocation);
+
         this.accuracy = geoLocation.coords.accuracy;
 
         switch (true) {
@@ -170,11 +172,19 @@ export class Mapper {
           default:
             this.signalLevel = 5;
         }
-
-        document.getElementById("gps-signal-icon").className = "gps-signal-level-" + this.signalLevel;
+        const gpsSignalIcon = document.getElementById("gps-signal-icon");
+        if (gpsSignalIcon) {
+          while (gpsSignalIcon.classList.length > 0) {
+            gpsSignalIcon.classList.remove(gpsSignalIcon.classList[0]);
+          }
+          gpsSignalIcon.classList.add("gps-signal-level-" + this.signalLevel);
+        }
       },
       (err) => {
-        document.getElementById("gps-signal-icon").className = "";
+        const gpsSignalIcon = document.getElementById("gps-signal-icon");
+        if (gpsSignalIcon) {
+          gpsSignalIcon.className = "";
+        }
         this.signalLevel = 0;
       }
     );
@@ -195,13 +205,12 @@ export class Mapper {
   }
 
   startUpdateMarkerWithGps() {
-    this.watchId = navigator.geolocation.watchPosition(
-      function (location) {
-        var latlng = L.latLng(location.coords.latitude, location.coords.longitude);
-        // console.log("trigger geomChanged mit latlng: %o", latlng);
-        // $(document).trigger("geomChanged", [{ geom: kvm.activeLayer.activeFeature.aLatLngsToWkx([latlng]) }]);
-      }.bind(this)
-    );
+    this.watchId = navigator.geolocation.watchPosition((location) => {
+      var latlng = L.latLng(location.coords.latitude, location.coords.longitude);
+      // document.dispatchEvent(new CustomEvent("geomChanged", { detail: { geom: feature.aLatLngsToWkx([latlng]), exclude: "latlngs" } }));
+      // console.log("trigger geomChanged mit latlng: %o", latlng);
+      // $(document).trigger("geomChanged", [{ geom: kvm.activeLayer.activeFeature.aLatLngsToWkx([latlng]) }]);
+    });
   }
 
   getDraggableIcon() {

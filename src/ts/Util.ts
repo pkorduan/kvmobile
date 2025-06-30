@@ -1,6 +1,7 @@
 /// <reference types="cordova-plugin-file" />
 
 import type { FingerprintAuth as FingerprintAuthI, FingerprintAuthConfig, FingerprintAuthEncryptSuccess, FingerprintAuthIsAvailableSuccess, IFingerprintAuthErrors } from "cordova-plugin-android-fingerprint-auth";
+import { LatLngTuple } from "leaflet";
 declare var FingerprintAuth: typeof FingerprintAuthI;
 
 // export type AsyncFunction<T> = (params?: any) => Promise<T>;
@@ -535,13 +536,13 @@ export function encryptFingerPrint(encryptConfig: FingerprintAuthConfig) {
   });
 }
 
-export function TraceElementChange() {
+export function traceElementChange(el: HTMLElement) {
   const callback = (mutationList: MutationRecord[], observer: MutationObserver) => {
     for (const mutation of mutationList) {
       if (mutation.type === "childList") {
         console.log("A child node has been added or removed.", mutation.addedNodes);
       } else if (mutation.type === "attributes") {
-        console.log(`The ${mutation.attributeName} attribute was modified.`);
+        console.error(`The ${mutation.attributeName} attribute was modified.`, mutation);
       }
     }
   };
@@ -550,5 +551,25 @@ export function TraceElementChange() {
   const observer = new MutationObserver(callback);
 
   // Start observing the target node for configured mutations
-  observer.observe(document.body, { attributes: true, childList: true, subtree: true });
+  observer.observe(el || document.body, { attributes: true, childList: true, subtree: true });
+
+  return observer;
+}
+
+export function getCurrentPosition() {
+  return new Promise<GeolocationPosition | GeolocationPositionError>((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(
+      (geoLocation) => {
+        resolve(geoLocation);
+      },
+      (error) => {
+        resolve(error);
+      },
+      {
+        maximumAge: 2000, // duration to cache current position
+        timeout: 5000, // timeout for try to call successFunction, else call errorFunction
+        enableHighAccuracy: true, // take position from gps not network-based method
+      }
+    );
+  });
 }

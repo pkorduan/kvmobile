@@ -18,9 +18,9 @@ import { SubFormEmbeddedPKFormField } from "./SubFormEmbeddedPKFormField";
 import { SubFormFKFormField } from "./SubFormFKFormField";
 import { Field } from "./Field";
 import { Layer } from "./Layer";
-import { createHtmlElement } from "./Util";
+import { createHtmlElement, traceElementChange } from "./Util";
 import { kvm } from "./app";
-import { styleText } from "util";
+import { debug, styleText } from "util";
 
 export type OptionsAttributtes = {
   value: any;
@@ -81,8 +81,8 @@ export class Attribute {
     this.settings = settings;
     this.settings.stelleId = layer.stelle.get("ID");
     this.settings.layerId = layer.get("id");
-    this.formField = this.getFormField();
-    this.viewField = this.getViewField();
+    this.formField = this.createFormField();
+    this.viewField = this.createViewField();
     return this;
   }
 
@@ -193,65 +193,65 @@ export class Attribute {
     return vorschauOption;
   }
 
-  getViewField() {
+  private createViewField() {
     return new DataViewField(this);
   }
 
-  getFormField(): Field {
-    console.log("Attribute.getFormField attr: " + this.get("name") + " type: " + this.get("type") + " form_element_type: " + this.get("form_element_type"));
+  private createFormField(): Field {
+    console.log("Attribute.createFormField attr: " + this.get("name") + " type: " + this.get("type") + " form_element_type: " + this.get("form_element_type"));
     let field: Field;
 
     switch (this.get("form_element_type")) {
       case "Auswahlfeld":
         if (this.settings.enums.length > 100) {
-          field = new SelectAutoFormField("featureFormular", this.settings);
+          field = new SelectAutoFormField("featureFormular", this);
         } else {
-          field = new SelectAutoFormField("featureFormular", this.settings);
+          field = new SelectAutoFormField("featureFormular", this);
         }
         break;
       case "Autovervollständigungsfeld":
-        field = new SelectAutoFormField("featureFormular", this.settings);
+        field = new SelectAutoFormField("featureFormular", this);
         break;
       case "Text":
         if (this.get("type") == "timestamp") {
-          field = new DateTimeFormField("featureFormular", this.settings);
+          field = new DateTimeFormField("featureFormular", this);
         } else if (this.get("type") == "date") {
-          field = new DateFormField("featureFormular", this.settings);
+          field = new DateFormField("featureFormular", this);
         } else if (this.get("type").substr(0, 3) == "int" || this.get("type") == "numeric") {
-          field = new ZahlFormField("featureFormular", this.settings);
+          field = new ZahlFormField("featureFormular", this);
         } else {
-          field = new TextFormField("featureFormular", this.settings);
+          field = new TextFormField("featureFormular", this);
         }
         break;
       case "Textfeld":
-        field = new TextfeldFormField("featureFormular", this.settings);
+        field = new TextfeldFormField("featureFormular", this);
         break;
       case "Time":
-        field = new DateTimeFormField("featureFormular", this.settings);
+        field = new DateTimeFormField("featureFormular", this);
         break;
       case "Checkbox":
-        field = new CheckboxFormField("featureFormular", this.settings);
+        field = new CheckboxFormField("featureFormular", this);
         break;
       case "Zahl":
-        field = new ZahlFormField("featureFormular", this.settings);
+        field = new ZahlFormField("featureFormular", this);
         break;
       case "Geometrie":
-        field = new GeometrieFormField("featureFormular", this.settings, this.layer.settings.geometry_type);
+        field = new GeometrieFormField("featureFormular", this);
         break;
       case "Dokument":
-        field = new BilderFormField("featureFormular", this.settings);
+        field = new BilderFormField("featureFormular", this);
         break;
       case "User":
-        field = new UserFormField("featureFormular", this.settings);
+        field = new UserFormField("featureFormular", this);
         break;
       case "UserID":
-        field = new UserIDFormField("featureFormular", this.settings);
+        field = new UserIDFormField("featureFormular", this);
         break;
       case "StelleID":
-        field = new StelleIDFormField("featureFormular", this.settings);
+        field = new StelleIDFormField("featureFormular", this);
         break;
       case "ClientID":
-        field = new ClientIDFormField("featureFormular", this.settings);
+        field = new ClientIDFormField("featureFormular", this);
         break;
       case "SubFormEmbeddedPK":
         field = new SubFormEmbeddedPKFormField("featureFormular", this);
@@ -260,9 +260,8 @@ export class Attribute {
         field = new SubFormFKFormField("featureFormular", this);
         break;
       default:
-        field = new TextFormField("featureFormular", this.settings);
+        field = new TextFormField("featureFormular", this);
     }
-
     return field;
   }
 
@@ -478,9 +477,14 @@ export class Attribute {
     return slValue;
   }
 
-  withLabelNoJq() {
+  /**
+   * TODO Delete
+   * @returns {*}
+   */
+  withLabelNoJqXX() {
+    console.debug("Attribute.withLabelNoJq " + this.get("name"));
     const labelDiv = createHtmlElement("label");
-    labelDiv.htmlFor = "this.formField.settings.name";
+    labelDiv.htmlFor = this.formField.settings.name;
     labelDiv.innerText = (this.formField.settings.alias ? this.formField.settings.alias : this.formField.settings.name) + (this.settings.nullable == 0 ? "*" : "");
 
     if (this.formField.settings.tooltip) {
@@ -533,14 +537,17 @@ export class Attribute {
 
     const formField = this.formField;
     const div = createHtmlElement("div", null, "form-field-rows");
-    div.id = `formFieldDiv_${this.get("index")}"`;
+    // if (this.get("index") === 4) {
+    //   traceElementChange(div);
+    // }
+    div.id = `formFieldDiv_${this.layer.get("id")}_${this.get("index")}`;
 
     if (this.get("form_element_type") == "SubFormEmbeddedPK" && this.get("privilege") && this.get("privilege") > "0") {
       console.info(`Attribute.withLabel ${this.get("form_element_type")}`);
       const divFormLabel = createHtmlElement("div", div, "form-label");
       divFormLabel.appendChild(labelDiv);
       const bttn = createHtmlElement("input", divFormLabel);
-      bttn.id = "new_sub_data_set";
+      bttn.id = `new_sub_data_set_${this.layer.get("id")}_${this.get("index")}`;
       bttn.type = "button";
       bttn.value = "Neu";
       bttn.addEventListener("click", () => {
@@ -556,17 +563,19 @@ export class Attribute {
       valueDiv.append(formField.getDom());
     } else {
       div.style.cssText = this.getArrangementStyle();
-      if (formField instanceof SubFormFKFormField) {
-        div.append(formField.linkElement);
-      }
+      // TODO
+      // if (formField instanceof SubFormFKFormField) {
+      //   div.append(formField.linkElement);
+      // }
       // div.append("linkElement" in formField ? formField.linkElement : "");
       if (this.get("form_element_type") !== "SubFormFK") {
         const fL = createHtmlElement("div", div, "form-label");
-        div.append(labelDiv);
+        fL.append(labelDiv);
       }
       div.append(valueDiv);
       valueDiv.append(formField.getDom());
     }
+
     return div;
   }
 

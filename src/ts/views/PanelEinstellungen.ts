@@ -28,7 +28,9 @@ abstract class PanelEinstellungen {
         } else {
           this.hide();
           PanelEinstellungen.currentPanel = null;
-          show("layer");
+          if (nodeId !== "h2_layer") {
+            show("layer");
+          }
         }
       });
     }
@@ -115,7 +117,7 @@ export class Konfiguration extends PanelEinstellungen {
     if (this.selectField.value != "-1") {
       const confirmed = await confirm("Wollen Sie wirklich die Konfiguration ändern? Dabei gehen alle lokalen Änderungen verloren, die Layer und Einstellungen werden gelöscht und die Anwendung wird mit den Default-Werten der anderen Konfiguration neu gestartet!", "Konfiguration", "Ja", "Abbruch");
       if (confirmed) {
-        kvm.setConfiguration(this.selectField.value);
+        await kvm.setConfiguration(this.selectField.value);
         show("server");
       }
     }
@@ -403,15 +405,15 @@ export class Layers extends PanelEinstellungen {
       }
     }
     kvm.addEventListener(Kvm.EVENTS.ACTIVE_LAYER_CHANGED, (evt) => {
-      console.log("Kvm.EVENTS.ACTIVE_LAYER_CHANGED", evt);
+      // console.log("Kvm.EVENTS.ACTIVE_LAYER_CHANGED", evt);
       this.setActiveLayer(evt.newValue);
     });
     kvm.addEventListener(Kvm.EVENTS.LAYER_ADDED, (evt) => {
-      console.log("Kvm.EVENTS.LAYER_ADDED", evt);
+      // console.log("Kvm.EVENTS.LAYER_ADDED", evt);
       this.appendLayer(evt.newValue);
     });
     kvm.addEventListener(Kvm.EVENTS.LAYER_REMOVED, (evt) => {
-      console.log("Kvm.EVENTS.LAYER_REMOVED", evt);
+      // console.log("Kvm.EVENTS.LAYER_REMOVED", evt);
       this.removeLayer(evt.oldValue);
     });
     this.setActiveLayer(kvm.getActiveLayer());
@@ -492,11 +494,10 @@ export class Layers extends PanelEinstellungen {
     if (this.layerId2layerListIem.size === 0) {
       document.getElementById("syncLayerButtonTxt").innerHTML = "Layer mit Server synchronisieren";
     }
-
     console.log(`PanelLayer.appendLayer(${layer.title})`);
-    console.log(`### getLayerListItem ${layer.title}`);
+
     const dom = createHtmlElement("div", null, "layer-list-div");
-    dom.id = `layer_${layer.getGlobalId()}`;
+    dom.id = "layer_" + layer.getGlobalId();
     const radioInput = createHtmlElement("input", dom);
     radioInput.type = "radio";
     radioInput.addEventListener("change", (evt) => {
@@ -627,34 +628,6 @@ export class LayerParams extends PanelEinstellungen {
         }
       }
     }
-
-    // let layerParamsDiv = $("#h2_layerparams").parent();
-    // if (layerParamSettings && Object.keys(layerParamSettings).length > 0) {
-    //   let layerParamsList = $("#layer_params_list");
-    //   layerParamsList.html("");
-    //   Object.keys(layerParamSettings).forEach((key) => {
-    //     let paramSetting = layerParamSettings[key];
-    //     let savedValue = key in layerParams ? layerParams[key] : null; // übernehme gespeicherten Wert wenn er existiert
-    //     kvm.layerParams[key] = savedValue || paramSetting.default_value; // setze gespeicherten oder wenn leer dann den default Wert.
-
-    //     let labelElement = $(`<div class="form-label><label for="${key}">${paramSetting.alias}</label></div>`);
-    //     let valueElement = $(`
-    //       <div class="form-value">
-    //         <select id="${key}" name="${key}" onchange="kvm.saveLayerParams(this)">
-    //           ${paramSetting.options
-    //             .map((option) => {
-    //               return `<option value="${option.value}"${kvm.layerParams[key] == option.value ? " selected" : ""}>${option.output}</option>`;
-    //             })
-    //             .join("")}
-    //         </select>
-    //       </div>
-    //     `);
-    //     layerParamsList.append(labelElement).append(valueElement);
-    //   });
-    //   layerParamsDiv.show();
-    // } else {
-    //   layerParamsDiv.hide();
-    // }
   }
 }
 
@@ -738,6 +711,7 @@ export class AnzeigeFilter extends PanelEinstellungen {
 
     this.setLayer(layer);
     kvm.addEventListener(Kvm.EVENTS.ACTIVE_LAYER_CHANGED, (evt) => {
+      console.info("AnzeigeFilter", this);
       this.setLayer(evt.newValue);
     });
   }
@@ -751,68 +725,7 @@ export class AnzeigeFilter extends PanelEinstellungen {
   //   return operationOptions;
   // }
 
-  // setLayerx(layer: Layer) {
-  //   this.layer = layer;
-  //   this.attributeFilterFieldDiv.innerHTML = "";
-  //   if (layer) {
-  //     const filter_operators = ["=", ">", "<", ">=", "<=", "IN", "LIKE"];
-  //     const filter_operator_options = filter_operators.map(function (operator) {
-  //       return '<option value="' + operator + '"' + (operator == "=" ? " selected" : "") + ">" + operator + "</option>";
-  //     });
-  //     layer.attributes.forEach((value) => {
-  //       if (value.settings.type != "geometry") {
-  //         if (value.settings.name === "status") {
-  //           /*
-  //            */
-  //           $("#statusFilterSelect option").remove();
-  //           if (value.settings.enums !== "" && Array.isArray(value.settings.enums)) {
-  //             $("#statusFilterSelect").append($('<option value="" selected>-- Bitte wählen --</option>'));
-  //             value.settings.enums.map(function (enum_option) {
-  //               $("#statusFilterSelect").append($('<option value="' + enum_option.value + '">' + enum_option.output + "</option>"));
-  //             });
-  //           }
-  //         }
-  //         // TODO Bug
-  //         let input_field;
-  //         switch (value.settings.form_element_type) {
-  //           case "Auswahlfeld":
-  //             {
-  //               input_field = $('<select id="filter_value_' + value.settings.name + '" class="filter-view-value-field" name="filter_value_' + value.settings.name + '">');
-  //               input_field.append($('<option value="" selected>-- Bitte wählen --</option>'));
-  //               if (value.settings.enums !== "" && Array.isArray(value.settings.enums)) {
-  //                 value.settings.enums.map(function (enum_option) {
-  //                   input_field.append($('<option value="' + enum_option.value + '">' + enum_option.output + "</option>"));
-  //                 });
-  //               } else {
-  //                 console.log("options keine Array: %o", value.settings.enums);
-  //               }
-  //             }
-  //             break;
-  //           case "Time":
-  //             {
-  //               input_field = '<input id="filter_value_' + value.settings.name + '" class="filter-view-value-field" name="filter_value_' + value.settings.name + '" type="datetime-local" value=""/>';
-  //             }
-  //             break;
-  //           default: {
-  //             input_field = '<input id="filter_value_' + value.settings.name + '" class="filter-view-value-field" name="filter_value_' + value.settings.name + '" type="text" value=""/>';
-  //           }
-  //         }
-  //         $("#attributeFilterFieldDiv").append(
-  //           $('<div class="filter-view-field" database_type="' + value.settings.type + '" name="' + value.settings.name + '">')
-  //             .append('<div class="filter-view-label">' + value.settings.alias + "</div>")
-  //             .append('<div class="filter-view-operator"><select id="filter_operator_' + value.settings.name + '">' + filter_operator_options + "</select></div>")
-  //             .append($('<div class="filter-view-value">').append(input_field))
-  //         );
-  //       }
-  //     });
-  //   } else {
-  //     console.error("not implemented");
-  //   }
-  // }
-
   layerFilterChanged(evt: Event) {
-    // const optionselect = <HTMLSelectElement>evt.currentTarget;
-    // optionselect.dataset.attrName;
     this.checkChanges();
   }
 
@@ -877,8 +790,6 @@ export class AnzeigeFilter extends PanelEinstellungen {
           this.map.set(value.settings.name, { operatorSelect: operatorSelect, valueField: valueElement });
         }
       });
-    } else {
-      console.error("not implemented");
     }
   }
 
@@ -957,6 +868,7 @@ export class Sortierung extends PanelEinstellungen {
     this.anzeigeSortSelect.addEventListener("input", () => this.clickedAnzeigeSortSelect());
     this.setLayer(kvm.getActiveLayer());
     kvm.addEventListener(Kvm.EVENTS.ACTIVE_LAYER_CHANGED, (evt) => {
+      console.info("Sortierung", this);
       this.setLayer(evt.newValue);
     });
   }

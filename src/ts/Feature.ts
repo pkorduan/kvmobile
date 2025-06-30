@@ -38,7 +38,7 @@ export class Feature {
   id: string;
   // Achtung reine Id von leaflet
   // layerId: number;
-  globalLayerId: string;
+  // globalLayerId: string;
   isEditable: boolean;
   private _isActive: boolean;
   editableLayer: any;
@@ -52,44 +52,17 @@ export class Feature {
   leafletLayer: CircleMarker | Path;
 
   constructor(data: any = {}, layer: Layer, isNew?: boolean) {
-    // this.options = {
-    //     id_attribute: layer.get('id_attribute') ?? "uuid",
-    //     geometry_type: layer.get('geometry_type') ?? "Point",
-    //     geometry_attribute: layer.settings.geometry_attribute ?? "geom",
-    //     globalLayerId: layer.getGlobalId() ?? 0,
-    //     new: isNew ?? true
-    // }
-
     this.new = isNew ?? true;
-    //console.log('Create Feature with data: %o and options: %o', data, options);
-    this.data = typeof data == "string" ? JSON.parse(data) : data;
     this.layer = layer;
-    this.id = this.getFeatureId();
-    //this.data[this.layer.settings.id_attribute];
-    // this.layerId = null; // Leaflet Layer id des Layers (z.B. circleMarkers) in dem das Feature gezeichnet ist
-    this.globalLayerId = this.layer.getGlobalId(); // Id des Layers zu dem das Feature gehört
-    /*kvm
-  console.log('Erzeuge eine editierbare Geometrie vom Feature');
-  this.editableLayer = kvm.controller.mapper.createEditable(this); // In vorheriger Version wurde hier L.marker(kvm.map.getCenter()) verwendet. ToDo: muss das hier überhaupt gesetzt werden, wenn es denn dann doch beim setEditable erzeugt wird?
-  */
-    //console.log('Setze Feature auf im Moment nicht editierbar.');
+    // this.globalLayerId = this.layer.getGlobalId(); // Id des Layers zu dem das Feature gehört
+    this.setData(data);
     this.isEditable = false; // Feature ist gerade im Modus editierbar oder nicht
     this._isActive = false; // Feature is aktuell gerade ausgewählt, Style in Karte gändert und evtl. Popup offen oder nicht
-    this.setGeomFromData();
   }
 
   get isActive() {
     return this._isActive;
   }
-
-  // setActive(active: boolean) {
-  //   console.error(`zzz feature.setActiv(${active})  ${this.layer?.title} ${this.id}`);
-  //   this._isActive = active;
-  // }
-
-  // getId() {
-  //     return this.id;
-  // }
 
   /**
    * gibt den Wert des Attributes zurück oder null
@@ -119,7 +92,7 @@ export class Feature {
   }
 
   setDefaultValuesForNonSaveables() {
-    const layer = kvm.getLayer(this.globalLayerId);
+    const layer = this.layer;
     const nonSaveableAttributes = layer.attributes.filter((attribute) => {
       return attribute.settings.saveable == "0" && attribute.settings.default != "";
     });
@@ -172,7 +145,7 @@ export class Feature {
   }
 
   findParentFeature() {
-    const layer = kvm.getLayer(this.globalLayerId);
+    const layer = this.layer;
     const subFormFKAttribute = layer.attributes.find((attr) => attr.settings.form_element_type === "SubFormFK");
     if (subFormFKAttribute === undefined) {
       return false;
@@ -196,7 +169,12 @@ export class Feature {
   setData(data: string | { [id: string]: any }) {
     //console.log('Feature.setData %o', data);
     this.data = typeof data == "string" ? JSON.parse(data) : data;
-    this.setGeomFromData();
+    this.id = String(this.getDataValue(this.layer.settings.id_attribute));
+    const dataGeom = this.getDataValue(this.layer.settings.geometry_attribute);
+    if (dataGeom) {
+      this.geom = this.wkbToWkx(dataGeom);
+    }
+    this.newGeom = this.geom;
   }
 
   setCopyData(copyData: { [id: string]: any } = {}) {
@@ -616,7 +594,7 @@ export class Feature {
   }
 
   getLabelValue() {
-    const kvmLayer = kvm.getLayer(this.globalLayerId);
+    const kvmLayer = this.layer;
     let label_value = "";
     const label_attribute = kvmLayer.settings.name_attribute;
     let formField;
@@ -779,15 +757,15 @@ export class Feature {
     return style;
   }
 
-  setGeomFromData() {
-    //console.log('setGeomFromData');
-    const dataGeom = this.getDataValue(this.layer.settings.geometry_attribute);
-    if (dataGeom) {
-      //console.log('Setze geom des neuen Features mit data: %o', this.data);
-      this.geom = this.wkbToWkx(dataGeom);
-    }
-    this.newGeom = this.geom; // Aktuelle WKX-Geometry beim Editieren. Entspricht this.geom wenn das Feature neu geladen wurde und Geometrie in Karte, durch GPS oder Formular noch nicht geändert wurde.
-    //console.log('new feature newGeom: %o', this.newGeom);
-    //console.log('new feature geom: %o', this.geom);
-  }
+  // setGeomFromData() {
+  //   //console.log('setGeomFromData');
+  //   const dataGeom = this.getDataValue(this.layer.settings.geometry_attribute);
+  //   if (dataGeom) {
+  //     //console.log('Setze geom des neuen Features mit data: %o', this.data);
+  //     this.geom = this.wkbToWkx(dataGeom);
+  //   }
+  //   this.newGeom = this.geom; // Aktuelle WKX-Geometry beim Editieren. Entspricht this.geom wenn das Feature neu geladen wurde und Geometrie in Karte, durch GPS oder Formular noch nicht geändert wurde.
+  //   //console.log('new feature newGeom: %o', this.newGeom);
+  //   //console.log('new feature geom: %o', this.geom);
+  // }
 }

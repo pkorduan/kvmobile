@@ -1,4 +1,4 @@
-import { AttributeSetting } from "./Attribute";
+import { Attribute, AttributeSetting } from "./Attribute";
 import { AbstractField } from "./Field";
 import { kvm } from "./app";
 import { createHtmlElement } from "./Util";
@@ -17,14 +17,14 @@ import { createHtmlElement } from "./Util";
 export class DateFormField extends AbstractField {
   element: HTMLInputElement;
 
-  constructor(formId: string, settings: AttributeSetting) {
-    super(formId, settings);
+  constructor(formId: string, attr: Attribute) {
+    super(formId, attr);
 
     this.element = createHtmlElement("input");
     this.element.type = "date";
-    this.element.id = String(this.settings.index);
-    this.element.name = this.settings.name;
-    const disabled = (this.element.disabled = this.settings.privilege == "0");
+    this.element.id = String(attr.settings.index);
+    this.element.name = attr.settings.name;
+    const disabled = (this.element.disabled = attr.settings.privilege == "0");
     if (!disabled) {
       this.element.addEventListener("change", () => {
         this._value = this.element.value || null;
@@ -37,23 +37,21 @@ export class DateFormField extends AbstractField {
   // }
   async setValue(val) {
     this._oldValue = val;
-    kvm.log("val: " + val, 4);
+    console.debug("val: " + val, 4);
     val = kvm.coalesce(val, "");
     if (this.isValidDate(val)) {
       val = this.toISO(val);
     }
-    kvm.log("DateFormField " + this.settings.name + " setValue with value: " + JSON.stringify(val), 4);
+    console.info("DateFormField " + this.attr.settings.name + " setValue with value: " + JSON.stringify(val));
     this._value = val || null;
     this.element.value = val;
   }
 
   getValue(action = "") {
-    kvm.log("DateFormField.getValue", 4);
     return this._value;
   }
 
   getAutoValue() {
-    kvm.log("DateFormField.getAutoValue", 4);
     return kvm.today();
   }
 
@@ -62,7 +60,7 @@ export class DateFormField extends AbstractField {
   }
 
   fromISO(date) {
-    kvm.log("konvert " + this.settings.name + " date: " + date, 4);
+    console.info("konvert " + this.attr.settings.name + " date: " + date, 4);
     return typeof date == "string" ? date.replace(/-/g, "/").replace("T", " ").replace("Z", "") : null;
   }
 
@@ -123,7 +121,7 @@ export class DateFormField extends AbstractField {
     return true;
   }
 
-  getDom(): HTMLElement {
+  createInputElement(): HTMLElement {
     return this.element;
   }
 }

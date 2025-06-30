@@ -113,7 +113,7 @@ export class MapLibreLayer extends LLayer {
     }
   }
 
-  removeFromApp() {
+  async removeFromApp() {
     console.log("remove layer %s (%s)", this.get("title"), this.get("id"));
     //console.log('Entferne layer div aus layer options list.');
     $("#layer_" + this.getGlobalId()).remove();
@@ -121,7 +121,7 @@ export class MapLibreLayer extends LLayer {
     //console.log('Entferne layer von map');
     kvm.map.removeLayer(this);
     //console.log('Lösche activeLayer von kvm layers array');
-    kvm.removeLayer(this);
+    await kvm.removeLayer(this);
     //console.log('Lösche layer und seine id aus dem store');
     this.removeFromStore();
   }

@@ -64,7 +64,6 @@ export class SubFormEmbeddedPKFormField implements Field {
   getValue(action = "") {}
 
   getDom(): HTMLElement {
-    console.info("yyyyy");
     return this.element;
   }
 
@@ -79,6 +78,17 @@ export class SubFormEmbeddedPKFormField implements Field {
   fireChanged() {
     for (let i = 0; i < this.lsts.length; i++) {
       this.lsts[i](this, this.hasChanged());
+    }
+  }
+
+  hide() {
+    if (this.element?.parentElement) {
+      this.element.parentElement.style.display = "none";
+    }
+  }
+  show() {
+    if (this.element?.parentElement) {
+      this.element.parentElement.style.display = "";
     }
   }
 }

@@ -1,5 +1,5 @@
 import { kvm } from "./app";
-import { createHtmlElement, getWebviewUrl } from "./Util";
+import { createHtmlElement, getWebviewUrl, confirm } from "./Util";
 import { Attribute, AttributeSetting } from "./Attribute";
 
 export class DataViewField {
@@ -7,6 +7,7 @@ export class DataViewField {
   element: HTMLElement;
   images_div_id: string;
   attribute: Attribute;
+  private dom: HTMLElement;
 
   /**
    * create a field in data view in the form
@@ -23,9 +24,28 @@ export class DataViewField {
   constructor(attribute: Attribute) {
     this.attribute = attribute;
     this.settings = attribute.settings;
-    // this.selector = "#" + divId + " > #" + this.get("index");
+  }
+
+  private _createDom() {
+    console.error(`createDom of attr:${this.attribute.get("name")}`);
+    const dom = (this.dom = createHtmlElement("div", null, "data-view-field"));
+    dom.id = "dataViewFieldDiv_" + this.attribute.layer.get("id") + "_" + this.get("index");
+    if (this.attribute.getArrangementStyle()) {
+      dom.style.cssText = this.attribute.getArrangementStyle();
+    }
+    const label = createHtmlElement("div", dom, "data-view-label");
+
+    label.append(this.get("alias") ? this.get("alias") : this.get("name"));
+
+    if (this.settings.tooltip) {
+      const infoBttn = createHtmlElement("i", label, "fa fa-exclamation-circle");
+      infoBttn.style.color = "#f57802";
+      infoBttn.style.paddingLeft = "0.2rem";
+      infoBttn.addEventListener("click", () => kvm.msg(this.settings.tooltip));
+    }
+
     this.images_div_id = `images_${this.get("index")}`;
-    this.element = createHtmlElement("div", null, "data-view-value");
+    this.element = createHtmlElement("div", dom, "data-view-value");
     this.element.id = "dataViewFieldValue_" + this.get("index");
   }
 
@@ -33,8 +53,20 @@ export class DataViewField {
     return this.attribute.settings[key];
   }
 
+  hide() {
+    if (this.dom) {
+      this.dom.style.display = "none";
+    }
+  }
+  show() {
+    if (this.dom) {
+      this.dom.style.display = "";
+    }
+  }
+
   async setDocumentValue(val) {
     try {
+      console.info(`DataViewField.setDocumentValue(${val})`);
       val = kvm.coalesce(val, "");
       this.element.innerHTML = "";
       const imgPrevDiv = createHtmlElement("div", this.element);
@@ -53,38 +85,8 @@ export class DataViewField {
         for (let i = 0; i < images.length; i++) {
           const remoteFile = kvm.removeQuotas(images[i]);
           const localFile = kvm.removeOriginalName(kvm.serverToLocalPath(remoteFile));
-          // const f = localFile.replace("file:///storage/emulated/0/", "");
-
-          // window.requestFileSystem(
-          //     LocalFileSystem.PERSISTENT,
-          //     0,
-          //     function (fs) {
-          //         console.log("file system open: " + fs.name);
-          //         fs.root.getFile(
-          //             f,
-          //             {},
-          //             async function (fileEntry) {
-          //                 // console.log("fileEntry is file?" + fileEntry.isFile.toString());
-          //                 // console.log("getFileUrl(fileEntry.fullPath)" + (await getFileUrl(fileEntry.fullPath)));
-          //             },
-          //             function (err) {
-          //                 console.error(err);
-          //             }
-          //         );
-          //     },
-          //     function (err) {
-          //         console.error(err);
-          //     }
-          // );
-          // const imgDiv = $('<div id="preview_' + this.get("index") + "_" + i + '" class="img preview" src="' + localFile + '" style="background-image: url(' + localFile + ');" field_id="' + this.get("index") + '"name="preview_' + localFile + '"></div>');
-
           const imgUrl = await getWebviewUrl(localFile);
-          // console.log("Add\nremoteFile: %s \nlocalFile: %s \nwebviewUrl: %s", remoteFile, localFile, imgUrl);
-          // const imgDiv = $('<div id="preview_' + this.get("index") + "_" + i + '" class="img preview" src=file:///"' + f + '" style="background-image: url(' + localFile + ');" field_id="' + this.get("index") + '"name="preview_' + f + '"></div>');
-          // const imgDivOld = $('<div id="preview_' + this.get("index") + "_" + i + '" class="img preview" src=file:///"' + url +
-          // '" style="background-image: url(' + url + ');" field_id="' + this.get("index") + '"name="preview_' + f + '"></div>');
 
-          //  localFile
           const imgDiv = createHtmlElement("input", null, "img preview", {
             id: `preview_${this.get("index")}_${i}`,
             field_id: this.get("index"),
@@ -267,28 +269,12 @@ export class DataViewField {
           } else {
             kvm.log("Versuche das Bild zu öffnen: " + src, 4);
             cordova.plugins.fileOpener2.open(src, "image/jpeg", {
-              error: function (e) {
+              error: (e) => {
                 console.error("Fehler beim laden der Datei: '" + src + "'. Fehler:", e);
                 alert("Fehler beim Laden der Datei: '" + src + "'. Fehler:" + e);
               },
-              success: function () {
+              success: async () => {
                 kvm.log("Datei " + src + " erfolgreich geöffnet.", 4);
-                navigator.notification.confirm(
-                  "Bild Löschen?",
-                  function (buttonIndex) {
-                    if (buttonIndex == 1) {
-                      // ja
-                      var field = kvm.getActiveLayer().attributes[fieldId].formField;
-                      field.dropImage(target);
-                    }
-                    if (buttonIndex == 2) {
-                      // nein
-                      // Do nothing
-                    }
-                  },
-                  "",
-                  ["ja", "nein"]
-                );
               },
             });
           }
@@ -371,28 +357,9 @@ export class DataViewField {
     });
   }
 
-  withLabel(): HTMLElement {
-    const dataViewField = createHtmlElement("div", null, "data-view-field");
-    dataViewField.id = "dataViewFieldDiv_" + this.get("index");
-    if (this.attribute.getArrangementStyle()) {
-      dataViewField.style.cssText = this.attribute.getArrangementStyle();
-    }
-    const label = createHtmlElement("div", dataViewField, "data-view-label");
-
-    label.append(this.get("alias") ? this.get("alias") : this.get("name"));
-
-    if (this.settings.tooltip) {
-      const infoBttn = createHtmlElement("i", label, "fa fa-exclamation-circle");
-      infoBttn.style.color = "#f57802";
-      infoBttn.style.paddingLeft = "0.2rem";
-      infoBttn.addEventListener("click", () => kvm.msg(this.settings.tooltip));
-    }
-
-    // return $(`<div id="dataViewFieldDiv_${this.get("index")}" class="data-view-field" ${this.attribute.getArrangementStyle()}>`)
-
-    dataViewField.append(this.element);
-    return dataViewField;
-  }
+  // withLabel(): HTMLElement {
+  //   return dataViewField;
+  // }
 
   // getWithLabel(): HTMLElement {
   //   const dom = createHtmlElement("div", null, "data-view-field");
@@ -411,6 +378,9 @@ export class DataViewField {
   // }
 
   getDom(): HTMLElement {
-    return this.element;
+    if (!this.dom) {
+      this._createDom();
+    }
+    return this.dom;
   }
 }

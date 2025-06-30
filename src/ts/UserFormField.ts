@@ -1,4 +1,4 @@
-import { AttributeSetting } from "./Attribute";
+import { Attribute, AttributeSetting } from "./Attribute";
 import { AbstractField, Field } from "./Field";
 import { kvm } from "./app";
 import { createHtmlElement } from "./Util";
@@ -17,21 +17,21 @@ import { createHtmlElement } from "./Util";
 export class UserFormField extends AbstractField {
   element: HTMLInputElement;
 
-  constructor(formId: string, settings: AttributeSetting) {
+  constructor(formId: string, attr: Attribute) {
     //console.log('Erzeuge UserFormField with settings %o', settings);
-    super(formId, settings);
+    super(formId, attr);
 
     this.element = createHtmlElement("input");
     this.element.type = "text";
 
-    this.element.id = String(this.settings.index);
-    this.element.name = this.settings.name;
+    this.element.id = String(attr.settings.index);
+    this.element.name = attr.settings.name;
     this.element.disabled = true;
   }
 
   async setValue(val) {
-    if (kvm.coalesce(val, "") == "" && this.settings.default) {
-      val = this.settings.default;
+    if (kvm.coalesce(val, "") == "" && this.attr.settings.default) {
+      val = this.attr.settings.default;
     }
     this.element.value = val == null || val == "null" ? "" : val;
   }
@@ -50,7 +50,7 @@ export class UserFormField extends AbstractField {
     return kvm.store.getItem("userName");
   }
 
-  getDom(): HTMLElement {
+  createInputElement(): HTMLElement {
     return this.element;
   }
 }

@@ -1,4 +1,4 @@
-import { AttributeSetting } from "./Attribute";
+import { Attribute, AttributeSetting } from "./Attribute";
 import { AbstractField, Field } from "./Field";
 import { createHtmlElement } from "./Util";
 import { kvm } from "./app";
@@ -16,14 +16,14 @@ import { kvm } from "./app";
 export class TextFormField extends AbstractField implements Field {
   element: HTMLInputElement;
 
-  constructor(formId: string, settings: AttributeSetting) {
-    super(formId, settings);
+  constructor(formId: string, attr: Attribute) {
+    super(formId, attr);
 
     this.element = createHtmlElement("input");
     this.element.type = "text";
-    this.element.id = String(this.settings.index);
-    this.element.name = this.settings.name;
-    const disabled = (this.element.disabled = this.settings.privilege == "0");
+    this.element.id = String(this.attr.settings.index);
+    this.element.name = this.attr.settings.name;
+    const disabled = (this.element.disabled = this.attr.settings.privilege == "0");
     if (!disabled) {
       this.element.addEventListener("input", () => {
         this._value = this.element.value || null;
@@ -33,10 +33,10 @@ export class TextFormField extends AbstractField implements Field {
   }
 
   async setValue(val: string) {
-    console.log("TextFormField " + this.settings.name + " setValue with value: %o", val);
+    console.log("TextFormField " + this.attr.settings.name + " setValue with value: %o", val);
     this._oldValue = val;
-    if (kvm.coalesce(val, "") == "" && this.settings.default) {
-      val = this.settings.default;
+    if (kvm.coalesce(val, "") == "" && this.attr.settings.default) {
+      val = this.attr.settings.default;
     }
     this._value = val;
     this.element.value = val == null || val == "null" ? "" : val;
@@ -56,14 +56,14 @@ export class TextFormField extends AbstractField implements Field {
       val = null;
     }
 
-    if (this.settings.form_element_type == "UserID" && (action == "" || this.settings.options == "" || action.toLowerCase() == this.settings.options.toLowerCase())) {
+    if (this.attr.settings.form_element_type == "UserID" && (action == "" || this.attr.settings.options == "" || action.toLowerCase() == this.attr.settings.options.toLowerCase())) {
       val = kvm.store.getItem("userId");
     }
 
     return val;
   }
 
-  getDom(): HTMLElement {
+  createInputElement(): HTMLElement {
     return this.element;
   }
 }

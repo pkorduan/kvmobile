@@ -22,7 +22,7 @@ import maplibregl, { MapGeoJSONFeature } from "maplibre-gl";
 import "process";
 import { MapLibreLayer } from "./MapLibreLayer";
 import { Control, DomUtil, LatLngBounds, ErrorEvent as LErrorEvent, Map as LMap, Point as LPoint, Renderer, SVG } from "leaflet";
-import { sperrBildschirm } from "./SperrBildschirm";
+import { objectToString, sperrBildschirm } from "./SperrBildschirm";
 import { Menu, ViewName } from "./Menu";
 import { PropertyChangeEvent, PropertyChangeSupport } from "./Observable";
 import { View } from "./views/View";
@@ -152,7 +152,7 @@ export class Kvm extends PropertyChangeSupport {
   getActiveLayer() {
     return this._activeLayer;
   }
-  setActiveLayer(layer: Layer | null) {
+  async setActiveLayer(layer: Layer | null) {
     if (this._activeLayer === layer) {
       console.log(`zzz app.setActiveLayer ${layer?.title} again`);
       return;
@@ -169,14 +169,14 @@ export class Kvm extends PropertyChangeSupport {
     } else {
       kvm.store.removeItem("activeLayerId");
     }
-    this.fire(new PropertyChangeEvent(this, Kvm.EVENTS.ACTIVE_LAYER_CHANGED, oldLayer, layer));
+    await this.fire(new PropertyChangeEvent(this, Kvm.EVENTS.ACTIVE_LAYER_CHANGED, oldLayer, layer));
   }
 
   getActiveFeature() {
     return this._activeFeature;
   }
 
-  setActiveFeature(feature: Feature) {
+  async setActiveFeature(feature: Feature) {
     // console.error(`zzz app.setActiveFeature ${feature?.layer?.title}`, feature, this._activeFeature);
     if (this._activeFeature === feature) {
       return;
@@ -194,10 +194,10 @@ export class Kvm extends PropertyChangeSupport {
     } else {
       this._activeFeature = null;
     }
-    this.fire(new PropertyChangeEvent(this, Kvm.EVENTS.ACTIVE_FEATURE_CHANGED, oldFeature, feature));
+    await this.fire(new PropertyChangeEvent(this, Kvm.EVENTS.ACTIVE_FEATURE_CHANGED, oldFeature, feature));
   }
 
-  setActiveStelle(stelle: Stelle) {
+  async setActiveStelle(stelle: Stelle) {
     console.info(`setActiveStelle ${stelle?.get("ID")}`, stelle);
     const oldStelle = this._activeStelle;
     this._activeStelle = stelle;
@@ -206,7 +206,7 @@ export class Kvm extends PropertyChangeSupport {
     } else {
       this.store.removeItem("activeStelleId");
     }
-    this.fire(new PropertyChangeEvent(this, Kvm.EVENTS.ACTIVE_STELLE_CHANGED, oldStelle, stelle));
+    await this.fire(new PropertyChangeEvent(this, Kvm.EVENTS.ACTIVE_STELLE_CHANGED, oldStelle, stelle));
   }
   getActiveStelle() {
     return this._activeStelle;
@@ -292,20 +292,20 @@ export class Kvm extends PropertyChangeSupport {
     return sorted.map((id) => this.getLayer(id));
   }
 
-  addLayer(layer: Layer | MapLibreLayer) {
+  async addLayer(layer: Layer | MapLibreLayer) {
     console.info(`addLayer(${layer.title})`);
     if (layer instanceof Layer) {
       this._layers.set(layer.getGlobalId(), layer);
       if (layer.hasGeometry) {
         kvm.controls.layerCtrl.addOverlay(layer.layerGroup, '<span id="layerCtrLayerDiv_' + layer.getGlobalId() + '">' + layer.title + "</span>");
       }
-      this.fire(new PropertyChangeEvent(this, Kvm.EVENTS.LAYER_ADDED, null, layer));
+      await this.fire(new PropertyChangeEvent(this, Kvm.EVENTS.LAYER_ADDED, null, layer));
     }
   }
-  removeLayer(layer: Layer | MapLibreLayer) {
+  async removeLayer(layer: Layer | MapLibreLayer) {
     console.info(`removeLayer(${layer.title})`);
     this._layers.delete(layer.getGlobalId());
-    this.fire(new PropertyChangeEvent(this, Kvm.EVENTS.LAYER_REMOVED, layer, null));
+    await this.fire(new PropertyChangeEvent(this, Kvm.EVENTS.LAYER_REMOVED, layer, null));
   }
 
   /**
@@ -322,7 +322,7 @@ export class Kvm extends PropertyChangeSupport {
         layer.removeFromMap();
         await layer.dropDataTable();
         // await layer.dropDeltasTable();
-        this.fire(new PropertyChangeEvent(this, Kvm.EVENTS.LAYER_REMOVED, layer, null));
+        await this.fire(new PropertyChangeEvent(this, Kvm.EVENTS.LAYER_REMOVED, layer, null));
       }
     }
     this._layers.clear();
@@ -532,9 +532,9 @@ export class Kvm extends PropertyChangeSupport {
         const tableColumnDefinitions = ["version INTEGER PRIMARY KEY", "action text", "sql text", "uuid text", "action_time text", "schema_name text", "table_name text"];
         const sqlCreateTbl = "CREATE TABLE IF NOT EXISTS deltas (" + tableColumnDefinitions.join(", ") + ")";
         await executeSQL(kvm.db, sqlCreateTbl);
-      } else {
-        const rs = await Util.executeSQL(kvm.db, "PRAGMA table_info('deltas')");
-        Util.printResultSet("delta", rs);
+        // } else {
+        //   const rs = await Util.executeSQL(kvm.db, "PRAGMA table_info('deltas')");
+        //   Util.printResultSet("delta", rs);
       }
 
       const tblImageDeltasExists = await tableExists(db, "image_deltas");
@@ -542,9 +542,9 @@ export class Kvm extends PropertyChangeSupport {
         const tableColumnDefinitions = ["version INTEGER PRIMARY KEY", "action text", "file text", "uuid text", "action_time text", "layer_id text"];
         const sqlCreateTbl = "CREATE TABLE IF NOT EXISTS image_deltas (" + tableColumnDefinitions.join(", ") + ")";
         await executeSQL(kvm.db, sqlCreateTbl);
-      } else {
-        const rs = await Util.executeSQL(kvm.db, "PRAGMA table_info('image_deltas')");
-        Util.printResultSet("image_deltas", rs);
+        // } else {
+        //   const rs = await Util.executeSQL(kvm.db, "PRAGMA table_info('image_deltas')");
+        //   Util.printResultSet("image_deltas", rs);
       }
     } catch (ex) {
       console.error("Initialisierung der Datenbank ist fehlgeschlagen.", ex);
@@ -866,6 +866,7 @@ export class Kvm extends PropertyChangeSupport {
           sperrBildschirm.show("Lade Layerdaten.");
 
           for (const settings of layerSettings) {
+            // console.group("Init Layer " + settings.title);
             if (settings.vector_tile_url) {
               const layer = new MapLibreLayer(settings, true, stelle);
               layer.appendToApp();
@@ -915,6 +916,7 @@ export class Kvm extends PropertyChangeSupport {
                 kvm.setActiveLayer(layer);
               }
             }
+            // console.groupEnd();
           }
 
           stelle.sortOverlays();
@@ -1038,7 +1040,7 @@ export class Kvm extends PropertyChangeSupport {
    * setzt die Konfiguration und startet die App
    * @param configName reset
    */
-  setConfiguration(configName: string) {
+  async setConfiguration(configName: string) {
     const oldconfigName = this._configName;
     this._configName = configName;
     this.store.clear();
@@ -1056,7 +1058,7 @@ export class Kvm extends PropertyChangeSupport {
     //   stelle.settings.login_name = this.getConfigurationOption("kvwmapServerLoginName");
     //   stelle.saveToStore();
     // }
-    this.fire(new PropertyChangeEvent(this, Kvm.EVENTS.ACTIVE_CONFIGURATION_CHANGED, oldconfigName, configName));
+    await this.fire(new PropertyChangeEvent(this, Kvm.EVENTS.ACTIVE_CONFIGURATION_CHANGED, oldconfigName, configName));
     PanelEinstellungen.show("server");
   }
 
@@ -1170,7 +1172,7 @@ export class Kvm extends PropertyChangeSupport {
     //   sortLayers: false,
     //   sortFunction: (layerA, layerB, nameA, nameB) => (parseInt(layerA.getAttribution()) > parseInt(layerB.getAttribution()) ? parseInt(layerA.getAttribution()) : parseInt(layerB.getAttribution())),
     // }).addTo(map);
-    this.controls.layerCtrl = new LayerCtrl(baseMaps, null, {
+    this.controls.layerCtrl = new LayerCtrl(this, baseMaps, null, {
       autoZIndex: true,
       sortLayers: true,
       sortFunction: (layerA, layerB, nameA, nameB) => (parseInt(layerA.getAttribution()) > parseInt(layerB.getAttribution()) ? parseInt(layerA.getAttribution()) : parseInt(layerB.getAttribution())),
@@ -1729,6 +1731,9 @@ export class Kvm extends PropertyChangeSupport {
   async saveFeatureButtonClicked(evt: MouseEvent) {
     sperrBildschirm.show();
     try {
+      // printing all Changes fro debug reasons
+      console.table(kvm._activeLayer.getAllChanges("insert"));
+
       let validationErrMsg: string = "";
 
       const notNullErrMsg: string = kvm._activeLayer.notNullValid();
@@ -1739,6 +1744,7 @@ export class Kvm extends PropertyChangeSupport {
       // in setValue() wird der übergeordnete Datensatz über ST_Within() gesucht
       for (const attribute of this._activeLayer.attributes) {
         if (attribute.settings.form_element_type === "SubFormFK" && !attribute.formField.getValue()) {
+          console.info(`saveFeatureButton ${attribute.settings.name} setting value to ""`);
           await attribute.formField.setValue("");
         }
       }
@@ -1774,11 +1780,14 @@ export class Kvm extends PropertyChangeSupport {
           }
         }
       }
+      sperrBildschirm.close();
     } catch (ex) {
-      kvm.msg("Beim Speicher tratt ein Fehler auf. " + JSON.stringify(ex));
-      console.error("Beim Speichern tratt ein Fehler auf.", ex);
+      sperrBildschirm.close("Beim Speichern trat ein Fehler auf", ex);
+      this.writeLog("Beim Speichern trat ein Fehler auf\n" + objectToString(ex));
+      // Util.alertNative("Beim Speicher tratt ein Fehler auf." + JSON.stringify(ex))
+      // kvm.msg("Beim Speicher tratt ein Fehler auf. " + JSON.stringify(ex));
+      console.error("Beim Speichern trat ein Fehler auf.", ex);
     }
-    sperrBildschirm.close();
   }
 
   bindEvents() {
@@ -2517,7 +2526,7 @@ export class Kvm extends PropertyChangeSupport {
       if (activeFeature.new) {
         let parentFeature = activeFeature.findParentFeature();
         if (parentFeature) {
-          const parentLayer = kvm.getLayer(parentFeature.globalLayerId);
+          const parentLayer = parentFeature.layer;
           parentLayer.activateFeature(parentFeature, true);
         }
       }
@@ -2576,7 +2585,7 @@ export class Kvm extends PropertyChangeSupport {
       //     this._activeLayer.newSubDataSet(options);
       //   }
       // } else {^
-      this._activeLayer.newSubDataSet(options);
+      await this._activeLayer.newSubDataSet(options);
     }
   }
 

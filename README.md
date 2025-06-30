@@ -16,30 +16,40 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 
 # Change log
 
+## 1.20.1
+
+- Maintainance
+  - weitestgehende Entfernung von jquery
+
 ## 1.20.0
+
 - Maintainance
   - Merge der Änderungen von Peter in den Master von Ralf mit Synchronisation in develop
 - Features
   - Neuer Hintergrundlayer mit Luftbilder aus WMS.
   - ToDo: Die Synchronisierung startet nach jedem Speichern der Datensätze.
 - Bugfix
-  - Fix stelle.setLayerParam(key, value) error if _layerParams is undefined
+  - Fix stelle.setLayerParam(key, value) error if \_layerParams is undefined
+
 ## 1.19.4
+
 - Features
   - Auswahl von Layer und Type für Hintergrundkarten möglich.
   - Option zum Einstellen der automatischen Layersynchronisierung.
-  - Deutlich weniger Meldungen 
+  - Deutlich weniger Meldungen
 - Bugfix
   - Fehler bei Meldung im Catch.
   - Fehlendes Laden von Daten nach sendDeltas und hängen nach Sync.
 
 ## 1.19.3
+
 - Features
   - Die Funktion gdi_conditional_nextval liefert 1 wenn kein Wert ermittelt werden konnte.
   - Kameraeinstellungen werden behalten
   - Berücksichtigung des Editiersperreattributes
 
 ## 1.19.2
+
 - Maintainance
   - Bezeichnung der App auf kvmobile korrigiert.
   - Konfiguration Streuobst (ohne Zusatz) hinzugefügt.
@@ -48,11 +58,13 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
   - Leere nur lesbare Attribute ausblenden, die anderen aber nicht einblenden. Das passiert schon bei vcheckattributes
 
 ## 1.19.1
+
 - Bugfix
   - Attribute mit privilege null werden gar nicht erst dargestellt.
   - Attribute die leer sind und nur lesbar werden ausgeblendet.
 
 ## 1.19.0
+
 - Features
   - Möglichkeit zur Datenerfassung mit nur einem Layerparameter.
   - Replace $EXPORT in Query
@@ -61,6 +73,7 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
   - Anpassungen zur Verbesserung der Synchronisierung von Ralf im develop
 
 ## 1.18.4
+
 - Bugfix
   - GPS-Tracking ausschalten wenn ein existierendes Feature editier wird.
 

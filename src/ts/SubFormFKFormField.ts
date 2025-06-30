@@ -12,11 +12,41 @@ import { createHtmlElement } from "./Util";
  */
 export class SubFormFKFormField implements Field {
   settings: AttributeSetting;
-  // element: HTMLInputElement;
+  private element: HTMLInputElement;
   linkElement: HTMLElement;
   attribute: Attribute;
   selector: string;
   value: string;
+  counter = 0;
+
+  constructor(formId: string, attribute: Attribute) {
+    this.attribute = attribute;
+    this.settings = attribute.settings;
+    this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
+    let globalParentLayerId = this.attribute.getGlobalParentLayerId();
+    let vorschauOption = this.attribute.getVorschauOption();
+    this.element = createHtmlElement("input", null);
+    this.element.type = "text";
+    this.element.id = this.attribute.settings.name + "_" + this.attribute.settings.index;
+    this.element.dataset.testdate = "jhjghdjahd";
+    this.element.name = this.attribute.settings.name;
+    this.element.value = "";
+    this.element.disabled = true;
+    // this.element.style.display = "none";
+
+    this.linkElement = createHtmlElement("div", this.element);
+    createHtmlElement("i", this.linkElement, "fa fa-arrow-left");
+    // this.linkElement.appendChild
+    //   <div onclick="kvm.editFeature('${globalParentLayerId}', document.getElementById('${this.attribute.settings.index}').value)" class="link-element">
+    //     <i class="fa fa-arrow-left" aria-hidden="true" style="margin-right: 10px"></i> ${vorschauOption}
+    //   </div>
+    // `);
+    // $(`
+    //   <div onclick="kvm.editFeature('${globalParentLayerId}', document.getElementById('${this.get("index")}').value)" class="link-element">
+    //     <i class="fa fa-arrow-left" aria-hidden="true" style="margin-right: 10px"></i> ${vorschauOption}
+    //   </div>
+    // `);
+  }
 
   /**
    * create a SubFormFK form field in the structure
@@ -35,7 +65,7 @@ export class SubFormFKFormField implements Field {
    *     </div>
    *   </div>
    */
-  constructor(formId: string, attribute: Attribute) {
+  constructorXX(formId: string, attribute: Attribute) {
     console.info(`new SubFormFKFormField(${formId}, ${attribute.settings.name})`);
     this.attribute = attribute;
     this.settings = attribute.settings;
@@ -88,7 +118,8 @@ export class SubFormFKFormField implements Field {
   }
 
   async setValue(val) {
-    console.log("Attribute: %s, SubFormFKFormField.setValue options: %o, value: %s", this.get("name"), this.get("options"), val);
+    this.counter++;
+    console.error("%s Attribute: %s, SubFormFKFormField.setValue options: %o, value: %s", this.counter, this.get("name"), this.get("options"), val);
     // ToDo: Prüfen warum hier noch mal default gesetzt wird. Das wird auch schon in getNewData gemacht.
     if (kvm.coalesce(val, "") == "" && this.get("default")) {
       val = this.get("default");
@@ -102,11 +133,11 @@ export class SubFormFKFormField implements Field {
       if (pkLayer.hasGeometry) {
         console.log("Übergeordneter Layer %s", pkLayer.title);
         // Abfragen der uuid des Features in das das aktive Feature fällt
-        // aktuelle mit Within umgesetzt. Bei Polygonen könnte auch ein Intersects notwendig werden.
+        // aktuelle mit Within umgetzt. Bei Polygonen könnte auch ein Intersects notwendig werden.
         // 03
         // const sqlx = `
         //   SELECT
-        //     ${pkLayer.get("id_attribute")} AS id,
+        //     ${pkLayer.get("id_attresibute")} AS id,
         //     geom
         //   FROM
         //     ${pkLayer.getSqliteTableName()}
@@ -148,12 +179,11 @@ export class SubFormFKFormField implements Field {
         // Prüfen gegen welche Geometrie ST_Within testet, vielleicht liegt es auch an einer falschen geom in standorte
         console.log("Frage parent id mit sql ab: ", sql);
         try {
+          console.error("%s Attribute: %s, SubFormFKFormField.setValue search parentFeature", this.counter, this.get("name"));
           const rs = await executeSQL(kvm.db, sql);
           console.log("Resultset von räumlicher Abfrage", rs);
           let featureId: string = "";
-          if (rs.rows.length > 0) {
-            console.info("firstItem:", rs.rows.item(0), rs.rows.item(0).id);
-          }
+
           for (let i = 0; i < rs.rows.length; i++) {
             if (typeof rs.rows.item(i).geom != "undefined" && rs.rows.item(i).geom != "") {
               featureId = rs.rows.item(i)[pkLayer.get("id_attribute")];
@@ -162,6 +192,7 @@ export class SubFormFKFormField implements Field {
               break;
             }
           }
+          console.error("%s Attribute: %s, SubFormFKFormField.setValue search parentFeature => %s value=%s", this.counter, this.get("name"), featureId, this.value);
           if (featureId == "") {
             kvm.mapHint(`Der Marker liegt nicht im räumlichen Bereich eines Objektes vom Layers ${pkLayer.title}.`, 5000);
             this.value = this.get("default");
@@ -174,22 +205,16 @@ export class SubFormFKFormField implements Field {
     } else {
       this.value = val == null || val == "null" ? "" : val;
     }
+    this.element.value = this.value;
+    console.error("%s Attribute: %s, SubFormFKFormField.setValue done value: %s", this.counter, this.get("name"), this.value);
   }
 
   getValue(action = "") {
-    console.log("SubFormFKFormField.getValue");
+    console.log(`SubFormFKFormField ${this.attribute.layer.title}.${this.attribute.settings.name}.getValue => ${this.value}`);
     return this.value;
-    // var val = this.element.value;
-
-    // if (typeof val === "undefined" || val == "") {
-    //   val = null;
-    // }
-
-    // return val;
   }
 
   getAutoValue() {
-    // return this.element.value;
     const attributeName = this.attribute.get("name");
     return this.attribute.layer.activeFeature.getDataValue(attributeName);
   }
@@ -206,6 +231,17 @@ export class SubFormFKFormField implements Field {
   }
 
   getDom(): HTMLElement {
-    return this.linkElement;
+    return this.element;
+  }
+
+  hide() {
+    if (this.element?.parentElement) {
+      this.element.parentElement.style.display = "none";
+    }
+  }
+  show() {
+    if (this.element?.parentElement) {
+      this.element.parentElement.style.display = "";
+    }
   }
 }

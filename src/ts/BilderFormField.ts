@@ -2,7 +2,7 @@
 /// <reference types="cordova-plugin-file-opener2"/>
 
 import { kvm } from "./app";
-import { AttributeSetting } from "./Attribute";
+import { Attribute, AttributeSetting } from "./Attribute";
 import { AbstractField, Field } from "./Field";
 import { confirm, createHtmlElement, fileExists, getWebviewUrl } from "./Util";
 
@@ -20,27 +20,28 @@ export class BilderFormField extends AbstractField {
 
   // moveFile: (srcFile, dstDir) => void;
 
-  constructor(formId: string, settings: AttributeSetting) {
-    console.trace("BilderFormField", formId, settings);
-    super(formId, settings);
+  constructor(formId: string, attr: Attribute) {
+    console.trace("BilderFormField", formId, attr);
+    super(formId, attr);
+    const settings = attr.settings;
     this.images_div_id = "images_" + settings["index"];
 
     this.element = createHtmlElement("div", null, "form-value");
 
-    if (this.settings.privilege === "1") {
+    if (settings.privilege === "1") {
       const takePictureButton = (this.takePictureButton = createHtmlElement("i", this.element, "fa fa-camera fa-2x"));
       takePictureButton.style.cssText = "color: rgb(38, 50, 134); margin: 5px 10px 15px 0px";
-      takePictureButton.id = "takePictureButton_" + this.settings.index;
+      takePictureButton.id = "takePictureButton_" + settings.index;
       takePictureButton.addEventListener("click", (ev) => this.takePicture(ev));
 
       const loadPictureFromPhotolibraryBttn = (this.loadPictureFromPhotolibraryBttn = createHtmlElement("i", this.element, "fa fa-image fa-2x"));
       loadPictureFromPhotolibraryBttn.style.cssText = "color: rgb(38, 50, 134); margin: 0px 0px 14px 9px";
-      loadPictureFromPhotolibraryBttn.id = "loadPictureFromPhotolibrary_" + this.settings.index;
+      loadPictureFromPhotolibraryBttn.id = "loadPictureFromPhotolibrary_" + settings.index;
       loadPictureFromPhotolibraryBttn.addEventListener("click", (ev) => this.loadPictureFromPhotolibrary(ev));
 
       const dropAllPictureButton = (this.dropAllPictureButton = createHtmlElement("i", this.element, "fa fa-trash fa-2x"));
       dropAllPictureButton.style.cssText = "color: rgb(238, 50, 50); float: right; display: none;";
-      dropAllPictureButton.id = "dropAllPictureButton_" + this.settings.index;
+      dropAllPictureButton.id = "dropAllPictureButton_" + settings.index;
       dropAllPictureButton.addEventListener("click", (ev) => this.dropAllPictures(ev));
     }
 
@@ -48,8 +49,8 @@ export class BilderFormField extends AbstractField {
 
     this.hiddenElement = createHtmlElement("input", this.element, "form-value");
     this.hiddenElement.type = "hidden";
-    this.hiddenElement.id = String(this.settings.index);
-    this.hiddenElement.name = String(this.settings.name);
+    this.hiddenElement.id = String(settings.index);
+    this.hiddenElement.name = String(settings.name);
 
     // this.element = $('<div class="form-value">').append(
     //   '\
@@ -74,7 +75,7 @@ export class BilderFormField extends AbstractField {
 
   /* Assign the value of the feature to the form field as it is in the database and
    * create corresponding form and view elements.
-   * example: {/var/www/data_streuobst/upload/bilder_kob_baum/1000068112.jpg,/var/www/data_streuobst/upload/bilder_kob_baum/1000068320.jpggghsd}
+   * example: {/var/www/data_streuobst/upload/bilder_kob_baum/1000068112.jpg,/var/www/data_streuobst/upload/bilder_kob_baum/1000068320.jpg}
    * @params any set to '' if val is undefined, null, 'null' or NAN
    */
   async setValue(pics: string) {
@@ -94,7 +95,7 @@ export class BilderFormField extends AbstractField {
 
     if (val == "") {
       this.imagesDiv.innerHTML = "";
-      if (this.settings.privilege === "1") {
+      if (this.attr.settings.privilege === "1") {
         this.dropAllPictureButton.style.display = "none";
       }
     } else {
@@ -139,6 +140,17 @@ export class BilderFormField extends AbstractField {
     return hasChanged;
   }
 
+  hide() {
+    if (this.element?.parentElement) {
+      this.element.parentElement.style.display = "none";
+    }
+  }
+  show() {
+    if (this.element?.parentElement) {
+      this.element.parentElement.style.display = "";
+    }
+  }
+
   /*
    * src is the file shown in view
    * name is the file stored in database
@@ -159,7 +171,7 @@ export class BilderFormField extends AbstractField {
     const imgDiv = createHtmlElement("div", this.imagesDiv, "img");
     imgDiv.style.backgroundImage = "url(" + webviewUrl + ")";
     imgDiv.dataset.src = webviewUrl;
-    imgDiv.dataset.field_id = this.settings.index + "name=" + name;
+    imgDiv.dataset.field_id = this.attr.settings.index + "name=" + name;
 
     this.dropAllPictureButton.style.display = "";
 
@@ -269,7 +281,7 @@ export class BilderFormField extends AbstractField {
   async dropAllPictures(evt: Event) {
     // const context = evt.data.context;
     //console.log('BilderformField.dropAllPictures');
-    const confirmed = await confirm("Wirklich alle Bilder in diesem Datensatz Löschen?", null, "ja", "nein");
+    const confirmed = await confirm("Wirklich alle Bilder in diesem Datensatz Löschen?", "Bitte Bestätigen", "ja", "nein");
     if (confirmed) {
       this.setValue("");
       this.fireChanged();
@@ -324,7 +336,7 @@ export class BilderFormField extends AbstractField {
     navigator.camera.getPicture(
       (fileURL) => {
         console.log("this.loadPictureFromPhotolibrary(" + fileURL + ")");
-        const ffileURL = "file://" + fileURL + "gghsd";
+        const ffileURL = "file://" + fileURL;
         fileExists(ffileURL).then((exists) => {
           console.info(`file ${ffileURL} ${exists}`);
           this.moveFile(ffileURL, kvm.getConfigurationOption("localImgPath"));
@@ -417,7 +429,7 @@ export class BilderFormField extends AbstractField {
     kvm.log("getLocalImgPath returning: " + result);
   }
 
-  getDom(): HTMLElement {
+  createInputElement(): HTMLElement {
     return this.element;
   }
 }

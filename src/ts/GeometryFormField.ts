@@ -2,7 +2,7 @@ import { Buffer } from "buffer";
 import { kvm } from "./app";
 import * as wkx from "wkx";
 import { AbstractField, Field } from "./Field";
-import { AttributeSetting } from "./Attribute";
+import { Attribute, AttributeSetting } from "./Attribute";
 import { alertNative, confirm, createHtmlElement } from "./Util";
 /*
  * create a geometry form field in the structure
@@ -23,8 +23,8 @@ export class GeometrieFormField extends AbstractField implements Field {
   showGpsStatusButton: SVGSVGElement;
   goToGpsPositionButton: HTMLElement;
 
-  constructor(formId: string, settings: AttributeSetting, geomType: string) {
-    super(formId, settings);
+  constructor(formId: string, attr: Attribute) {
+    super(formId, attr);
     // this.settings = settings;
     // this.selector = "#" + formId + " input[id=" + this.settings.index + "]";
     const div = (this.element = createHtmlElement("div"));
@@ -32,11 +32,11 @@ export class GeometrieFormField extends AbstractField implements Field {
     div.style.flexDirection = "column";
     this.hiddenElement = createHtmlElement("input", div);
     this.hiddenElement.type = "hidden";
-    this.hiddenElement.id = String(this.settings.index);
-    this.hiddenElement.name = this.settings.name;
-    this.hiddenElement.disabled = this.settings.privilege == "0";
+    this.hiddenElement.id = String(attr.settings.index);
+    this.hiddenElement.name = attr.settings.name;
+    this.hiddenElement.disabled = attr.settings.privilege == "0";
 
-    if (geomType == "Point") {
+    if (attr.layer.settings.geometry_type == "Point") {
       const bttnDiv = createHtmlElement("div", div);
       bttnDiv.style.display = "flex";
       const saveGpsPositionButton = (this.saveGpsPositionButton = createHtmlElement("i", bttnDiv, "fa fa-map-marker fa-2x"));
@@ -292,7 +292,7 @@ export class GeometrieFormField extends AbstractField implements Field {
     });
   }
 
-  getDom(): HTMLElement {
+  createInputElement(): HTMLElement {
     return this.element;
   }
 }

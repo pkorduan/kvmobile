@@ -1,4 +1,4 @@
-import { AttributeSetting, OptionsAttributtes } from "./Attribute";
+import { Attribute, AttributeSetting, OptionsAttributtes } from "./Attribute";
 import { Field } from "./Field";
 import { kvm } from "./app";
 import { createHtmlElement } from "./Util";
@@ -36,8 +36,8 @@ export class SelectAutoFormField implements Field {
 
   lsts: { (src: Field, hasChanged: boolean): void }[] = [];
 
-  constructor(formId: string, settings: AttributeSetting) {
-    this.settings = settings;
+  constructor(formId: string, attr: Attribute) {
+    this.settings = attr.settings;
     // this.selector = "#" + formId + " select[id=" + this.settings.index + "]";
     this.options = <OptionsAttributtes[]>this.settings.enums;
     this.filteredOptions = this.options;
@@ -302,6 +302,17 @@ export class SelectAutoFormField implements Field {
 
   getDom(): HTMLElement {
     return this.element;
+  }
+
+  hide() {
+    if (this.element?.parentElement) {
+      this.element.parentElement.style.display = "none";
+    }
+  }
+  show() {
+    if (this.element?.parentElement) {
+      this.element.parentElement.style.display = "";
+    }
   }
 
   hasChanged(): boolean {
