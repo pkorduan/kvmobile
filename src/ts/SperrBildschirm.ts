@@ -1,7 +1,7 @@
 import { kvm } from "./app";
 import { alertNative as nativeAlert, alertOverlay } from "./Util";
 
-function objectToString(err: Object) {
+export function objectToString(err: Object) {
   let s = "";
   if (err instanceof Error) {
     s = err.message || "";
@@ -65,7 +65,7 @@ class SperrBildschirm {
   }
 
   async close(msg?: string, o?: Object) {
-    console.trace("close", msg, o);
+    // console.trace("close", msg, o);
     if (msg) {
       msg = msg.replaceAll("\\n", "\n");
       msg = msg.replaceAll("<br>", "\n");

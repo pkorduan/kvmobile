@@ -17,7 +17,7 @@ export async function runInsert(feature: Feature, delta: { action: "insert"; sql
       const sql = delta.sql;
       await executeSQL(kvm.db, sql);
       await writeDelta(feature, delta);
-      const rsNew = readDataset(feature.layer);
+      const rsNew = await readDataset(feature.layer);
       resolve(rsNew);
     } catch (ex) {
       reject(ex);
@@ -39,7 +39,7 @@ export async function runUpdate(feature: Feature, delta: { action: "update"; sql
       const sql = delta.sql + " AND endet IS NULL";
       await executeSQL(kvm.db, sql);
       await writeDelta(feature, delta);
-      const rsNew = readDataset(feature.layer);
+      const rsNew = await readDataset(feature.layer);
       resolve(rsNew);
     } catch (ex) {
       reject(ex);

@@ -21,19 +21,19 @@ export class ViewFormular extends View {
 
     this.featureFormular = createHtmlElement("form", this.dom);
 
-    app.addEventListener(Kvm.EVENTS.ACTIVE_FEATURE_CHANGED, (evt) => {
+    app.addEventListener(Kvm.EVENTS.ACTIVE_FEATURE_CHANGED, async (evt) => {
       this.update(<Feature>evt.newValue);
     });
   }
 
   update(f: Feature) {
-    console.error(`ViewFormular.update Feature ${f?.layer.title}`, f);
+    console.error(`ViewFormular.update ${f?.layer?.title} ${f?.id}`, f);
     this.feature = f;
-    // this._update(f.layer);
     this._updateFeature(f);
   }
 
   _createForm(layer: Layer) {
+    console.error("ViewFormular create Form for Layer " + layer.title);
     this.dom.innerHTML = "";
     const h1 = Util.createHtmlElement("h1", this.dom);
     h1.innerText = layer.title;
@@ -62,7 +62,7 @@ export class ViewFormular extends View {
             Util.createHtmlElement("div", form, null, { styleText: "clear: both" });
           }
           if (attr.get("privilege")) {
-            attrGrpBody.append(attr.withLabelNoJq());
+            attrGrpBody.append(attr.formField.getDom());
           }
           attr.formField.bindEvents?.();
           // add change event handler here to avoid redundancy in different bindEvents methods of formField classes
@@ -80,7 +80,7 @@ export class ViewFormular extends View {
                 console.log("Attribute: %s changed to value: %s fromChanged=%s", attr.get("name"), attr.formField.getValue(), hasChanged);
                 this.app.menu.enableSaveFeatureButton(this.hasChanged());
                 if (attr.hasVisibilityDependency()) {
-                  layer.vcheckAttributes(attr.get("name"), attr.formField.getValue(), "form");
+                  layer.vcheckAttributes(attr.get("name"), attr.formField.getValue(), attr.formField, "form");
                 }
               });
             }
@@ -179,11 +179,9 @@ export class ViewFormular extends View {
     if (f) {
       try {
         this._createForm(f.layer);
-        // f.layer.loadFeatureToForm(f, { editable: false });
-        // f.layer.createFeatureForm();
         await f.layer.loadFeatureToForm(f, { editable: false });
       } catch (ex) {
-        await Util.showError("Fehler beim Aktivieren des Features", ex);
+        await Util.showError("Fehler beim Aktivieren des Features im Formular", ex);
       }
     }
   }

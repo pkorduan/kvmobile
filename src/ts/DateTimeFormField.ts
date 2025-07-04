@@ -1,4 +1,4 @@
-import { AttributeSetting } from "./Attribute";
+import { Attribute, AttributeSetting } from "./Attribute";
 import { AbstractField, Field } from "./Field";
 import { kvm } from "./app";
 import { createHtmlElement } from "./Util";
@@ -17,14 +17,14 @@ import { createHtmlElement } from "./Util";
 export class DateTimeFormField extends AbstractField implements Field {
   element: HTMLInputElement;
 
-  constructor(formId: string, settings: AttributeSetting) {
-    super(formId, settings);
+  constructor(formId: string, attr: Attribute) {
+    super(formId, attr);
 
     this.element = createHtmlElement("input");
     this.element.type = "datetime-local";
-    this.element.id = String(this.settings.index);
-    this.element.name = this.settings.name;
-    this.element.disabled = this.settings.privilege == "0";
+    this.element.id = String(this.attr.settings.index);
+    this.element.name = this.attr.settings.name;
+    this.element.disabled = this.attr.settings.privilege == "0";
 
     this.element.addEventListener("click", () => {
       this._value = this.element.checked ? "t" : "f";
@@ -84,7 +84,7 @@ export class DateTimeFormField extends AbstractField implements Field {
     return typeof datetime == "string" ? datetime.replace(/-/g, "/").replace("T", " ").replace("Z", "") : null;
   }
 
-  getDom(): HTMLElement {
+  createInputElement(): HTMLElement {
     return this.element;
   }
 }

@@ -1,4 +1,6 @@
-import { Control, Util, DomEvent, DomUtil, Layer, Map as LMap, ControlOptions, ControlPosition } from "leaflet";
+import { Control, Util, DomEvent, DomUtil, Layer as LeafletLayer, Map as LMap, ControlOptions, ControlPosition } from "leaflet";
+import { Kvm } from "./app";
+import { Layer } from "./Layer";
 // import * as Util from '../core/Util';
 // import * as DomEvent from '../dom/DomEvent';
 // import * as DomUtil from '../dom/DomUtil';
@@ -70,7 +72,7 @@ export interface LayerCtrlOptions extends ControlOptions {
    * Standard: false;
    */
   sortLayers: boolean;
-  sortFunction: (layerA: Layer, layerB: Layer, nameA: string, nameB: string) => number;
+  sortFunction: (layerA: LeafletLayer, layerB: LeafletLayer, nameA: string, nameB: string) => number;
 }
 /**
  *
@@ -103,13 +105,13 @@ export class LayerCtrl extends Control {
     // The function receives both the `L.Layer` instances and their names, as in
     // `sortFunction(layerA, layerB, nameA, nameB)`.
     // By default, it sorts layers alphabetically by their name.
-    sortFunction: function (layerA: Layer, layerB: Layer, nameA: string, nameB: string) {
+    sortFunction: function (layerA: LeafletLayer, layerB: LeafletLayer, nameA: string, nameB: string) {
       return nameA < nameB ? -1 : nameB < nameA ? 1 : 0;
     },
   };
   // _map: LMap;
   private _layerControlInputs: HTMLInputElement[];
-  private _layers: { layer: Layer; name: string; overlay: boolean }[] = [];
+  private _layers: { layer: LeafletLayer; name: string; overlay: boolean }[] = [];
   private _lastZIndex: number;
   private _handlingClick: boolean;
   private _preventClick: boolean;
@@ -120,8 +122,12 @@ export class LayerCtrl extends Control {
   private _separator: HTMLDivElement;
   private _overlaysList: HTMLDivElement;
 
-  constructor(baseLayers: any, overlays: any, options: LayerCtrlOptions) {
+  private _app: Kvm;
+  _activeLayer: Layer;
+
+  constructor(app: Kvm, baseLayers: any, overlays: any, options: LayerCtrlOptions) {
     super();
+    this._app = app;
     Util.setOptions(this, options);
 
     this._layerControlInputs = [];
@@ -136,6 +142,36 @@ export class LayerCtrl extends Control {
 
     for (let i in overlays) {
       this._addLayer(overlays[i], i, true);
+    }
+
+    this._app.addEventListener(Kvm.EVENTS.ACTIVE_LAYER_CHANGED, (evt) => {
+      console.error(this);
+      const layer = <Layer>evt.newValue;
+      if (this._activeLayer) {
+        this.markLayer(this._activeLayer, false);
+      }
+      if (layer) {
+        this._activeLayer = layer;
+        if (!this._map.hasLayer(layer.layerGroup)) {
+          this._map.addLayer(layer.layerGroup);
+        }
+        this.markLayer(this._activeLayer, true);
+      }
+      console.info(evt);
+    });
+  }
+
+  markLayer(layer: Layer, mark: boolean) {
+    if (layer?.layerGroup) {
+      const leafletId = layer.layerGroup["_leaflet_id"];
+      const inputEl = this._layerControlInputs.find((inputEl) => inputEl["layerId"] === leafletId);
+      if (inputEl) {
+        if (mark) {
+          inputEl.parentElement.classList.add("active-layer");
+        } else {
+          inputEl.parentElement.classList.remove("active-layer");
+        }
+      }
     }
   }
 
@@ -169,21 +205,21 @@ export class LayerCtrl extends Control {
 
   // @method addBaseLayer(layer: Layer, name: String): this
   // Adds a base layer (radio button entry) with the given name to the control.
-  addBaseLayer(layer, name) {
+  addBaseLayer(layer: LeafletLayer, name: string) {
     this._addLayer(layer, name);
     return this._map ? this._update() : this;
   }
 
   // @method addOverlay(layer: Layer, name: String): this
   // Adds an overlay (checkbox entry) with the given name to the control.
-  addOverlay(layer: Layer, name: string) {
+  addOverlay(layer: LeafletLayer, name: string) {
     this._addLayer(layer, name, true);
     return this._map ? this._update() : this;
   }
 
   // @method removeLayer(layer: Layer): this
   // Remove the given layer from the control.
-  removeLayer(layer: Layer) {
+  removeLayer(layer: LeafletLayer) {
     layer.off("add remove", this._onLayerChange, this);
 
     const obj = this._getLayer(Util.stamp(layer));
@@ -275,7 +311,7 @@ export class LayerCtrl extends Control {
     container.appendChild(section);
   }
 
-  private _getLayer(id): { layer: Layer; name: string; overlay: boolean } | undefined {
+  private _getLayer(id): { layer: LeafletLayer; name: string; overlay: boolean } | undefined {
     for (let i = 0; i < this._layers.length; i++) {
       if (this._layers[i] && Util.stamp(this._layers[i].layer) === id) {
         return this._layers[i];
@@ -283,7 +319,7 @@ export class LayerCtrl extends Control {
     }
   }
 
-  private _addLayer(layer: Layer, name: string, overlay?: boolean) {
+  private _addLayer(layer: LeafletLayer, name: string, overlay?: boolean) {
     if (this._map) {
       layer.on("add remove", this._onLayerChange, this);
     }
@@ -419,8 +455,8 @@ export class LayerCtrl extends Control {
 
     const inputs = this._layerControlInputs;
 
-    const addedLayers: Layer[] = [],
-      removedLayers: Layer[] = [];
+    const addedLayers: LeafletLayer[] = [],
+      removedLayers: LeafletLayer[] = [];
 
     this._handlingClick = true;
 

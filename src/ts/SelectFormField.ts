@@ -18,38 +18,38 @@ import { createHtmlElement } from "./Util";
 export class SelectFormField extends AbstractField {
   element: HTMLSelectElement;
 
-  constructor(formId: string, settings: AttributeSetting) {
-    super(formId, settings);
-    this.settings = settings;
-    this.selector = "#" + formId + " select[id=" + this.settings.index + "]";
+  constructor(formId: string, attr: Attribute) {
+    super(formId, attr);
+    // this.settings = attr;
+    // this.selector = "#" + formId + " select[id=" + this.settings.index + "]";
 
     this.element = createHtmlElement("select");
-    this.element.id = String(this.settings.index);
-    this.element.name = this.settings.name;
+    this.element.id = String(attr.settings.index);
+    this.element.name = attr.settings.name;
     this.element.multiple = this.isArrayType();
-    this.element.disabled = this.settings.privilege == "0";
-    if (this.settings.required_by) {
-      this.element["required_by"] = this.settings.required_by;
+    this.element.disabled = attr.settings.privilege == "0";
+    if (attr.settings.required_by) {
+      this.element["required_by"] = attr.settings.required_by;
     }
-    if (this.settings.requires) {
-      this.element["requires"] = this.settings.requires;
+    if (attr.settings.requires) {
+      this.element["requires"] = attr.settings.requires;
     }
     if (!this.isArrayType()) {
       const option = createHtmlElement("option", this.element);
       option.innerText = "Bitte wählen";
     }
-    for (let i = 0; i < this.settings.enums.length; i++) {
-      const optionAttr = this.settings.enums[i];
+    for (let i = 0; i < attr.settings.enums.length; i++) {
+      const optionAttr = attr.settings.enums[i];
       const option = createHtmlElement("option", this.element);
       option.value = optionAttr.value;
       option.innerHTML = optionAttr.output;
     }
 
-    if (this.settings.required_by) {
+    if (attr.settings.required_by) {
       this.element.addEventListener("change", () => {
-        const required_by_idx = kvm.getActiveLayer().attribute_index[this.settings.required_by];
-        console.log("Select Feld %s hat abhängiges Auswahlfeld %s", this.settings.name, this.settings.required_by);
-        (<any>kvm.getActiveLayer().attributes[required_by_idx].formField).filter_by_required(this.settings.name, this.element.value);
+        const required_by_idx = kvm.getActiveLayer().attribute_index[attr.settings.required_by];
+        console.log("Select Feld %s hat abhängiges Auswahlfeld %s", attr.settings.name, attr.settings.required_by);
+        (<any>kvm.getActiveLayer().attributes[required_by_idx].formField).filter_by_required(attr.settings.name, this.element.value);
       });
       // find attribute with the name in required_by
       // apply the filter on the options, call filter_by_required
@@ -84,8 +84,8 @@ export class SelectFormField extends AbstractField {
 
   async setValue(val) {
     //console.log('SelectFormField.setValue with value: ' + val);
-    if (kvm.coalesce(val, "") === "" && this.settings.default) {
-      val = this.settings.default;
+    if (kvm.coalesce(val, "") === "" && this.attr.settings.default) {
+      val = this.attr.settings.default;
     }
 
     val = val == "null" ? "" : val;
@@ -113,7 +113,7 @@ export class SelectFormField extends AbstractField {
   }
 
   isArrayType() {
-    return this.settings.type.substring(0, 1) == "_";
+    return this.attr.settings.type.substring(0, 1) == "_";
   }
 
   filter_by_required(attribute: Attribute, value: any) {
@@ -165,7 +165,7 @@ export class SelectFormField extends AbstractField {
     // });
   }
 
-  getDom(): HTMLElement {
+  createInputElement(): HTMLElement {
     return this.element;
   }
 }

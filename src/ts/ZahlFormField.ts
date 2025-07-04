@@ -1,4 +1,4 @@
-import { AttributeSetting } from "./Attribute";
+import { Attribute, AttributeSetting } from "./Attribute";
 import { AbstractField, Field } from "./Field";
 import { kvm } from "./app";
 import { createHtmlElement } from "./Util";
@@ -17,14 +17,14 @@ import { createHtmlElement } from "./Util";
 export class ZahlFormField extends AbstractField implements Field {
   element: HTMLInputElement;
 
-  constructor(formId: string, settings: AttributeSetting) {
-    super(formId, settings);
+  constructor(formId: string, attr: Attribute) {
+    super(formId, attr);
 
     this.element = createHtmlElement("input");
     this.element.type = "number";
-    this.element.id = String(this.settings.index);
-    this.element.name = this.settings.name;
-    const disabled = (this.element.disabled = this.settings.privilege == "0");
+    this.element.id = String(attr.settings.index);
+    this.element.name = attr.settings.name;
+    const disabled = (this.element.disabled = attr.settings.privilege == "0");
     if (!disabled) {
       this.element.addEventListener("change", () => {
         this._value = this.element.value;
@@ -34,34 +34,35 @@ export class ZahlFormField extends AbstractField implements Field {
   }
 
   async setValue(val) {
-    console.log(`Attribute: ${this.settings.name} ZahlFormField.setValue with value: ${val}`);
+    console.log(`Attribute: ${this.attr.settings.name} ZahlFormField.setValue with value: ${val}`);
 
+    const settings = this.attr.settings;
     this._oldValue = val;
 
     const _attribute = this;
-    const layer = kvm.getLayer(`${this.settings.stelleId}_${this.settings.layerId}`);
+    const layer = kvm.getLayer(`${settings.stelleId}_${settings.layerId}`);
     let sql = "";
 
     if (layer.activeFeature.new) {
-      if (this.settings.default) {
+      if (settings.default) {
         // console.log('TextFormField default: %s', this.get('default'));
-        if (this.settings.default.startsWith("nextval")) {
+        if (settings.default.startsWith("nextval")) {
           // console.log('TextFormField %s Default Wert beginnt mit nextval. Frage max_id ab.', this.get('name'));
           // nextval Attribute werden immer gesetzt
-          sql = kvm.nextval(layer.get("schema_name"), layer.get("table_name"), this.settings.name);
+          sql = kvm.nextval(layer.get("schema_name"), layer.get("table_name"), settings.name);
         }
-        if (this.settings.default.startsWith("gdi_conditional_nextval")) {
+        if (settings.default.startsWith("gdi_conditional_nextval")) {
           sql = kvm.gdi_conditional_nextval(
-            this.settings.default.match(/'(.*?)'/)[1], // schema: 1. Argument in quotas
-            this.settings.default
+            settings.default.match(/'(.*?)'/)[1], // schema: 1. Argument in quotas
+            settings.default
               .split(",")[1]
               .trim()
               .replace(/^["'](.+(?=["']$))["']$/, "$1"), // table: 2. kommasepariertes Argument
-            this.settings.default
+            settings.default
               .split(",")[2]
               .trim()
               .replace(/^["'](.+(?=["']$))["']$/, "$1"), // column: 3. kommasepariertes Argument
-            this.settings.default
+            settings.default
               .split(",")[3]
               .replace(")", "")
               .trim()
@@ -79,20 +80,20 @@ export class ZahlFormField extends AbstractField implements Field {
               let next_val = 1;
               if (rs.rows.length == 1) {
                 next_val = rs.rows.item(0).next_val;
-                console.log("ZahlFormField " + _attribute.settings.name + " setValue to nextValue: %s", next_val);
+                console.log("ZahlFormField " + settings.name + " setValue to nextValue: %s", next_val);
                 _attribute.element.value = String(next_val);
               }
             },
             (err) => {
-              console.log("Fehler bei Ermittlung des max Value von Attribute: %s. Fehler: %o", _attribute.settings.name, err);
+              console.log("Fehler bei Ermittlung des max Value von Attribute: %s. Fehler: %o", _attribute.attr.settings.name, err);
               _attribute.element.value = "1";
             }
           );
         }
-      } else if (this.settings.nullable == 0 && this.settings.form_element_type != "Time") {
+      } else if (settings.nullable == 0 && settings.form_element_type != "Time") {
         // sonstige Pflichtattribute außer Zeit, diese werden erst beim Speichern gesetzt.
-        if (kvm.coalesce(val, "") == "" && this.settings.default) {
-          val = this.settings.default;
+        if (kvm.coalesce(val, "") == "" && settings.default) {
+          val = settings.default;
         }
       }
     }
@@ -111,7 +112,7 @@ export class ZahlFormField extends AbstractField implements Field {
     return val;
   }
 
-  getDom(): HTMLElement {
+  createInputElement(): HTMLElement {
     return this.element;
   }
 }

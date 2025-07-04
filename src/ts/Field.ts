@@ -1,4 +1,6 @@
-import { AttributeSetting } from "./Attribute";
+import { kvm } from "./app";
+import { Attribute, AttributeSetting } from "./Attribute";
+import { createHtmlElement } from "./Util";
 
 export interface FieldChangeEvent {
   src: Field;
@@ -17,22 +19,84 @@ export interface Field {
   hasChanged(): boolean;
 
   getDom(): HTMLElement;
+
+  hide(): void;
+  show(): void;
 }
 
 export abstract class AbstractField implements Field {
-  settings?: AttributeSetting;
-  selector?: string;
+  // settings?: AttributeSetting;
+  attr?: Attribute;
+  // selector?: string;
+
+  dom: HTMLElement;
 
   protected _value: any;
   protected _oldValue: any;
 
-  constructor(formId: string, settings: AttributeSetting) {
-    this.settings = settings;
-    this.selector = "#" + formId + " input[id=" + this.settings.index + "]";
+  constructor(formId: string, att: Attribute) {
+    // this.settings = settings;
+    this.attr = att;
+    // this.selector = "#" + formId + " input[id=" + this.settings.index + "]";
+  }
+
+  /**
+   *
+   * must create dom without Label
+   *
+   * @abstract
+   * @returns {HTMLElement}
+   */
+  abstract createInputElement(): HTMLElement;
+
+  /**
+   *
+   * creates dom without Label and using createFieldDom to add the InputElement
+   *
+   * @abstract
+   * @returns {HTMLElement}
+   */
+  createDom(): HTMLElement {
+    const labelDiv = createHtmlElement("label");
+    const settings = this.attr.settings;
+
+    labelDiv.htmlFor = settings.name;
+    labelDiv.innerText = (settings.alias ? settings.alias : settings.name) + (settings.nullable == 0 ? "*" : "");
+
+    if (settings.tooltip) {
+      const infoBttn = createHtmlElement("i", labelDiv, "fa fa-exclamation-circle");
+      infoBttn.style.color = "#f57802";
+      infoBttn.style.paddingLeft = "0.2rem";
+      infoBttn.addEventListener("click", () => kvm.msg(settings.tooltip));
+    }
+
+    const valueDiv = createHtmlElement("div", null, "form-value");
+
+    const formField = this.createInputElement();
+    const div = createHtmlElement("div", null, "form-field-rows");
+    // if (this.get("index") === 4) {
+    //   traceElementChange(div);
+    // }
+    div.id = `formFieldDiv_${this.attr.layer.get("id")}_${this.attr.get("index")}`;
+
+    div.style.cssText = this.attr.getArrangementStyle();
+    // TODO rtr
+    if (this.attr.get("form_element_type") !== "SubFormFK") {
+      const fL = createHtmlElement("div", div, "form-label");
+      fL.append(labelDiv);
+    }
+
+    div.append(valueDiv);
+    valueDiv.append(formField);
+
+    return div;
   }
 
   getDom(): HTMLElement {
-    throw new Error("Method not implemented.");
+    if (!this.dom) {
+      this.dom = this.createDom();
+    }
+    return this.dom;
   }
 
   lsts: { (src: Field, hasChanged: boolean): void }[] = [];
@@ -58,6 +122,19 @@ export abstract class AbstractField implements Field {
   fireChanged() {
     for (let i = 0; i < this.lsts.length; i++) {
       this.lsts[i](this, this.hasChanged());
+    }
+  }
+
+  hide() {
+    const dom = this.getDom();
+    if (dom?.parentElement) {
+      dom.parentElement.style.display = "none";
+    }
+  }
+  show() {
+    const dom = this.getDom();
+    if (dom?.parentElement) {
+      dom.parentElement.style.display = "";
     }
   }
 }

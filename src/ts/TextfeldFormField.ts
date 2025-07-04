@@ -1,4 +1,4 @@
-import { AttributeSetting } from "./Attribute";
+import { Attribute, AttributeSetting } from "./Attribute";
 import { AbstractField } from "./Field";
 import { kvm } from "./app";
 import { createHtmlElement } from "./Util";
@@ -16,13 +16,12 @@ import { createHtmlElement } from "./Util";
 export class TextfeldFormField extends AbstractField {
   element: HTMLTextAreaElement;
 
-  constructor(formId: string, settings: AttributeSetting) {
-    super(formId, settings);
-    console.log("TextfeldFormField", settings);
+  constructor(formId: string, attr: Attribute) {
+    super(formId, attr);
     this.element = createHtmlElement("textarea");
-    this.element.id = String(this.settings.index);
-    this.element.name = this.settings.name;
-    const disabled = (this.element.disabled = this.settings.privilege == "0");
+    this.element.id = attr.layer.get("id") + "-" + String(attr.settings.index);
+    this.element.name = attr.settings.name;
+    const disabled = (this.element.disabled = attr.settings.privilege == "0");
     if (!disabled) {
       this.element.addEventListener("keyup", () => {
         this._value = this.element.value || null;
@@ -34,8 +33,8 @@ export class TextfeldFormField extends AbstractField {
   async setValue(val: string) {
     console.log("TextFormField.setValue with value: " + val);
     this._oldValue = val;
-    if (kvm.coalesce(val, "") == "" && this.settings.default) {
-      val = this.settings.default;
+    if (kvm.coalesce(val, "") == "" && this.attr.settings.default) {
+      val = this.attr.settings.default;
     }
     this._oldValue = val;
     this.element.value = val == null || val == "null" ? "" : val;
@@ -45,7 +44,7 @@ export class TextfeldFormField extends AbstractField {
     return this._value;
   }
 
-  getDom(): HTMLElement {
+  createInputElement(): HTMLElement {
     return this.element;
   }
 }

@@ -14,7 +14,7 @@ export class ViewFeatureList extends View {
   featurelistBody: HTMLElement;
   showSearch: HTMLElement;
 
-  private fctUpdate: (evt: PropertyChangeEvent) => void;
+  private fctUpdate: (evt: PropertyChangeEvent) => Promise<void>;
 
   constructor(app: Kvm) {
     super(app, "featurelist");
@@ -25,7 +25,7 @@ export class ViewFeatureList extends View {
     this.showSearch = <HTMLElement>document.getElementById("showSearch");
     const searchFeatureField = <HTMLInputElement>document.getElementById("searchFeatureField");
 
-    this.fctUpdate = (evt: PropertyChangeEvent) => this.update(evt);
+    this.fctUpdate = async (evt: PropertyChangeEvent) => this.update(evt);
 
     for (const evt of ["keyup", "paste", "change", "search"]) {
       searchFeatureField.addEventListener(evt, () => {
@@ -51,7 +51,6 @@ export class ViewFeatureList extends View {
     app.addEventListener(Kvm.EVENTS.ACTIVE_LAYER_CHANGED, (evt) => {
       this.setActiveLayer(evt.newValue);
     });
-    this.setActiveLayer(app.getActiveLayer());
 
     app.addEventListener(Kvm.EVENTS.ACTIVE_FEATURE_CHANGED, (evt) => {
       console.info(`ViewFeatureList.activeFeatureChanged`, evt);
