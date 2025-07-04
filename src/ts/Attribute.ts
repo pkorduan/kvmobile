@@ -277,8 +277,9 @@ export class Attribute {
       case $.inArray(pgType, ["int4", "int2", "int8", "int16", "bigint", "integer"]) > -1:
         slType = "INTEGER";
         break;
-      case $.inArray(pgType, ["double precision"]) > -1:
+      case $.inArray(pgType, ["double precision", "numeric"]) > -1:
         slType = "REAL";
+        break;
       case pgType == "date":
         slType = "DATE";
         break;

@@ -21,6 +21,7 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
   - Merge der Änderungen von Peter in den Master von Ralf mit Synchronisation in develop
 - Features
   - Neuer Hintergrundlayer mit Luftbilder aus WMS.
+  - Ausgaben für die Synchronisierung verringert.
   - ToDo: Die Synchronisierung startet nach jedem Speichern der Datensätze.
 - Bugfix
   - Fix stelle.setLayerParam(key, value) error if _layerParams is undefined
