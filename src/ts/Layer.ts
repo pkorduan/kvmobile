@@ -341,7 +341,7 @@ export class Layer extends PropertyChangeSupport {
    * @param clickFunction
    */
   async readVorschauAttributes(attribute: Attribute, featureId: string, vorschauElement: HTMLElement, clickFunction = "activateFeature") {
-    console.error(`layer.readVorschauAttributes Attribute=${attribute.get("name")} für Layer=${this.title}`);
+    console.info(`layer.readVorschauAttributes Attribute=${attribute.get("name")} für Layer=${this.title}`);
     const subLayerId = attribute.getGlobalSubLayerId();
     const fkAttribute: String = attribute.getFKAttribute();
     const vorschauOption: String = attribute.getVorschauOption();
@@ -607,7 +607,7 @@ export class Layer extends PropertyChangeSupport {
    * @param items
    */
   async writeData(items) {
-    console.error("Layer %s: Schreibe %s Datensätze in die lokale Datebank.", this.title, items.length);
+    console.info("Layer %s: Schreibe %s Datensätze in die lokale Datebank.", this.title, items.length);
     // sperrBildschirm.tick("Schreibe Layerdaten in Datenbank.");
     const keys = this.getTableColumns().join(", ");
     console.info("keys", keys);
@@ -965,7 +965,7 @@ export class Layer extends PropertyChangeSupport {
     collection = JSON.parse(txt);
 
     if (("success" in collection && !collection.success) || ("type" in collection && collection.type != "FeatureCollection")) {
-      console.error(collection.msg, `url: ${url}`);
+      console.info(collection.msg, `url: ${url}`);
       kvm.msg(collection.msg, `Fehler beim Laden des Layers ${this.title} vom Server.`);
       return 0;
     }
@@ -1420,7 +1420,7 @@ export class Layer extends PropertyChangeSupport {
 
         attr.viewField.setValue(val);
         if (val === null && attr.get("privilege") == "0") {
-          console.error("Blende aus: " + attr.get("name"));
+          console.info("Blende aus: " + attr.get("name"));
           attr.viewField.element.parentElement.style.display = "none";
         }
       }
@@ -1447,7 +1447,7 @@ export class Layer extends PropertyChangeSupport {
    */
   async loadFeatureToForm(feature: Feature, options = { editable: false }) {
     // console.log("Layer.loadFeature %o ToForm with options: %o", feature, options);
-    console.error(`layer.loadFeatureToForm layer=´${this.title}`, feature.getDataValue(this.settings.id_attribute));
+    console.info(`layer.loadFeatureToForm layer=´${this.title}`, feature.getDataValue(this.settings.id_attribute));
     this._activeFeature = feature;
 
     // this.attributes.forEach((attr, idx) => async {^
@@ -1755,7 +1755,7 @@ export class Layer extends PropertyChangeSupport {
                 {
                   // replace default String with layerParams if exists
                   let paramName = attribute.get("default").slice(1);
-                  console.error("!!!!!!!!!!!");
+
                   const paramValue = this.stelle.getLayerParam(paramName);
                   if (attribute.hasEnumValue(paramValue)) {
                     value = paramValue;
@@ -1810,7 +1810,7 @@ export class Layer extends PropertyChangeSupport {
         // Prüfen gegen welche Geometrie ST_Within testet, vielleicht liegt es auch an einer falschen geom in standorte
         console.log("Frage parent id mit sql ab: ", sql);
         try {
-          console.error("_bestimmeUbergeordneteObjekte: %s  search parentFeature", att.get("name"));
+          console.info("_bestimmeUbergeordneteObjekte: %s  search parentFeature", att.get("name"));
           const rs = await Util.executeSQL(kvm.db, sql);
           console.log("Resultset von räumlicher Abfrage", rs);
           for (let i = 0; i < rs.rows.length; i++) {
@@ -1822,7 +1822,7 @@ export class Layer extends PropertyChangeSupport {
               break;
             }
           }
-          console.error("_bestimmeUbergeordneteObjekte: %s, SubFormFKFormField.setValue search parentFeature => %s ", att.get("name"), featureId);
+          console.info("_bestimmeUbergeordneteObjekte: %s, SubFormFKFormField.setValue search parentFeature => %s ", att.get("name"), featureId);
           if (featureId == "") {
             kvm.mapHint(`Der Marker liegt nicht im räumlichen Bereich eines Objektes vom Layers ${pkLayer.title}.`, 5000);
             // att.formField.setValue(att.get("default"));
@@ -1892,7 +1892,7 @@ export class Layer extends PropertyChangeSupport {
     // editFeature(f: string | Feature) {
     // const feature = typeof f === "string" ? this.getFeature(f) : f;
 
-    console.error(`zzz Layer.editFeature of layer ${this.title}`, feature);
+    console.info(`Layer.editFeature of layer ${this.title}`, feature);
 
     if (!this.isActive) {
       this.activate();
@@ -1985,7 +1985,7 @@ export class Layer extends PropertyChangeSupport {
     // editFeature(f: string | Feature) {
     // const feature = typeof f === "string" ? this.getFeature(f) : f;
 
-    console.error(`zzz Layer.editFeature of layer ${this.title}`, feature);
+    console.info(`zzz Layer.editFeature of layer ${this.title}`, feature);
 
     if (!this.isActive) {
       this.activate();
@@ -3401,7 +3401,7 @@ export class Layer extends PropertyChangeSupport {
    * - Wenn dieser Layer gesynct wurde und aktiv ist
    */
   activate() {
-    console.error(`Layer.activate ${this.title}`);
+    console.log(`Layer.activate ${this.title}`);
     // console.error("Setze Layer " + this.get("title") + " (" + (this.get("alias") ? this.get("alias") : "kein Aliasname") + ") aktiv.");
     try {
       this.isActive = true;

@@ -24,7 +24,7 @@ export class ViewDataView extends View {
   }
 
   update(f: Feature) {
-    console.error(`ViewDataView.update ${f?.layer?.title} ${f?.id}`);
+    console.info(`ViewDataView.update ${f?.layer?.title} ${f?.id}`);
     this.feature = f;
     this._updateFeature(f);
   }

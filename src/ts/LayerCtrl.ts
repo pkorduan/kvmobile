@@ -129,7 +129,6 @@ export class LayerCtrl extends Control {
     super();
     this._app = app;
     Util.setOptions(this, options);
-    console.error("LayerCtrl.new");
     this._layerControlInputs = [];
     this._layers = [];
     this._lastZIndex = 0;
@@ -145,7 +144,6 @@ export class LayerCtrl extends Control {
     }
 
     this._app.addEventListener(Kvm.EVENTS.ACTIVE_LAYER_CHANGED, (evt) => {
-      console.error(this);
       const layer = <Layer>evt.newValue;
       if (this._activeLayer) {
         this.markLayer(this._activeLayer, false);
@@ -206,7 +204,6 @@ export class LayerCtrl extends Control {
   // @method addBaseLayer(layer: Layer, name: String): this
   // Adds a base layer (radio button entry) with the given name to the control.
   addBaseLayer(layer: LeafletLayer, name: string) {
-    console.error("addBaseLayer");
     this._addLayer(layer, name);
     return this._map ? this._update() : this;
   }
@@ -214,7 +211,6 @@ export class LayerCtrl extends Control {
   // @method addOverlay(layer: Layer, name: String): this
   // Adds an overlay (checkbox entry) with the given name to the control.
   addOverlay(layer: LeafletLayer, name: string) {
-    console.error("addOverlay");
     this._addLayer(layer, name, true);
     return this._map ? this._update() : this;
   }
