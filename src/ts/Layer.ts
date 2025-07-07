@@ -1400,10 +1400,11 @@ export class Layer extends PropertyChangeSupport {
           kvm.getActiveLayer().vcheckAttributes(key, val, attr.viewField, "dataView");
         }
 
-        attr.viewField.setValue(val);
         if (val === null && attr.get("privilege") == "0") {
           console.info("Blende aus: " + attr.get("name"));
           attr.viewField.element.parentElement.style.display = "none";
+        } else {
+          attr.viewField.setValue(val);
         }
       }
       console.groupEnd();
@@ -1430,6 +1431,7 @@ export class Layer extends PropertyChangeSupport {
    */
   async loadFeatureToForm(feature: Feature, options = { editable: false }) {
     // console.log("Layer.loadFeature %o ToForm with options: %o", feature, options);
+    // this.app.menu.enableSaveFeatureButton(false);
     console.groupCollapsed(`layer.loadFeatureToForm layer=´${this.title}`, feature.getDataValue(this.settings.id_attribute));
     this._activeFeature = feature;
 
@@ -1877,6 +1879,7 @@ export class Layer extends PropertyChangeSupport {
     // const feature = typeof f === "string" ? this.getFeature(f) : f;
 
     console.info(`Layer.editFeature of layer ${this.title}`, feature);
+    kvm.menu.enableSaveFeatureButton(false);
 
     if (!this.isActive) {
       this.activate();
