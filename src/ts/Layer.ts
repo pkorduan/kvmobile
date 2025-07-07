@@ -392,7 +392,8 @@ export class Layer extends PropertyChangeSupport {
         vorschauElement.append(htmlList);
       }
     } catch (error) {
-      kvm.log(`Fehler bei der Abfrage der Vorschauattribute mit sql: ${sql} Fehler: ${error.message}`);
+      console.error(`Fehler bei der Abfrage der Vorschauattribute mit sql: ${sql} Fehler: ${error.message}`);
+      kvm.writeLog(`Fehler bei der Abfrage der Vorschauattribute mit sql: ${sql} Fehler: ${error.message}`);
     }
   }
 
@@ -640,9 +641,10 @@ export class Layer extends PropertyChangeSupport {
     } catch (error) {
       const msg = `Fehler beim Schreiben des Layers "${this.title}" ${error.message}`;
       this.set("syncVersion", 0);
+      // TODO jquery
       $("#syncVersionSpan_" + this.getGlobalId()).html("0");
       // console.error(`writeData of layer ${this.title} ${msg}`);
-      kvm.log(msg, 1);
+      console.error(error);
       alert(msg);
       throw new Error(msg);
     }
@@ -652,6 +654,7 @@ export class Layer extends PropertyChangeSupport {
     if (parseInt(this.get("sync"))) {
       console.log("Setze layerSettings syncVersion auf Layer.runningSyncVersion: ", this.runningSyncVersion);
       this.set("syncVersion", this.runningSyncVersion);
+      // TODO jquery
       $("#syncVersionSpan_" + this.getGlobalId()).html(this.runningSyncVersion.toString());
       this.set("syncLastLocalTimestamp", Date());
     }
@@ -669,7 +672,7 @@ export class Layer extends PropertyChangeSupport {
       console.log("Erzeuge Tabelle mit sql: " + sql);
       Util.executeSQL(kvm.db, sql)
         .then(async () => {
-          kvm.log("Tabelle " + layer.getSqliteTableName() + " erfolgreich angelegt.", 3);
+          console.log("Tabelle " + layer.getSqliteTableName() + " erfolgreich angelegt.");
           const tblExists = await Util.tableExists(kvm.db, layer.getSqliteTableName());
           console.info(`Tabelle ${layer.getSqliteTableName()} angelegt ${tblExists}`);
 
@@ -693,7 +696,6 @@ export class Layer extends PropertyChangeSupport {
         .catch((error) => {
           const msg = `Tabelle für Layer ${layer.title} konnte nicht angelegt werden. ${error.message}`;
           console.error(msg);
-          kvm.log(msg, 3);
           reject(new Error(msg));
         });
     });
@@ -708,7 +710,7 @@ export class Layer extends PropertyChangeSupport {
     const tableName = this.getSqliteTableName();
     const sql = "DROP TABLE IF EXISTS " + tableName;
     return new Promise<void>((resolve, reject) => {
-      kvm.log("Lösche Tabelle mit sql: " + sql, 3);
+      console.log("Lösche Tabelle mit sql: " + sql);
       Util.executeSQL(kvm.db, sql)
         .then(async (result) => {
           console.info("Tabelle " + tableName + " gelöscht.", result);
@@ -717,11 +719,8 @@ export class Layer extends PropertyChangeSupport {
           resolve();
         })
         .catch((error) => {
-          console.info("Fehler beim Löschen der Tabelle: " + tableName + " ", error.message);
-          reject({
-            message: `Fehler beim Löschen der Tabelle: ${tableName} ${error?.message}`,
-            caause: error,
-          });
+          console.error("Fehler beim Löschen der Tabelle: " + tableName + " ", error);
+          reject(new Error(`Fehler beim Löschen der Tabelle: ${tableName} ${error?.message}`, { cause: error }));
         });
     });
   }
@@ -733,19 +732,16 @@ export class Layer extends PropertyChangeSupport {
     const tableName = this.getSqliteTableName() + "_deltas";
     const sql = "DROP TABLE IF EXISTS " + tableName;
     return new Promise<void>((resolve, reject) => {
-      kvm.log("Lösche Deltas Tabelle mit sql: " + sql, 3);
+      console.log("Lösche Deltas Tabelle mit sql: " + sql);
 
       Util.executeSQL(kvm.db, sql)
         .then(() => {
-          kvm.log("Deltatabelle " + tableName + " gelöscht.", 3);
+          console.log("Deltatabelle " + tableName + " gelöscht.");
           resolve();
         })
         .catch((error) => {
-          kvm.msg("Fehler beim Löschen der Deltatabelle: " + tableName + " " + error.message);
-          reject({
-            message: `Fehler beim Löschen der Deltatabelle: ${tableName} ${error?.message}`,
-            caause: error,
-          });
+          console.error("Fehler beim Löschen der Deltatabelle: " + tableName + " " + error.message);
+          reject(new Error(`Fehler beim Löschen der Deltatabelle: ${tableName} ${error?.message}`, { cause: error }));
         });
     });
   }
@@ -765,7 +761,7 @@ export class Layer extends PropertyChangeSupport {
             (tx, res) => {
               sperrBildschirm.tick("Tabelle " + this.getSqliteTableName() + " erfolgreich gelöscht.");
               const sql = this.getCreateTableSql();
-              kvm.log("Erzeuge neue Tabelle mit sql: " + sql, 3);
+              console.log("Erzeuge neue Tabelle mit sql: " + sql);
               sperrBildschirm.tick("Erzeuge neue Tabelle " + this.getSqliteTableName());
               tx.executeSql(
                 sql,
@@ -1083,7 +1079,7 @@ export class Layer extends PropertyChangeSupport {
         imageDiv.css("background-image", "url('" + localFile + "')");
       },
       (error) => {
-        kvm.log("Fehler beim Download der Bilddatei: " + error.code, 1);
+        console.log("Fehler beim Download der Bilddatei: " + error.code, 1);
       },
       true
     );
@@ -1388,7 +1384,7 @@ export class Layer extends PropertyChangeSupport {
    * Setzt die Werte des Features im dataView
    */
   loadFeatureToView(feature: Feature, options = {}) {
-    console.log(this.get("title") + ": Lade Feature in View.");
+    console.groupCollapsed(this.get("title") + ": Lade Feature in View.");
 
     for (const attr of this.attributes) {
       if (attr.get("type") != "geometry") {
@@ -1410,6 +1406,7 @@ export class Layer extends PropertyChangeSupport {
           attr.viewField.element.parentElement.style.display = "none";
         }
       }
+      console.groupEnd();
     }
 
     //this.selectFeature(feature, true);
@@ -1433,7 +1430,7 @@ export class Layer extends PropertyChangeSupport {
    */
   async loadFeatureToForm(feature: Feature, options = { editable: false }) {
     // console.log("Layer.loadFeature %o ToForm with options: %o", feature, options);
-    console.info(`layer.loadFeatureToForm layer=´${this.title}`, feature.getDataValue(this.settings.id_attribute));
+    console.groupCollapsed(`layer.loadFeatureToForm layer=´${this.title}`, feature.getDataValue(this.settings.id_attribute));
     this._activeFeature = feature;
 
     // this.attributes.forEach((attr, idx) => async {^
@@ -1489,6 +1486,7 @@ export class Layer extends PropertyChangeSupport {
     //     kvm.controller.mapper.watchGpsAccuracy();
     //   }
     // }
+    console.groupEnd();
   }
 
   async loadTplFeatureToForm(tplId: string) {
@@ -1863,7 +1861,7 @@ export class Layer extends PropertyChangeSupport {
     //   }
     // }
     // kvm.setActiveFeature(feature);
-    kvm.log(`Neues Feature mit id: ${this.activeFeature.id} erzeugt.`);
+    console.log(`Neues Feature mit id: ${this.activeFeature.id} erzeugt.`);
     return feature;
   }
 
@@ -2395,10 +2393,10 @@ export class Layer extends PropertyChangeSupport {
             oldVal = "";
           }
 
-          kvm.log("Vergleiche " + attr.get("form_element_type") + " Attribut: " + attrName + " " + oldVal + " (" + typeof oldVal + ") vs. " + newVal + "(" + typeof newVal + "))");
+          console.log("Vergleiche " + attr.get("form_element_type") + " Attribut: " + attrName + " " + oldVal + " (" + typeof oldVal + ") vs. " + newVal + "(" + typeof newVal + "))");
 
           if (oldVal != newVal) {
-            kvm.log("Änderung in Attribut " + attrName + " gefunden.", 3);
+            console.log("Änderung in Attribut " + attrName + " gefunden.", 3);
             //kvm.deb("Änderung in Attribut " + key + " gefunden.");
             //            activeFeature.set(key, newVal); Wird jetzt in afterUpdateDataset ausgeführt mit feature.updateChanges
 
@@ -2586,7 +2584,7 @@ export class Layer extends PropertyChangeSupport {
    * @return array The array of changes including the auto values
    */
   addAutoChanges(changes: AttributteDelta[], action: string): AttributteDelta[] {
-    kvm.log("Layer.addAutoChanges mit action " + action, 4);
+    console.log("Layer.addAutoChanges mit action " + action);
     const changesKeys = $.map(changes, function (change) {
       return change.key;
     });
@@ -2597,7 +2595,7 @@ export class Layer extends PropertyChangeSupport {
         console.log("getAutoValue from attribute: %s formfield: %s", attr.get("name"), attr.formField.constructor.name);
         try {
           const autoValue = (<any>attr.formField).getAutoValue();
-          kvm.log("Ergänze Autowert: " + attr.get("name") + " = " + autoValue);
+          console.log("Ergänze Autowert: " + attr.get("name") + " = " + autoValue);
           results.push({
             key: attr.get("name"),
             oldVal: kvm.getActiveLayer().activeFeature.getDataValue(attr.get("name")),
@@ -2735,7 +2733,7 @@ export class Layer extends PropertyChangeSupport {
       `,
     };
 
-    kvm.log("INSERT Delta: " + JSON.stringify(delta), 3);
+    console.log("INSERT Delta: " + JSON.stringify(delta));
     return delta;
   }
 
@@ -2765,7 +2763,7 @@ export class Layer extends PropertyChangeSupport {
         	${this.get("id_attribute")} = '${this.activeFeature.id}'
       `,
     };
-    kvm.log("UPDATE Delta sql: " + JSON.stringify(delta), 3);
+    console.log("UPDATE Delta sql: " + JSON.stringify(delta), 3);
     return delta;
   }
 
@@ -2782,7 +2780,7 @@ export class Layer extends PropertyChangeSupport {
           ${this.get("id_attribute")} = '${featureId}'
       `,
     };
-    kvm.log("DELETE Delta sql: " + JSON.stringify(delta), 3);
+    console.log("DELETE Delta sql: " + JSON.stringify(delta), 3);
     return delta;
   }
 
@@ -2994,7 +2992,6 @@ export class Layer extends PropertyChangeSupport {
               await kvm.getActiveStelle().reloadLayer(this.get("id"));
             } catch (ex) {
               alert("Fehler beim Einlesen der heruntergeladenen Datei. Prüfen Sie die URL und Parameter, die für den Download verwendet werden.");
-              kvm.log("Fehler beim lesen der Datei: ", ex);
               console.error(`Fehler`, ex);
             }
             sperrBildschirm.close();
@@ -3014,6 +3011,7 @@ export class Layer extends PropertyChangeSupport {
     console.info(`bttnStyleLayerClicked`);
     const layerGlobalId = this.getGlobalId();
     console.log("click on style-layer-button id: ", layerGlobalId);
+    // TODO jquery
     $("#styleLayerDiv_" + layerGlobalId).toggle();
   }
   bttnShowLayerInfoClicked(infoPanel: { dom: HTMLDivElement; update: () => void }, evt: MouseEvent) {
@@ -3334,10 +3332,10 @@ export class Layer extends PropertyChangeSupport {
   }
 
   downloadError(error) {
-    kvm.log("download error source " + error.source);
-    kvm.log("download error target " + error.target);
-    kvm.log("download error code: " + error.code);
-    kvm.log("download error http_status: " + error.http_status);
+    console.log("download error source " + error.source);
+    console.log("download error target " + error.target);
+    console.log("download error code: " + error.code);
+    console.log("download error http_status: " + error.http_status);
     alert("Fehler beim herunterladen der Datei von der Url: " + kvm.replacePassword(error.source) + "! Error code: " + error.code + " http_status: " + error.http_status);
   }
 

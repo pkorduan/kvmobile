@@ -514,14 +514,15 @@ export class Kvm extends PropertyChangeSupport {
    * @param log
    * @returns
    */
-  async writeLog(log: any) {
+  async writeLog(log: any): Promise<boolean> {
     log = `[${kvm.now(" ", "", ":")}] ${log}` + "\n";
     const dataObj = new Blob([log], { type: "text/plain" });
     try {
-      console.info("writeLog", kvm.logFileEntry);
       await FileUtils.writeFile(kvm.logFileEntry, dataObj, true);
+      return true;
     } catch (ex) {
-      throw new Error(`Fehler beim Schreiben in das Logfile ${kvm.logFileEntry.nativeURL} `, ex);
+      console.error(`Fehler beim Schreiben in das Logfile ${kvm.logFileEntry.nativeURL} `, ex);
+      return false;
     }
   }
 
@@ -1027,11 +1028,7 @@ export class Kvm extends PropertyChangeSupport {
   }
 
   initMap() {
-    //kvm.log("Karte initialisieren.", 3);
-    kvm.log("initialisiere Mapsettings", 3);
-    // this.initMapSettings();
-
-    kvm.log("initialisiere backgroundLayers", 3);
+    console.log("initialisiere backgroundLayers");
     this.initBackgroundLayers();
 
     // rtr removed
@@ -2408,25 +2405,25 @@ export class Kvm extends PropertyChangeSupport {
   //   kvm._layers.get($("#layer_list").children[0].val()).activate();
   // }
 
-  log(msg: any, level = 3, show_in_sperr_div: boolean = false, append: boolean = false) {
-    if (level <= (typeof kvm.store == "undefined" ? kvm.config.logLevel : kvm.store.getItem("logLevel")) && (typeof msg === "string" || msg instanceof String)) {
-      msg = this.replacePassword(msg);
-      if (kvm.config.debug) {
-        console.log("Log msg: " + msg);
-      }
-      setTimeout(function () {
-        const logText = document.getElementById("logText");
-        if (logText) {
-          const txt = logText.innerHTML;
-          logText.innerHTML = txt + `<br>${kvm.now(" ", "", ":")}: ${msg}`;
-          if (show_in_sperr_div) {
-            sperrBildschirm.show();
-            sperrBildschirm.setContent(msg, append);
-          }
-        }
-      });
-    }
-  }
+  // log(msg: any, level = 3, show_in_sperr_div: boolean = false, append: boolean = false) {
+  //   if (level <= (typeof kvm.store == "undefined" ? kvm.config.logLevel : kvm.store.getItem("logLevel")) && (typeof msg === "string" || msg instanceof String)) {
+  //     msg = this.replacePassword(msg);
+  //     if (kvm.config.debug) {
+  //       console.log("Log msg: " + msg);
+  //     }
+  //     setTimeout(function () {
+  //       const logText = document.getElementById("logText");
+  //       if (logText) {
+  //         const txt = logText.innerHTML;
+  //         logText.innerHTML = txt + `<br>${kvm.now(" ", "", ":")}: ${msg}`;
+  //         if (show_in_sperr_div) {
+  //           sperrBildschirm.show();
+  //           sperrBildschirm.setContent(msg, append);
+  //         }
+  //       }
+  //     });
+  //   }
+  // }
 
   /**
    *
@@ -2561,7 +2558,7 @@ export class Kvm extends PropertyChangeSupport {
     const resultObj = JSON.parse(layerResult);
 
     if (!resultObj.success) {
-      kvm.log("Result success ist false!", 4);
+      console.error("Result success ist false!", resultObj);
       const errMsg = "Fehler beim Abfragen der Layerdaten. Falsche Serverparameter, Authentifizierungsfehler oder Fehler auf dem Server.";
       return { success: false, errMsg: errMsg };
     }

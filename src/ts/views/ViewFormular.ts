@@ -33,7 +33,7 @@ export class ViewFormular extends View {
   }
 
   _createForm(layer: Layer) {
-    console.info("ViewFormular create Form for Layer " + layer.title);
+    console.groupCollapsed("ViewFormular create Form for Layer " + layer.title);
     this.dom.innerHTML = "";
     const h1 = Util.createHtmlElement("h1", this.dom);
     h1.innerText = layer.title;
@@ -89,6 +89,8 @@ export class ViewFormular extends View {
         });
       }
     });
+    console.log("ViewFormular Form createdLayer=" + layer.title);
+    console.groupEnd();
   }
 
   private hasChanged(): boolean {

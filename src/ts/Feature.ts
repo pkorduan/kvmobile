@@ -525,7 +525,7 @@ export class Feature {
         // kvm.msg("Das Feature hat noch keine Geometrie und ist deshalb nicht in der Karte zu sehen!", "Hinweis");
       }
     }
-    kvm.log("Select feature in list " + this.id, 4);
+    console.log("Select feature in list " + this.id);
     //  $("#" + this.id).addClass("selected-feature-item");
     // this.setActive(true);
     this._isActive = true;

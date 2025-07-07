@@ -551,7 +551,7 @@ export class Stelle {
         await layer.updateTable(this.getLastDeltaVersion()); // includes DROP TABLE IF EXISTS, appendToApp(), activate(), this.sortOverlays(), saveToStore(), readData()
         // TODO
       } else {
-        kvm.log("Fehlerausgabe von parseLayerResult!", 4);
+        console.log("Fehlerausgabe von parseLayerResult!", 4);
         kvm.msg(resultObj.errMsg, `Layer ID: ${layerId}`);
       }
     } catch (ex) {
@@ -780,7 +780,7 @@ export class Stelle {
       // $("#showSearch").hide();
       // hier nicht schließen, sonden am Ende von requestData kvm.closeSperrDiv();
     } else {
-      kvm.log("Fehlerausgabe von parseLayerResult!", 4);
+      console.log("Fehlerausgabe von parseLayerResult!", 4);
       kvm.msg(layerRequestResult.errMsg, "Downloadfehler");
     }
   }
@@ -892,7 +892,7 @@ export class Stelle {
     const img = deltaRow.file;
     //kvm.log("Layer.sendNewImage", 4);
     console.log(`sendNewImage ${img} `);
-    kvm.log("Bild " + img + " wird hochgeladen.", 3);
+    console.log("Bild " + img + " wird hochgeladen.");
     // const icon = $("#syncImagesIcon_" + this.getGlobalId());
     // const ft = new FileTransfer();
     const fileURL = "file://" + kvm.getConfigurationOption("localImgPath") + img.substring(img.lastIndexOf("/") + 1);
@@ -934,7 +934,7 @@ export class Stelle {
       try {
         const response = JSON.parse(fileUploadResult.response);
         if (response.success) {
-          kvm.log("Bild " + img + " wurde erfolgreich auf den Server geladen.");
+          console.log("Bild " + img + " wurde erfolgreich auf den Server geladen.");
           //kvm.log("Code = " + r.responseCode, 4);
           //kvm.log("Response = " + r.response, 4);
           //kvm.log("Sent = " + r.bytesSent, 4);
@@ -947,7 +947,6 @@ export class Stelle {
       } catch (error) {
         const err_msg = "Fehler beim Hochladen der Bilddatei.";
         console.error("%s Fehler: %o Response: %o", err_msg, error, fileUploadResult);
-        kvm.log(err_msg + " error: " + JSON.stringify(error));
         sperrBildschirm.close(err_msg + " Kann Antwort vom Server nicht parsen: " + JSON.stringify(fileUploadResult));
       }
     } catch (error) {
@@ -986,7 +985,7 @@ export class Stelle {
       const fileContent = await readFileAsString(fileEntry);
       const json = JSON.parse(fileContent);
       if (json.success) {
-        kvm.log("Bild: " + img + " erfolgreich auf dem Server gelöscht.", 4);
+        console.log("Bild: " + img + " erfolgreich auf dem Server gelöscht.");
         await this.clearImageDelta(deltaRow);
       } else {
         if (!img) {

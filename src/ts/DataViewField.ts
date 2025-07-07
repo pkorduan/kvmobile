@@ -99,7 +99,7 @@ export class DataViewField {
                 alert("Fehler beim laden der Datei: '" + localFile + "'. Fehler:" + e);
               },
               success: () => {
-                kvm.log("Datei " + localFile + " erfolgreich geöffnet.", 4);
+                console.log("Datei " + localFile + " erfolgreich geöffnet.");
               },
             });
           });
@@ -266,14 +266,14 @@ export class DataViewField {
               ["ja", "nein"]
             );
           } else {
-            kvm.log("Versuche das Bild zu öffnen: " + src, 4);
+            console.log("Versuche das Bild zu öffnen: " + src);
             cordova.plugins.fileOpener2.open(src, "image/jpeg", {
               error: (e) => {
                 console.error("Fehler beim laden der Datei: '" + src + "'. Fehler:", e);
                 alert("Fehler beim Laden der Datei: '" + src + "'. Fehler:" + e);
               },
               success: async () => {
-                kvm.log("Datei " + src + " erfolgreich geöffnet.", 4);
+                console.log("Datei " + src + " erfolgreich geöffnet.");
               },
             });
           }
@@ -327,20 +327,20 @@ export class DataViewField {
           kvm.msg("Kein Internet! Bild kann gerade nicht heruntergeladen werden.", "Bilder Download");
         }
       } else {
-        kvm.log("Versuche das Bild zu öffnen: " + src, 4);
+        console.log("Versuche das Bild zu öffnen: " + src);
         cordova.plugins.fileOpener2.open(src, "image/jpeg", {
           error: function (e) {
             console.error("Fehler beim laden der Datei: '" + src + "'. Fehler:", e);
             alert("Fehler beim Laden der Datei: '" + src + "'. Fehler:" + e);
           },
           success: function () {
-            kvm.log("Datei " + src + " erfolgreich geöffnet.", 4);
+            console.log("Datei " + src + " erfolgreich geöffnet.");
             navigator.notification.confirm(
               "Bild Löschen?",
               function (buttonIndex) {
                 if (buttonIndex == 1) {
                   // ja
-                  var field = kvm.getActiveLayer().attributes[fieldId].formField;
+                  const field = kvm.getActiveLayer().attributes[fieldId].formField;
                   field.dropImage(target);
                 }
                 if (buttonIndex == 2) {

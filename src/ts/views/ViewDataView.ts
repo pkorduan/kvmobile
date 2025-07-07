@@ -72,7 +72,7 @@ export class ViewDataView extends View {
   // }
 
   _createDataView(layer: Layer) {
-    console.log("Layer.createDataView");
+    console.groupCollapsed("Layer.createDataView for Layer " + layer.title);
     // sperrBildschirm.tick(`${layer.title}:<br>&nbsp;&nbsp;Erzeuge Sachdatenanzeige neu.`);
     const dataView = document.getElementById("dataView");
     dataView.innerHTML = "";
@@ -114,6 +114,7 @@ export class ViewDataView extends View {
         // $("#dataViewDiv").append(attributeGroup.div);
       }
     });
+    console.groupEnd();
     // $(".attribute-group-header").on("click", (evt) => {
     //   console.log("attribute-group-header");
     //   $(evt.target).toggleClass("b-expanded b-collapsed");

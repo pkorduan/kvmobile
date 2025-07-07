@@ -309,7 +309,7 @@ export class Server extends PanelEinstellungen {
   async requestStellen() {
     const url = this.getStellenUrl();
 
-    kvm.log("Download Stellen von Url: " + url);
+    console.log("Download Stellen von Url: " + url);
 
     let txt: string;
     try {
@@ -363,7 +363,7 @@ export class Server extends PanelEinstellungen {
 
     if (errMsg) {
       kvm.msg(errMsg);
-      kvm.log(errMsg, 1);
+      console.log(errMsg, 1);
     }
     sperrBildschirm.close();
   }
@@ -1502,7 +1502,7 @@ export class Database extends PanelEinstellungen {
     } catch (error) {
       const msg = `Fehler in bei Abfrage der Deltas mit sql: ${sql} Fehler: ${error.message} code: ${(<any>error).code}`;
       console.error(msg);
-      kvm.log(msg, 1);
+      console.log(msg);
       kvm.msg(msg, "Datenbank");
     }
   }
@@ -1528,8 +1528,7 @@ export class Database extends PanelEinstellungen {
       this.showImageDeltasWaiting.style.display = "none";
     } catch (error) {
       const msg = `Fehler in bei Abfrage der Deltas mit sql: ${sql} Fehler: ${error.message} code: ${(<any>error).code}`;
-      console.error(msg);
-      kvm.log(msg, 1);
+      console.error(msg, error);
       kvm.msg(msg, "Datenbank");
     }
   }

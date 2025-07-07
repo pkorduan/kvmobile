@@ -117,7 +117,7 @@ export class GeometrieFormField extends AbstractField implements Field {
     console.log(`GeometrieFormField(${val})`, val);
     this._value = val;
     this._oldValue = val;
-    kvm.log("GeometrieFormField.setValue with value:" + val);
+    console.log("GeometrieFormField.setValue with value:" + val);
     if (val) {
       const geom = wkx.Geometry.parse(<any>new Buffer(val, "hex"));
       this.hiddenElement.value = geom.toEwkb().toString("hex");
