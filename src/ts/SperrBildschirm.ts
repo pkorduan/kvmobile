@@ -30,12 +30,7 @@ class SperrBildschirm {
   private sperrDivSpinner: HTMLElement;
   private sperrDivContent: HTMLElement;
 
-  //   <div id="sperr_div" class="modal">
-  //   <i class="fa fa-spinner fa-pulse fa-2x"></i>
-  //   <div id="sperr_div_content" class="sperr-div-content"></div>
-
   constructor() {
-    console.info("SperrBildschirm new");
     const f = () => {
       this.sperrDiv = document.getElementById("sperr_div") as HTMLElement;
       this.sperrDivSpinner = this.sperrDiv.querySelector("i") as HTMLElement;
@@ -54,8 +49,6 @@ class SperrBildschirm {
           ["ja", "nein"]
         );
       });
-
-      console.info("SperrBildschirm init");
     };
     document.addEventListener("deviceready", f);
   }

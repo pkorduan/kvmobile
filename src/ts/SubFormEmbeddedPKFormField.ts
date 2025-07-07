@@ -48,6 +48,7 @@ export class SubFormEmbeddedPKFormField implements Field {
    * werden über die ID des Datensatzes der in id_attribut steht
    */
   async setValue(val) {
+    // TODO jquery
     const feature = this.attribute.layer.activeFeature;
     console.log("setValue of SubFormEmbeddedPK FormField");
     this.element.innerHTML = "";

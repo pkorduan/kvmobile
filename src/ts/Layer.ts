@@ -318,16 +318,18 @@ export class Layer extends PropertyChangeSupport {
     return typeof this.get("syncVersion") == "undefined" || this.get("syncVersion") == null || this.get("syncVersion") == "" || this.get("syncVersion") == 0 || (this.get("syncVersion") != "" && this.numFeatures == 0);
   }
 
-  setEmpty(): void {
-    this.set("syncVersion", 0);
-    // $("#syncVersionSpan_" + this.getGlobalId()).html("0");
-    console.log("Function setEmpty: Setze runningSyncVersion auf 0.");
-    this.runningSyncVersion = 0;
-  }
+  // TODO
+  // setEmpty(): void {
+  //   this.set("syncVersion", 0);
+  //   // $("#syncVersionSpan_" + this.getGlobalId()).html("0");
+  //   console.log("Function setEmpty: Setze runningSyncVersion auf 0.");
+  //   this.runningSyncVersion = 0;
+  // }
 
-  autoSyncActive() {
-    return $(`#auto_sync_${this.getGlobalId()}`).is(":checked");
-  }
+  // // TODO
+  // autoSyncActive() {
+  //   return $(`#auto_sync_${this.getGlobalId()}`).is(":checked");
+  // }
 
   /**
    * Function read VorschauAttributes from feature with featureId
@@ -1011,7 +1013,7 @@ export class Layer extends PropertyChangeSupport {
     if (this.layerGroup) {
       this.layerGroup.clearLayers();
     }
-    this.setEmpty();
+    // this.setEmpty();
   }
 
   /**
@@ -1040,6 +1042,7 @@ export class Layer extends PropertyChangeSupport {
       Util.executeSQL(kvm.db, sql)
         .then((rs: SQLitePlugin.Results) => {
           resolve();
+          // TODO
           // console.error("TODO: update GUI");
           /*
                     // kvm.log("Deltas von Layer " + this.layer.get("title") + " erfolgreich gelöscht.", 3);
@@ -1347,7 +1350,6 @@ export class Layer extends PropertyChangeSupport {
             visible = attr.get("vcheck_value").split("|").indexOf(attribute_value) != -1;
             break;
         }
-        console.info(`vcheckAttributes ${attr.get("name")} ${attr.get("vcheck_attribute")} ${attribute_value} ${attr.get("vcheck_operator")} ${attr.get("vcheck_value")} => ${visible}`);
 
         if (visible) {
           console.log(`Schalte #${fieldType}FieldDiv_${attr.get("index")} von Attribut ${attr.get("name")} sichtbar wegen ${attribute_name} ${attr.get("vcheck_operator")} ${attr.get("vcheck_value")}`);
@@ -1364,21 +1366,22 @@ export class Layer extends PropertyChangeSupport {
         }
       }
     });
-    if (fieldType === "dataView") {
-      this.attributeGroups.forEach((attrGrp) => {
-        if (
-          attrGrp.attributeIds.every((attributeId) => {
-            return $(`#dataViewFieldDiv_${attributeId}`).css("display") === "none";
-          })
-        ) {
-          // TODO
-          // attrGrp.div.hide();
-        } else {
-          // TODO
-          // attrGrp.div.show();
-        }
-      });
-    }
+    // ToDo
+    // if (fieldType === "dataView") {
+    //   this.attributeGroups.forEach((attrGrp) => {
+    //     if (
+    //       attrGrp.attributeIds.every((attributeId) => {
+    //         return $(`#dataViewFieldDiv_${attributeId}`).css("display") === "none";
+    //       })
+    //     ) {
+    //       // TODO
+    //       // attrGrp.div.hide();
+    //     } else {
+    //       // TODO
+    //       // attrGrp.div.show();
+    //     }
+    //   });
+    // }
   }
 
   getIcon() {
@@ -1425,6 +1428,7 @@ export class Layer extends PropertyChangeSupport {
 
     //this.selectFeature(feature, true);
     if (feature.new) {
+      // TODO jquery
       $("#newAfterCreateDiv").show();
     } else {
       $("#newAfterCreateDiv").hide();
@@ -1451,9 +1455,8 @@ export class Layer extends PropertyChangeSupport {
       const attrName = attr.get("name");
       const val = feature.getDataValue(attrName) == "null" ? null : feature.getDataValue(attrName);
 
-      //console.log("Set %s %s: %s", attr.get("form_element_type"), key, val);
-      //console.log('Set Value of feature: %s in formField: %s for key: %s with value: %s', JSON.stringify(this), attr.formField.constructor.name, key, val);
       await attr.formField.setValue(val);
+
       // TODO
       if (val === null && !attr.isEditable()) {
         // attr.formField.getDom().style.display = "none";
@@ -1466,6 +1469,7 @@ export class Layer extends PropertyChangeSupport {
         console.info("FormField=" + kvm.getActiveLayer().attributes[required_by_idx].formField, this === kvm.getActiveLayer());
         (<any>kvm.getActiveLayer().attributes[required_by_idx].formField).filter_by_required(attr.get("name"), val);
       }
+
       if (attr.hasVisibilityDependency()) {
         this.vcheckAttributes(attr.get("name"), val, attr.formField, "form");
       }
@@ -2006,6 +2010,7 @@ export class Layer extends PropertyChangeSupport {
               const startLatLng: LatLngTuple = [geoLocation.coords.latitude, geoLocation.coords.longitude];
               kvm.getActiveLayer().startEditing(kvm.getActiveLayer().getStartGeomAtLatLng(startLatLng), startLatLng);
               if (this.get("geometry_type") === "Point") {
+                // TODO jquery
                 $("#gpsCurrentPosition").html(geoLocation.coords.latitude.toString() + " " + geoLocation.coords.longitude.toString());
                 console.log("Starte laufende Übernahme der aktuellen GPS-Position.");
                 kvm.controller.mapper.startUpdateMarkerWithGps();
@@ -2618,9 +2623,6 @@ export class Layer extends PropertyChangeSupport {
         }
       }
     }
-
-    // kvm.alog("Add autoChanges: ", autoChanges, 4);
-    // const result = changes.concat(autoChanges);
     kvm.alog("Return:", results, 4);
     return results;
   }
@@ -2630,7 +2632,7 @@ export class Layer extends PropertyChangeSupport {
    * @param result set rs Resultset from a readDataset query
    */
   afterUpdateDataset(rs: SQLitePlugin.Results) {
-    // console.log("afterUpdateDataset rs", rs);
+    console.log("afterUpdateDataset rs", rs);
     try {
       this.activeFeature.setData(rs.rows.item(0));
       if (this.hasGeometry) {
@@ -2698,6 +2700,7 @@ export class Layer extends PropertyChangeSupport {
       kvm.editFeature(parentLayerId, parentFeatureId);
     } else {
       //console.log('Wechsel die Ansicht zur Featurelist.');
+      // TODO
       kvm.showView(!$("#map").is(":visible") ? "featurelist" : "map");
       //console.log('Scroll die FeatureListe nach ganz oben');
       kvm.showNextItem(kvm.getConfigurationOption("viewAfterDelete"), this);
@@ -2947,6 +2950,7 @@ export class Layer extends PropertyChangeSupport {
         function (buttonIndex) {
           if (buttonIndex == 1) {
             // ja
+            // TODO jquery
             $("#syncImageIcon_" + this.getGlobalId()).toggleClass("fa-upload fa-spinner fa-spin");
             sperrBildschirm.show();
             this.syncImages();
@@ -2957,6 +2961,8 @@ export class Layer extends PropertyChangeSupport {
       );
     }
   }
+
+  // TODO
   bttnClearLayerClicked(evt: MouseEvent) {
     console.info(`bttnClearLayerClicked`);
     if (this.isEmpty()) {
@@ -3600,6 +3606,7 @@ export class Layer extends PropertyChangeSupport {
 
   notGeomValid() {
     // Check again for validity
+    // TODO
     let errMsg = kvm.getActiveLayer().notFKValid();
     if (this.hasGeometry && !$("#featureFormular input[name=" + this.get("geometry_attribute") + "]").val()) {
       errMsg = `Sie haben noch keine Koordinaten erfasst!`;

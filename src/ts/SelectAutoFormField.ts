@@ -1,5 +1,5 @@
 import { Attribute, AttributeSetting, OptionsAttributtes } from "./Attribute";
-import { Field } from "./Field";
+import { AbstractField, Field } from "./Field";
 import { kvm } from "./app";
 import { createHtmlElement } from "./Util";
 
@@ -16,7 +16,7 @@ import { createHtmlElement } from "./Util";
  * </div>
  */
 
-export class SelectAutoFormField implements Field {
+export class SelectAutoFormField extends AbstractField implements Field {
   settings: AttributeSetting;
   element: HTMLElement;
   // {value: 287, output: 'Lange grüne Herbstbirne', requires_value: '2'}
@@ -29,14 +29,15 @@ export class SelectAutoFormField implements Field {
 
   val: any;
 
-  private _value: any;
-  private _oldValue: any;
+  // private _value: any;
+  // private _oldValue: any;
 
   txtField: HTMLInputElement;
 
   lsts: { (src: Field, hasChanged: boolean): void }[] = [];
 
   constructor(formId: string, attr: Attribute) {
+    super(formId, attr);
     this.settings = attr.settings;
     // this.selector = "#" + formId + " select[id=" + this.settings.index + "]";
     this.options = <OptionsAttributtes[]>this.settings.enums;
@@ -300,20 +301,25 @@ export class SelectAutoFormField implements Field {
     console.log("SelectAutoFormField.bindEvents");
   }
 
-  getDom(): HTMLElement {
+  createInputElement(): HTMLElement {
     return this.element;
   }
 
-  hide() {
-    if (this.element?.parentElement) {
-      this.element.parentElement.style.display = "none";
-    }
-  }
-  show() {
-    if (this.element?.parentElement) {
-      this.element.parentElement.style.display = "";
-    }
-  }
+  // getDom(): HTMLElement {
+  //   xx
+  //   return this.element;
+  // }
+
+  // hide() {
+  //   if (this.element?.parentElement) {
+  //     this.element.parentElement.style.display = "none";
+  //   }
+  // }
+  // show() {
+  //   if (this.element?.parentElement) {
+  //     this.element.parentElement.style.display = "";
+  //   }
+  // }
 
   hasChanged(): boolean {
     return this._value !== this._oldValue;

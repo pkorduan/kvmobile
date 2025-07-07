@@ -290,6 +290,7 @@ export class DataViewField {
    * otherwise src is equal to name
    */
   addImage(src: string, name = "") {
+    // TODO jquery
     //console.log("DataViewField: Add Image with src: %s and name: %s", src, name);
     // console.log("DataViewField.addimage", src, name);
     name = name == "" ? src : name;

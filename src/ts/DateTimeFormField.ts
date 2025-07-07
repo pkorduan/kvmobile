@@ -37,7 +37,7 @@ export class DateTimeFormField extends AbstractField implements Field {
     this._value = val;
     this._oldValue = val;
 
-    var val = kvm.coalesce(val, "");
+    val = kvm.coalesce(val, "");
     if (val != "") {
       val = this.toISO(val);
     }
@@ -66,23 +66,13 @@ export class DateTimeFormField extends AbstractField implements Field {
     return kvm.now("T", "");
   }
 
-  // bindEvents() {
-  //   //console.log('DateTimeFormField.bindEvents');
-  //   // $("#featureFormular input[id=" + this.settings.index + "]").on("change", function () {
-  //   //   if (!$("#saveFeatureButton").hasClass("active-button")) {
-  //   //     $("#saveFeatureButton").toggleClass("active-button inactive-button");
-  //   //   }
-  //   // });
+  toISO(datetime: string) {
+    return datetime ? datetime.replace(/\//g, "-").replace(" ", "T") : null;
+  }
+
+  // fromISO(datetime:string) {
+  //   return typeof datetime == "string" ? datetime.replace(/-/g, "/").replace("T", " ").replace("Z", "") : null;
   // }
-
-  toISO(datetime) {
-    return datetime.replace(/\//g, "-").replace(" ", "T");
-  }
-
-  fromISO(datetime) {
-    // kvm.log("konvert " + this.get("name") + " datetime: " + datetime, 4);
-    return typeof datetime == "string" ? datetime.replace(/-/g, "/").replace("T", " ").replace("Z", "") : null;
-  }
 
   createInputElement(): HTMLElement {
     return this.element;

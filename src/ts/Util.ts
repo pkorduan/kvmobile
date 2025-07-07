@@ -573,3 +573,29 @@ export function getCurrentPosition() {
     );
   });
 }
+
+/**
+ * zeigt das Element für die showTime in msec und blendet es danach über die fadeTime aus;
+ *
+ * @export
+ * @param {*} el
+ * @param {*} showTime
+ * @param {*} fadeTime
+ */
+export function showShort(el: HTMLElement, showTime: number, fadeTime: number) {
+  console.info(`showShort showTime=${showTime} fadeTime=${fadeTime}`);
+  el.addEventListener("transitionend", (ev) => {
+    console.info("animationend");
+    el.style.display = "none";
+  });
+  el.style.display = "";
+  el.style.transitionDuration = "";
+  el.style.transitionProperty = "";
+  el.style.opacity = "1";
+  window.setTimeout(() => {
+    console.info(`fadeout showTime=${showTime} fadeTime=${fadeTime}`);
+    el.style.transitionDuration = fadeTime + "ms";
+    el.style.transitionProperty = "opacity";
+    el.style.opacity = "0";
+  }, showTime);
+}

@@ -238,7 +238,7 @@ export class GeometrieFormField extends AbstractField implements Field {
      */
     // $(document).on("geomChanged", function (event, options) {
     document.addEventListener("geomChanged", (event: CustomEvent) => {
-      console.error("geomChanged", event, event.detail);
+      console.error("GeometrieFormField.geomChanged", event, event.detail);
       const feature = kvm.getActiveLayer().activeFeature;
       const geom = event.detail.geom;
       const exclude = event.detail.exclude;
@@ -254,6 +254,7 @@ export class GeometrieFormField extends AbstractField implements Field {
       }
 
       // Das kann eigentlich auch gemacht werden beim Speichern.
+      // TODO jquery
       if (exclude != "wkb") {
         const oldGeom: any = $("#featureFormular input[name=" + kvm.getActiveLayer().get("geometry_attribute") + "]").val();
 

@@ -44,7 +44,7 @@ export class ViewFormular extends View {
     // formDiv.id = "formDiv";
     const form = Util.createHtmlElement("form", formDiv); // id = featureFormular
     form.id = "featureFormular";
-    layer.attributeGroups.forEach((attributeGroup) => {
+    layer.attributeGroups.forEach((attributeGroup, idx) => {
       if (attributeGroup.attributeIds.length > 0) {
         const attrGroupDiv = (attributeGroup.div = Util.createHtmlElement("div", form, "attribute-group" + (attributeGroup.collapsed ? " collapsed" : "")));
 
@@ -53,6 +53,7 @@ export class ViewFormular extends View {
           attrGroupDiv.classList.toggle("collapsed");
         });
         const attrGrpBody = Util.createHtmlElement("div", attrGroupDiv, "attribute-group-body");
+        attrGrpBody.id = "attribute-group-body-" + idx;
         attrGrpHead.append(attributeGroup.name);
         attributeGroup.attributeIds.forEach((attributeId) => {
           const attr = layer.attributes[attributeId];

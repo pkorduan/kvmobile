@@ -150,6 +150,7 @@ export class Menu {
 
   showDataViewMenu() {
     const items = [this.showSettings, this.showFeatureList, this.showMap];
+    // TODO jquery
     // TODO!!!!
     // $("#showSettings, #showFeatureList, #showMap").show();
     if ($("#historyFilter").is(":checked")) {
@@ -210,7 +211,7 @@ export class Menu {
         break;
       case "dataView":
         this.showDataViewMenu();
-        $("#dataView").show().scrollTop(0);
+        document.getElementById("dataView").scrollTop = 0;
         this.app.lastMapOrListView = "dataView";
         newView = this.id2View.get(item);
         break;

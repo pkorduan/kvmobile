@@ -17,6 +17,7 @@ export class OverlayX {
 
   constructor(stelle: Stelle, settings = {}) {
     // const overlay_ = this;
+    console.error("OverlayX.new");
     this.stelle = stelle;
     this.settings = typeof settings == "string" ? JSON.parse(settings) : settings;
 
@@ -57,7 +58,8 @@ export class OverlayX {
   };
 
   getGlobalId() {
-    return this.stelle.get("id") + "_" + this.get("id");
+    console.error("Overlay.getGlobalId");
+    return this.stelle.get("ID") + "_" + this.get("id");
   }
 
   getDokumentAttributeNames = function () {
@@ -102,7 +104,7 @@ export class OverlayX {
   removeFromApp = function () {
     console.log("  requestOverlays) fkt: removeFromApp");
     // remove layer from layer control
-    kvm.controls.layers.removeLayer(this.layerGroup);
+    kvm.controls.layerCtrl?.removeLayer(this.layerGroup);
     // remove layer from map
     kvm.map.removeLayer(this.layerGroup);
     this.layerGroup.clearLayers();
@@ -114,6 +116,7 @@ export class OverlayX {
     delete kvm.overlays[this.globalId];
     console.log("Remove overlay %s from list", this.globalId);
     // remove the list element
+    // TODO
     $("#overlay_" + this.globalId).remove();
     // update the overlayIds list in store
     kvm.store.setItem("overlayIds_" + this.stelle.get("id"), JSON.stringify(Object.keys(kvm.overlays)));
@@ -132,8 +135,8 @@ export class OverlayX {
     this.layerGroup = new GeoJSON(features, {
       style: this.getOverlayStyle.bind(this),
     });
-    console.log("Add Overlay with title: %s to layers control.", title);
-    kvm.controls.layers.addOverlay(this.layerGroup, title);
+    console.error("Add Overlay with title: %s to layers control.", title);
+    kvm.controls.layerCtrl?.addOverlay(this.layerGroup, title);
     //    this.layerGroup.bringToBack();
   };
 

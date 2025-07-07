@@ -279,7 +279,6 @@ export class BilderFormField extends AbstractField {
   }
 
   async dropAllPictures(evt: Event) {
-    // const context = evt.data.context;
     //console.log('BilderformField.dropAllPictures');
     const confirmed = await confirm("Wirklich alle Bilder in diesem Datensatz Löschen?", "Bitte Bestätigen", "ja", "nein");
     if (confirmed) {
@@ -293,8 +292,6 @@ export class BilderFormField extends AbstractField {
    */
   takePicture(evt: Event) {
     console.log("takePicture", evt);
-    // kvm.log("BilderFormField.takePicture: " + JSON.stringify(evt), 4);
-
     navigator.camera.getPicture(
       (fileURL) => {
         kvm.log("this.takePicture(" + fileURL + ");", 4);

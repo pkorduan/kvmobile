@@ -46,7 +46,6 @@ abstract class PanelEinstellungen {
   }
 
   static init() {
-    console.log("Register click event on .toggle-settings-div");
     const toggleMehr = document.getElementById("toggle_mehr");
     const toggleWeniger = document.getElementById("toggle_weniger");
     toggleMehr.addEventListener("click", () => {
@@ -1183,7 +1182,9 @@ export class HintergrundLayer extends PanelEinstellungen {
     const changeBackgroundLayerSettingsButton = document.getElementById("changeBackgroundLayerSettingsButton");
     const loadBackgroundLayerButton = document.getElementById("loadBackgroundLayerButton");
     // TODO
+    // TODO jquery
     resetBackgroundLayerSettingsButton.addEventListener("click", () => {
+      console.error("resetBackgroundLayerSettingsButton.click");
       kvm.getConfigurationOption("backgroundLayerSettings").forEach((l, i) => {
         $("#backgroundLayerURL_" + i).val(l.url);
         if (l.params.layers) {
@@ -1565,8 +1566,35 @@ function createTable(rs: SQLitePlugin.Results) {
 }
 
 export class Protokoll extends PanelEinstellungen {
+  selectLogLevel: HTMLSelectElement;
+
   constructor() {
     super("h2_protokoll");
+    const selectLogLevel = (this.selectLogLevel = <HTMLSelectElement>document.getElementById("logLevel"));
+
+    const currentLogLevel = kvm.store.getItem("logLevel");
+    selectLogLevel.value = currentLogLevel;
+    selectLogLevel.addEventListener("change", () => {
+      kvm.store.setItem("logLevel", selectLogLevel.value);
+      kvm.msg("Protokollierungsstufe geändert!", "Protokollierung");
+    });
+
+    document.getElementById("showLoggingsButton").addEventListener("click", () => {
+      kvm.showView("loggings");
+    });
+
+    document.getElementById("clearLoggingsButton").addEventListener("click", () => {
+      document.getElementById("logText").innerHTML = "Log geleert: " + new Date().toUTCString();
+      kvm.showView("loggings");
+    });
+
+    // deb(msg) {
+    //   $("#debText").append("<p>" + msg);
+    //   //$(document).scrollBottom($('#debText').offset().bottom);
+    //   if ($("#show_allways_debug_messages").is(":checked")) {
+    //     $("#debugs").show();
+    //   }
+    // }
   }
 }
 

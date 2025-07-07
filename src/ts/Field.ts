@@ -126,15 +126,22 @@ export abstract class AbstractField implements Field {
   }
 
   hide() {
-    const dom = this.getDom();
-    if (dom?.parentElement) {
-      dom.parentElement.style.display = "none";
+    if (this.dom) {
+      this.dom.style.display = "none";
     }
+    // const dom = this.getDom();
+    // if (dom?.parentElement) {
+    //   console.info("MMM hide " + dom.parentElement.id, this);
+    //   // RTRRRRRRR  dom.parentElement.style.display = "none";
+    // }
   }
   show() {
-    const dom = this.getDom();
-    if (dom?.parentElement) {
-      dom.parentElement.style.display = "";
+    if (this.dom) {
+      this.dom.style.display = "";
     }
+    // const dom = this.getDom();
+    // if (dom?.parentElement) {
+    //   dom.parentElement.style.display = "";
+    // }
   }
 }
