@@ -100,7 +100,7 @@ export class ViewFormular extends View {
       if (changed) {
         // if (attr.formField.hasChanged()) {
         // console.info(`hasChanged01: "${attr.formField.settings.name}" ${(<any>attr.formField)._oldValue} => ${(<any>attr.formField)._value}`);
-        console.info(`hasChanged02: "${attr.formField.settings.name}" ${attr.formField.getValue()} => ${this.feature.getDataValue(attr.settings.name)}`);
+        console.info(`hasChanged: "${attr.formField.settings.name}" ${attr.formField.getValue()} => ${this.feature.getDataValue(attr.settings.name)}`);
         return true;
       }
     }
@@ -182,6 +182,7 @@ export class ViewFormular extends View {
     if (f) {
       try {
         this._createForm(f.layer);
+        this.app.menu.enableSaveFeatureButton(false);
         await f.layer.loadFeatureToForm(f, { editable: false });
       } catch (ex) {
         await Util.showError("Fehler beim Aktivieren des Features im Formular", ex);

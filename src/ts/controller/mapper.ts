@@ -131,6 +131,10 @@ export class Mapper {
           const latlngs = feature.editableLayer.getLatLngs();
           document.dispatchEvent(new CustomEvent("geomChanged", { detail: { geom: feature.aLatLngsToWkx(latlngs), exclude: "latlngs" } }));
           // $(document).trigger("geomChanged", [{ geom: feature.aLatLngsToWkx(latlngs), exclude: "latlngs" }]);
+        })
+        .on("editable:editing", (ev) => {
+          console.error("editable:editing", ev);
+          // document.dispatchEvent(new CustomEvent("geomChanged", { detail: { geom: feature.aLatLngsToWkx(latlngs), exclude: "latlngs" } }));
         });
     }
   }
