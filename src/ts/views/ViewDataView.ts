@@ -1,7 +1,7 @@
 import { Kvm } from "../app";
 import { Feature } from "../Feature";
 import { View } from "./View";
-import { createHtmlElement, traceElementChange } from "../Util";
+import { createHtmlElement } from "../Util";
 import * as Util from "../Util";
 import { Layer } from "../Layer";
 
@@ -24,7 +24,7 @@ export class ViewDataView extends View {
   }
 
   update(f: Feature) {
-    console.error(`ViewDataView.update ${f?.layer?.title} ${f?.id}`);
+    console.info(`ViewDataView.update ${f?.layer?.title} ${f?.id}`);
     this.feature = f;
     this._updateFeature(f);
   }
@@ -72,7 +72,7 @@ export class ViewDataView extends View {
   // }
 
   _createDataView(layer: Layer) {
-    console.log("Layer.createDataView");
+    console.groupCollapsed("Layer.createDataView for Layer " + layer.title);
     // sperrBildschirm.tick(`${layer.title}:<br>&nbsp;&nbsp;Erzeuge Sachdatenanzeige neu.`);
     const dataView = document.getElementById("dataView");
     dataView.innerHTML = "";
@@ -104,7 +104,7 @@ export class ViewDataView extends View {
               attrGrpBody.append(dom);
               if (attr.get("name") === "bilder") {
                 console.info("adding ViewField for '" + attr.get("name") + "' display=" + dom.style?.display, dom);
-                traceElementChange(dom);
+                // traceElementChange(dom);
               }
             }
             attr.viewField.bindEvents();
@@ -114,6 +114,7 @@ export class ViewDataView extends View {
         // $("#dataViewDiv").append(attributeGroup.div);
       }
     });
+    console.groupEnd();
     // $(".attribute-group-header").on("click", (evt) => {
     //   console.log("attribute-group-header");
     //   $(evt.target).toggleClass("b-expanded b-collapsed");

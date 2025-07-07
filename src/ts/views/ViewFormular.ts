@@ -27,13 +27,13 @@ export class ViewFormular extends View {
   }
 
   update(f: Feature) {
-    console.error(`ViewFormular.update ${f?.layer?.title} ${f?.id}`, f);
+    console.info(`ViewFormular.update ${f?.layer?.title} ${f?.id}`, f);
     this.feature = f;
     this._updateFeature(f);
   }
 
   _createForm(layer: Layer) {
-    console.error("ViewFormular create Form for Layer " + layer.title);
+    console.groupCollapsed("ViewFormular create Form for Layer " + layer.title);
     this.dom.innerHTML = "";
     const h1 = Util.createHtmlElement("h1", this.dom);
     h1.innerText = layer.title;
@@ -44,7 +44,7 @@ export class ViewFormular extends View {
     // formDiv.id = "formDiv";
     const form = Util.createHtmlElement("form", formDiv); // id = featureFormular
     form.id = "featureFormular";
-    layer.attributeGroups.forEach((attributeGroup) => {
+    layer.attributeGroups.forEach((attributeGroup, idx) => {
       if (attributeGroup.attributeIds.length > 0) {
         const attrGroupDiv = (attributeGroup.div = Util.createHtmlElement("div", form, "attribute-group" + (attributeGroup.collapsed ? " collapsed" : "")));
 
@@ -53,6 +53,7 @@ export class ViewFormular extends View {
           attrGroupDiv.classList.toggle("collapsed");
         });
         const attrGrpBody = Util.createHtmlElement("div", attrGroupDiv, "attribute-group-body");
+        attrGrpBody.id = "attribute-group-body-" + idx;
         attrGrpHead.append(attributeGroup.name);
         attributeGroup.attributeIds.forEach((attributeId) => {
           const attr = layer.attributes[attributeId];
@@ -88,6 +89,8 @@ export class ViewFormular extends View {
         });
       }
     });
+    console.log("ViewFormular Form createdLayer=" + layer.title);
+    console.groupEnd();
   }
 
   private hasChanged(): boolean {

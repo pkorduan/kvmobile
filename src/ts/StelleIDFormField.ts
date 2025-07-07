@@ -33,7 +33,7 @@ export class StelleIDFormField extends AbstractField {
   }
 
   getValue(action = "") {
-    kvm.log("StelleIDFormField.getValue", 4);
+    console.log("StelleIDFormField.getValue");
     let val = this.element.value;
     if (typeof val === "undefined" || val == "") {
       return null;
@@ -42,7 +42,7 @@ export class StelleIDFormField extends AbstractField {
   }
 
   getAutoValue() {
-    kvm.log("StelleIDFormField.getAutoValue");
+    console.log("StelleIDFormField.getAutoValue");
     return kvm.getActiveStelle().get("ID");
   }
 

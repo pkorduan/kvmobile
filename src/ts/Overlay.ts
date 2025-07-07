@@ -17,6 +17,7 @@ export class OverlayX {
 
   constructor(stelle: Stelle, settings = {}) {
     // const overlay_ = this;
+    console.error("OverlayX.new");
     this.stelle = stelle;
     this.settings = typeof settings == "string" ? JSON.parse(settings) : settings;
 
@@ -25,7 +26,7 @@ export class OverlayX {
       console.log("Set id_attribute: %s as name_attribute", this.settings["id_attribute"]);
     }
     this.globalId = this.getGlobalId();
-    kvm.log("Erzeuge Overlayobjekt für Overlay " + this.settings.title + " (globalId: " + this.globalId + ")", 3);
+    console.log("Erzeuge Overlayobjekt für Overlay " + this.settings.title + " (globalId: " + this.globalId + ")");
     this.attributes = [];
     this.layerGroup = new LayerGroup();
     this.features = [];
@@ -57,7 +58,8 @@ export class OverlayX {
   };
 
   getGlobalId() {
-    return this.stelle.get("id") + "_" + this.get("id");
+    console.error("Overlay.getGlobalId");
+    return this.stelle.get("ID") + "_" + this.get("id");
   }
 
   getDokumentAttributeNames = function () {
@@ -79,7 +81,7 @@ export class OverlayX {
   };
 
   saveSettingsToStore = function () {
-    kvm.log("Speicher Settings für Overlay: " + this.settings.title, 3);
+    console.log("Speicher Settings für Overlay: " + this.settings.title, 3);
     kvm.store.setItem("overlaySettings_" + this.globalId, JSON.stringify(this.settings));
     const overlayIdsItem = "overlayIds_" + this.stelle.get("id");
 
@@ -102,7 +104,7 @@ export class OverlayX {
   removeFromApp = function () {
     console.log("  requestOverlays) fkt: removeFromApp");
     // remove layer from layer control
-    kvm.controls.layers.removeLayer(this.layerGroup);
+    kvm.controls.layerCtrl?.removeLayer(this.layerGroup);
     // remove layer from map
     kvm.map.removeLayer(this.layerGroup);
     this.layerGroup.clearLayers();
@@ -114,6 +116,7 @@ export class OverlayX {
     delete kvm.overlays[this.globalId];
     console.log("Remove overlay %s from list", this.globalId);
     // remove the list element
+    // TODO
     $("#overlay_" + this.globalId).remove();
     // update the overlayIds list in store
     kvm.store.setItem("overlayIds_" + this.stelle.get("id"), JSON.stringify(Object.keys(kvm.overlays)));
@@ -128,12 +131,12 @@ export class OverlayX {
    */
   drawFeatures = function (features) {
     var title = this.getTitle();
-    kvm.log("Zeichne Features of overlay " + title, 3);
+    console.log("Zeichne Features of overlay " + title);
     this.layerGroup = new GeoJSON(features, {
       style: this.getOverlayStyle.bind(this),
     });
-    console.log("Add Overlay with title: %s to layers control.", title);
-    kvm.controls.layers.addOverlay(this.layerGroup, title);
+    console.error("Add Overlay with title: %s to layers control.", title);
+    kvm.controls.layerCtrl?.addOverlay(this.layerGroup, title);
     //    this.layerGroup.bringToBack();
   };
 
@@ -233,7 +236,7 @@ export class OverlayX {
       this_ = this;
 
     console.log("Lade Overlaydaten von URL: %s", url);
-    kvm.log("Speicher die Daten von Overlay " + globalId + " in Datei: " + cordova.file.dataDirectory + filename, 3);
+    console.log("Speicher die Daten von Overlay " + globalId + " in Datei: " + cordova.file.dataDirectory + filename);
 
     fileTransfer.download(
       url,
@@ -244,10 +247,9 @@ export class OverlayX {
             const reader = new FileReader();
 
             reader.onloadend = function (evt: ProgressEvent<FileReader>) {
-              kvm.log("Download der Daten von Overlay " + this_.get("id") + " ist abgeschlossen.", 3, true);
-              var items = [],
-                collection: any = {},
-                errMsg = "";
+              console.log("Download der Daten von Overlay " + this_.get("id") + " ist abgeschlossen.");
+              let collection: any = {};
+              let errMsg = "";
 
               //console.log('Download Ergebnis von Overlay ' + this_.get('id') + ' (Head 1000): %s', this.result.substring(0, 1000));
               //const result = (<string>evt.target.result).replace("\n", "\\\n");
@@ -257,9 +259,9 @@ export class OverlayX {
               } catch (e) {
                 errMsg = "Fehler beim Parsen der von " + this_.getUrl() + " heruntergeladenen Daten: " + result.substring(0, 1000);
                 kvm.msg(errMsg, "Fehler");
-                kvm.log(errMsg, 1);
+                console.log(errMsg);
               }
-              kvm.log("Anzahl empfangene Datensätze: " + collection.features.length, 3);
+              console.log("Anzahl empfangene Datensätze: " + collection.features.length);
               console.log("Add " + collection.features.length + " Features to the overlay");
               this_.features = collection.features;
               try {
@@ -268,7 +270,7 @@ export class OverlayX {
               } catch (e) {
                 errMsg = "Fehler beim Zeichnen der Features des Overlays " + this_.globalId;
                 kvm.msg(errMsg, "Fehler");
-                kvm.log(errMsg, 1);
+                console.error("Fehler beim Zeichnen der Features des Overlays " + this_.globalId, e);
               }
               kvm.overlays[<string>globalId] = this_;
               kvm.store.setItem("overlayFeatures_" + this_.globalId, JSON.stringify(this_.features));
@@ -280,7 +282,7 @@ export class OverlayX {
           },
           function (error) {
             alert("Fehler beim Einlesen der heruntergeladenen Datei. Prüfen Sie die URL und Parameter, die für die Synchronisation verwendet werden.");
-            kvm.log("Fehler beim lesen der Datei: " + error.code, 1);
+            console.error("Fehler beim lesen der Datei: " + error.code, error);
             sperrBildschirm.close();
           }
         );
@@ -295,14 +297,15 @@ export class OverlayX {
    */
   appendToApp = function () {
     console.log("Overlay.appendToApp: %s", this.get("title"));
-    kvm.log("Füge Overlay " + this.get("title") + " zur Overlayliste hinzu.", 3);
+    console.log("Füge Overlay " + this.get("title") + " zur Overlayliste hinzu.");
+    // TODO jquery
     $("#overlay_list").append(this.getListItem());
     this.bindOverlayEvents();
   };
 
   bindOverlayEvents = function () {
     console.log("bind events for overlay: %s", this.globalId);
-
+    // TODO jquery
     $("#overlay-functions-button_" + this.globalId).on("click", function (evt) {
       var target = $(evt.target);
       console.log("click on overlay-functions-button von div %o", target.parent().attr("id"));
@@ -350,7 +353,7 @@ export class OverlayX {
   };
 
   getUrl = function () {
-    kvm.log("Layer.getUrl", 4);
+    console.log("Layer.getUrl");
     var url = this.stelle.get("url"),
       file = this.stelle.getUrlFile(url);
 
@@ -360,10 +363,10 @@ export class OverlayX {
   };
 
   downloadError = function (error) {
-    kvm.log("download error source " + error.source);
-    kvm.log("download error target " + error.target);
-    kvm.log("download error code: " + error.code);
-    kvm.log("download error http_status: " + error.http_status);
+    console.log("download error source " + error.source);
+    console.log("download error target " + error.target);
+    console.log("download error code: " + error.code);
+    console.log("download error http_status: " + error.http_status);
     alert("Fehler beim herunterladen der Datei von der Url: " + error.source + "! Error code: " + error.code + " http_status: " + error.http_status);
   };
 

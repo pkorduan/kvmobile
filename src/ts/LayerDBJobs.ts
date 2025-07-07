@@ -232,6 +232,7 @@ async function writeDelta(feature: Feature, delta: { action: "insert" | "delete"
     // console.log("Funktion nach schreiben des Deltas: %s", this.next.succFunc);
     return executeSQL(kvm.db, sql);
   } catch (ex) {
+    throw ex;
     console.error("Error in writeDelta", ex);
   }
 }

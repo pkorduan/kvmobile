@@ -37,7 +37,7 @@ export class UserFormField extends AbstractField {
   }
 
   getValue(action = "") {
-    kvm.log("UserFormField.getValue", 4);
+    console.log("UserFormField.getValue");
     var val = this.element.value;
     if (typeof val === "undefined" || val == "") {
       val = null;
@@ -46,7 +46,7 @@ export class UserFormField extends AbstractField {
   }
 
   getAutoValue() {
-    kvm.log("UserFormField.getAutoValue");
+    console.log("UserFormField.getAutoValue");
     return kvm.store.getItem("userName");
   }
 

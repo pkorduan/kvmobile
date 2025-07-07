@@ -117,7 +117,7 @@ export class BilderFormField extends AbstractField {
             }
           },
           () => {
-            kvm.log("Datei " + localFile + " existiert nicht!", 2);
+            console.info("Datei " + localFile + " existiert nicht!");
             this.addImage("img/no_image.png", remoteFile);
             if (navigator.onLine) {
               kvm.getActiveLayer().downloadImage(localFile, remoteFile);
@@ -188,7 +188,7 @@ export class BilderFormField extends AbstractField {
           kvm.msg("Kein Internet! Bild kann gerade nicht heruntergeladen werden.", "Bilder Download");
         }
       } else {
-        kvm.log("Versuche das Bild zu öffnen: " + nativeURL, 4);
+        console.log("Versuche das Bild zu öffnen: " + nativeURL);
         cordova.plugins.fileOpener2.open(nativeURL, "image/jpeg", {
           error: async (e) => {
             alert("Fehler beim Laden der Datei '" + nativeURL + "'. Fehler: " + e.status);
@@ -197,7 +197,7 @@ export class BilderFormField extends AbstractField {
             }
           },
           success: async () => {
-            kvm.log("Datei " + webviewUrl + " erfolgreich geöffnet.", 4);
+            console.log("Datei " + webviewUrl + " erfolgreich geöffnet.");
             if (await confirm("Bild Löschen?", null, "ja", "nein")) {
               this.dropImage(imgDiv);
             }
@@ -225,8 +225,7 @@ export class BilderFormField extends AbstractField {
    */
   dropImage(imgDiv: HTMLElement) {
     const src = imgDiv.dataset.src;
-    kvm.log("BilderFormField.dropImage img: " + src, 4);
-    console.log("BilderFormField.dropImage img: " + src, 4);
+    console.log("BilderFormField.dropImage img: " + src);
 
     const curValue = this.hiddenElement.value;
     const arr = kvm.removeBrackes(curValue).split(",");
@@ -279,7 +278,6 @@ export class BilderFormField extends AbstractField {
   }
 
   async dropAllPictures(evt: Event) {
-    // const context = evt.data.context;
     //console.log('BilderformField.dropAllPictures');
     const confirmed = await confirm("Wirklich alle Bilder in diesem Datensatz Löschen?", "Bitte Bestätigen", "ja", "nein");
     if (confirmed) {
@@ -293,11 +291,9 @@ export class BilderFormField extends AbstractField {
    */
   takePicture(evt: Event) {
     console.log("takePicture", evt);
-    // kvm.log("BilderFormField.takePicture: " + JSON.stringify(evt), 4);
-
     navigator.camera.getPicture(
       (fileURL) => {
-        kvm.log("this.takePicture(" + fileURL + ");", 4);
+        console.log("this.takePicture(" + fileURL + ");");
 
         if (kvm.hasFilePath(fileURL, kvm.getConfigurationOption("localImgPath"))) {
           this.addImgNameToVal(kvm.localToServerPath(fileURL));
@@ -332,7 +328,7 @@ export class BilderFormField extends AbstractField {
    */
   loadPictureFromPhotolibrary(evt: Event) {
     // console.log("takePicture", evt);
-    kvm.log("BilderFormField.loadPictureFromPhotolibrary: " + JSON.stringify(evt), 4);
+    console.log("BilderFormField.loadPictureFromPhotolibrary: " + JSON.stringify(evt));
     navigator.camera.getPicture(
       (fileURL) => {
         console.log("this.loadPictureFromPhotolibrary(" + fileURL + ")");
@@ -380,12 +376,11 @@ export class BilderFormField extends AbstractField {
     // listFiles(dstDir);
     // listFiles(srcFile.substring(0, srcFile.lastIndexOf("/") + 1));
 
-    kvm.log("moveFile " + srcFile + " nach " + dstDir, 4);
+    console.log("moveFile " + srcFile + " nach " + dstDir);
     // console.log("moveFile(" + srcFile + ", " + dstDir + ")");
     window.resolveLocalFileSystemURL(
       dstDir,
       (dirEntry) => {
-        kvm.log("Erzeuge dirEntry", 4);
         console.log("Kopiere nach dstDirEntry: %o", dirEntry);
         window.resolveLocalFileSystemURL(
           srcFile,
@@ -424,9 +419,9 @@ export class BilderFormField extends AbstractField {
    */
   getLocalImgPath(imageData) {
     // console.log("getLocalImgPath", imageData);
-    kvm.log("getLocalImgPath for imageData: " + imageData);
+    console.log("getLocalImgPath for imageData: " + imageData);
     const result = "file:///storage/" + imageData.split("file:///storage/")[1].split("/Android/data/de.gdiservice.kvmobile/files/")[0] + "/Android/data/de.gdiservice.kvmobile/files/";
-    kvm.log("getLocalImgPath returning: " + result);
+    console.log("getLocalImgPath returning: " + result);
   }
 
   createInputElement(): HTMLElement {

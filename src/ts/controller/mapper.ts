@@ -243,7 +243,7 @@ export class Mapper {
       "Es kann keine GPS-Position bestimmt werden. Schalten Sie die GPS Funktion auf Ihrem Gerät ein, suchen Sie einen Ort unter freiem Himmel auf und versuchen Sie es dann noch einmal. Fehler: " + error.message,
       function (buttonIndex) {
         if (buttonIndex == 1) {
-          kvm.log("Einschalten der GPS-Funktion", 3);
+          console.log("Einschalten der GPS-Funktion");
         }
       },
       "GPS-Position",

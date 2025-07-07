@@ -35,7 +35,7 @@ export class ClientIDFormField extends AbstractField {
   }
 
   getValue(action = "") {
-    kvm.log("ClientIDFormField.getValue", 4);
+    console.log("ClientIDFormField.getValue");
     let val = this.element.value;
     if (typeof val === "undefined" || val == "") {
       return null;
@@ -44,7 +44,7 @@ export class ClientIDFormField extends AbstractField {
   }
 
   getAutoValue() {
-    kvm.log("ClientIDFormField.getAutoValue");
+    console.log("ClientIDFormField.getAutoValue");
     return device.uuid;
   }
 

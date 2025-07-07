@@ -116,6 +116,7 @@ export class MapLibreLayer extends LLayer {
   async removeFromApp() {
     console.log("remove layer %s (%s)", this.get("title"), this.get("id"));
     //console.log('Entferne layer div aus layer options list.');
+    // TODO jquery
     $("#layer_" + this.getGlobalId()).remove();
     kvm.controls.layerCtrl.removeLayer(this);
     //console.log('Entferne layer von map');
@@ -256,6 +257,7 @@ export class MapLibreLayer extends LLayer {
    * Do not read data for listing and mapping
    */
   appendToApp() {
+    // TODO jquery
     sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Füge Layer zur App hinzu.`);
     // console.error("MapLibreLayer.appendToApp");
     const index = kvm.getActiveStelle().getLayerDrawingIndex(this);
@@ -293,7 +295,7 @@ export class MapLibreLayer extends LLayer {
 
   activate() {
     // console.error("wwww activate");
-
+    // TODO jquery
     (<any>$("input[value=" + this.getGlobalId() + "]")[0]).checked = true;
     $(".layer-functions-button, .layer-functions-div").hide();
     $("#layer_" + this.getGlobalId() + " > .layer-functions-button").show();

@@ -119,7 +119,7 @@ export class SubFormFKFormField implements Field {
 
   async setValue(val) {
     this.counter++;
-    console.error("%s Attribute: %s, SubFormFKFormField.setValue options: %o, value: %s", this.counter, this.get("name"), this.get("options"), val);
+    console.log("%s Attribute: %s, SubFormFKFormField.setValue options: %o, value: %s", this.counter, this.get("name"), this.get("options"), val);
     // ToDo: Prüfen warum hier noch mal default gesetzt wird. Das wird auch schon in getNewData gemacht.
     if (kvm.coalesce(val, "") == "" && this.get("default")) {
       val = this.get("default");
@@ -179,7 +179,7 @@ export class SubFormFKFormField implements Field {
         // Prüfen gegen welche Geometrie ST_Within testet, vielleicht liegt es auch an einer falschen geom in standorte
         console.log("Frage parent id mit sql ab: ", sql);
         try {
-          console.error("%s Attribute: %s, SubFormFKFormField.setValue search parentFeature", this.counter, this.get("name"));
+          console.log("%s Attribute: %s, SubFormFKFormField.setValue search parentFeature", this.counter, this.get("name"));
           const rs = await executeSQL(kvm.db, sql);
           console.log("Resultset von räumlicher Abfrage", rs);
           let featureId: string = "";
@@ -192,7 +192,7 @@ export class SubFormFKFormField implements Field {
               break;
             }
           }
-          console.error("%s Attribute: %s, SubFormFKFormField.setValue search parentFeature => %s value=%s", this.counter, this.get("name"), featureId, this.value);
+          console.log("%s Attribute: %s, SubFormFKFormField.setValue search parentFeature => %s value=%s", this.counter, this.get("name"), featureId, this.value);
           if (featureId == "") {
             kvm.mapHint(`Der Marker liegt nicht im räumlichen Bereich eines Objektes vom Layers ${pkLayer.title}.`, 5000);
             this.value = this.get("default");
@@ -206,7 +206,7 @@ export class SubFormFKFormField implements Field {
       this.value = val == null || val == "null" ? "" : val;
     }
     this.element.value = this.value;
-    console.error("%s Attribute: %s, SubFormFKFormField.setValue done value: %s", this.counter, this.get("name"), this.value);
+    console.log("%s Attribute: %s, SubFormFKFormField.setValue done value: %s", this.counter, this.get("name"), this.value);
   }
 
   getValue(action = "") {

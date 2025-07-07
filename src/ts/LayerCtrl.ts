@@ -129,7 +129,6 @@ export class LayerCtrl extends Control {
     super();
     this._app = app;
     Util.setOptions(this, options);
-
     this._layerControlInputs = [];
     this._layers = [];
     this._lastZIndex = 0;
@@ -145,7 +144,6 @@ export class LayerCtrl extends Control {
     }
 
     this._app.addEventListener(Kvm.EVENTS.ACTIVE_LAYER_CHANGED, (evt) => {
-      console.error(this);
       const layer = <Layer>evt.newValue;
       if (this._activeLayer) {
         this.markLayer(this._activeLayer, false);

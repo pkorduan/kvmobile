@@ -46,7 +46,6 @@ abstract class PanelEinstellungen {
   }
 
   static init() {
-    console.log("Register click event on .toggle-settings-div");
     const toggleMehr = document.getElementById("toggle_mehr");
     const toggleWeniger = document.getElementById("toggle_weniger");
     toggleMehr.addEventListener("click", () => {
@@ -310,12 +309,10 @@ export class Server extends PanelEinstellungen {
   async requestStellen() {
     const url = this.getStellenUrl();
 
-    kvm.log("Download Stellen von Url: " + url);
+    console.log("Download Stellen von Url: " + url);
 
-    // let response: Response;
     let txt: string;
     try {
-      // response = await fetch(url);
       const fileEntry = await download(url, cordova.file.dataDirectory + "stellen.json");
       txt = await readFileAsString(fileEntry);
     } catch (err) {
@@ -366,7 +363,7 @@ export class Server extends PanelEinstellungen {
 
     if (errMsg) {
       kvm.msg(errMsg);
-      kvm.log(errMsg, 1);
+      console.log(errMsg, 1);
     }
     sperrBildschirm.close();
   }
@@ -1183,7 +1180,9 @@ export class HintergrundLayer extends PanelEinstellungen {
     const changeBackgroundLayerSettingsButton = document.getElementById("changeBackgroundLayerSettingsButton");
     const loadBackgroundLayerButton = document.getElementById("loadBackgroundLayerButton");
     // TODO
+    // TODO jquery
     resetBackgroundLayerSettingsButton.addEventListener("click", () => {
+      console.info("resetBackgroundLayerSettingsButton.click");
       kvm.getConfigurationOption("backgroundLayerSettings").forEach((l, i) => {
         $("#backgroundLayerURL_" + i).val(l.url);
         if (l.params.layers) {
@@ -1503,7 +1502,7 @@ export class Database extends PanelEinstellungen {
     } catch (error) {
       const msg = `Fehler in bei Abfrage der Deltas mit sql: ${sql} Fehler: ${error.message} code: ${(<any>error).code}`;
       console.error(msg);
-      kvm.log(msg, 1);
+      console.log(msg);
       kvm.msg(msg, "Datenbank");
     }
   }
@@ -1529,8 +1528,7 @@ export class Database extends PanelEinstellungen {
       this.showImageDeltasWaiting.style.display = "none";
     } catch (error) {
       const msg = `Fehler in bei Abfrage der Deltas mit sql: ${sql} Fehler: ${error.message} code: ${(<any>error).code}`;
-      console.error(msg);
-      kvm.log(msg, 1);
+      console.error(msg, error);
       kvm.msg(msg, "Datenbank");
     }
   }
@@ -1565,8 +1563,35 @@ function createTable(rs: SQLitePlugin.Results) {
 }
 
 export class Protokoll extends PanelEinstellungen {
+  selectLogLevel: HTMLSelectElement;
+
   constructor() {
     super("h2_protokoll");
+    const selectLogLevel = (this.selectLogLevel = <HTMLSelectElement>document.getElementById("logLevel"));
+
+    const currentLogLevel = kvm.store.getItem("logLevel");
+    selectLogLevel.value = currentLogLevel;
+    selectLogLevel.addEventListener("change", () => {
+      kvm.store.setItem("logLevel", selectLogLevel.value);
+      kvm.msg("Protokollierungsstufe geändert!", "Protokollierung");
+    });
+
+    document.getElementById("showLoggingsButton").addEventListener("click", () => {
+      kvm.showView("loggings");
+    });
+
+    document.getElementById("clearLoggingsButton").addEventListener("click", () => {
+      document.getElementById("logText").innerHTML = "Log geleert: " + new Date().toUTCString();
+      kvm.showView("loggings");
+    });
+
+    // deb(msg) {
+    //   $("#debText").append("<p>" + msg);
+    //   //$(document).scrollBottom($('#debText').offset().bottom);
+    //   if ($("#show_allways_debug_messages").is(":checked")) {
+    //     $("#debugs").show();
+    //   }
+    // }
   }
 }
 
