@@ -253,7 +253,7 @@ export class Feature {
     if (this.layer.settings.geometry_type == "Point") {
       // ToDo hier ggf. den Geometrietyp auch aus this.geometry_type auslesen und nicht aus der übergebenen geom
       // Problem dann, dass man die Funktion nur benutzen kann für den Geometrietype des activen Layer
-      console.info("geom.toWkt() ='" + geom.toWkt() + "'");
+      // console.info("geom.toWkt() ='" + geom.toWkt() + "'");
       const coordsLevelDeep = Mapper.coordsLevelsDeep[geom.toWkt().split("(")[0].toUpperCase()];
       return coordsLevelDeep == 0 ? GeoJSON.coordsToLatLng(geom.toGeoJSON().coordinates) : GeoJSON.coordsToLatLngs(geom.toGeoJSON().coordinates, coordsLevelDeep);
     } else if (this.layer.settings.geometry_type == "Line") {

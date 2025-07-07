@@ -1102,7 +1102,7 @@ export const configurations: Configuration[] = [
       startCenterLat: 48.63346,
       startCenterLon: 9.03363,
     },
-    kvwmapServerUrl: "https://mvbio.de/streuobst",
+    kvwmapServerUrl: "https://obstbaum.pomologen-verein.de/kvwmap",
     kvwmapServerLoginName: "",
     kvwmapServerPasswort: "",
     backgroundLayerSettings: [
@@ -1195,7 +1195,7 @@ export const configurations: Configuration[] = [
       startCenterLat: 48.78621,
       startCenterLon: 9.02783,
     },
-    kvwmapServerUrl: "https://mvbio.de/streuobst",
+    kvwmapServerUrl: "https://obstbaum.pomologen-verein.de/kvwmap",
     kvwmapServerLoginName: "",
     kvwmapServerPasswort: "",
     backgroundLayerSettings: [
@@ -1272,7 +1272,7 @@ export const configurations: Configuration[] = [
       startCenterLat: 54.1,
       startCenterLon: 12.1,
     },
-    kvwmapServerUrl: "https://mvbio.de/streuobst",
+    kvwmapServerUrl: "https://obstbaum.pomologen-verein.de/kvwmap",
     kvwmapServerLoginName: "kobmbl",
     kvwmapServerPasswort: "",
     backgroundLayerSettings: [
