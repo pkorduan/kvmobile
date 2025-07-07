@@ -1039,6 +1039,9 @@ export class Karteneinstellung extends PanelEinstellungen {
   constructor() {
     super("h2_karteneinstellungen");
     const newPosSelect = (this.newPosSelect = <HTMLSelectElement>document.getElementById("newPosSelect"));
+    newPosSelect.addEventListener("change", () => {
+      kvm.setMapSetting("newPosSelect", newPosSelect.value);
+    });
 
     const minTrackDistanceSlider = (this.minTrackDistanceSlider = <HTMLInputElement>document.getElementById("minTrackDistanceSlider"));
     const minTrackDistance = <HTMLElement>document.getElementById("minTrackDistance");

@@ -1338,6 +1338,7 @@ export class Kvm extends PropertyChangeSupport {
       this.mapSettings[settingName] = value;
       this.map.setMaxBounds(new LatLngBounds(new LatLng(this.mapSettings["south"], this.mapSettings["west"]), new LatLng(this.mapSettings["north"], this.mapSettings["east"])));
       console.info(`mapSetting changed: ${settingName}=${value}`);
+      this.saveMapSettings(this.mapSettings);
     }
   }
 

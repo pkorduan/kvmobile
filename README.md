@@ -17,7 +17,8 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 # Change log
 
 ## 1.20.1
-
+- Bugfixes
+  - Eventhandler für Karteneinstellung Startposition anlegen und mapSettings im Store speichern nach dem setzen in der Variable mapSettings 
 - Maintainance
   - weitestgehende Entfernung von jquery
 
