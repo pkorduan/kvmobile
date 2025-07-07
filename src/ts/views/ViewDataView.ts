@@ -1,7 +1,7 @@
 import { Kvm } from "../app";
 import { Feature } from "../Feature";
 import { View } from "./View";
-import { createHtmlElement, traceElementChange } from "../Util";
+import { createHtmlElement } from "../Util";
 import * as Util from "../Util";
 import { Layer } from "../Layer";
 
@@ -104,7 +104,7 @@ export class ViewDataView extends View {
               attrGrpBody.append(dom);
               if (attr.get("name") === "bilder") {
                 console.info("adding ViewField for '" + attr.get("name") + "' display=" + dom.style?.display, dom);
-                traceElementChange(dom);
+                // traceElementChange(dom);
               }
             }
             attr.viewField.bindEvents();

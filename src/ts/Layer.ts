@@ -157,23 +157,14 @@ export class Layer extends PropertyChangeSupport {
 
   constructor(stelle: Stelle, settings: LayerSetting | string) {
     super();
-    // const layer_ = this;
 
     this.stelle = stelle;
     this.settings = typeof settings === "string" ? JSON.parse(settings) : settings;
     console.groupCollapsed("create Layer " + this.settings?.title);
     this.title = kvm.coalempty(this.get("alias"), this.get("title"), this.get("table_name"), "overlay" + this.getGlobalId());
-    // console.log("layer", stelle, this.settings);
-    // console.log(
-    //   "%s: Erzeuge Layerobjekt (id: %s) mit drawingorder: %s in Stelle: %s",
-    //   this.title,
-    //   this.settings.id,
-    //   this.settings.drawingorder,
-    //   stelle.get("id")
-    // );
+
     if (!this.settings.name_attribute) {
       this.settings.name_attribute = this.settings.id_attribute;
-      //console.log("Set id_attribute: %s as name_attribute", this.settings["id_attribute"]);
     }
     if (!("table_alias" in this.settings)) {
       this.settings.table_alias = "ht";
@@ -759,53 +750,48 @@ export class Layer extends PropertyChangeSupport {
     });
   }
 
-  updateTable(last_delta_version: number) {
-    // console.error(`xxx updateTable "${this.title}`);
-    kvm.db.transaction(
-      (tx) => {
-        const tableName = this.getSqliteTableName();
-        const sql = "DROP TABLE IF EXISTS " + tableName;
-
-        sperrBildschirm.tick("Lösche Tabelle " + tableName);
-        //console.log("Lösche Tabelle " + tableName);
-        tx.executeSql(
-          sql,
-          [],
-          (tx, res) => {
-            sperrBildschirm.tick("Tabelle " + this.getSqliteTableName() + " erfolgreich gelöscht.");
-            const sql = this.getCreateTableSql();
-            kvm.log("Erzeuge neue Tabelle mit sql: " + sql, 3);
-            sperrBildschirm.tick("Erzeuge neue Tabelle " + this.getSqliteTableName());
-            tx.executeSql(
-              sql,
-              [],
-              (tx, res) => {
-                sperrBildschirm.tick("Tabelle erfolgreich angelegt.");
-                // update layer name in layerlist for this layer
-                // this.appendToApp();
-                //this.activate();
-                kvm.getActiveStelle().sortOverlays();
-                this.saveToStore();
-                // kvm.setConnectionStatus();
-                this.requestData(last_delta_version);
-              },
-              (tx, error) => {
-                const tableName = this.getSqliteTableName();
-                kvm.msg("Fehler beim Anlegen der Tabelle: " + tableName + " " + error.message);
-              }
-            );
-          },
-          (tx, error) => {
-            const tableName = this.getSqliteTableName();
-            kvm.msg("Fehler beim Löschen der Tabelle: " + tableName + " " + error.message);
-          }
-        );
-      },
-      (error) => {
-        kvm.log("Fehler beim Update der Tabellen für den Layer: " + this.get("title") + " " + error.message, 1);
-        kvm.msg("Fehler beim Update der Tabellen für den Layer: " + this.get("title") + " " + error.message);
-      }
-    );
+  async updateTable(last_delta_version: number) {
+    return new Promise<void>((resolve, reject) => {
+      // console.error(`xxx updateTable "${this.title}`);
+      const tableName = this.getSqliteTableName();
+      kvm.db.transaction(
+        (tx) => {
+          const sql = "DROP TABLE IF EXISTS " + tableName;
+          sperrBildschirm.tick("Lösche Tabelle " + tableName);
+          //console.log("Lösche Tabelle " + tableName);
+          tx.executeSql(
+            sql,
+            [],
+            (tx, res) => {
+              sperrBildschirm.tick("Tabelle " + this.getSqliteTableName() + " erfolgreich gelöscht.");
+              const sql = this.getCreateTableSql();
+              kvm.log("Erzeuge neue Tabelle mit sql: " + sql, 3);
+              sperrBildschirm.tick("Erzeuge neue Tabelle " + this.getSqliteTableName());
+              tx.executeSql(
+                sql,
+                [],
+                async (tx, res) => {
+                  sperrBildschirm.tick("Tabelle erfolgreich angelegt.");
+                  kvm.getActiveStelle().sortOverlays();
+                  this.saveToStore();
+                  await this.requestData(last_delta_version);
+                  resolve();
+                },
+                (tx, error) => {
+                  reject(new Error("Fehler beim Anlegen der Tabelle: " + tableName + " " + error.message, { cause: error }));
+                }
+              );
+            },
+            (tx, error) => {
+              reject(new Error("Fehler beim Löschen der Tabelle: " + tableName + " " + error.message, { cause: error }));
+            }
+          );
+        },
+        (error) => {
+          reject(new Error("Fehler beim Update der Tabellefür den Layer: " + this.get("title") + " " + error.message, { cause: error }));
+        }
+      );
+    });
   }
 
   /**
@@ -938,7 +924,6 @@ export class Layer extends PropertyChangeSupport {
    * Function request layer with the last_delta_version data from server and writes the data to database
    */
   async requestData(last_delta_version: number) {
-    // console.error("xxx Layer %s: requestData", this.title);
     const filename = "data_layer_" + this.getGlobalId() + ".json";
     if (this.isLoaded) {
       throw new Error("Daten wurden schon runtergeladen");
@@ -993,6 +978,7 @@ export class Layer extends PropertyChangeSupport {
     try {
       const rs = await Util.executeSQL(kvm.db, sql);
       kvm.store.removeItem("layerFilter");
+      // TODO jquery
       $("#numDatasetsText_" + this.getGlobalId()).html("keine");
     } catch (ex) {
       navigator.notification.confirm(
@@ -1060,7 +1046,7 @@ export class Layer extends PropertyChangeSupport {
         })
         .catch((error: Error) => {
           reject({ message: "Fehler beim Löschen der Deltas!", cause: error });
-          console.error("TODO: ErrorMsg and update GUI");
+          console.info("TODO: ErrorMsg and update GUI");
           // kvm.log("Fehler beim Löschen der Deltas!", 1);
           // const icon = $("#clearLayerIcon_" + this.getGlobalId());
           // if (icon.hasClass("fa-spinner")) {
@@ -3000,6 +2986,7 @@ export class Layer extends PropertyChangeSupport {
         async (buttonIndex) => {
           if (buttonIndex == 1) {
             // ja
+            // TODO jquery
             $("#reloadLayerIcon_" + this.getGlobalId()).toggleClass("fa-rotate fa-spinner fa-spin");
             console.log("reload layer id: %s", this.get("id"));
             sperrBildschirm.show("Layer neu laden");

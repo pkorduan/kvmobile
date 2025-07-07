@@ -114,7 +114,7 @@ export class GeometrieFormField extends AbstractField implements Field {
   // }
 
   async setValue(val) {
-    console.error(`GeometrieFormField(${val})`, val);
+    console.log(`GeometrieFormField(${val})`, val);
     this._value = val;
     this._oldValue = val;
     kvm.log("GeometrieFormField.setValue with value:" + val);
@@ -144,7 +144,7 @@ export class GeometrieFormField extends AbstractField implements Field {
   }
 
   async saveGpsPositionButtonClicked() {
-    console.error("saveGpsPositionButtonClicked");
+    console.log("saveGpsPositionButtonClicked");
     navigator.geolocation.getCurrentPosition(
       async (geoLocation) => {
         const confirmed = await confirm("Neue Position:\n" + geoLocation.coords.longitude + " " + geoLocation.coords.latitude + "\nübernehmen?");
@@ -238,7 +238,7 @@ export class GeometrieFormField extends AbstractField implements Field {
      */
     // $(document).on("geomChanged", function (event, options) {
     document.addEventListener("geomChanged", (event: CustomEvent) => {
-      console.error("GeometrieFormField.geomChanged", event, event.detail);
+      console.log("GeometrieFormField.geomChanged", event, event.detail);
       const feature = kvm.getActiveLayer().activeFeature;
       const geom = event.detail.geom;
       const exclude = event.detail.exclude;

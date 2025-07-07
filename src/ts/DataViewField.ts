@@ -27,7 +27,6 @@ export class DataViewField {
   }
 
   private _createDom() {
-    console.error(`createDom of attr:${this.attribute.get("name")}`);
     const dom = (this.dom = createHtmlElement("div", null, "data-view-field"));
     dom.id = "dataViewFieldDiv_" + this.attribute.layer.get("id") + "_" + this.get("index");
     if (this.attribute.getArrangementStyle()) {

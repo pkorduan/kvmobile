@@ -548,7 +548,7 @@ export class Stelle {
         //console.log("Erzeuge neuen Layer");
         const layer = new Layer(kvm.getActiveStelle(), layerSettings);
         sperrBildschirm.tick(`${layer.title}:<br>&nbsp;&nbsp;Lege Layer an.`);
-        layer.updateTable(this.getLastDeltaVersion()); // includes DROP TABLE IF EXISTS, appendToApp(), activate(), this.sortOverlays(), saveToStore(), readData()
+        await layer.updateTable(this.getLastDeltaVersion()); // includes DROP TABLE IF EXISTS, appendToApp(), activate(), this.sortOverlays(), saveToStore(), readData()
         // TODO
       } else {
         kvm.log("Fehlerausgabe von parseLayerResult!", 4);
@@ -1127,7 +1127,7 @@ export class Stelle {
               if (changedNoSyncLayers) {
                 for (const layerSetting of changedNoSyncLayers) {
                   const layer = kvm.getLayer(`${this.get("ID")}_${layerSetting.id}`);
-                  layer.requestData(this._lastDeltaVersion);
+                  await layer.requestData(this._lastDeltaVersion);
                 }
               }
             }

@@ -311,10 +311,8 @@ export class Server extends PanelEinstellungen {
 
     kvm.log("Download Stellen von Url: " + url);
 
-    // let response: Response;
     let txt: string;
     try {
-      // response = await fetch(url);
       const fileEntry = await download(url, cordova.file.dataDirectory + "stellen.json");
       txt = await readFileAsString(fileEntry);
     } catch (err) {
@@ -1184,7 +1182,7 @@ export class HintergrundLayer extends PanelEinstellungen {
     // TODO
     // TODO jquery
     resetBackgroundLayerSettingsButton.addEventListener("click", () => {
-      console.error("resetBackgroundLayerSettingsButton.click");
+      console.info("resetBackgroundLayerSettingsButton.click");
       kvm.getConfigurationOption("backgroundLayerSettings").forEach((l, i) => {
         $("#backgroundLayerURL_" + i).val(l.url);
         if (l.params.layers) {

@@ -5,7 +5,6 @@ import { DataViewField } from "./DataViewField";
 import { DateFormField } from "./DateFormField";
 import { DateTimeFormField } from "./DateTimeFormField";
 import { GeometrieFormField } from "./GeometryFormField";
-import { SelectFormField } from "./SelectFormField";
 import { SelectAutoFormField } from "./SelectAutoFormField";
 import { TextfeldFormField } from "./TextfeldFormField";
 import { TextFormField } from "./TextFormField";
@@ -18,9 +17,8 @@ import { SubFormEmbeddedPKFormField } from "./SubFormEmbeddedPKFormField";
 import { SubFormFKFormField } from "./SubFormFKFormField";
 import { Field } from "./Field";
 import { Layer } from "./Layer";
-import { createHtmlElement, traceElementChange } from "./Util";
+import { createHtmlElement } from "./Util";
 import { kvm } from "./app";
-import { debug, styleText } from "util";
 
 export type OptionsAttributtes = {
   value: any;
@@ -760,7 +758,7 @@ export class Attribute {
     }
   }
 */
-  isEmpty(value): boolean {
-    return typeof value == "undefined" || value == null || value == "" || value == 0;
-  }
+  // isEmpty(value): boolean {
+  //   return typeof value == "undefined" || value == null || value == "" || value == 0;
+  // }
 }

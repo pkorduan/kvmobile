@@ -27,13 +27,13 @@ export class ViewFormular extends View {
   }
 
   update(f: Feature) {
-    console.error(`ViewFormular.update ${f?.layer?.title} ${f?.id}`, f);
+    console.info(`ViewFormular.update ${f?.layer?.title} ${f?.id}`, f);
     this.feature = f;
     this._updateFeature(f);
   }
 
   _createForm(layer: Layer) {
-    console.error("ViewFormular create Form for Layer " + layer.title);
+    console.info("ViewFormular create Form for Layer " + layer.title);
     this.dom.innerHTML = "";
     const h1 = Util.createHtmlElement("h1", this.dom);
     h1.innerText = layer.title;
