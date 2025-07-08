@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      #testdiv {
+        position: absolute;
+        height: 50px;
+        width: 50px;
+        background-color: aqua;
+      }
+      .fade-in-out {
+        opacity: 0;
+        transition: opacity 5s;
+        pointer-events: none;
+      }
+      .fade-in-in {
+        opacity: 1;
+        transition: opacity 5s;
+        pointer-events: none;
+      }
+      label {
+            width: 150px;
+            display: inline-block;
+      }
+    </style>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        document.getElementById("bttnrun").addEventListener("click", ()=>{
+            run();
+        })
+      });
+
+      let vis = false;
+      function run() {
+        const showTime = document.getElementById("showTime").value || 1;
+        const fadeoutTime = document.getElementById("fadeoutTime").value || 1;
+        const el = document.getElementById("testdiv");
+        show(el, showTime, fadeoutTime);
+      }
+
+      function show(el, showTime, fadeTime) {
+        el.addEventListener("transitionend", (ev)=>{
+            console.info("animationend");
+            el.style.display = "none";
+        });
+        // div.style.transitionDelay = "";
+        el.style.display = "";
+        el.style.transitionDuration = "";
+        el.style.transitionProperty = "";
+        el.style.opacity = 1;
+        const hdl = window.setTimeout(() => {        
+            el.style.transitionDuration = fadeTime+"s";
+            el.style.transitionProperty = "opacity";
+            el.style.opacity = "0";
+        }, showTime*1000);
+      }
+     
+      function _run(showTime, fadeTime) {
+        console.info("run "+showTime+"  "+fadeTime);
+        const div = document.getElementById("testdiv");
+        
+        div.style.transitionDelay = showTime+"s";
+        div.style.transitionDuration = fadeTime+"s";
+        div.style.transitionProperty = "opacity";
+        const hdl = window.setTimeout(
+          () => {
+            if (vis) {
+              console.info("fadeout");
+              div.style.opacity = "0";
+              vis = false;
+            } else {
+              console.info("fadein");
+              div.style.opacity = "1";
+            //   div.classList.replace("fade-in-out", "fade-in-in");
+              vis = true;
+            }
+          },
+          showTime
+        );
+      }
+
+    </script>
+  </head>
+  <body>
+    <div>
+        <label>how long to show</label><input id="showTime"/>
+    </div>
+    <div>
+        <label>fadeoutTime</label><input id="fadeoutTime"/></div>
+    </div>
+    <div>
+        <button id="bttnrun">run</button>
+    </div>
+    <div style="opacity: 0;" id="testdiv"></div>
+
+  </body>
+</html>

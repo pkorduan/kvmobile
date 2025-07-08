@@ -78,8 +78,8 @@ export class ViewFormular extends View {
                 // const attributeId = $(evt.target).attr("id");
                 // const attribute = kvm.getActiveLayer().attributes[attributeId];
                 const hasChanged = this.hasChanged();
-                console.log("Attribute: %s changed to value: %s fromChanged=%s", attr.get("name"), attr.formField.getValue(), hasChanged);
-                this.app.menu.enableSaveFeatureButton(this.hasChanged());
+                console.log("Attribute: %s changed to value: %s hasChanged=%s", attr.get("name"), attr.formField.getValue(), hasChanged);
+                this.app.menu.enableSaveFeatureButton(hasChanged);
                 if (attr.hasVisibilityDependency()) {
                   layer.vcheckAttributes(attr.get("name"), attr.formField.getValue(), attr.formField, "form");
                 }
@@ -96,12 +96,12 @@ export class ViewFormular extends View {
   private hasChanged(): boolean {
     const layer = this.feature.layer;
     for (const attr of layer.attributes) {
-      const changed = attr.formField.getValue() != this.feature.getDataValue(attr.settings.name);
-      if (changed) {
-        // if (attr.formField.hasChanged()) {
-        // console.info(`hasChanged01: "${attr.formField.settings.name}" ${(<any>attr.formField)._oldValue} => ${(<any>attr.formField)._value}`);
-        console.info(`hasChanged: "${attr.formField.settings.name}" ${attr.formField.getValue()} => ${this.feature.getDataValue(attr.settings.name)}`);
-        return true;
+      if (attr.settings.form_element_type !== "SubFormEmbeddedPK") {
+        const changed = attr.formField.getValue() != this.feature.getDataValue(attr.settings.name);
+        if (changed) {
+          console.info(`hasChanged: "${attr.settings.name}" ${this.feature.getDataValue(attr.settings.name)} => ${attr.formField.getValue()}`);
+          return true;
+        }
       }
     }
     return false;
