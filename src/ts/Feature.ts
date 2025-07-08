@@ -458,11 +458,14 @@ export class Feature {
     if (this.leafletLayer) {
       let layer = this.isEditable ? this.editableLayer : this.leafletLayer;
       if (this.layer.settings.geometry_type == "Point") {
+        console.log("flyTo %s %o", this.isEditable ? "editableLayer: " : "feature latlng: ", layer.getLatLng());
         if (zoom) {
-          kvm.map.setZoom(18);
+          kvm.map.flyTo(layer.getLatLng(), 18, { animate: false});
         }
-        console.log("panTo %s %o", this.isEditable ? "editableLayer: " : "feature latlng: ", layer.getLatLng());
-        kvm.map.panTo(layer.getLatLng());
+        else {
+          kvm.map.panTo(layer.getLatLng(), { animate: false});
+        }
+        // kvm.map.panTo(layer.getLatLng());
       } else {
         console.log("flyToBounds %s %o", this.isEditable ? "editableLayer: " : "feature bounds: ", layer.getBounds().getCenter());
         // let isVisible = $("#map").is(":visible");

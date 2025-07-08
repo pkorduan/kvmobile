@@ -259,11 +259,11 @@ export class Mapper {
     return $("#showMapEdit").css("display") == "none";
   }
 
-  zoomToFeature(featureId: string) {
-    const feature = kvm.getActiveLayer().getFeature(featureId);
+  // zoomToFeature(featureId: string) {
+  //   const feature = kvm.getActiveLayer().getFeature(featureId);
 
-    kvm.map.flyTo(feature.editableLayer.getLatLng(), 18);
-  }
+  //   kvm.map.flyTo(feature.editableLayer.getLatLng(), 18);
+  // }
 
   wkbToLatLngs(wkb) {
     // ToDo hier ggf. den Geometrietyp auch aus this.geometry_type auslesen und nicht aus der übergebenen geom

@@ -63,6 +63,7 @@ export interface LayerSetting {
   syncVersion?: any;
   checksum?: string;
   data_version?: string;
+  attribution?: string;
 }
 
 export interface BackgroundLayerSetting {
@@ -76,7 +77,7 @@ export interface BackgroundLayerSetting {
   params: {
     layers?: string; // "de_basemapde_web_raster_farbe"
     format?: string; // "image/png"
-    attribution?: string; // "Basemap DE dl-de/by-2-0"}
+    attribution?: string; // "z.B. Basemap DE dl-de/by-2-0"
     transparent?: any;
     maxZoom?: number;
     minZoom?: number;
@@ -195,7 +196,7 @@ export class Layer extends PropertyChangeSupport {
     const pane = kvm.map.createPane(this.title);
     pane.style.zIndex = String(400 + Layer._lastZIndex++);
     this.layerGroup = new LayerGroup([], {
-      attribution: this.get("drawingorder"),
+      attribution: this.get('attribution'),
       pane: this.title,
     });
 

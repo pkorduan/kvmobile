@@ -19,6 +19,9 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 ## 1.20.1
 - Bugfixes
   - Eventhandler für Karteneinstellung Startposition anlegen und mapSettings im Store speichern nach dem setzen in der Variable mapSettings 
+  - Beim ZoomTo Feature unterscheiden in panTo und flyTo jenachdem ob mit zoom oder ohne zum Feature gesprungen werden soll.
+- Features
+  - Anzeige der Attributions von Layern wenn sie auf dem Server welche über Datasources gesetzt bekommen haben.
 - Maintainance
   - weitestgehende Entfernung von jquery
 
