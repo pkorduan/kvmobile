@@ -45,6 +45,7 @@ export class SubFormEmbeddedPKFormField implements Field {
         parentLayerId: attribute.getGlobalLayerId(),
         subLayerId: attribute.getGlobalSubLayerId(),
         fkAttribute: attribute.getFKAttribute(),
+        parentFeatureId: kvm.getActiveFeature().id,
       });
     });
 

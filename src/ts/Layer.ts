@@ -196,7 +196,7 @@ export class Layer extends PropertyChangeSupport {
     const pane = kvm.map.createPane(this.title);
     pane.style.zIndex = String(400 + Layer._lastZIndex++);
     this.layerGroup = new LayerGroup([], {
-      attribution: this.get('attribution'),
+      attribution: this.get("attribution"),
       pane: this.title,
     });
 
@@ -3267,7 +3267,7 @@ export class Layer extends PropertyChangeSupport {
    * parentFeature is set from currently activeLayer
    * @param options Object mit Attributen parentLayerId
    */
-  async newSubDataSet(options = { parentLayerId: "", subLayerId: "", fkAttribute: "" }) {
+  async newSubDataSet(options: { parentLayerId: string; subLayerId: string; fkAttribute: string; parentFeatureId: any }) {
     // parentLayerId, parentFeatureId, subLayerId, subLayerFKAttribute) {
     sperrBildschirm.show("Neuer Sublayer-Datensatz");
     const parentLayer = kvm.getLayer(options.parentLayerId);
@@ -3279,7 +3279,9 @@ export class Layer extends PropertyChangeSupport {
     subLayer.parentFeatureId = parentLayer.activeFeature.id;
     subLayer.specifiedValues[options.fkAttribute] = parentLayer.activeFeature.id;
     subLayer.activate();
-    const feature = await subLayer.newFeature();
+    const values = {};
+    values[options.fkAttribute] = options.parentFeatureId;
+    const feature = await subLayer.newFeature(values);
     subLayer.editFeature(feature);
     // kvm.closeSperrDiv(`Neues Formular für Layer ${subLayer.title} geladen.`);
     sperrBildschirm.close();

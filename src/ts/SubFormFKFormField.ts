@@ -132,36 +132,6 @@ export class SubFormFKFormField implements Field {
       const pkLayer = kvm.getLayer(`${this.get("stelleId")}_${this.get("options").split(",")[0]}`);
       if (pkLayer.hasGeometry) {
         console.log("Übergeordneter Layer %s", pkLayer.title);
-        // Abfragen der uuid des Features in das das aktive Feature fällt
-        // aktuelle mit Within umgetzt. Bei Polygonen könnte auch ein Intersects notwendig werden.
-        // 03
-        // const sqlx = `
-        //   SELECT
-        //     ${pkLayer.get("id_attresibute")} AS id,
-        //     geom
-        //   FROM
-        //     ${pkLayer.getSqliteTableName()}
-        //   WHERE
-        //     ST_Within(
-        //       ST_GeomFromText('${this.attribute.layer.activeFeature.geom.toWkt()}', 4326),
-        //       ST_GeomFromEWKB(${pkLayer.get("geometry_attribute")})
-        //     ) > 0
-        // `;
-
-        // let sql = `
-        //   SELECT
-        //     geom,
-
-        //     ${pkLayer.get("id_attribute")} AS id,
-        //     geom
-        //   FROM
-        //     ${pkLayer.getSqliteTableName()}
-        //   WHERE
-        //     ST_Within(
-        //       ST_GeomFromText('${this.attribute.layer.activeFeature.newGeom.toWkt()}', 4326),
-        //       GeomFromEWKB(${pkLayer.get("geometry_attribute")})
-        //     )
-        // `;
 
         let query = kvm.getActiveStelle().replaceParams(pkLayer.settings.query);
         let filter: string = kvm.getActiveStelle().replaceParams(pkLayer.settings.filter);
