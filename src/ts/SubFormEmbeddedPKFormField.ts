@@ -25,17 +25,30 @@ export class SubFormEmbeddedPKFormField implements Field {
   settings: AttributeSetting;
   selector: string;
   element: HTMLElement;
-  attribute: Attribute;
+  attr: Attribute;
 
   lsts: { (src: Field, hasChanged: boolean): void }[] = [];
+  bttNewSubItem: HTMLButtonElement;
+  subItemList: HTMLDivElement;
 
   constructor(formId: string, attribute: Attribute) {
     console.info(`new SubFormEmbeddedPKFormField(${formId}, ${attribute.settings.name})`);
-    this.attribute = attribute;
+    this.attr = attribute;
     this.settings = attribute.settings;
-    this.selector = "#" + formId + " input[id=" + attribute.settings.index + "]";
-    this.element = createHtmlElement("div");
-    this.element.id = "xxxxxxxxxxxxxxx";
+
+    this.bttNewSubItem = createHtmlElement("button");
+    this.bttNewSubItem.innerText = "neu";
+    this.bttNewSubItem.style.padding = "0.1em 1em";
+    this.bttNewSubItem.addEventListener("click", () => {
+      console.info(`new SubLayerItem globalLayerId=${attribute.getGlobalLayerId()} globalSubLayerId=${attribute.getGlobalSubLayerId()} FKAttribute=${attribute.getFKAttribute()}`);
+      kvm.newSubFeature({
+        parentLayerId: attribute.getGlobalLayerId(),
+        subLayerId: attribute.getGlobalSubLayerId(),
+        fkAttribute: attribute.getFKAttribute(),
+      });
+    });
+
+    this.subItemList = createHtmlElement("div", null, "form-value");
   }
 
   // get(key) {
@@ -49,22 +62,42 @@ export class SubFormEmbeddedPKFormField implements Field {
    */
   async setValue(val) {
     // TODO jquery
-    const feature = this.attribute.layer.activeFeature;
-    console.log("setValue of SubFormEmbeddedPK FormField");
-    this.element.innerHTML = "";
+    const feature = this.attr.layer.activeFeature;
+    console.log("setValue of SubFormEmbeddedPK FormField " + typeof val);
     if (feature.new) {
-      $("#new_sub_data_set").hide();
+      this.bttNewSubItem.style.display = "none";
       const span = createHtmlElement("span", this.element);
       span.innerText = "Können erst angelegt werden wenn der neue Datensatz gespeichert ist.";
     } else {
-      $("#new_sub_data_set").show();
-      this.attribute.layer.readVorschauAttributes(this.attribute, feature.getDataValue(this.attribute.getPKAttribute()), this.element, "editFeature");
+      this.bttNewSubItem.style.display = "";
+      this.attr.layer.readVorschauAttributes(this.attr, feature.getDataValue(this.attr.getPKAttribute()), this.subItemList, "editFeature");
     }
   }
 
   getValue(action = "") {}
 
   getDom(): HTMLElement {
+    if (!this.element) {
+      const div = (this.element = createHtmlElement("div", null, "form-field-rows"));
+      div.id = `formFieldDiv_${this.attr.layer.get("id")}_${this.attr.get("index")}`;
+      div.style.cssText = this.attr.getArrangementStyle();
+      const fL = createHtmlElement("div", div, "form-label");
+
+      const settings = this.attr.settings;
+      const labelDiv = createHtmlElement("label", fL);
+      labelDiv.htmlFor = settings.name;
+      labelDiv.innerText = (settings.alias ? settings.alias : settings.name) + (settings.nullable == 0 ? "*" : "");
+      fL.appendChild(this.bttNewSubItem);
+      fL.style.cssText = "display: flex;justify-content: space-between;";
+
+      if (settings.tooltip) {
+        const infoBttn = createHtmlElement("i", labelDiv, "fa fa-exclamation-circle");
+        infoBttn.style.color = "#f57802";
+        infoBttn.style.paddingLeft = "0.2rem";
+        infoBttn.addEventListener("click", () => kvm.msg(settings.tooltip));
+      }
+      div.append(this.subItemList);
+    }
     return this.element;
   }
 
