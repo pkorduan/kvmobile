@@ -176,6 +176,22 @@ export class Kvm extends PropertyChangeSupport {
     return this._activeFeature;
   }
 
+  /**
+   * gibt die Fremdschlüsselbeziehung zurück, wenn der Layer ein Parent hat.
+   *
+   * @param {(Layer | string)} layer
+   * @returns {({ parentLayer: Layer; parentIdColumn: String; fkColumn: String; }|null)}
+   */
+  getParentFK(layer: Layer | string): { parentLayer: Layer; parentIdColumn: String; fkColumn: String } | null {
+    if (typeof layer === "string") {
+      layer = this.getLayer(layer);
+    }
+    if (layer) {
+      return layer.getParentFK();
+    }
+    return null;
+  }
+
   async setActiveFeature(feature: Feature) {
     // console.error(`zzz app.setActiveFeature ${feature?.layer?.title}`, feature, this._activeFeature);
     if (this._activeFeature === feature) {

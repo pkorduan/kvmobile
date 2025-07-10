@@ -41,7 +41,7 @@ export class TextfeldFormField extends AbstractField {
   }
 
   getValue(action = "") {
-    return this._value;
+    return this.element.value || null;
   }
 
   createInputElement(): HTMLElement {
