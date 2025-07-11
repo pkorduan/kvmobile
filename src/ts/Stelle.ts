@@ -543,7 +543,7 @@ export class Stelle {
         const layerSettings = resultObj.layers.find((layer) => {
           return layer["id"] == layerId;
         });
-        sperrBildschirm.tick(`${kvm.getActiveLayer().title}:<br>&nbsp;&nbsp;Entferne Layer von App.`);
+        // sperrBildschirm.tick(`${kvm.getActiveLayer().title}:<br>&nbsp;&nbsp;Entferne Layer von App.`);
         // kvm.getActiveLayer().removeFromMap(); // includes removeFromStore()
         //console.log("Erzeuge neuen Layer");
         const layer = new Layer(kvm.getActiveStelle(), layerSettings);
@@ -667,7 +667,7 @@ export class Stelle {
     console.log("runGetLayersRequest mit url: ", kvm.replacePassword(url));
     const fileEntry = await download(url, filename);
 
-    sperrBildschirm.tick("Download der Layerdaten abgeschlossen.");
+    // sperrBildschirm.tick("Download der Layerdaten abgeschlossen.");
     const fileContent = await readFileAsString(fileEntry);
     const layerRequestResponse = <LayerRequestResponse>kvm.parseLayerResult(fileContent);
     for (const layer of layerRequestResponse.layers) {
@@ -702,8 +702,8 @@ export class Stelle {
       await executeSQL(kvm.db, "delete from deltas");
       await executeSQL(kvm.db, "delete from image_deltas");
 
-      sperrBildschirm.tick("Downloadergebnis ist fehlerfrei.");
-      sperrBildschirm.tick("Entferne existierende Layer aus der Anwendung.");
+      // sperrBildschirm.tick("Downloadergebnis ist fehlerfrei.");
+      // sperrBildschirm.tick("Entferne existierende Layer aus der Anwendung.");
 
       await this.clearLayers();
       this.numLayers = layerRequestResult.layers.length;

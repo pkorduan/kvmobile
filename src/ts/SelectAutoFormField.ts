@@ -180,12 +180,15 @@ export class SelectAutoFormField extends AbstractField implements Field {
     const selectField = document.createElement("select");
     selectField.multiple = this.isArrayType();
     selectField.disabled = this.settings.privilege == "0";
-
+    
+    if (this.settings.nullable === '1') {
+      const opt = createHtmlElement('option', selectField);
+      opt.innerText = '-';
+    }
     for (let i = 0; i < options.length; i++) {
-      const opt = document.createElement("option");
+      const opt = createHtmlElement("option", selectField);
       opt.value = options[i].value;
       opt.innerHTML = options[i].output;
-      selectField.add(opt);
     }
     selectField.addEventListener("change", (ev) => {
       const result: string[] = [];

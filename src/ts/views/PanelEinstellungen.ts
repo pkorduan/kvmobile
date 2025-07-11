@@ -214,6 +214,7 @@ export class Server extends PanelEinstellungen {
       this.kvwmapServerUrlField.value = stelle?.get("url") || "";
       this.kvwmapServerLoginNameField.value = stelle?.get("login_name") || "";
       this.kvwmapServerPasswortField.value = stelle?.get("passwort") || "";
+      this.setActiveStellenBezeichnung(stelle.get('Bezeichnung'));
     }
 
     // $("#kvwmapServerStelleSelectField").find("option").remove();
@@ -286,7 +287,8 @@ export class Server extends PanelEinstellungen {
     sperrBildschirm.show();
     kvm.setActiveStelle(stelle);
     await stelle.requestLayers();
-
+    const layers = kvm.getLayers();
+    kvm.setActiveLayer(layers.find(obj => obj.get('geometry_attribute') !== null))
     this.kvwmapServerStelleSelectField.style.display = "none";
     this.saveServerSettingsButton.style.display = "none";
     this.requestStellenButton.style.display = "";
@@ -355,17 +357,19 @@ export class Server extends PanelEinstellungen {
       if (resultObj.stellen.length === 1) {
         this.kvwmapServerStelleSelectField.value = resultObj.stellen[0].ID;
         this.saveServerSettingsButton.style.display = "";
+        // Hier gleich das Laden der Layer starten
+        this.clickedSaveServerSettingsButton();
       } else {
         this.saveServerSettingsButton.style.display = "none";
+        this.kvwmapServerStelleSelectField.style.display = "";
+        sperrBildschirm.close();
       }
-      this.kvwmapServerStelleSelectField.style.display = "";
     }
 
     if (errMsg) {
       kvm.msg(errMsg);
       console.log(errMsg, 1);
     }
-    sperrBildschirm.close();
   }
 
   // TODO <i class="fa fa-eye" aria-hidden="true" onclick="this.classList.toggle('fa-eye'); this.classList.toggle('fa-eye-slash'); document.getElementById('kvwmapServerPasswortField').type = (document.getElementById('kvwmapServerPasswortField').type === 'text' ? 'password' : 'text');"></i><br>
@@ -454,7 +458,7 @@ export class Layers extends PanelEinstellungen {
     console.log(`bttnSyncLayersClicked`);
     // const layer = kvm._activeLayer;
     if (this.layerId2layerListIem.size === 0) {
-      this.requestLayers();
+      await this.requestLayers();
       return;
     }
 
