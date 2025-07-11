@@ -69,6 +69,7 @@ export interface AttributeSetting {
 
 export class Attribute {
   settings: AttributeSetting;
+  name: string;
   layer: Layer;
   formField: Field;
   viewField: DataViewField;
@@ -76,6 +77,7 @@ export class Attribute {
   constructor(layer: Layer, settings: AttributeSetting) {
     //console.log('Erzeuge Attributeobjekt with settings %o', settings);
     this.layer = layer;
+    this.name = settings.name || settings.alias;
     this.settings = settings;
     this.settings.stelleId = layer.stelle.get("ID");
     this.settings.layerId = layer.get("id");
@@ -550,11 +552,11 @@ export class Attribute {
       bttn.type = "button";
       bttn.value = "Neu";
       bttn.addEventListener("click", () => {
-        kvm.newSubFeature({
-          parentLayerId: this.getGlobalLayerId(),
-          subLayerId: this.getGlobalSubLayerId(),
-          fkAttribute: this.getFKAttribute(),
-        });
+        // kvm.newSubFeature({
+        //   parentLayerId: this.getGlobalLayerId(),
+        //   subLayerId: this.getGlobalSubLayerId(),
+        //   fkAttribute: this.getFKAttribute(),
+        // });
       });
 
       bttn.style.cssText = "float: right; padding: 2px; margin-right: 5px";

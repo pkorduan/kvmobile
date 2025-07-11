@@ -30,6 +30,7 @@ export class SubFormEmbeddedPKFormField implements Field {
   lsts: { (src: Field, hasChanged: boolean): void }[] = [];
   bttNewSubItem: HTMLButtonElement;
   subItemList: HTMLDivElement;
+  spanMsgNewFeature: HTMLSpanElement;
 
   constructor(formId: string, attribute: Attribute) {
     console.info(`new SubFormEmbeddedPKFormField(${formId}, ${attribute.settings.name})`);
@@ -45,6 +46,7 @@ export class SubFormEmbeddedPKFormField implements Field {
         parentLayerId: attribute.getGlobalLayerId(),
         subLayerId: attribute.getGlobalSubLayerId(),
         fkAttribute: attribute.getFKAttribute(),
+        parentFeatureId: kvm.getActiveFeature().id,
       });
     });
 
@@ -61,15 +63,19 @@ export class SubFormEmbeddedPKFormField implements Field {
    * werden über die ID des Datensatzes der in id_attribut steht
    */
   async setValue(val) {
-    // TODO jquery
     const feature = this.attr.layer.activeFeature;
     console.log("setValue of SubFormEmbeddedPK FormField " + typeof val);
+
     if (feature.new) {
       this.bttNewSubItem.style.display = "none";
-      const span = createHtmlElement("span", this.element);
-      span.innerText = "Können erst angelegt werden wenn der neue Datensatz gespeichert ist.";
+      if (!this.spanMsgNewFeature) {
+        this.spanMsgNewFeature = createHtmlElement("span");
+        this.spanMsgNewFeature.innerText = "Können erst angelegt werden wenn der neue Datensatz gespeichert ist.";
+        this.element.append(this.spanMsgNewFeature);
+      }
     } else {
       this.bttNewSubItem.style.display = "";
+      this.spanMsgNewFeature?.remove();
       this.attr.layer.readVorschauAttributes(this.attr, feature.getDataValue(this.attr.getPKAttribute()), this.subItemList, "editFeature");
     }
   }

@@ -34,9 +34,9 @@ export abstract class AbstractField implements Field {
   protected _value: any;
   protected _oldValue: any;
 
-  constructor(formId: string, att: Attribute) {
+  constructor(formId: string, attr: Attribute) {
     // this.settings = settings;
-    this.attr = att;
+    this.attr = attr;
     // this.selector = "#" + formId + " input[id=" + this.settings.index + "]";
   }
 

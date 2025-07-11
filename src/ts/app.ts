@@ -176,6 +176,22 @@ export class Kvm extends PropertyChangeSupport {
     return this._activeFeature;
   }
 
+  /**
+   * gibt die Fremdschlüsselbeziehung zurück, wenn der Layer ein Parent hat.
+   *
+   * @param {(Layer | string)} layer
+   * @returns {({ parentLayer: Layer; parentIdColumn: String; fkColumn: String; }|null)}
+   */
+  getParentFK(layer: Layer | string): { parentLayer: Layer; parentIdColumn: String; fkColumn: String } | null {
+    if (typeof layer === "string") {
+      layer = this.getLayer(layer);
+    }
+    if (layer) {
+      return layer.getParentFK();
+    }
+    return null;
+  }
+
   async setActiveFeature(feature: Feature) {
     // console.error(`zzz app.setActiveFeature ${feature?.layer?.title}`, feature, this._activeFeature);
     if (this._activeFeature === feature) {
@@ -2167,7 +2183,7 @@ export class Kvm extends PropertyChangeSupport {
    * If activeFeature has open changes a confirm dialog comes up.
    * Input form only open if user confirm else nothing happens.
    */
-  async newSubFeature(options = { parentLayerId: "", subLayerId: "", fkAttribute: "" }) {
+  async newSubFeature(options: { parentLayerId: string; subLayerId: string; fkAttribute: string; parentFeatureId: any }) {
     if (this._activeLayer && this._activeLayer.activeFeature) {
       const changes = this._activeLayer.collectChanges("update");
       if (changes.length > 0) {

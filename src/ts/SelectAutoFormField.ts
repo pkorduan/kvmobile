@@ -123,11 +123,16 @@ export class SelectAutoFormField extends AbstractField implements Field {
     //console.log('SelectFormField.getValue');
     let val = this.val;
 
-    if (typeof val === "undefined" || val === "") {
+    if (typeof val === "undefined" || val === "" || val === "{}") {
       return null;
     }
 
     if (val && this.isArrayType()) {
+      if (Array.isArray(val)) {
+        if (val.length === 0) {
+          return null;
+        }
+      }
       return `{${val.toString()}}`;
     }
 

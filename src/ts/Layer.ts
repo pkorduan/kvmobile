@@ -155,6 +155,7 @@ export class Layer extends PropertyChangeSupport {
   parentFeatureId: string;
 
   layerFilter = new Map<string, { operator: string; value: string }>();
+  parentFK: { parentLayer: Layer; parentIdColumn: string; fkColumn: string } = undefined;
 
   constructor(stelle: Stelle, settings: LayerSetting | string) {
     super();
@@ -196,7 +197,7 @@ export class Layer extends PropertyChangeSupport {
     const pane = kvm.map.createPane(this.title);
     pane.style.zIndex = String(400 + Layer._lastZIndex++);
     this.layerGroup = new LayerGroup([], {
-      attribution: this.get('attribution'),
+      attribution: this.get("attribution"),
       pane: this.title,
     });
 
@@ -281,6 +282,33 @@ export class Layer extends PropertyChangeSupport {
         return feature.getDataValue(fkAttr) === featureId;
       })
     );
+  }
+
+  /**
+   * gibt die Fremdschlüsselbeziehung zurück, wenn der Layer ein Parent hat.
+   *
+   * @param {(Layer | string)} layer
+   * @returns {({ parentLayer: Layer; parentIdColumn: string; fkColumn: string; }|null)}
+   */
+  getParentFK(): { parentLayer: Layer; parentIdColumn: string; fkColumn: string } | null {
+    if (this.parentFK === undefined) {
+      const attrFK = this.attributes.find((attr) => attr.get("form_element_type") === "SubFormFK");
+      this.parentFK = null;
+      if (attrFK) {
+        // "287,standort_uuid:uuid;no_new_window"
+        const options = attrFK.get("options");
+        if (options) {
+          const sA = options.split(/[,:;]/);
+          this.getGlobalId;
+          this.parentFK = {
+            parentLayer: kvm.getLayer(this.stelle.get("ID") + "_" + sA[0]),
+            fkColumn: sA[1],
+            parentIdColumn: sA[2],
+          };
+        }
+      }
+    }
+    return this.parentFK;
   }
 
   /*
@@ -1560,52 +1588,54 @@ export class Layer extends PropertyChangeSupport {
    * @async
    * @returns {*}
    */
-  private async _bestimmeUbergeordnetesObjekt(att: Attribute): Promise<string> {
-    console.info(`_bestimmeUbergeordnetesObjekt ${att.settings.name}`);
+  private async _bestimmeUbergeordnetesObjekt(): Promise<string> {
+    const parentFK = this.getParentFK();
+    if (!parentFK || !parentFK.parentLayer.hasGeometry) {
+      throw new Error("Layer hat kein Parent oder dieser hat keine Geometrie");
+    }
+    console.info(`_bestimmeUbergeordnetesObjekt ${parentFK}`);
     let featureId: string = "";
     if (this.hasGeometry && this.activeFeature.new && this.activeFeature.newGeom) {
       // Abfragen des übergeordneten Layers
-      const pkLayer = kvm.getLayer(`${att.get("stelleId")}_${att.get("options").split(",")[0]}`);
-      if (pkLayer.hasGeometry) {
-        console.log("Übergeordneter Layer %s", pkLayer.title);
+      const pkLayer = parentFK.parentLayer;
+      console.log("Übergeordneter Layer %s", pkLayer.title);
 
-        let query = kvm.getActiveStelle().replaceParams(pkLayer.settings.query);
-        let filter: string = kvm.getActiveStelle().replaceParams(pkLayer.settings.filter);
-        let where: string[] = [
-          `
+      let query = kvm.getActiveStelle().replaceParams(pkLayer.settings.query);
+      let filter: string = kvm.getActiveStelle().replaceParams(pkLayer.settings.filter);
+      let where: string[] = [
+        `
           ST_Within(
               ST_GeomFromText('${this.activeFeature.newGeom.toWkt()}', 4326),
               GeomFromEWKB(${pkLayer.get("geometry_attribute")})
             )
         `,
-        ];
-        let sql = pkLayer.extentSql(query, where, "", "", "", filter);
+      ];
+      let sql = pkLayer.extentSql(query, where, "", "", "", filter);
 
-        // eventuell ist diese Geometrie richtiger als die von ST_GeomFromText '${this.attribute.layer.activeFeature.wkxToEwkb(this.attribute.layer.activeFeature.geom)}'
-        // Prüfen gegen welche Geometrie ST_Within testet, vielleicht liegt es auch an einer falschen geom in standorte
-        console.log("Frage parent id mit sql ab: ", sql);
-        try {
-          console.info("_bestimmeUbergeordneteObjekte: %s  search parentFeature", att.get("name"));
-          const rs = await Util.executeSQL(kvm.db, sql);
-          console.log("Resultset von räumlicher Abfrage", rs);
-          for (let i = 0; i < rs.rows.length; i++) {
-            if (typeof rs.rows.item(i).geom != "undefined" && rs.rows.item(i).geom != "") {
-              featureId = rs.rows.item(i)[pkLayer.get("id_attribute")];
-              kvm.mapHint(`Übergeordnetes Objekt ${pkLayer.getFeature(featureId).getDataValue(pkLayer.get("name_attribute"))} aus Layer ${pkLayer.title} über Markerposition ermittelt.`, 5000);
-              // att.formField.setValue(featureId);
+      // eventuell ist diese Geometrie richtiger als die von ST_GeomFromText '${this.attribute.layer.activeFeature.wkxToEwkb(this.attribute.layer.activeFeature.geom)}'
+      // Prüfen gegen welche Geometrie ST_Within testet, vielleicht liegt es auch an einer falschen geom in standorte
+      console.log("Frage parent id mit sql ab: ", sql);
+      try {
+        console.info("_bestimmeUbergeordneteObjekte: %s  search parentFeature", parentFK.fkColumn);
+        const rs = await Util.executeSQL(kvm.db, sql);
+        console.log("Resultset von räumlicher Abfrage", rs);
+        for (let i = 0; i < rs.rows.length; i++) {
+          if (typeof rs.rows.item(i).geom != "undefined" && rs.rows.item(i).geom != "") {
+            featureId = rs.rows.item(i)[pkLayer.get("id_attribute")];
+            // kvm.mapHint(`Übergeordnetes Objekt ${pkLayer.getFeature(featureId).getDataValue(pkLayer.get("name_attribute"))} aus Layer ${pkLayer.title} über Markerposition ermittelt.`, 5000);
+            // att.formField.setValue(featureId);
 
-              break;
-            }
+            break;
           }
-          console.info("_bestimmeUbergeordneteObjekte: %s, SubFormFKFormField.setValue search parentFeature => %s ", att.get("name"), featureId);
-          if (featureId == "") {
-            kvm.mapHint(`Der Marker liegt nicht im räumlichen Bereich eines Objektes vom Layers ${pkLayer.title}.`, 5000);
-            // att.formField.setValue(att.get("default"));
-          }
-        } catch (err) {
-          console.error(`Fehler bei der räumlichen Suche eines Objektes im Layer ${pkLayer.title}`, err);
-          kvm.msg(`Fehler bei der räumlichen Suche eines Objektes in Layer ${pkLayer.title} zu dem dieses Objekt räumlich gehören könnte. Fehler: ${err["message"]}`, "Editiervorgabe");
         }
+        console.info("_bestimmeUbergeordneteObjekte: %s, SubFormFKFormField.setValue search parentFeature => %s ", parentFK.fkColumn, featureId);
+        // if (featureId == "") {
+        //   kvm.mapHint(`Der Marker liegt nicht im räumlichen Bereich eines Objektes vom Layers ${pkLayer.title}.`, 5000);
+        //   // att.formField.setValue(att.get("default"));
+        // }
+      } catch (err) {
+        console.error(`Fehler bei der räumlichen Suche eines Objektes im Layer ${pkLayer.title}`, err);
+        kvm.msg(`Fehler bei der räumlichen Suche eines Objektes in Layer ${pkLayer.title} zu dem dieses Objekt räumlich gehören könnte. Fehler: ${err["message"]}`, "Editiervorgabe");
       }
     }
     return featureId;
@@ -1686,140 +1716,40 @@ export class Layer extends PropertyChangeSupport {
         kvm.controller.mapper.clearWatch();
         this.startEditing();
       } else {
+        // new
+        let startLatLng: LatLngTuple;
         if (kvm.mapSettings.newPosSelect == 1) {
-          // if (this.get("geometry_type") === "Point") {
-          //   const result = await Util.getCurrentPosition();
-          //   if (result instanceof GeolocationPosition) {
-          //     console.log("Starte Editierung an GPS-Coordinate");
-          //     const startLatLng: LatLngTuple = [result.coords.latitude, result.coords.longitude];
-          //     this.startEditing(kvm.getActiveLayer().getStartGeomAtLatLng(startLatLng), startLatLng);
-          //     if (this.get("geometry_type") === "Point") {
-          //       this.getAttribute(this.get("geometry_attribute")).formField.setValue(String(result.coords));
-          //       console.log("Starte laufende Übernahme der aktuellen GPS-Position.");
-          //       kvm.controller.mapper.startUpdateMarkerWithGps();
-          //     }
-          //   } else {
-          //     console.log("Starte Editierung in Bildschirmmitte", result);
-          //     const center = kvm.map.getCenter();
-          //     const startLatLng: LatLngTuple = [center.lat, center.lng];
-          //     this.startEditing(this.getStartGeomAtLatLng(startLatLng), startLatLng);
-          //     await Util.confirm("Da keine GPS-Position ermittelt werden kann, wird die neue Geometrie in der Mitte der Karte gezeichnet. Schalten Sie die GPS Funktion auf Ihrem Gerät ein und suchen Sie einen Ort unter freiem Himmel auf um GPS benutzen zu können.", "GPS-Position", "ok", "ohne GPS weitermachen");
-          //     this.getAttribute(this.get("geometry_attribute")).formField.setValue(String(startLatLng));
-          //   }
-
-          //   for (let att of this.attributes) {
-          //     if (att.get("form_element_type") === "SubFormFK") {
-          //       await this._bestimmeUbergeordnetesObjekt(att);
-          //     }
-          //   }
-          // }
-
           const result = await Util.getCurrentPosition();
           if (result instanceof GeolocationPosition) {
             console.log("Starte Editierung an GPS-Coordinate");
-            const startLatLng: LatLngTuple = [result.coords.latitude, result.coords.longitude];
-            kvm.getActiveLayer().startEditing(kvm.getActiveLayer().getStartGeomAtLatLng(startLatLng), startLatLng);
-            if (this.get("geometry_type") === "Point") {
-              // $("#gpsCurrentPosition").html(result.coords.latitude.toString() + " " + result.coords.longitude.toString());
-              console.log("Starte laufende Übernahme der aktuellen GPS-Position.");
-              kvm.controller.mapper.startUpdateMarkerWithGps();
-            }
+            startLatLng = [result.coords.latitude, result.coords.longitude];
           } else {
             console.log("Starte Editierung in Bildschirmmitte", result);
-            const center = kvm.map.getCenter();
-            const startLatLng: LatLngTuple = [center.lat, center.lng];
-            this.startEditing(this.getStartGeomAtLatLng(startLatLng), startLatLng);
             await Util.confirm("Da keine GPS-Position ermittelt werden kann, wird die neue Geometrie in der Mitte der Karte gezeichnet. Schalten Sie die GPS Funktion auf Ihrem Gerät ein und suchen Sie einen Ort unter freiem Himmel auf um GPS benutzen zu können.", "GPS-Position", "ok", "ohne GPS weitermachen");
           }
-          for (let att of this.attributes) {
-            if (att.get("form_element_type") === "SubFormFK") {
-              const parentFeatureId = await this._bestimmeUbergeordnetesObjekt(att);
-              feature.data[att.settings.name] = parentFeatureId;
-            }
+        }
+        if (!startLatLng) {
+          console.log("Starte Editierung in Bildschirmmitte");
+          const center = kvm.map.getCenter();
+          startLatLng = [center.lat, center.lng];
+        }
+        const initialGeom = this.getStartGeomAtLatLng(startLatLng);
+        feature.setGeom(feature.aLatLngsToWkx(initialGeom));
+        feature.geom = feature.newGeom;
+        feature.setDataValue(this.settings.geometry_attribute, feature.wkxToEwkb(feature.geom));
+
+        const parentFK = this.getParentFK();
+        if (parentFK && !feature.getDataValue(parentFK.fkColumn)) {
+          const parentFeatureId = await this._bestimmeUbergeordnetesObjekt();
+          const parentLayer = parentFK.parentLayer;
+          if (parentFeatureId) {
+            feature.data[parentFK.fkColumn] = parentFeatureId;
+            kvm.mapHint(`Übergeordnetes Objekt "${parentLayer.getFeature(parentFeatureId).getDataValue(parentLayer.get("name_attribute"))}" aus Layer ${parentLayer.title} über Markerposition ermittelt.`, 5000);
+          } else {
+            await Util.alertNative(`Der Marker liegt nicht im räumlichen Bereich eines Objektes des Layers ${parentLayer.title}.`);
           }
-        } else {
-          const center = kvm.map.getCenter();
-          console.log("Starte Editierung in Bildschirmmitte");
-          const startLatLng: LatLngTuple = [center.lat, center.lng];
-          this.startEditing(this.getStartGeomAtLatLng(startLatLng), startLatLng);
         }
-      }
-    } else {
-      this.loadFeatureToForm(feature, { editable: true });
-      kvm.showView("formular");
-    }
-  }
-
-  /**
-   * Show feature with featureId in edit form if featureId is not yet in layers feature list take the activeFeature.
-   * Its the case when a new feature has been created but is not saved allready.
-   * Activate Layer before if not already active.
-   * Activate Feature before if exists and not already active.
-   * @param feature
-   */
-  async editFeatureX(feature: Feature): Promise<void> {
-    // editFeature(f: string | Feature) {
-    // const feature = typeof f === "string" ? this.getFeature(f) : f;
-
-    console.info(`zzz Layer.editFeature of layer ${this.title}`, feature);
-
-    if (!this.isActive) {
-      this.activate();
-    }
-
-    if (!feature.isActive) {
-      // Only existing features can be set active
-      this.activateFeature(feature, true);
-    }
-
-    feature.setDefaultValuesForNonSaveables();
-
-    if (this.hasGeometry) {
-      if (feature.geom) {
-        kvm.controller.mapper.clearWatch();
         this.startEditing();
-      } else {
-        if (kvm.mapSettings.newPosSelect == 1) {
-          navigator.geolocation.getCurrentPosition(
-            (geoLocation) => {
-              console.log("Starte Editierung an GPS-Coordinate");
-              const startLatLng: LatLngTuple = [geoLocation.coords.latitude, geoLocation.coords.longitude];
-              kvm.getActiveLayer().startEditing(kvm.getActiveLayer().getStartGeomAtLatLng(startLatLng), startLatLng);
-              if (this.get("geometry_type") === "Point") {
-                // TODO jquery
-                $("#gpsCurrentPosition").html(geoLocation.coords.latitude.toString() + " " + geoLocation.coords.longitude.toString());
-                console.log("Starte laufende Übernahme der aktuellen GPS-Position.");
-                kvm.controller.mapper.startUpdateMarkerWithGps();
-              }
-            },
-            (error) => {
-              console.log("Starte Editierung in Bildschirmmitte", error);
-              const center = kvm.map.getCenter();
-              const startLatLng: LatLngTuple = [center.lat, center.lng];
-              this.startEditing(this.getStartGeomAtLatLng(startLatLng), startLatLng);
-              navigator.notification.confirm(
-                "Da keine GPS-Position ermittelt werden kann, wird die neue Geometrie in der Mitte der Karte gezeichnet. Schalten Sie die GPS Funktion auf Ihrem Gerät ein und suchen Sie einen Ort unter freiem Himmel auf um GPS benutzen zu können.",
-                function (buttonIndex) {
-                  if (buttonIndex == 1) {
-                    //kvm.log("Einschalten der GPS-Funktion.", 3);
-                  }
-                },
-                "GPS-Position",
-                ["ok", "ohne GPS weitermachen"]
-              );
-            },
-            {
-              maximumAge: 2000, // duration to cache current position
-              timeout: 5000, // timeout for try to call successFunction, else call errorFunction
-              enableHighAccuracy: true, // take position from gps not network-based method
-            }
-          );
-        } else {
-          const center = kvm.map.getCenter();
-          console.log("Starte Editierung in Bildschirmmitte");
-          const startLatLng: LatLngTuple = [center.lat, center.lng];
-          this.startEditing(this.getStartGeomAtLatLng(startLatLng), startLatLng);
-        }
       }
     } else {
       this.loadFeatureToForm(feature, { editable: true });
@@ -1917,12 +1847,6 @@ export class Layer extends PropertyChangeSupport {
     // console.log("Layer.startEditing");
     const feature = this.activeFeature;
 
-    if (alatlng.length > 0) {
-      // console.log("Setzte Geometry für Feature %o", alatlng, 4);
-      feature.setGeom(feature.aLatLngsToWkx(alatlng));
-      feature.geom = feature.newGeom;
-      feature.setDataValue(this.settings.geometry_attribute, feature.wkxToEwkb(feature.geom));
-    }
     this.loadFeatureToForm(feature, { editable: true });
     kvm.map.closePopup();
     if (feature.leafletLayer) {
@@ -2177,8 +2101,9 @@ export class Layer extends PropertyChangeSupport {
           if (typeof newVal == "string") newVal = newVal.trim();
           if (oldVal == "null" && newVal == null) {
             newVal = "null"; // null String und null Object sollen gleich sein beim Vergleich
+          } else if (oldVal === "{}" && newVal === null) {
+            newVal = "{}";
           }
-
           if (action == "insert") {
             // Setze oldVal auf leer zurück, damit die geometry und die in getNewData erzeugten
             // und in das Formular geladenen Default-Werte übernommen werden.
@@ -3269,7 +3194,7 @@ export class Layer extends PropertyChangeSupport {
    * parentFeature is set from currently activeLayer
    * @param options Object mit Attributen parentLayerId
    */
-  async newSubDataSet(options = { parentLayerId: "", subLayerId: "", fkAttribute: "" }) {
+  async newSubDataSet(options: { parentLayerId: string; subLayerId: string; fkAttribute: string; parentFeatureId: any }) {
     // parentLayerId, parentFeatureId, subLayerId, subLayerFKAttribute) {
     sperrBildschirm.show("Neuer Sublayer-Datensatz");
     const parentLayer = kvm.getLayer(options.parentLayerId);
@@ -3281,8 +3206,10 @@ export class Layer extends PropertyChangeSupport {
     subLayer.parentFeatureId = parentLayer.activeFeature.id;
     subLayer.specifiedValues[options.fkAttribute] = parentLayer.activeFeature.id;
     subLayer.activate();
-    const feature = await subLayer.newFeature();
-    subLayer.editFeature(feature);
+    const values = {};
+    values[options.fkAttribute] = options.parentFeatureId;
+    const feature = await subLayer.newFeature(values);
+    await subLayer.editFeature(feature);
     // kvm.closeSperrDiv(`Neues Formular für Layer ${subLayer.title} geladen.`);
     sperrBildschirm.close();
   }

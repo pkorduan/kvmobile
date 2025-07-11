@@ -1,6 +1,6 @@
 import { kvm } from "./app";
 import { Attribute, AttributeSetting } from "./Attribute";
-import { Field } from "./Field";
+import { AbstractField, Field } from "./Field";
 import { executeSQL } from "./Util";
 import { createHtmlElement } from "./Util";
 
@@ -10,32 +10,43 @@ import { createHtmlElement } from "./Util";
  * kann aber ggf. später auch mal über eine Auswahlliste im Formular gesetzt werden
  * und das ist dann kein Autoattribute
  */
-export class SubFormFKFormField implements Field {
-  settings: AttributeSetting;
-  private element: HTMLInputElement;
+export class SubFormFKFormField extends AbstractField {
+  // settings: AttributeSetting;
+  // private element: HTMLInputElement;
   linkElement: HTMLElement;
-  attribute: Attribute;
-  selector: string;
-  value: string;
+  span: HTMLSpanElement;
+  // attribute: Attribute;
+  // selector: string;
+  // value: string;
   counter = 0;
+  parentFeatureId: string;
 
-  constructor(formId: string, attribute: Attribute) {
-    this.attribute = attribute;
-    this.settings = attribute.settings;
-    this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
-    let globalParentLayerId = this.attribute.getGlobalParentLayerId();
-    let vorschauOption = this.attribute.getVorschauOption();
-    this.element = createHtmlElement("input", null);
-    this.element.type = "text";
-    this.element.id = this.attribute.settings.name + "_" + this.attribute.settings.index;
-    this.element.dataset.testdate = "jhjghdjahd";
-    this.element.name = this.attribute.settings.name;
-    this.element.value = "";
-    this.element.disabled = true;
+  constructor(formId: string, attr: Attribute) {
+    super(formId, attr);
+    // this.attribute = attribute;
+    // this.settings = attribute.settings;
+    // this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
+    let globalParentLayerId = attr.getGlobalParentLayerId();
+    let vorschauOption = attr.getVorschauOption();
+    // this.element = createHtmlElement("input", null);
+    // this.element.type = "text";
+    // this.element.id = this.attribute.settings.name + "_" + this.attribute.settings.index;
+    // this.element.dataset.testdate = "jhjghdjahd";
+    // this.element.name = this.attribute.settings.name;
+    // this.element.value = "";
+    // this.element.disabled = true;
     // this.element.style.display = "none";
 
-    this.linkElement = createHtmlElement("div", this.element);
+    this.linkElement = createHtmlElement("div", null, "link-element pointer");
     createHtmlElement("i", this.linkElement, "fa fa-arrow-left");
+    this.span = createHtmlElement("span", this.linkElement);
+
+    this.linkElement.addEventListener("click", () => {
+      if (this.parentFeatureId) {
+        kvm.editFeature(globalParentLayerId, this.parentFeatureId);
+      }
+    });
+
     // this.linkElement.appendChild
     //   <div onclick="kvm.editFeature('${globalParentLayerId}', document.getElementById('${this.attribute.settings.index}').value)" class="link-element">
     //     <i class="fa fa-arrow-left" aria-hidden="true" style="margin-right: 10px"></i> ${vorschauOption}
@@ -65,110 +76,84 @@ export class SubFormFKFormField implements Field {
    *     </div>
    *   </div>
    */
-  constructorXX(formId: string, attribute: Attribute) {
-    console.info(`new SubFormFKFormField(${formId}, ${attribute.settings.name})`);
-    this.attribute = attribute;
-    this.settings = attribute.settings;
-    this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
-    let globalParentLayerId = this.attribute.getGlobalParentLayerId();
-    let vorschauOption = this.attribute.getVorschauOption();
-    // ToDo prüfen ob display none korrekt ist.
-    // this.element = createHtmlElement("input");
-    // this.element.type = "text";
-    // this.element.id = String(this.attribute.settings.index);
-    // this.element.name = this.attribute.settings.name;
-    // this.element.disabled = true;
-    // this.element.style.display = "none";
+  // constructorXX(formId: string, attribute: Attribute) {
+  //   console.info(`new SubFormFKFormField(${formId}, ${attribute.settings.name})`);
+  //   this.attribute = attribute;
+  //   this.settings = attribute.settings;
+  //   this.selector = "#" + formId + " input[id=" + this.get("index") + "]";
+  //   let globalParentLayerId = this.attribute.getGlobalParentLayerId();
+  //   let vorschauOption = this.attribute.getVorschauOption();
+  //   // ToDo prüfen ob display none korrekt ist.
+  //   // this.element = createHtmlElement("input");
+  //   // this.element.type = "text";
+  //   // this.element.id = String(this.attribute.settings.index);
+  //   // this.element.name = this.attribute.settings.name;
+  //   // this.element.disabled = true;
+  //   // this.element.style.display = "none";
 
-    // $(`
-    //   <input
-    // 		type="text"
-    // 		id="${this.attribute.settings.index}"
-    // 		name="${this.attribute.settings.name}"
-    // 		value=""
-    // 		disabled
-    //     style="display: none"
-    // 	/>`);
+  //   // $(`
+  //   //   <input
+  //   // 		type="text"
+  //   // 		id="${this.attribute.settings.index}"
+  //   // 		name="${this.attribute.settings.name}"
+  //   // 		value=""
+  //   // 		disabled
+  //   //     style="display: none"
+  //   // 	/>`);
 
-    this.linkElement = createHtmlElement("div", null, "link-element");
-    this.linkElement.addEventListener("click", () => {
-      const layer = kvm.getLayer(globalParentLayerId);
-      console.info(`SubFormFKFormField.clicked ${layer?.title} ${this.value}`);
-      kvm.editFeature(globalParentLayerId, this.value);
-    });
-    const bttn = createHtmlElement("i", this.linkElement, "fa fa-arrow-left");
-    bttn.ariaHidden = "true";
-    bttn.style.cssText = "margin-right: 10px";
-    this.linkElement.append(vorschauOption);
-    // $(`
-    //   <div onclick="kvm.editFeature('${globalParentLayerId}', document.getElementById('${this.attribute.settings.index}').value)"
-    //   class="link-element">
-    //     <i class="fa fa-arrow-left" aria-hidden="true" style="margin-right: 10px"></i> ${vorschauOption}
-    //   </div>
-    // `);
-    // $(`
-    //   <div onclick="kvm.editFeature('${globalParentLayerId}', document.getElementById('${this.get("index")}').value)" class="link-element">
-    //     <i class="fa fa-arrow-left" aria-hidden="true" style="margin-right: 10px"></i> ${vorschauOption}
-    //   </div>
-    // `);
-  }
+  //   this.linkElement = createHtmlElement("div", null, "link-element");
+  //   this.linkElement.addEventListener("click", () => {
+  //     const layer = kvm.getLayer(globalParentLayerId);
+  //     console.info(`SubFormFKFormField.clicked ${layer?.title} ${this.value}`);
+  //     kvm.editFeature(globalParentLayerId, this.value);
+  //   });
+  //   const bttn = createHtmlElement("i", this.linkElement, "fa fa-arrow-left");
+  //   bttn.ariaHidden = "true";
+  //   bttn.style.cssText = "margin-right: 10px";
+  //   this.linkElement.append(vorschauOption);
+  //   // $(`
+  //   //   <div onclick="kvm.editFeature('${globalParentLayerId}', document.getElementById('${this.attribute.settings.index}').value)"
+  //   //   class="link-element">
+  //   //     <i class="fa fa-arrow-left" aria-hidden="true" style="margin-right: 10px"></i> ${vorschauOption}
+  //   //   </div>
+  //   // `);
+  //   // $(`
+  //   //   <div onclick="kvm.editFeature('${globalParentLayerId}', document.getElementById('${this.get("index")}').value)" class="link-element">
+  //   //     <i class="fa fa-arrow-left" aria-hidden="true" style="margin-right: 10px"></i> ${vorschauOption}
+  //   //   </div>
+  //   // `);
+  // }
 
   get(key) {
-    return this.attribute.settings[key];
+    return this.attr.settings[key];
   }
 
   async setValue(val) {
     this.counter++;
     console.log("%s Attribute: %s, SubFormFKFormField.setValue options: %o, value: %s", this.counter, this.get("name"), this.get("options"), val);
     // ToDo: Prüfen warum hier noch mal default gesetzt wird. Das wird auch schon in getNewData gemacht.
-    if (kvm.coalesce(val, "") == "" && this.get("default")) {
-      val = this.get("default");
+    if (val) {
+      const vorschauOption = this.attr.getVorschauOption();
+      this.parentFeatureId = val;
+      this.span.innerText = this.attr.getVorschauOption();
     }
 
     // ToDo: Das darf nur gemacht werden wenn der Layer Geometrie hat und der übergeordnete auch.
     // rtr
+    console.error("SubFromFKFormField.setValue Abfragen des übergeordneten Layers");
+    return;
     if (kvm.getActiveLayer().hasGeometry && kvm.getActiveLayer().activeFeature.new && kvm.getActiveLayer().activeFeature.newGeom) {
       // Abfragen des übergeordneten Layers
       const pkLayer = kvm.getLayer(`${this.get("stelleId")}_${this.get("options").split(",")[0]}`);
       if (pkLayer.hasGeometry) {
         console.log("Übergeordneter Layer %s", pkLayer.title);
-        // Abfragen der uuid des Features in das das aktive Feature fällt
-        // aktuelle mit Within umgetzt. Bei Polygonen könnte auch ein Intersects notwendig werden.
-        // 03
-        // const sqlx = `
-        //   SELECT
-        //     ${pkLayer.get("id_attresibute")} AS id,
-        //     geom
-        //   FROM
-        //     ${pkLayer.getSqliteTableName()}
-        //   WHERE
-        //     ST_Within(
-        //       ST_GeomFromText('${this.attribute.layer.activeFeature.geom.toWkt()}', 4326),
-        //       ST_GeomFromEWKB(${pkLayer.get("geometry_attribute")})
-        //     ) > 0
-        // `;
-
-        // let sql = `
-        //   SELECT
-        //     geom,
-
-        //     ${pkLayer.get("id_attribute")} AS id,
-        //     geom
-        //   FROM
-        //     ${pkLayer.getSqliteTableName()}
-        //   WHERE
-        //     ST_Within(
-        //       ST_GeomFromText('${this.attribute.layer.activeFeature.newGeom.toWkt()}', 4326),
-        //       GeomFromEWKB(${pkLayer.get("geometry_attribute")})
-        //     )
-        // `;
 
         let query = kvm.getActiveStelle().replaceParams(pkLayer.settings.query);
         let filter: string = kvm.getActiveStelle().replaceParams(pkLayer.settings.filter);
         let where: string[] = [
           `
           ST_Within(
-              ST_GeomFromText('${this.attribute.layer.activeFeature.newGeom.toWkt()}', 4326),
+              ST_GeomFromText('${this.attr.layer.activeFeature.newGeom.toWkt()}', 4326),
               GeomFromEWKB(${pkLayer.get("geometry_attribute")})
             )
         `,
@@ -188,14 +173,14 @@ export class SubFormFKFormField implements Field {
             if (typeof rs.rows.item(i).geom != "undefined" && rs.rows.item(i).geom != "") {
               featureId = rs.rows.item(i)[pkLayer.get("id_attribute")];
               kvm.mapHint(`Übergeordnetes Objekt ${pkLayer.getFeature(featureId).getDataValue(pkLayer.get("name_attribute"))} aus Layer ${pkLayer.title} über Markerposition ermittelt.`, 5000);
-              this.value = featureId;
+              this._value = featureId;
               break;
             }
           }
-          console.log("%s Attribute: %s, SubFormFKFormField.setValue search parentFeature => %s value=%s", this.counter, this.get("name"), featureId, this.value);
+          console.log("%s Attribute: %s, SubFormFKFormField.setValue search parentFeature => %s value=%s", this.counter, this.get("name"), featureId, this._value);
           if (featureId == "") {
             kvm.mapHint(`Der Marker liegt nicht im räumlichen Bereich eines Objektes vom Layers ${pkLayer.title}.`, 5000);
-            this.value = this.get("default");
+            this._value = this.get("default");
           }
         } catch (err) {
           console.error(`Fehler bei der räumlichen Suche eines Objektes im Layer ${pkLayer.title}`, err);
@@ -203,45 +188,49 @@ export class SubFormFKFormField implements Field {
         }
       }
     } else {
-      this.value = val == null || val == "null" ? "" : val;
+      this._value = val == null || val == "null" ? "" : val;
     }
-    this.element.value = this.value;
-    console.log("%s Attribute: %s, SubFormFKFormField.setValue done value: %s", this.counter, this.get("name"), this.value);
+    // this.element.value = this._value;
+    console.log("%s Attribute: %s, SubFormFKFormField.setValue done value: %s", this.counter, this.get("name"), this._value);
   }
 
   getValue(action = "") {
-    console.log(`SubFormFKFormField ${this.attribute.layer.title}.${this.attribute.settings.name}.getValue => ${this.value}`);
-    return this.value;
+    console.log(`SubFormFKFormField ${this.attr.layer.title}.${this.attr.settings.name}.getValue => ${this.parentFeatureId}`);
+    return this.parentFeatureId;
   }
 
   getAutoValue() {
-    const attributeName = this.attribute.get("name");
-    return this.attribute.layer.activeFeature.getDataValue(attributeName);
+    const attributeName = this.attr.name;
+    return this.attr.layer.activeFeature.getDataValue(attributeName);
   }
 
   /**
    * @return string: ID of sublayer
    */
   getParentLayerId() {
-    return this.attribute.settings.options.split(";")[0].split(",")[0];
+    return this.attr.settings.options.split(";")[0].split(",")[0];
   }
 
   hasChanged(): boolean {
     return false;
   }
 
-  getDom(): HTMLElement {
-    return this.element;
+  createInputElement(): HTMLElement {
+    return this.linkElement;
   }
 
-  hide() {
-    if (this.element?.parentElement) {
-      this.element.parentElement.style.display = "none";
-    }
-  }
-  show() {
-    if (this.element?.parentElement) {
-      this.element.parentElement.style.display = "";
-    }
-  }
+  // getDom(): HTMLElement {
+  //   return this.element;
+  // }
+
+  // hide() {
+  //   if (this.element?.parentElement) {
+  //     this.element.parentElement.style.display = "none";
+  //   }
+  // }
+  // show() {
+  //   if (this.element?.parentElement) {
+  //     this.element.parentElement.style.display = "";
+  //   }
+  // }
 }
