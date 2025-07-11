@@ -1533,12 +1533,13 @@ export class Kvm extends PropertyChangeSupport {
       }
       // Versuche FK-Attribute die fehlen mit setValue() automatisch zu setzen
       // in setValue() wird der übergeordnete Datensatz über ST_Within() gesucht
-      for (const attribute of this._activeLayer.attributes) {
-        if (attribute.settings.form_element_type === "SubFormFK" && !attribute.formField.getValue()) {
-          console.info(`saveFeatureButton ${attribute.settings.name} setting value to ""`);
-          await attribute.formField.setValue("");
-        }
-      }
+      // TODO ???????
+      // for (const attribute of this._activeLayer.attributes) {
+      //   if (attribute.settings.form_element_type === "SubFormFK" && !attribute.formField.getValue()) {
+      //     console.info(`saveFeatureButton ${attribute.settings.name} setting value to ""`);
+      //     await attribute.formField.setValue("");
+      //   }
+      // }
 
       const notFKValidErrMsg: string = kvm._activeLayer.notFKValid();
       if (notFKValidErrMsg) {

@@ -147,7 +147,7 @@ export class GeometrieFormField extends AbstractField implements Field {
     console.log("saveGpsPositionButtonClicked");
     navigator.geolocation.getCurrentPosition(
       async (geoLocation) => {
-        const confirmed = await confirm("Neue Position:\n" + geoLocation.coords.longitude + " " + geoLocation.coords.latitude + "\nübernehmen?");
+        const confirmed = await confirm("Position:\n" + geoLocation.coords.longitude + " " + geoLocation.coords.latitude + "\nübernehmen?", "neue Position");
         if (confirmed) {
           console.log("Set new Position " + geoLocation.coords.latitude + " " + geoLocation.coords.longitude);
           const feature = kvm.getActiveLayer().activeFeature;
