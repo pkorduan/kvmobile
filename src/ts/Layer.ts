@@ -424,7 +424,7 @@ export class Layer extends PropertyChangeSupport {
    * ] > readData
    */
   async readData(limit: number | string = "50000", offset: number | string = 0, order: any = "") {
-    sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Lese Daten aus Datenbank.`);
+    // sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Lese Daten aus Datenbank.`);
     // console.error(`readData ${this.title}`);
     //  order = (this.get('name_attribute') != '' ? this.get('name_attribute') : this.get('id_attribute'));
 
@@ -518,7 +518,7 @@ export class Layer extends PropertyChangeSupport {
             throw new Error(msg);
           }
         }
-        sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;${this._features.size} Features erzeugt.`);
+        // sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;${this._features.size} Features erzeugt.`);
 
         //console.log("Check if syncLayerIcon exists");
         // if ($("#syncLayerIcon_" + this.getGlobalId()) && $("#syncLayerIcon_" + this.getGlobalId()).hasClass("fa-spinner")) {
@@ -888,7 +888,8 @@ export class Layer extends PropertyChangeSupport {
   async requestDataVersion() {
     console.log("Layer %s: requestDataVersion", this.title);
     const url = this.getDataVersionUrl();
-    sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Frage Layerversion ab mit URL: ${url}`);
+    sperrBildschirm.tick(`${this.title}`);
+
     const filename = "data_version_layer_" + this.getGlobalId() + ".json";
     const fileEntry = await Util.download(url, cordova.file.dataDirectory + filename);
     const txt = await Util.readFileAsString(fileEntry);
@@ -935,7 +936,7 @@ export class Layer extends PropertyChangeSupport {
       last_delta_version: String(last_delta_version),
     });
 
-    sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Frage Layerdaten ab mit URL: ${url}`);
+    // sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Frage Layerdaten ab mit URL: ${url}`);
 
     const fileEntry = await Util.download(url, cordova.file.dataDirectory + filename);
     const txt = await Util.readFileAsString(fileEntry);
@@ -953,7 +954,7 @@ export class Layer extends PropertyChangeSupport {
     }
     console.log("Layer %s: Anzahl empfangene Datensätze: %s", this.title, collection.features.length);
     console.log("Layer " + this.get("title") + ": Version in Response: " + collection.lastDeltaVersion);
-    sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Empfangene Datensätze ${collection.features.length}`);
+    sperrBildschirm.tick(`${this.title}:&nbsp;&nbsp; ${collection.features.length}`);
     if ("lastDeltaVersion" in collection) {
       console.log("Setze runningSyncVersion auf collection.lastDeltaVersion: ", collection.lastDeltaVersion);
       this.runningSyncVersion = collection.lastDeltaVersion;
@@ -1188,10 +1189,11 @@ export class Layer extends PropertyChangeSupport {
 
         if (attr.get("privilege")) {
           attr.viewField.setValue(val);
-          if (val === null) {
-            console.info("Blende aus: " + attr.get("name"));
-            attr.viewField.element.parentElement.style.display = "none";
-          }
+          // Attribute die leer sind sollen im DataView trotzdem angezeigt werden.
+          // if (val === null) {
+          //   console.info("Blende aus: " + attr.get("name"));
+          //   attr.viewField.element.parentElement.style.display = "none";
+          // }
         }
       }
       console.groupEnd();
@@ -1297,7 +1299,7 @@ export class Layer extends PropertyChangeSupport {
    */
   drawFeatures() {
     // console.error(`xxx Layer.drawFeatures ${this.getGlobalId()}`, this);
-    sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Zeichne ${this._features.size} Features neu.`);
+    // sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Zeichne ${this._features.size} Features neu.`);
 
     this._features.forEach((feature) => {
       try {

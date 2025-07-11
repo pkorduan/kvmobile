@@ -45,6 +45,7 @@ export class DataViewField {
 
     this.images_div_id = `images_${this.get("index")}`;
     this.element = createHtmlElement("div", dom, "data-view-value");
+    // console.log('created element %o', this.element);
     this.element.id = "dataViewFieldValue_" + this.get("index");
   }
 

@@ -20,10 +20,16 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 - Bugfixes
   - Eventhandler für Karteneinstellung Startposition anlegen und mapSettings im Store speichern nach dem setzen in der Variable mapSettings 
   - Beim ZoomTo Feature unterscheiden in panTo und flyTo jenachdem ob mit zoom oder ohne zum Feature gesprungen werden soll.
+  - Wenn Attribute Null-Werte haben dürfen, in Auswahllisten eine leere Option anbieten um einen vorhergewählten Wert wieder auf keinen Wert abwählen zu können.
 - Features
   - Anzeige der Attributions von Layern wenn sie auf dem Server welche über Datasources gesetzt bekommen haben.
+  - Anzeige der Attribute im DataView wenn die Werte leer sind.
+  - Wenn nur eine Stelle geladen wird, wird das Laden der Layer danach automatisch angestoßen.
+  - Anzeige der Stellenbezeichnung unter Einstellungen > Server > Stelle nach Auswahl einer Stelle.
+  - Wählt nach dem Laden der Layer vom Server den ersten Layer mit Geometrie als aktiven Layer aus.
 - Maintainance
   - weitestgehende Entfernung von jquery
+  - Weitere Meldungen beim Laden ausgeblendet
 
 ## 1.20.0
 
