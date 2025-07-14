@@ -1565,6 +1565,7 @@ export class Kvm extends PropertyChangeSupport {
               await kvm._activeLayer.runInsertStrategy(changes);
             } else {
               await kvm._activeLayer.runUpdateStrategy(changes);
+              kvm._activeLayer.fire(new PropertyChangeEvent(kvm._activeLayer, Layer.EVENTS.FEATURE_CHANGED, null, null));
             }
           } else {
             sperrBildschirm.close("Keine Änderungen! Zum Abbrechen verwenden Sie den Button neben Speichern-Button.");

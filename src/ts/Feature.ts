@@ -570,19 +570,16 @@ export class Feature {
   }
 
   getListElement(): HTMLElement {
-    if (!this.listElement) {
-      //console.log('Erzeuge Listenelement für Feature', this.get(this.layer.settings.id_attribute));
-      const markerStyles = kvm.getMarkerStyles();
-      const numStyles = Object.keys(markerStyles).length;
-      const markerStyleIndex = this.getDataValue("status") && this.getDataValue("status") >= 0 && this.getDataValue("status") < numStyles ? this.getDataValue("status") : 0;
+    //console.log('Erzeuge Listenelement für Feature', this.get(this.layer.settings.id_attribute));
+    const markerStyles = kvm.getMarkerStyles();
+    const numStyles = Object.keys(markerStyles).length;
+    const markerStyleIndex = this.getDataValue("status") && this.getDataValue("status") >= 0 && this.getDataValue("status") < numStyles ? this.getDataValue("status") : 0;
 
-      const div = (this.listElement = createHtmlElement("div", null, "feature-item"));
-      div.style.backgroundColor = markerStyles[markerStyleIndex].fillColor;
-      div.innerHTML = this.getLabelValue();
-      div.dataset.id = this.id;
-      return div;
-    }
-    return this.listElement;
+    const div = (this.listElement = createHtmlElement("div", null, "feature-item"));
+    div.style.backgroundColor = markerStyles[markerStyleIndex].fillColor;
+    div.innerHTML = this.getLabelValue();
+    div.dataset.id = this.id;
+    return div;
     // return (
     //   '\
     //   <div class="feature-item" id="' +

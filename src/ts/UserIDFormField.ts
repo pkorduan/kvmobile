@@ -39,7 +39,7 @@ export class UserIDFormField extends AbstractField {
   }
 
   getValue(action = "") {
-    console.log("UserIDFormField.getValue");
+    // console.log("UserIDFormField.getValue");
     let val = this.element.value;
     if (typeof val === "undefined" || val == "") {
       val = null;

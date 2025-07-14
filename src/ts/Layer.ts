@@ -111,7 +111,7 @@ export class Layer extends PropertyChangeSupport {
   static EVENTS = {
     FEATURE_CHANGED: "FEATURE_CHANGED",
     FEATURE_ADDED: "FEATURE_ADDED",
-    FEATURE_REMOVED: "FEATURE_ADDED",
+    FEATURE_REMOVED: "FEATURE_REMOVED",
     FILTER_CHANGED: "FILTER_CHANGED",
     SORTED_BY: "SORTED_BY",
   };
@@ -321,6 +321,7 @@ export class Layer extends PropertyChangeSupport {
     this._features.set(feature.id, feature);
     await this.fire(new PropertyChangeEvent(this, Layer.EVENTS.FEATURE_ADDED, null, this.activateFeature));
   }
+
   async removeFeature(feature: Feature) {
     this._features.delete(feature.id);
     await this.fire(new PropertyChangeEvent(this, Layer.EVENTS.FEATURE_REMOVED, null, this.activateFeature));
@@ -377,7 +378,7 @@ export class Layer extends PropertyChangeSupport {
 
     const sql = this.extentSql(this.stelle.replaceParams(subLayer.settings.query), where, "", "", "", filter);
 
-    console.log(`Read Vorschaudatensätze für Attribute ${attribute.settings.name} Layer ${subLayer.title} with sql`, [sql]);
+    // console.log(`Read Vorschaudatensätze für Attribute ${attribute.settings.name} Layer ${subLayer.title} with sql`, [sql]);
     // Das folgende geht noch nicht weil die Tabellen nicht so benannt sind  wie in sqlite
     //let sql = `${this.settings.query} AND ${filter.join(' AND ')}`;
     vorschauElement.innerHTML = "";
@@ -1149,11 +1150,11 @@ export class Layer extends PropertyChangeSupport {
         }
 
         if (visible) {
-          console.log(`Schalte #${fieldType}FieldDiv_${attr.get("index")} von Attribut ${attr.get("name")} sichtbar wegen ${attribute_name} ${attr.get("vcheck_operator")} ${attr.get("vcheck_value")}`);
+          // console.log(`Schalte #${fieldType}FieldDiv_${attr.get("index")} von Attribut ${attr.get("name")} sichtbar wegen ${attribute_name} ${attr.get("vcheck_operator")} ${attr.get("vcheck_value")}`);
           // $(`#${fieldType}FieldDiv_${attr.get("index")}`).show();
           field.show();
         } else {
-          console.log(`Schalte #${fieldType}FieldDiv_${attr.get("index")} von Attribut ${attr.get("name")} unsichtbar wegen ${attribute_name} ${attr.get("vcheck_operator")} ${attr.get("vcheck_value")}`);
+          // console.log(`Schalte #${fieldType}FieldDiv_${attr.get("index")} von Attribut ${attr.get("name")} unsichtbar wegen ${attribute_name} ${attr.get("vcheck_operator")} ${attr.get("vcheck_value")}`);
           // $(`#${fieldType}FieldDiv_${attr.get("index")}`).hide();
           field.hide();
         }

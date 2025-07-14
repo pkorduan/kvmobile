@@ -128,7 +128,7 @@ export class GeometrieFormField extends AbstractField implements Field {
   }
 
   getValue() {
-    console.log("GeometrieFormField.getValue");
+    // console.log("GeometrieFormField.getValue");
     // const val = this.element.value;
 
     // if (typeof val === "undefined" || val == "") {
