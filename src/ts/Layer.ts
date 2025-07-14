@@ -1125,9 +1125,8 @@ export class Layer extends PropertyChangeSupport {
    * @param fieldType ('dataView'|'form')
    */
   vcheckAttributes(attribute_name: string, attribute_value: any, field: DataViewField | Field, fieldType: "dataView" | "form") {
-    // TODO
     console.info(`vcheckAttributes(${attribute_name}, ${attribute_value}, ${fieldType})`);
-    this.attributes.map((attr) => {
+    this.attributes.forEach((attr) => {
       let visible = true;
 
       if (attr.get("vcheck_attribute") == attribute_name) {
@@ -1149,14 +1148,17 @@ export class Layer extends PropertyChangeSupport {
             break;
         }
 
+        // ToDo Mehrfachaufruf für viewField und formField auflösen
         if (visible) {
           // console.log(`Schalte #${fieldType}FieldDiv_${attr.get("index")} von Attribut ${attr.get("name")} sichtbar wegen ${attribute_name} ${attr.get("vcheck_operator")} ${attr.get("vcheck_value")}`);
           // $(`#${fieldType}FieldDiv_${attr.get("index")}`).show();
-          field.show();
+          attr.viewField.show();
+          attr.formField.show();
         } else {
           // console.log(`Schalte #${fieldType}FieldDiv_${attr.get("index")} von Attribut ${attr.get("name")} unsichtbar wegen ${attribute_name} ${attr.get("vcheck_operator")} ${attr.get("vcheck_value")}`);
           // $(`#${fieldType}FieldDiv_${attr.get("index")}`).hide();
-          field.hide();
+          attr.viewField.hide();
+          attr.formField.hide();
         }
         if (attr.get("name") == "sorte_id") {
           const field = $(`#${fieldType}FieldDiv_${attr.get("index")}`);
