@@ -635,24 +635,26 @@ export class Layer extends PropertyChangeSupport {
     console.info("keys", keys);
     const values =
       "(" +
-      $.map(items, (item) => {
-        //console.log('item.geometry %', item.geometry);
-        //					if (item.geometry) {
-        return $.map(
-          // this.attributes.filter((attr) => {
-          //   return (attr.layer.hasEditPrivilege && attr.get("saveable") == "1") || !attr.layer.hasEditPrivilege;
-          // })
-          this.getMainTableAttributes(),
-          (attr) => {
-            const type = attr.get("type");
-            const value = type == "geometry" ? item.geometry : item.properties[attr.get("name")];
-            //console.log('type: %s value: %s', type, value);
-            const v = attr.toSqliteValue(type, value);
-            return v;
-          }
-        ).join(", ");
-        //					}
-      }).join("), (") +
+      items
+        .map((item) => {
+          //console.log('item.geometry %', item.geometry);
+          //					if (item.geometry) {
+          return $.map(
+            // this.attributes.filter((attr) => {
+            //   return (attr.layer.hasEditPrivilege && attr.get("saveable") == "1") || !attr.layer.hasEditPrivilege;
+            // })
+            this.getMainTableAttributes(),
+            (attr) => {
+              const type = attr.get("type");
+              const value = type == "geometry" ? item.geometry : item.properties[attr.get("name")];
+              //console.log('type: %s value: %s', type, value);
+              const v = attr.toSqliteValue(type, value);
+              return v;
+            }
+          ).join(", ");
+          //					}
+        })
+        .join("), (") +
       ")";
 
     const sql =
@@ -2303,7 +2305,7 @@ export class Layer extends PropertyChangeSupport {
    */
   addAutoChanges(changes: AttributteDelta[], action: string): AttributteDelta[] {
     console.log("Layer.addAutoChanges mit action " + action);
-    const changesKeys = $.map(changes, function (change) {
+    const changesKeys = changes.map((change) => {
       return change.key;
     });
     const results = changes.slice();
@@ -2402,8 +2404,7 @@ export class Layer extends PropertyChangeSupport {
       kvm.editFeature(parentLayerId, parentFeatureId);
     } else {
       //console.log('Wechsel die Ansicht zur Featurelist.');
-      // TODO
-      kvm.showView(!$("#map").is(":visible") ? "featurelist" : "map");
+      kvm.showView(!kvm.menu.isActiveView("map") ? "featurelist" : "map");
       //console.log('Scroll die FeatureListe nach ganz oben');
       kvm.showNextItem(kvm.getConfigurationOption("viewAfterDelete"), this);
     }

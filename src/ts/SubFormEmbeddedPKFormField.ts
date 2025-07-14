@@ -40,22 +40,31 @@ export class SubFormEmbeddedPKFormField implements Field {
     this.bttNewSubItem = createHtmlElement("button");
     this.bttNewSubItem.innerText = "neu";
     this.bttNewSubItem.style.padding = "0.1em 1em";
-    this.bttNewSubItem.addEventListener("click", () => {
-      console.info(`new SubLayerItem globalLayerId=${attribute.getGlobalLayerId()} globalSubLayerId=${attribute.getGlobalSubLayerId()} FKAttribute=${attribute.getFKAttribute()}`);
-      kvm.newSubFeature({
-        parentLayerId: attribute.getGlobalLayerId(),
-        subLayerId: attribute.getGlobalSubLayerId(),
-        fkAttribute: attribute.getFKAttribute(),
-        parentFeatureId: kvm.getActiveFeature().id,
-      });
+    this.bttNewSubItem.addEventListener("click", (evt) => {
+      // console.info(`new SubLayerItem globalLayerId=${attribute.getGlobalLayerId()} globalSubLayerId=${attribute.getGlobalSubLayerId()} FKAttribute=${attribute.getFKAttribute()}`);
+      // await kvm.newSubFeature({
+      //   parentLayerId: attribute.getGlobalLayerId(),
+      //   subLayerId: attribute.getGlobalSubLayerId(),
+      //   fkAttribute: attribute.getFKAttribute(),
+      //   parentFeatureId: kvm.getActiveFeature().id,
+      // });
+      evt.preventDefault();
+      this.bttNewSubItemClicked();
     });
 
     this.subItemList = createHtmlElement("div", null, "form-value");
   }
 
-  // get(key) {
-  //     return this.attribute.settings[key];
-  // }
+  async bttNewSubItemClicked() {
+    const attribute = this.attr;
+    console.info(`new SubLayerItem globalLayerId=${attribute.getGlobalLayerId()} globalSubLayerId=${attribute.getGlobalSubLayerId()} FKAttribute=${attribute.getFKAttribute()}`);
+    await kvm.newSubFeature({
+      parentLayerId: attribute.getGlobalLayerId(),
+      subLayerId: attribute.getGlobalSubLayerId(),
+      fkAttribute: attribute.getFKAttribute(),
+      parentFeatureId: kvm.getActiveFeature().id,
+    });
+  }
 
   /**
    *
