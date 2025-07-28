@@ -1190,12 +1190,12 @@ export class Stelle {
       const numReturnedDeltas = response.deltas.length;
 
       console.log("numReturendDeltas: %s", numReturnedDeltas);
-
+      // ToDo pk: Fehler: Hier kommen zur Zeit auch Deltas zurück, die zuvor zum Server geschickt wurden. Das sind nicht die Serverdeltas! Deshalb werden die dann noch mal auf dem Client ausgeführt.
       if (numReturnedDeltas > 0) {
         const msg = `${numReturnedDeltas} Änderungen von Daten auf dem Server gefunden. Die Datenbank wurde gesichert und die Änderungen in die lokale Datenbank eingespielt.`;
         kvm.writeLog(msg);
         kvm.msg(msg, "Datenänderung");
-        // TODO backupDatabase auch nur ein mal machen wenn irgend ein Delta gekommen ist (Weiß man aber vorher nicht ob irgend ein layer ein Delta bekommen wird.)
+        // TODO backupDatabase auch nur ein mal machen wenn irgend ein Delta vom Server gekommen ist (Weiß man aber vorher nicht ob irgend ein layer ein Delta bekommen wird.)
         // Wenn ein mal ein backDatabase gemacht wurde bei den anderen layern in der gleichen syncLayers Runde nicht mehr ausführen.
         kvm.backupDatabase();
         try {

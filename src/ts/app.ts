@@ -826,42 +826,50 @@ export class Kvm extends PropertyChangeSupport {
               const layer = new Layer(stelle, settings);
               this.addLayer(layer);
               // layer.appendToApp();
-
-              if (navigator.onLine && layer.hasSyncPrivilege && layer.get("autoSync")) {
-                if (layer.hasEditPrivilege) {
-                  try {
-                    console.log("Layer " + layer.title + ": SyncData with local deltas if exists.");
-                    // TODO Deltas
-                    // layer.syncData();
-                  } catch ({ name, message }) {
-                    kvm.msg("Fehler beim synchronisieren des Layers id: " + layer.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
-                  }
-                  try {
-                    console.log("Layer " + layer.title + ": SyncImages with local images if exists.");
-                    // TODO Deltas
-                    // layer.syncImages();
-                  } catch ({ name, message }) {
-                    kvm.msg("Fehler beim synchronisieren der Bilder des Layers id: " + layer.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
-                  }
-                } else {
-                  console.log("Layer " + layer.title + ": Only get deltas from server.");
-                  try {
-                    // TODO Deltas
-                    // layer.sendDeltas({ rows: [] });
-                  } catch ({ name, message }) {
-                    kvm.msg("Fehler beim senden der Deltas des Layers id: " + layer.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
-                  }
-                }
-              } else {
-                try {
-                  console.log("Layer " + layer.title + ": Only read data from local database.");
-                  await layer.readData(); // include drawFeatures
-                } catch (error) {
-                  const msg = `Fehler beim lesen der Daten des Layers "${layer.get("title")}" ${error.message}`;
-                  console.error(error);
-                  kvm.msg(msg, "App-Start");
-                }
+              try {
+                console.log("Layer " + layer.title + ": Only read data from local database.");
+                await layer.readData(); // include drawFeatures
+              } catch (error) {
+                const msg = `Fehler beim lesen der Daten des Layers "${layer.get("title")}" ${error.message}`;
+                console.error(error);
+                kvm.msg(msg, "App-Start");
               }
+
+              // if (navigator.onLine && layer.hasSyncPrivilege && layer.get("autoSync")) {
+              //   if (layer.hasEditPrivilege) {
+              //     try {
+              //       console.log("Layer " + layer.title + ": SyncData with local deltas if exists.");
+              //       // TODO Deltas
+              //       // layer.syncData();
+              //     } catch ({ name, message }) {
+              //       kvm.msg("Fehler beim synchronisieren des Layers id: " + layer.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
+              //     }
+              //     try {
+              //       console.log("Layer " + layer.title + ": SyncImages with local images if exists.");
+              //       // TODO Deltas
+              //       // layer.syncImages();
+              //     } catch ({ name, message }) {
+              //       kvm.msg("Fehler beim synchronisieren der Bilder des Layers id: " + layer.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
+              //     }
+              //   } else {
+              //     console.log("Layer " + layer.title + ": Only get deltas from server.");
+              //     try {
+              //       // TODO Deltas
+              //       // layer.sendDeltas({ rows: [] });
+              //     } catch ({ name, message }) {
+              //       kvm.msg("Fehler beim senden der Deltas des Layers id: " + layer.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
+              //     }
+              //   }
+              // } else {
+              //   try {
+              //     console.log("Layer " + layer.title + ": Only read data from local database.");
+              //     await layer.readData(); // include drawFeatures
+              //   } catch (error) {
+              //     const msg = `Fehler beim lesen der Daten des Layers "${layer.get("title")}" ${error.message}`;
+              //     console.error(error);
+              //     kvm.msg(msg, "App-Start");
+              //   }
+              // }
               if (layer.get("id") == kvm.store.getItem("activeLayerId")) {
                 layer.isActive = true;
                 kvm.setActiveLayer(layer);
@@ -872,6 +880,11 @@ export class Kvm extends PropertyChangeSupport {
 
           stelle.sortOverlays();
           stelle.sortLayers();
+          // ToDo pk: Synchronisieren
+          if (kvm.getConfigurationOption('autoSync')) {
+            console.log(`autoSync steht auf: ${kvm.getConfigurationOption('autoSync')} Synchronisiere mit Server.`);
+            const result = await kvm.syncLayers();
+          }
         } else {
           kvm.msg("Noch keine Layer vorhanden. Bitte wählen Sie die Konfiguration aus, setzen Nutzername und Passwort und fragen Stelle und Layer vom Server ab.");
           PanelEinstellungen.show("layer");

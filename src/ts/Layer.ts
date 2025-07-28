@@ -59,7 +59,7 @@ export interface LayerSetting {
   classes?: [];
   useCustomStyle?: boolean;
   loaded?: boolean;
-  autoSync?: boolean;
+  // autoSync?: boolean;
   syncVersion?: any;
   checksum?: string;
   data_version?: string;
@@ -171,9 +171,9 @@ export class Layer extends PropertyChangeSupport {
     if (!("table_alias" in this.settings)) {
       this.settings.table_alias = "ht";
     }
-    if (!("autoSync" in this.settings)) {
-      this.settings["autoSync"] = false;
-    }
+    // if (!("autoSync" in this.settings)) {
+    //   this.settings["autoSync"] = false;
+    // }
 
     /*
     // diese 3 Settings werden hier statisch gesetzt für den Fall dass der Server die Attribute noch nicht per mobile_get_layer liefert.
@@ -2241,7 +2241,7 @@ export class Layer extends PropertyChangeSupport {
       await this._processImageChanges(changes);
       try {
         const rs = await LayerDBJobs.runUpdate(this._activeFeature, delta);
-        this.afterUpdateDataset(rs);
+        await this.afterUpdateDataset(rs);
       } catch (reason) {
         console.error("Etwas ist schief gegangen", reason);
         throw new Error("Fehler beim Updaten", { cause: reason });
@@ -2337,7 +2337,7 @@ export class Layer extends PropertyChangeSupport {
    * Function, die nach dem erfolgreichen Eintragen eines UPDATE ausgeführt werden soll
    * @param result set rs Resultset from a readDataset query
    */
-  afterUpdateDataset(rs: SQLitePlugin.Results) {
+  async afterUpdateDataset(rs: SQLitePlugin.Results) {
     console.log("afterUpdateDataset rs", rs);
     try {
       this.activeFeature.setData(rs.rows.item(0));
@@ -2353,6 +2353,9 @@ export class Layer extends PropertyChangeSupport {
       //kvm.closeSperrDiv(`${layer.title}: Update des Datensatzes erfolgreich beendet.`);
 
       // ToDo: Layer gleich syncronisieren
+      // Noch offene Fehler:
+      // - Feature nach dem Speichern nicht aktiv (lässt sich nicht zum Editieren öffnen nach dem Speichern)
+      const result = await kvm.syncLayers();
     } catch (ex) {
       throw new Error("Error in afterUpdateDataset", ex);
     }
