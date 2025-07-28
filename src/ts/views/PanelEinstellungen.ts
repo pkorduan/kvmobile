@@ -214,7 +214,7 @@ export class Server extends PanelEinstellungen {
       this.kvwmapServerUrlField.value = stelle?.get("url") || "";
       this.kvwmapServerLoginNameField.value = stelle?.get("login_name") || "";
       this.kvwmapServerPasswortField.value = stelle?.get("passwort") || "";
-      this.setActiveStellenBezeichnung(stelle.get('Bezeichnung'));
+      this.setActiveStellenBezeichnung(stelle.get("Bezeichnung"));
     }
 
     // $("#kvwmapServerStelleSelectField").find("option").remove();
@@ -288,7 +288,7 @@ export class Server extends PanelEinstellungen {
     kvm.setActiveStelle(stelle);
     await stelle.requestLayers();
     const layers = kvm.getLayers();
-    kvm.setActiveLayer(layers.find(obj => obj.get('geometry_attribute') !== null))
+    kvm.setActiveLayer(layers.find((obj) => obj.get("geometry_attribute") !== null));
     this.kvwmapServerStelleSelectField.style.display = "none";
     this.saveServerSettingsButton.style.display = "none";
     this.requestStellenButton.style.display = "";

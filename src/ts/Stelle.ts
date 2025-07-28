@@ -670,11 +670,13 @@ export class Stelle {
     // sperrBildschirm.tick("Download der Layerdaten abgeschlossen.");
     const fileContent = await readFileAsString(fileEntry);
     const layerRequestResponse = <LayerRequestResponse>kvm.parseLayerResult(fileContent);
-    for (const layer of layerRequestResponse.layers) {
-      const dataVersion = layer.dataVersion;
-      layer.dataVersion = "0";
-      layer.checksum = await Util.checksum(layer);
-      layer.dataVersion = dataVersion;
+    if (layerRequestResponse.success) {
+      for (const layer of layerRequestResponse.layers) {
+        const dataVersion = layer.dataVersion;
+        layer.dataVersion = "0";
+        layer.checksum = await Util.checksum(layer);
+        layer.dataVersion = dataVersion;
+      }
     }
     return layerRequestResponse;
   }
@@ -1030,8 +1032,9 @@ export class Stelle {
   // }
 
   /**
-   * prüft an Hand des Attributes dataVersion, ob sich die Daten der Layer, die nicht synchronisiert werden, geändert haben und gibt diese
-   * zurück
+   * prüft an Hand des Attributes dataVersion, ob sich die Daten der Layer, die nicht synchronisiert werden,
+   * geändert haben und gibt diese zurück
+   *
    * @param layerRequestResult
    * @returns Layer, die nicht synchronisiert werden aber deren Daten sich geändert haben
    */
@@ -1109,7 +1112,7 @@ export class Stelle {
         const layerRequestResult = await this.runGetLayersRequest();
 
         if (!layerRequestResult.success) {
-          throw new Error("Abfrage der Layer war nicht erfolgreich.", { cause: layerRequestResult.errMsg });
+          throw new Error("Abfrage der Layer vom Server war nicht erfolgreich.", { cause: layerRequestResult.errMsg });
         }
         const hasLayerChanged = this.checkForLayerChange(layerRequestResult);
 
@@ -1139,10 +1142,7 @@ export class Stelle {
 
         resolve(numRows);
       } catch (ex) {
-        reject({
-          message: ``,
-          cause: ex,
-        });
+        reject(ex);
       }
     });
   }
@@ -1222,7 +1222,7 @@ export class Stelle {
 
   async readData(limit: string | number, offset: string | number) {
     for (const layer of kvm.getLayersSortedByDrawingOrder()) {
-      layer.readData(limit, offset);
+      await layer.readData(limit, offset);
     }
   }
 

@@ -136,8 +136,8 @@ export class Kvm extends PropertyChangeSupport {
     super();
   }
 
-  getLayer(layerId: string) {
-    return this._layers.get(layerId);
+  getLayer(globalLayerId: string) {
+    return this._layers.get(globalLayerId);
   }
 
   getActiveLayer() {
@@ -339,7 +339,7 @@ export class Kvm extends PropertyChangeSupport {
     console.log(`syncLayers activeLayer="${this._activeLayer?.title}"`);
 
     // merken, um nach der Synchronisierung den Layer wieder auszuwählen
-    const activeLayerId = this._activeLayer ? this._activeLayer.getGlobalId() : null;
+    // const activeLayerId = this._activeLayer ? this._activeLayer.getGlobalId() : null;
 
     const syncResultImages = await this._activeStelle.syncImages();
     const syncResultData = await this._activeStelle.syncData();
@@ -349,14 +349,14 @@ export class Kvm extends PropertyChangeSupport {
     //   this._activeStelle.requestLayers();
     // }
 
-    if (activeLayerId) {
-      const activeLayerEntry = Array.from(this._layers).find((entry) => entry[1].getGlobalId() === activeLayerId);
-      if (activeLayerEntry) {
-        const activeLayer = activeLayerEntry[1];
-        console.log(`syncLayers: reaktiviere Layer ${activeLayer.title} ${activeLayer.getGlobalId()}`);
-        activeLayer.activate();
-      }
-    }
+    // if (activeLayerId) {
+    //   const activeLayerEntry = Array.from(this._layers).find((entry) => entry[1].getGlobalId() === activeLayerId);
+    //   if (activeLayerEntry) {
+    //     const activeLayer = activeLayerEntry[1];
+    //     console.log(`syncLayers: reaktiviere Layer ${activeLayer.title} ${activeLayer.getGlobalId()}`);
+    //     activeLayer.activate();
+    //   }
+    // }
 
     return {
       deletedImages: syncResultImages.deletedImages,
@@ -614,8 +614,8 @@ export class Kvm extends PropertyChangeSupport {
         await this.startApplication();
       }
     } catch (ex) {
-      console.error("Fehler bei der Initialisierung.", ex);
-      Util.alertNative("Fehler bei der Initialisierung.", ex);
+      console.error("Fehler bei der Initialisierung." + ex, ex);
+      Util.alertNative("Fehler bei der Initialisierung." + ex, ex);
     }
   }
 
@@ -881,9 +881,13 @@ export class Kvm extends PropertyChangeSupport {
           stelle.sortOverlays();
           stelle.sortLayers();
           // ToDo pk: Synchronisieren
-          if (kvm.getConfigurationOption('autoSync')) {
-            console.log(`autoSync steht auf: ${kvm.getConfigurationOption('autoSync')} Synchronisiere mit Server.`);
-            const result = await kvm.syncLayers();
+          if (kvm.getConfigurationOption("autoSync")) {
+            try {
+              console.log(`autoSync steht auf: ${kvm.getConfigurationOption("autoSync")} Synchronisiere mit Server.`);
+              const result = await kvm.syncLayers();
+            } catch (ex) {
+              Util.alertNative("Beim Synchronisieren trat ein Fehler auf. Ursache: " + ex.message, "Warnung");
+            }
           }
         } else {
           kvm.msg("Noch keine Layer vorhanden. Bitte wählen Sie die Konfiguration aus, setzen Nutzername und Passwort und fragen Stelle und Layer vom Server ab.");
@@ -921,12 +925,12 @@ export class Kvm extends PropertyChangeSupport {
     sperrBildschirm.close();
   }
 
-  reloadFeatures() {
-    // console.error("app.reloadFeatures");
-    this._layers.forEach((layer) => {
-      layer.readData();
-    });
-  }
+  // reloadFeatures() {
+  //   // console.error("app.reloadFeatures");
+  //   this._layers.forEach((layer) => {
+  //     layer.readData();
+  //   });
+  // }
 
   /**
    * setzt und schreibt diese als JSON in den store
@@ -1424,6 +1428,13 @@ export class Kvm extends PropertyChangeSupport {
         console.log("Lösche Feature " + id_attribute + ": " + kvm._activeLayer.activeFeature.getDataValue(id_attribute));
         try {
           await kvm._activeLayer.runDeleteStrategy();
+          if (this.getConfigurationOption("autoSync") && this.networkStatus.online) {
+            const activeLayerId = this._activeLayer.getGlobalId();
+            const syncResults = await this.syncLayers();
+            this.activateFeature(activeLayerId, null);
+          } else {
+            this._activeLayer.afterDeleteDataset();
+          }
         } catch (ex) {
           console.error("Fehler beim Löschen", ex);
         }
@@ -1476,12 +1487,30 @@ export class Kvm extends PropertyChangeSupport {
         }
         if (saveConfirmed) {
           const changes = kvm._activeLayer.getAllChanges(action);
+          let rs;
           if (changes?.length > 0) {
             if (action == "insert") {
-              await kvm._activeLayer.runInsertStrategy(changes);
+              rs = await kvm._activeLayer.runInsertStrategy(changes);
             } else {
-              await kvm._activeLayer.runUpdateStrategy(changes);
+              rs = await kvm._activeLayer.runUpdateStrategy(changes);
+
               kvm._activeLayer.fire(new PropertyChangeEvent(kvm._activeLayer, Layer.EVENTS.FEATURE_CHANGED, null, null));
+            }
+            if (this.getConfigurationOption("autoSync") && this.networkStatus.online) {
+              const activeLayerId = this._activeLayer.getGlobalId();
+              const activeFeatureId = this._activeFeature.id;
+              const syncResults = await this.syncLayers();
+              this.activateFeature(activeLayerId, activeFeatureId);
+            } else {
+              this._activeFeature.setData(rs.rows.item(0));
+              if (this._activeLayer.hasGeometry) {
+                this._activeLayer.saveGeometry(this._activeFeature);
+              }
+            }
+            if (action === "insert") {
+              this._activeLayer.afterCreateDataset(rs);
+            } else {
+              this._activeLayer.afterUpdateDataset(rs);
             }
           } else {
             sperrBildschirm.close("Keine Änderungen! Zum Abbrechen verwenden Sie den Button neben Speichern-Button.");
@@ -1777,7 +1806,7 @@ export class Kvm extends PropertyChangeSupport {
    */
   activateFeature(layerId: string, featureId: string) {
     const layer = kvm.getLayer(layerId);
-    const feature = layer.getFeature(featureId);
+    const feature = featureId ? layer.getFeature(featureId) : null;
     // console.error(`kvm.activateFeature ${layerId}=>${layer?.title} ${featureId}=>${feature}`);
     this.setActiveFeature(feature);
   }

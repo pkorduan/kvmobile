@@ -540,11 +540,11 @@ export class Layer extends PropertyChangeSupport {
           const item = rs.rows.item(i);
           try {
             await this.addFeature(new Feature(item, this, false));
-          } catch (error) {
-            const msg = `Fehler beim Erzeugen des Feature mit id: ${item[this.get("id_attribute")]}! Typ: ${error.name} Meldung: ${error.message}`;
+          } catch (ex) {
+            const msg = `Fehler beim Erzeugen des Feature mit id: ${item[this.get("id_attribute")]}! Typ: ${ex.name} Meldung: ${ex.message}`;
             console.error(`readData catch addFeature ${msg}`);
             kvm.msg(msg);
-            throw new Error(msg);
+            throw new Error(msg, { cause: ex });
           }
         }
         // sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;${this._features.size} Features erzeugt.`);
@@ -570,10 +570,10 @@ export class Layer extends PropertyChangeSupport {
           this.drawFeatures();
           // console.log("drawFeature beendet in Layer id: " + this.getGlobalId());
         }
-      } catch (error) {
-        const msg = `Fehler Beim Lesen der Daten aus der lokalen Datenbank ${error.message}`;
+      } catch (ex) {
+        const msg = `Fehler Beim Lesen der Daten aus der lokalen Datenbank ${ex.message}`;
         console.error(`readData ${msg}`);
-        throw new Error(msg);
+        throw new Error(msg, { cause: ex });
       }
       kvm.writeLog(`Layer ${this.title} gelesen AnzahlFeature=${this._features.size}`);
     } catch (error) {
@@ -678,7 +678,7 @@ export class Layer extends PropertyChangeSupport {
       // console.error(`writeData of layer ${this.title} ${msg}`);
       console.error(error);
       alert(msg);
-      throw new Error(msg);
+      throw new Error(msg, { cause: error });
     }
 
     // sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Daten erfolgreich in Datenbank geschrieben.`);
@@ -728,7 +728,7 @@ export class Layer extends PropertyChangeSupport {
         .catch((error) => {
           const msg = `Tabelle für Layer ${layer.title} konnte nicht angelegt werden. ${error.message}`;
           console.error(msg);
-          reject(new Error(msg));
+          reject(new Error(msg, { cause: error }));
         });
     });
   }
@@ -871,24 +871,24 @@ export class Layer extends PropertyChangeSupport {
     return this.getMainTableAttributes().map((attr) => attr.settings.name);
   }
 
-  getColumnValues() {
-    kvm.alog("getColumnValues", "", 4);
-    const values = $.map(
-      this.attributes.filter(function (attr) {
-        return attr.get("saveable") == "1";
-      }),
-      function (attr) {
-        const type = attr.get("type"),
-          // TODO BugXX
-          value = (<any>this).activeFeature.getDataValue(attr.get("name"));
+  // getColumnValues() {
+  //   kvm.alog("getColumnValues", "", 4);
+  //   const values = $.map(
+  //     this.attributes.filter(function (attr) {
+  //       return attr.get("saveable") == "1";
+  //     }),
+  //     function (attr) {
+  //       const type = attr.get("type"),
+  //         // TODO BugXX
+  //         value = (<any>this).activeFeature.getDataValue(attr.get("name"));
 
-        const v = attr.toSqliteValue(type, value);
-        return v;
-      }
-    );
-    kvm.alog("values: %o", values, 4);
-    return values;
-  }
+  //       const v = attr.toSqliteValue(type, value);
+  //       return v;
+  //     }
+  //   );
+  //   kvm.alog("values: %o", values, 4);
+  //   return values;
+  // }
 
   /**
    * Erzeugt und liefert das SQL zum Anlegen der Datentabelle
@@ -1383,7 +1383,7 @@ export class Layer extends PropertyChangeSupport {
         const msg = `Fehler beim Zeichnen des Feature Id: ${feature.id} in layer : "${feature.layer.title}"! Fehlertyp: ${error.name} Fehlermeldung: ${error.message}`;
         console.error(`drawFeatures ${msg}`, error);
         kvm.msg(msg);
-        throw new Error(msg);
+        throw new Error(msg, { cause: error });
       }
     });
     try {
@@ -1392,7 +1392,7 @@ export class Layer extends PropertyChangeSupport {
     } catch (error) {
       const msg = `Fehler beim Hinzufügen der Layergruppe in Layer id: ${this.getGlobalId()}! Fehlertyp: ${error.name} Fehlermeldung: ${error.message}`;
       kvm.msg(msg);
-      throw new Error(msg);
+      throw new Error(msg, { cause: error });
     }
     // console.log("activeLayer after drawFeatures of Layer Id: ", this.getGlobalId());
   }
@@ -2206,16 +2206,16 @@ export class Layer extends PropertyChangeSupport {
 
     //console.log("set data for activeFeature: %o", rs.rows.item(0));
     //console.log("with geom: %o", rs.rows.item(0).geom);
-    this.activeFeature.setData(rs.rows.item(0));
-    this.activeFeature.new = false;
+    // this.activeFeature.setData(rs.rows.item(0));
+    // this.activeFeature.new = false;
 
-    this.addFeature(this.activeFeature);
+    // this.addFeature(this.activeFeature);
 
-    // kvm.msg(this.succMsg, "Hinweis");
+    // // kvm.msg(this.succMsg, "Hinweis");
 
-    if (this.hasGeometry) {
-      this.saveGeometry(this.activeFeature);
-    }
+    // if (this.hasGeometry) {
+    //   this.saveGeometry(this.activeFeature);
+    // }
     if (kvm.getConfigurationOption("newAfterCreate")) {
       console.log("option newAfterCreate is on");
       this.newFeature(rs.rows.item(0));
@@ -2241,7 +2241,8 @@ export class Layer extends PropertyChangeSupport {
       await this._processImageChanges(changes);
       try {
         const rs = await LayerDBJobs.runUpdate(this._activeFeature, delta);
-        await this.afterUpdateDataset(rs);
+        this.activeFeature.setData(rs.rows.item(0));
+        // await this.afterUpdateDataset(rs);
       } catch (reason) {
         console.error("Etwas ist schief gegangen", reason);
         throw new Error("Fehler beim Updaten", { cause: reason });
@@ -2260,11 +2261,16 @@ export class Layer extends PropertyChangeSupport {
       await this._processImageChanges(changes);
       try {
         const rs = await LayerDBJobs.runInsert(this._activeFeature, delta);
-        this.afterCreateDataset(rs);
-      } catch (error) {
-        const msg = `Fehler in Funktion nach dem Anlegen des Datensatzes in runInsertStrategy ${error.message}`;
+        if (this._activeFeature) {
+          this._activeFeature.setData(rs.rows.item(0));
+          this._activeFeature.new = false;
+          this.addFeature(this._activeFeature);
+        }
+        // this.afterCreateDataset(rs);
+      } catch (ex) {
+        const msg = `Fehler in Funktion nach dem Anlegen des Datensatzes in runInsertStrategy ${ex.message}`;
         console.error(msg);
-        throw new Error(msg);
+        throw new Error(msg, { cause: ex });
       }
     }
   }
@@ -2340,10 +2346,10 @@ export class Layer extends PropertyChangeSupport {
   async afterUpdateDataset(rs: SQLitePlugin.Results) {
     console.log("afterUpdateDataset rs", rs);
     try {
-      this.activeFeature.setData(rs.rows.item(0));
-      if (this.hasGeometry) {
-        this.saveGeometry(this.activeFeature);
-      }
+      // this.activeFeature.setData(rs.rows.item(0));
+      // if (this.hasGeometry) {
+      //   this.saveGeometry(this.activeFeature);
+      // }
       this.loadFeatureToView(this.activeFeature, { editable: false });
       kvm.showNextItem(kvm.getConfigurationOption("viewAfterUpdate"), this);
 
@@ -2355,9 +2361,9 @@ export class Layer extends PropertyChangeSupport {
       // ToDo: Layer gleich syncronisieren
       // Noch offene Fehler:
       // - Feature nach dem Speichern nicht aktiv (lässt sich nicht zum Editieren öffnen nach dem Speichern)
-      const result = await kvm.syncLayers();
+      // const result = await kvm.syncLayers();
     } catch (ex) {
-      throw new Error("Error in afterUpdateDataset", ex);
+      throw new Error("Error in afterUpdateDataset", { cause: ex });
     }
   }
 
@@ -2370,10 +2376,9 @@ export class Layer extends PropertyChangeSupport {
     try {
       const delta = this.getDeleteDelta(this.activeFeature.id);
       const rs = await LayerDBJobs.runDelete(this._activeFeature, delta);
-      this.afterDeleteDataset(rs);
-    } catch (reason) {
-      console.error("Etwas ist schief gegangen.", reason);
-      kvm.msg("Etwas ist schief gegangen: " + JSON.stringify(reason));
+      // this.afterDeleteDataset(rs);
+    } catch (ex) {
+      throw new Error("Error in runDeleteStrategy", { cause: ex });
     }
   }
 
@@ -2382,7 +2387,7 @@ export class Layer extends PropertyChangeSupport {
    * Do every thing to delete the feature, geometry, Layer and listelement
    *
    */
-  afterDeleteDataset(rs) {
+  afterDeleteDataset() {
     console.log("afterDeleteDataset");
     let layerId = this.activeFeature.leafletLayer;
     let parentLayerId = this.parentLayerId;
