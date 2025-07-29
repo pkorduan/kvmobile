@@ -131,13 +131,13 @@ export class SubFormEmbeddedPKFormField implements Field {
   }
 
   hide() {
-    if (this.element?.parentElement) {
-      this.element.parentElement.style.display = "none";
+    if (this.element) {
+      this.element.style.display = "none";
     }
   }
   show() {
-    if (this.element?.parentElement) {
-      this.element.parentElement.style.display = "";
+    if (this.element) {
+      this.element.style.display = "";
     }
   }
 }

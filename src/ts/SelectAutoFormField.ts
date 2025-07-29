@@ -180,10 +180,10 @@ export class SelectAutoFormField extends AbstractField implements Field {
     const selectField = document.createElement("select");
     selectField.multiple = this.isArrayType();
     selectField.disabled = this.settings.privilege == "0";
-    
-    if (this.settings.nullable === '1') {
-      const opt = createHtmlElement('option', selectField);
-      opt.innerText = '-';
+
+    if (this.settings.nullable === "1") {
+      const opt = createHtmlElement("option", selectField);
+      opt.innerText = "-";
     }
     for (let i = 0; i < options.length; i++) {
       const opt = createHtmlElement("option", selectField);
@@ -312,22 +312,6 @@ export class SelectAutoFormField extends AbstractField implements Field {
   createInputElement(): HTMLElement {
     return this.element;
   }
-
-  // getDom(): HTMLElement {
-  //   xx
-  //   return this.element;
-  // }
-
-  // hide() {
-  //   if (this.element?.parentElement) {
-  //     this.element.parentElement.style.display = "none";
-  //   }
-  // }
-  // show() {
-  //   if (this.element?.parentElement) {
-  //     this.element.parentElement.style.display = "";
-  //   }
-  // }
 
   hasChanged(): boolean {
     return this._value !== this._oldValue;

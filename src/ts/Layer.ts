@@ -1159,13 +1159,14 @@ export class Layer extends PropertyChangeSupport {
         } else {
           // console.log(`Schalte #${fieldType}FieldDiv_${attr.get("index")} von Attribut ${attr.get("name")} unsichtbar wegen ${attribute_name} ${attr.get("vcheck_operator")} ${attr.get("vcheck_value")}`);
           // $(`#${fieldType}FieldDiv_${attr.get("index")}`).hide();
+          console.log("hiding field: " + attr.name + " - ", attr.formField);
           attr.viewField.hide();
           attr.formField.hide();
         }
-        if (attr.get("name") == "sorte_id") {
-          const field = $(`#${fieldType}FieldDiv_${attr.get("index")}`);
-          console.log(`Attribute: ${attr.get("name")} display is: ${field.css("display")} because (${attr.get("vcheck_attribute")}: ${attribute_value}) ${attr.get("vcheck_operator")} ${attr.get("vcheck_value")}`);
-        }
+        // if (attr.get("name") == "sorte_id") {
+        //   const field = $(`#${fieldType}FieldDiv_${attr.get("index")}`);
+        //   console.log(`Attribute: ${attr.get("name")} display is: ${field.css("display")} because (${attr.get("vcheck_attribute")}: ${attribute_value}) ${attr.get("vcheck_operator")} ${attr.get("vcheck_value")}`);
+        // }
       }
     });
     // ToDo
@@ -1757,6 +1758,7 @@ export class Layer extends PropertyChangeSupport {
         this.startEditing();
       }
     } else {
+      console.log("Layer.editFeature=>loadFeatureToForm");
       this.loadFeatureToForm(feature, { editable: true });
       kvm.showView("formular");
     }
@@ -1851,7 +1853,7 @@ export class Layer extends PropertyChangeSupport {
   startEditing(alatlng: number[] = [], startLatLng?: LatLngExpression) {
     // console.log("Layer.startEditing");
     const feature = this.activeFeature;
-
+    console.log("Layer.startEditing=>loadFeatureToForm");
     this.loadFeatureToForm(feature, { editable: true });
     kvm.map.closePopup();
     if (feature.leafletLayer) {

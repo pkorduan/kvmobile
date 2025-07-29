@@ -57,7 +57,7 @@ export class ViewFormular extends View {
         attrGrpHead.append(attributeGroup.name);
         attributeGroup.attributeIds.forEach((attributeId) => {
           const attr = layer.attributes[attributeId];
-          console.log(`viewAttr: ${attr.get("name")} arrangement: ${attr.get("arrangement")}`);
+          // console.log(`viewAttr: ${attr.get("name")} arrangement: ${attr.get("arrangement")}`);
 
           if (attr.get("arrangement") == "0") {
             Util.createHtmlElement("div", form, null, { styleText: "clear: both" });
@@ -183,6 +183,7 @@ export class ViewFormular extends View {
       try {
         this._createForm(f.layer);
         this.app.menu.enableSaveFeatureButton(false);
+        console.log("ViewFormular._updateFeature=>loadFeatureToForm");
         await f.layer.loadFeatureToForm(f, { editable: false });
       } catch (ex) {
         await Util.showError("Fehler beim Aktivieren des Features im Formular", ex);
