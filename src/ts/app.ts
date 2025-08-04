@@ -1513,7 +1513,7 @@ export class Kvm extends PropertyChangeSupport {
               this._activeLayer.afterUpdateDataset(rs);
             }
           } else {
-            sperrBildschirm.close("Keine Änderungen! Zum Abbrechen verwenden Sie den Button neben Speichern-Button.");
+            sperrBildschirm.close("Keine Änderungen! Zum Abbrechen verwenden Sie den Button mit dem Pfeil nach links, neben Speichern-Button.");
           }
         }
       }

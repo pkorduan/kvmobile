@@ -1458,7 +1458,7 @@ export class Layer extends PropertyChangeSupport {
     //console.log("getPopup with feature %o, isActive: %", feature, isActive);
     const dom = Util.createHtmlElement("div");
     dom.style.minWidth = "150px";
-    dom.innerHTML = `<b>${this.get("title")}</b><br>${feature.getLabelValue()}<br>`;
+    dom.innerHTML = `<b>${this.title}</b><br>${feature.getLabelValue()}<br>`;
     const fctDiv = Util.createHtmlElement("div", dom);
     if (this.hasEditPrivilege && !feature.hasEditiersperre()) {
       const editAnchor = Util.createHtmlElement("a", fctDiv, "edit-feature");
@@ -1628,7 +1628,7 @@ export class Layer extends PropertyChangeSupport {
         for (let i = 0; i < rs.rows.length; i++) {
           if (typeof rs.rows.item(i).geom != "undefined" && rs.rows.item(i).geom != "") {
             featureId = rs.rows.item(i)[pkLayer.get("id_attribute")];
-            // kvm.mapHint(`Übergeordnetes Objekt ${pkLayer.getFeature(featureId).getDataValue(pkLayer.get("name_attribute"))} aus Layer ${pkLayer.title} über Markerposition ermittelt.`, 5000);
+            kvm.mapHint(`Übergeordnetes Objekt ${pkLayer.getFeature(featureId).getDataValue(pkLayer.get("name_attribute"))} aus Layer ${pkLayer.title} über Markerposition ermittelt.`, 5000);
             // att.formField.setValue(featureId);
 
             break;

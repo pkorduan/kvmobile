@@ -59,7 +59,9 @@ export class GeometrieFormField extends AbstractField implements Field {
             </g>';
       bttnDiv.append(svg);
       svg.addEventListener("click", () => {
-        kvm.msg("Die GPS-Genauigkeit beträgt ca. " + Math.round(kvm.controller.mapper.getGPSAccuracy()) + " Meter.");
+        const genauigkeit = Math.round(kvm.controller.mapper.getGPSAccuracy());
+        const msg = (genauigkeit === 0 ? 'Es ist kein GPS-Signal vorhanden oder die Genauigkeit kann gerade nicht ermittelt werden!' : `Die GPS-Genauigkeit beträgt ca. ${genauigkeit} Meter.`);
+        kvm.msg(msg);
       });
 
       const goToGpsPositionButton = (this.goToGpsPositionButton = createHtmlElement("i", bttnDiv, "fa fa-pencil fa-2x"));
@@ -91,6 +93,7 @@ export class GeometrieFormField extends AbstractField implements Field {
       this.geomWkt.rows = 5;
     }
     this.geomWkt.id = "geom_wkt";
+    this.geomWkt.disabled = true;
 
     // this.element = $(
     //   '\
