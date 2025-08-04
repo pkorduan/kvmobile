@@ -883,8 +883,8 @@ export class Stelle {
             await this.sendDropImage(deltaRow);
             deletedImages++;
           }
-          return { deletedImages: deletedImages, addedImages: addedImages };
         }
+        return { deletedImages: deletedImages, addedImages: addedImages };
       } else {
         return { deletedImages: 0, addedImages: 0 };
       }
