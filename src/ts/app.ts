@@ -1392,6 +1392,7 @@ export class Kvm extends PropertyChangeSupport {
           await kvm._activeLayer.runDeleteStrategy();
           const feature = this._activeFeature;
           this._activeLayer.removeFeature(feature);
+          this.setActiveFeature(null);
           if (this.getConfigurationOption("autoSync") && this.networkStatus.online) {
             const activeLayerId = this._activeLayer.getGlobalId();
             const syncResults = await this.syncLayers();

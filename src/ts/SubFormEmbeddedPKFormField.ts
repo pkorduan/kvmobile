@@ -85,7 +85,8 @@ export class SubFormEmbeddedPKFormField implements Field {
     } else {
       this.bttNewSubItem.style.display = "";
       this.spanMsgNewFeature?.remove();
-      this.attr.layer.readVorschauAttributes(this.attr, feature.getDataValue(this.attr.getPKAttribute()), this.subItemList, "editFeature");
+      this.subItemList.innerHTML = '';
+      await this.attr.layer.readVorschauAttributes(this.attr, feature.getDataValue(this.attr.getPKAttribute()), this.subItemList, "editFeature");
     }
   }
 
