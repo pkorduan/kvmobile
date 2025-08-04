@@ -22,6 +22,7 @@ export class ViewFormular extends View {
     this.featureFormular = createHtmlElement("form", this.dom);
 
     app.addEventListener(Kvm.EVENTS.ACTIVE_FEATURE_CHANGED, async (evt) => {
+      console.log("ViewFormular.update", evt.newValue);
       this.update(<Feature>evt.newValue);
     });
   }
@@ -178,16 +179,51 @@ export class ViewFormular extends View {
   //   }
   // }
 
-  private async _updateFeature(f: Feature) {
-    if (f) {
-      try {
-        this._createForm(f.layer);
-        this.app.menu.enableSaveFeatureButton(false);
-        console.log("ViewFormular._updateFeature=>loadFeatureToForm");
-        await f.layer.loadFeatureToForm(f, { editable: false });
-      } catch (ex) {
-        await Util.showError("Fehler beim Aktivieren des Features im Formular", ex);
+  /**
+   * - Befüllt das Formular des Layers mit den Attributwerten des übergebenen Features
+   * - Setzt das Feature als activeFeature im Layer
+   * - Startet das GPS-Tracking
+   */
+  async loadFeatureToForm(feature: Feature, options = { editable: false }) {
+    const layer = feature.layer;
+    console.groupCollapsed(`ViewFormular.loadFeatureToForm layer=´${layer.title}`, feature.getDataValue(layer.settings.id_attribute));
+
+    for (const attr of layer.attributes) {
+      const attrName = attr.get("name");
+      const val = feature.getDataValue(attrName) == "null" ? null : feature.getDataValue(attrName);
+
+      await attr.formField.setValue(val);
+
+      // TODO
+      if (val === null && !attr.isEditable()) {
+        // attr.formField.getDom().style.display = "none";
+        // Blende Attribute aus, die keinen Wert haben und nur lesbar sind.
+        // $(`#formFieldDiv_${attr.get("index")}`).hide();
       }
+      if (this.app.coalesce(attr.get("required_by"), "") != "") {
+        // TODO rtr
+        const required_by_idx = layer.attribute_index[attr.get("required_by")];
+        // console.info("FormField=" + layer.attributes[required_by_idx].formField, this === kvm.getActiveLayer());
+        (<any>layer.attributes[required_by_idx].formField).filter_by_required(attr.get("name"), val);
+      }
+
+      if (attr.hasVisibilityDependency()) {
+        layer.vcheckAttributes(attr.get("name"), val, attr.formField, "form");
+      }
+    }
+    console.groupEnd();
+  }
+
+  private async _updateFeature(f: Feature) {
+    try {
+      this.app.menu.enableSaveFeatureButton(false);
+      if (f) {
+        this._createForm(f.layer);
+        console.log("ViewFormular._updateFeature=>loadFeatureToForm");
+        // await this.loadFeatureToForm(f, { editable: false });
+      }
+    } catch (ex) {
+      await Util.showError("Fehler beim Aktivieren des Features im Formular", ex);
     }
   }
 }
