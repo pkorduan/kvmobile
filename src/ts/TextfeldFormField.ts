@@ -23,7 +23,7 @@ export class TextfeldFormField extends AbstractField {
     this.element.name = attr.settings.name;
     const disabled = (this.element.disabled = attr.settings.privilege == "0");
     if (!disabled) {
-      this.element.addEventListener("keyup", () => {
+      this.element.addEventListener("input", () => {
         this._value = this.element.value || null;
         this.fireChanged();
       });

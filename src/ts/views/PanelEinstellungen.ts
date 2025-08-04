@@ -456,7 +456,7 @@ export class Layers extends PanelEinstellungen {
 
   async bttnSyncLayersClicked(evt: MouseEvent) {
     console.log(`bttnSyncLayersClicked`);
-    // const layer = kvm._activeLayer;
+
     if (this.layerId2layerListIem.size === 0) {
       await this.requestLayers();
       return;
@@ -464,16 +464,19 @@ export class Layers extends PanelEinstellungen {
 
     sperrBildschirm.clear();
 
-    // Sichere Datenbank
-    if ((<HTMLButtonElement>evt.currentTarget).classList.contains("inactive-button")) {
-      kvm.msg("Keine Internetverbindung! Kann Layer jetzt nicht synchronisieren.");
+    if (!kvm.networkStatus.online) {
+      kvm.msg("Keine Internetverbindung! Layer können jetzt nicht synchronisiert werden.");
     } else {
       sperrBildschirm.show();
       const confirmed = await confirm("Jetzt lokale Änderungen Daten und Bilder, falls vorhanden, zum Server schicken, Änderungen vom Server holen und lokal einspielen? Wenn Änderungen vom Server kommen wird die lokale Datenbank vorher automatisch gesichert.", "Layer mit Server synchronisieren", "ja", "nein");
       if (confirmed) {
         try {
           const result = await kvm.syncLayers();
-          kvm.msg(`Es wurden\n${result.sendDataDeltas} Datensätze gesendet\n${result.addedImages} Bilder wurden hinzugefügt\n${result.addedImages} Bilder wurden gelöscht`);
+          if (result.hasLayerStrucureChanged) {
+            await kvm.msg(`Es wurden\n${result.sendDataDeltas} Datensätze gesendet\n${result.addedImages} Bilder wurden hinzugefügt\n${result.addedImages} Bilder wurden gelöscht\nDie Datenstruktur hat sich geändert. Die Layer wurden aktualisiert.`);
+          } else {
+            await kvm.msg(`Es wurden\n${result.sendDataDeltas} Datensätze gesendet\n${result.addedImages} Bilder wurden hinzugefügt\n${result.addedImages} Bilder wurden gelöscht\n${result.numExecutedDeltas} Änderungen empfangen.`);
+          }
           sperrBildschirm.close();
         } catch (ex) {
           console.error("Fehler beim Synchronisieren", ex);

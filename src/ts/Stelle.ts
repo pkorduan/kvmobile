@@ -55,6 +55,13 @@ type LayerParams = {
   options: { value: string; output: string }[];
 };
 
+type SyncDataResult = {
+  applyDeltaResult?: { numExecutedDeltas: number; numReturnedDeltas: number };
+  countOfNoSyncLayersChanged?: number;
+  hasLayerStrucureChanged: boolean;
+  sendDataDeltas: number;
+};
+
 type StelleSetting = {
   ID: string;
   Bezeichnung: string;
@@ -704,9 +711,6 @@ export class Stelle {
       await executeSQL(kvm.db, "delete from deltas");
       await executeSQL(kvm.db, "delete from image_deltas");
 
-      // sperrBildschirm.tick("Downloadergebnis ist fehlerfrei.");
-      // sperrBildschirm.tick("Entferne existierende Layer aus der Anwendung.");
-
       await this.clearLayers();
       this.numLayers = layerRequestResult.layers.length;
 
@@ -1079,11 +1083,11 @@ export class Stelle {
   /**
    * Gleicht die lokalen Daten mit dem Server ab und übernimmt die Änderungen vom Server.
    * Hat sich die Layerstruktur geändert werden alle Layer neu geladen.
-   * @returns Promise<void>
+   * @returns Promise<SyncDataResult>
    */
-  async syncData(): Promise<number> {
+  async syncData(): Promise<SyncDataResult> {
     console.log(`syncData`);
-    return new Promise<number>(async (resolve, reject) => {
+    return new Promise<SyncDataResult>(async (resolve, reject) => {
       try {
         sperrBildschirm.tick(`Starte Synchronisation der Daten mit dem Server.`);
 
@@ -1114,17 +1118,21 @@ export class Stelle {
         if (!layerRequestResult.success) {
           throw new Error("Abfrage der Layer vom Server war nicht erfolgreich.", { cause: layerRequestResult.errMsg });
         }
-        const hasLayerChanged = this.checkForLayerChange(layerRequestResult);
+        const hasLayerStrucureChanged = this.checkForLayerChange(layerRequestResult);
+        const result: SyncDataResult = {
+          hasLayerStrucureChanged: hasLayerStrucureChanged,
+          sendDataDeltas: deltas.rows.length,
+        };
 
         // Sende Anfrage auch mit leeren rows Array um Änderungen vom Server zu bekommen.
 
-        if (!hasLayerChanged || deltas.rows.length > 0) {
+        if (!hasLayerStrucureChanged || deltas.rows.length > 0) {
           const sendDeltasResponse = await this.sendDeltas(deltas);
           if (sendDeltasResponse.success) {
-            if (hasLayerChanged) {
+            if (hasLayerStrucureChanged) {
               await this.requestLayers(layerRequestResult);
             } else {
-              await this.applyDeltas(sendDeltasResponse);
+              result.applyDeltaResult = await this.applyDeltas(sendDeltasResponse);
               const changedNoSyncLayers = this.checkForNoSyncLayerChange(layerRequestResult);
               if (changedNoSyncLayers) {
                 for (const layerSetting of changedNoSyncLayers) {
@@ -1132,6 +1140,7 @@ export class Stelle {
                   await layer.requestData(this._lastDeltaVersion);
                 }
               }
+              result.countOfNoSyncLayersChanged = changedNoSyncLayers.length;
             }
           } else {
             reject(new Error("Negative Antwort auf Upload der Deltas", { cause: { response: sendDeltasResponse, deltas: deltas } }));
@@ -1140,7 +1149,7 @@ export class Stelle {
           await this.requestLayers(layerRequestResult);
         }
 
-        resolve(numRows);
+        resolve(result);
       } catch (ex) {
         reject(ex);
       }
@@ -1178,7 +1187,7 @@ export class Stelle {
     return Util.upload(fileURL, encodeURI(server), options);
   }
 
-  async applyDeltas(response: SendDeltasResponse) {
+  async applyDeltas(response: SendDeltasResponse): Promise<{ numExecutedDeltas: number; numReturnedDeltas: number }> {
     // console.error(`applyDeltas`, response);
     // const response = JSON.parse(fileUploadResult.response);
 
@@ -1194,7 +1203,7 @@ export class Stelle {
       if (numReturnedDeltas > 0) {
         const msg = `${numReturnedDeltas} Änderungen von Daten auf dem Server gefunden. Die Datenbank wurde gesichert und die Änderungen in die lokale Datenbank eingespielt.`;
         kvm.writeLog(msg);
-        kvm.msg(msg, "Datenänderung");
+        // kvm.msg(msg, "Datenänderung");
         // TODO backupDatabase auch nur ein mal machen wenn irgend ein Delta vom Server gekommen ist (Weiß man aber vorher nicht ob irgend ein layer ein Delta bekommen wird.)
         // Wenn ein mal ein backDatabase gemacht wurde bei den anderen layern in der gleichen syncLayers Runde nicht mehr ausführen.
         kvm.backupDatabase();
@@ -1215,6 +1224,10 @@ export class Stelle {
       this.saveToStore();
       await this.clearDeltas();
       await this.readData(Util.getValueOfElement("limit"), Util.getValueOfElement("offset"));
+      return {
+        numExecutedDeltas: numExecutedDeltas,
+        numReturnedDeltas: numReturnedDeltas,
+      };
     } else {
       throw Error(`Sync-Fehler :<br>&nbsp;&nbsp;${response.msg}`);
     }

@@ -26,7 +26,7 @@ export class DateTimeFormField extends AbstractField implements Field {
     this.element.name = this.attr.settings.name;
     this.element.disabled = this.attr.settings.privilege == "0";
 
-    this.element.addEventListener("click", () => {
+    this.element.addEventListener("input", () => {
       this._value = this.element.checked ? "t" : "f";
       this.fireChanged();
     });

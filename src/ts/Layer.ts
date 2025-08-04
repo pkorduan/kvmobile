@@ -162,7 +162,7 @@ export class Layer extends PropertyChangeSupport {
 
     this.stelle = stelle;
     this.settings = typeof settings === "string" ? JSON.parse(settings) : settings;
-    console.groupCollapsed("create Layer " + this.settings?.title);
+
     this.title = kvm.coalempty(this.get("alias"), this.get("title"), this.get("table_name"), "overlay" + this.getGlobalId());
 
     if (!this.settings.name_attribute) {
@@ -247,7 +247,6 @@ export class Layer extends PropertyChangeSupport {
     }
 
     this._features = new Map();
-    console.groupEnd();
   }
 
   get activeFeature() {
@@ -324,6 +323,12 @@ export class Layer extends PropertyChangeSupport {
 
   async removeFeature(feature: Feature) {
     this._features.delete(feature.id);
+    if (this.hasGeometry) {
+      console.log("remove Editable");
+      kvm.controller.mapper.removeEditable(this.activeFeature);
+      console.log("remove Editable");
+      this.layerGroup.removeLayer(feature.leafletLayer);
+    }
     await this.fire(new PropertyChangeEvent(this, Layer.EVENTS.FEATURE_REMOVED, null, this.activateFeature));
   }
 
@@ -526,13 +531,8 @@ export class Layer extends PropertyChangeSupport {
 
         this._features = new Map();
 
-        if (numRows == 0) {
-          if (where.length > 0) {
-            console.log("filter %o", where);
-            // kvm.msg(`Keine Daten in Layer ${this.settings.title} gefunden. Filter anpassen um Daten anzuzeigen.`, "Datenfilter");
-          } else {
-            kvm.msg("Tabelle ist leer. Unter Einstellungen des Layers können Daten synchronisiert werden.", "Datenbank");
-          }
+        if (numRows === 0 && where.length === 0) {
+          kvm.msg("Tabelle ist leer. Unter Einstellungen des Layers können Daten synchronisiert werden.", "Datenbank");
         }
 
         console.log("Layer %s: Create %s features for layer", this.title, numRows);
@@ -1240,11 +1240,11 @@ export class Layer extends PropertyChangeSupport {
     } else {
       $("#newAfterCreateDiv").hide();
     }
-    if (this.hasEditiersperreAttribute && feature.getDataValue(this.editiersperreAttribute.get("name"))) {
-      $("#editFeatureButton").hide();
-    } else {
-      $("#editFeatureButton").show();
-    }
+    // if (this.hasEditiersperreAttribute && feature.getDataValue(this.editiersperreAttribute.get("name"))) {
+    //   $("#editFeatureButton").hide();
+    // } else {
+    //   $("#editFeatureButton").show();
+    // }
   }
 
   /**
@@ -1255,6 +1255,7 @@ export class Layer extends PropertyChangeSupport {
   async loadFeatureToForm(feature: Feature, options = { editable: false }) {
     // console.log("Layer.loadFeature %o ToForm with options: %o", feature, options);
     // this.app.menu.enableSaveFeatureButton(false);
+    console.error("Layer.loadFeatureToForm", feature);
     console.groupCollapsed(`layer.loadFeatureToForm layer=´${this.title}`, feature.getDataValue(this.settings.id_attribute));
     this._activeFeature = feature;
 
@@ -1328,6 +1329,66 @@ export class Layer extends PropertyChangeSupport {
     } // .bind(this.features.get(tplId))
   }
 
+  redrawFeature(feature: Feature) {
+    const style = this.hasClasses() ? feature.getStyle() : this.getDefaultPathOptions();
+    if (feature.newGeom) {
+      if (this.settings.geometry_type === "Point") {
+        (<CircleMarker>feature.leafletLayer).setLatLng(feature.wkxToLatLngs(feature.newGeom));
+        (<CircleMarker>feature.leafletLayer).setRadius(style.size);
+      } else if (this.settings.geometry_type === "Line") {
+        (<Polyline>feature.leafletLayer).setLatLngs(feature.wkxToLatLngs(feature.newGeom));
+      } else if (this.settings.geometry_type === "Polygon") {
+        (<Polygon>feature.leafletLayer).setLatLngs(feature.wkxToLatLngs(feature.newGeom));
+      }
+    }
+    feature.leafletLayer.setStyle(style);
+  }
+
+  drawFeature(feature: Feature) {
+    const style = this.hasClasses() ? feature.getStyle() : this.getDefaultPathOptions();
+    let vectorLayer: any;
+    if (feature.newGeom) {
+      if (this.settings.geometry_type === "Point") {
+        vectorLayer = new CircleMarker(feature.wkxToLatLngs(feature.newGeom), <any>{
+          featureId: feature.id,
+          globalLayerId: this.getGlobalId(),
+          pane: this.title,
+        });
+        vectorLayer.setRadius(style.size);
+      } else if (this.settings.geometry_type === "Line") {
+        vectorLayer = new Polyline(feature.wkxToLatLngs(feature.newGeom), <any>{
+          featureId: feature.id,
+          globalLayerId: this.getGlobalId(),
+          pane: this.title,
+        });
+      } else if (this.settings.geometry_type === "Polygon") {
+        vectorLayer = new Polygon(feature.wkxToLatLngs(feature.newGeom), <any>{
+          featureId: feature.id,
+          globalLayerId: this.getGlobalId(),
+          pane: this.title,
+        });
+      }
+      vectorLayer["feature"] = feature;
+
+      // Das angeklickte Feature selektieren wenn der Layer selektiert ist zu dem das Feature gehört
+      // und gerade kein anderes feature editiert wird.
+      vectorLayer.on("click", this.popupOpen);
+      // poupuclose event must not be considered because if the feature behind the popup
+      // witch has to be closed will be unselected only if another feature is selected
+      // popup close shall realy only close the popup not more.
+      //
+      //vectorLayer.on("popupclose", this.popupClose);
+      vectorLayer.setStyle(style);
+      // Kartenobjekt als Layer zur Layergruppe hinzufügen
+      this.layerGroup.addLayer(vectorLayer);
+
+      // layer_id abfragen und in Feature als layerId speichern
+      // feature.layerId = this.layerGroup.getLayerId(vectorLayer);
+
+      feature.leafletLayer = vectorLayer;
+    }
+  }
+
   /**
    * Zeichnet die Features in die Karte
    */
@@ -1337,49 +1398,7 @@ export class Layer extends PropertyChangeSupport {
 
     this._features.forEach((feature) => {
       try {
-        let vectorLayer: any;
-        const style = this.hasClasses() ? feature.getStyle() : this.getDefaultPathOptions();
-
-        if (feature.newGeom) {
-          if (this.settings.geometry_type === "Point") {
-            vectorLayer = new CircleMarker(feature.wkxToLatLngs(feature.newGeom), <any>{
-              featureId: feature.id,
-              globalLayerId: this.getGlobalId(),
-              pane: this.title,
-            });
-            vectorLayer.setRadius(style.size);
-          } else if (this.settings.geometry_type === "Line") {
-            vectorLayer = new Polyline(feature.wkxToLatLngs(feature.newGeom), <any>{
-              featureId: feature.id,
-              globalLayerId: this.getGlobalId(),
-              pane: this.title,
-            });
-          } else if (this.settings.geometry_type === "Polygon") {
-            vectorLayer = new Polygon(feature.wkxToLatLngs(feature.newGeom), <any>{
-              featureId: feature.id,
-              globalLayerId: this.getGlobalId(),
-              pane: this.title,
-            });
-          }
-          vectorLayer["feature"] = feature;
-
-          // Das angeklickte Feature selektieren wenn der Layer selektiert ist zu dem das Feature gehört
-          // und gerade kein anderes feature editiert wird.
-          vectorLayer.on("click", this.popupOpen);
-          // poupuclose event must not be considered because if the feature behind the popup
-          // witch has to be closed will be unselected only if another feature is selected
-          // popup close shall realy only close the popup not more.
-          //
-          //vectorLayer.on("popupclose", this.popupClose);
-          vectorLayer.setStyle(style);
-          // Kartenobjekt als Layer zur Layergruppe hinzufügen
-          this.layerGroup.addLayer(vectorLayer);
-
-          // layer_id abfragen und in Feature als layerId speichern
-          // feature.layerId = this.layerGroup.getLayerId(vectorLayer);
-
-          feature.leafletLayer = vectorLayer;
-        }
+        this.drawFeature(feature);
       } catch (error) {
         const msg = `Fehler beim Zeichnen des Feature Id: ${feature.id} in layer : "${feature.layer.title}"! Fehlertyp: ${error.name} Fehlermeldung: ${error.message}`;
         console.error(`drawFeatures ${msg}`, error);
@@ -1489,99 +1508,117 @@ export class Layer extends PropertyChangeSupport {
    * e.g. sequence attributes, version and the uuid attribute
    * @returns
    */
-  getNewData() {
+  async getNewData() {
     // loop through the attributes and generate key value pairs for autoAttributes
     const newData = {};
 
     for (const attribute of this.attributes) {
-      const attribute_name = attribute.get("name");
-      const options = attribute.get("options");
-      let value;
+      try {
+        const attribute_name = attribute.get("name");
+        const options = attribute.get("options");
+        let value;
 
-      switch (true) {
-        case attribute_name == this.get("id_attribute"):
-          {
-            value = kvm.uuidv4();
-          }
-          break;
-        case attribute_name == "version":
-          {
-            value = (this.get("syncVersion") == "null" ? 0 : this.get("syncVersion")) + 1;
-          }
-          break;
-        case attribute.get("form_element_type") == "UserID" && (options == "" || options.toLowerCase() == "insert"):
-          {
-            value = kvm.store.getItem("userId");
-          }
-          break;
-        case attribute.get("form_element_type") == "User" && (options == "" || options.toLowerCase() == "insert"):
-          {
-            value = kvm.store.getItem("userName");
-          }
-          break;
-        case attribute.get("form_element_type") == "StelleID" && (options == "" || options.toLowerCase() == "insert"):
-          {
-            value = kvm.getActiveStelle().get("ID");
-          }
-          break;
-        case attribute.get("form_element_type") == "ClientID" && (options == "" || options.toLowerCase() == "insert"):
-          {
-            value = device.uuid;
-          }
-          break;
-        case attribute.get("form_element_type") == "SubFormFK":
-          {
-            value = this.specifiedValues[attribute.getFKAttribute()];
-          }
-          break;
-        case attribute.get("default") &&
-          // attribute.get('nullable') == 0 &&
-          attribute.get("form_element_type") != "Time":
-          {
-            switch (true) {
-              case attribute.get("default").startsWith("gdi_conditional_val"):
-                {
-                  const parentLayer = kvm.getLayer(this.parentLayerId);
-                  const parentFeature = parentLayer.getFeature(this.parentFeatureId);
-                  // Frage den Spaltennamen ab, von dem der Defaultwert des parentLayers abgefragt werden soll.
-                  //z.B: entwicklungsphase_id aus gdi_conditional_val('kob', 'baum', 'entwicklungsphase_id', 'uuid = ''$baum_uuid''')
-                  const column = attribute
-                    .get("default")
-                    .split(",")[2]
-                    .trim()
-                    .replace(/^["'](.+(?=["']$))["']$/, "$1");
-                  value = parentFeature.getDataValue(column);
-                  // value = kvm.layers[this.parentLayerId].features.get(this.parentFeatureId).get(column)
-                }
-                break;
-              case attribute.get("default").includes("gdi_current_date"):
-                {
-                  const today = new Date();
-                  value = `${today.getFullYear()}/${(today.getMonth() + 1).toString().padStart(2, "0")}/${today.getDate()}`;
-                }
-                break;
-              case attribute.get("default").indexOf("$") === 0:
-                {
-                  // replace default String with layerParams if exists
-                  let paramName = attribute.get("default").slice(1);
+        // if (attribute_name === "kartierergruppe_id") {
+        //   attribute.settings.default = "$layerparam_kartierergruppe_id";
+        // }
 
-                  const paramValue = this.stelle.getLayerParam(paramName);
-                  if (attribute.hasEnumValue(paramValue)) {
-                    value = paramValue;
+        switch (true) {
+          case attribute_name == this.get("id_attribute"):
+            {
+              value = kvm.uuidv4();
+            }
+            break;
+          case attribute_name == "version":
+            {
+              value = (this.get("syncVersion") == "null" ? 0 : this.get("syncVersion")) + 1;
+            }
+            break;
+          case attribute.get("form_element_type") == "UserID" && (options == "" || options.toLowerCase() == "insert"):
+            {
+              value = kvm.store.getItem("userId");
+            }
+            break;
+          case attribute.get("form_element_type") == "User" && (options == "" || options.toLowerCase() == "insert"):
+            {
+              value = kvm.store.getItem("userName");
+            }
+            break;
+          case attribute.get("form_element_type") == "StelleID" && (options == "" || options.toLowerCase() == "insert"):
+            {
+              value = kvm.getActiveStelle().get("ID");
+            }
+            break;
+          case attribute.get("form_element_type") == "ClientID" && (options == "" || options.toLowerCase() == "insert"):
+            {
+              value = device.uuid;
+            }
+            break;
+          case attribute.get("form_element_type") == "SubFormFK":
+            {
+              value = this.specifiedValues[attribute.getFKAttribute()];
+            }
+            break;
+          case attribute.get("default") &&
+            // attribute.get('nullable') == 0 &&
+            attribute.get("form_element_type") != "Time":
+            {
+              const defAttr = attribute.get("default");
+              switch (true) {
+                case defAttr.startsWith("gdi_conditional_val"):
+                  {
+                    const parentLayer = kvm.getLayer(this.parentLayerId);
+                    const parentFeature = parentLayer.getFeature(this.parentFeatureId);
+                    // Frage den Spaltennamen ab, von dem der Defaultwert des parentLayers abgefragt werden soll.
+                    //z.B: entwicklungsphase_id aus gdi_conditional_val('kob', 'baum', 'entwicklungsphase_id', 'uuid = ''$baum_uuid''')
+                    const column = attribute
+                      .get("default")
+                      .split(",")[2]
+                      .trim()
+                      .replace(/^["'](.+(?=["']$))["']$/, "$1");
+                    value = parentFeature.getDataValue(column);
+                    // value = kvm.layers[this.parentLayerId].features.get(this.parentFeatureId).get(column)
                   }
-                  // if (paramName in kvm.layerParams && attribute.hasEnumValue(kvm.layerParams[paramName])) {
-                  //   value = kvm.layerParams[paramName];
-                  // }
+                  break;
+                case defAttr.includes("gdi_current_date"):
+                  {
+                    const today = new Date();
+                    value = `${today.getFullYear()}/${(today.getMonth() + 1).toString().padStart(2, "0")}/${today.getDate()}`;
+                  }
+                  break;
+                case defAttr.indexOf("$") >= 0 && !defAttr.includes("gdi_conditional_nextval"):
+                  {
+                    const defaultV = defAttr;
+                    let defaultD = defaultV;
+                    const regex = /\$\w+/g;
+                    let array: string[];
+                    while ((array = regex.exec(defAttr)) !== null) {
+                      console.log(`Found ${array[0]}  ${array.length} Next starts at ${regex.lastIndex}.`);
+                      let paramName = array[0].slice(1);
+                      const paramValue = this.stelle.getLayerParam(paramName);
+                      if (attribute.hasEnumValue(paramValue)) {
+                        defaultD = defaultD.replace(array[0], paramValue);
+                      }
+                    }
+
+                    const sqlResult = await Util.executeSQL(kvm.db, "select " + defaultD + " as value");
+                    value = sqlResult.rows.item(0).value;
+                    console.log(defaultD + " => " + value);
+                    // if (paramName in kvm.layerParams && attribute.hasEnumValue(kvm.layerParams[paramName])) {
+                    //   value = kvm.layerParams[paramName];
+                    // }
+                  }
+                  break;
+                default: {
+                  value = attribute.get("default");
                 }
-                break;
-              default: {
-                value = attribute.get("default");
               }
             }
-          }
-          break;
+            break;
+        }
+        newData[attribute_name] = value;
+      } catch (ex) {
+        console.error("Konnte den Defaultwert für " + attribute.name + " nicht bestimmen.", ex);
       }
-      newData[attribute_name] = value;
     }
     console.info(`created Data for feature of layer ${this.title}`, newData);
     return newData;
@@ -1655,7 +1692,7 @@ export class Layer extends PropertyChangeSupport {
   async newFeature(copyData?: { [id: string]: any }) {
     console.log("Layer.newFeature");
     this.deactivateFeature();
-    const feature = (this._activeFeature = new Feature(this.getNewData(), this, true));
+    const feature = (this._activeFeature = new Feature(await this.getNewData(), this, true));
     if (copyData) {
       feature.setCopyData(copyData);
     }
@@ -1759,7 +1796,7 @@ export class Layer extends PropertyChangeSupport {
       }
     } else {
       console.log("Layer.editFeature=>loadFeatureToForm");
-      this.loadFeatureToForm(feature, { editable: true });
+      kvm.viewFormular.loadFeatureToForm(feature, { editable: true });
       kvm.showView("formular");
     }
   }
@@ -1854,7 +1891,7 @@ export class Layer extends PropertyChangeSupport {
     // console.log("Layer.startEditing");
     const feature = this.activeFeature;
     console.log("Layer.startEditing=>loadFeatureToForm");
-    this.loadFeatureToForm(feature, { editable: true });
+    kvm.viewFormular.loadFeatureToForm(feature, { editable: true });
     kvm.map.closePopup();
     if (feature.leafletLayer) {
       // leafletLayer = this.layerGroup.getLayer(feature.layerId);
@@ -1944,89 +1981,89 @@ export class Layer extends PropertyChangeSupport {
    *
    * Überarbeiten für neue Features evtl.
    */
-  saveGeometry(feature: Feature) {
-    //console.log("saveGeometry mit feature: %o", feature);
-    let vectorLayer: CircleMarker | Path;
-    if (feature.leafletLayer) {
-      vectorLayer = feature.leafletLayer;
-    }
+  // saveGeometry(feature: Feature) {
+  //   //console.log("saveGeometry mit feature: %o", feature);
+  //   let vectorLayer: CircleMarker | Polyline<any>;
+  //   if (feature.leafletLayer) {
+  //     vectorLayer = feature.leafletLayer;
+  //   }
 
-    if (vectorLayer) {
-      this.layerGroup.removeLayer(vectorLayer);
-    }
+  //   if (vectorLayer) {
+  //     this.layerGroup.removeLayer(vectorLayer);
+  //   }
 
-    if (feature.layer.settings.geometry_type == "Point") {
-      //console.log('Lege neuen CircleMarker an.');
-      // circleMarker erzeugen mit Popup Eventlistener
-      vectorLayer = new CircleMarker(feature.wkxToLatLngs(feature.newGeom), <any>{
-        renderer: kvm.myRenderer,
-        featureId: feature.id,
-        globalLayerId: kvm.getActiveLayer().getGlobalId(),
-      });
-    } else if (feature.layer.settings.geometry_type == "Line") {
-      vectorLayer = new Polyline(feature.wkxToLatLngs(feature.newGeom), <any>{
-        featureId: feature.id,
-        globalLayerId: kvm.getActiveLayer().getGlobalId(),
-      });
-    } else if (feature.layer.settings.geometry_type == "Polygon") {
-      vectorLayer = new Polygon(
-        feature.wkxToLatLngs(feature.newGeom).map(function (ring) {
-          if (ring[0] != ring[ring.length - 1]) {
-            ring.push(ring[0]);
-          }
-          return ring;
-        }),
-        <any>{
-          featureId: feature.id,
-          globalLayerId: kvm.getActiveLayer().getGlobalId(),
-        }
-      );
-    }
-    vectorLayer["feature"] = feature;
-    feature.leafletLayer = vectorLayer;
+  //   if (feature.layer.settings.geometry_type == "Point") {
+  //     //console.log('Lege neuen CircleMarker an.');
+  //     // circleMarker erzeugen mit Popup Eventlistener
+  //     vectorLayer = new CircleMarker(feature.wkxToLatLngs(feature.newGeom), <any>{
+  //       renderer: kvm.myRenderer,
+  //       featureId: feature.id,
+  //       globalLayerId: kvm.getActiveLayer().getGlobalId(),
+  //     });
+  //   } else if (feature.layer.settings.geometry_type == "Line") {
+  //     vectorLayer = new Polyline(feature.wkxToLatLngs(feature.newGeom), <any>{
+  //       featureId: feature.id,
+  //       globalLayerId: kvm.getActiveLayer().getGlobalId(),
+  //     });
+  //   } else if (feature.layer.settings.geometry_type == "Polygon") {
+  //     vectorLayer = new Polygon(
+  //       feature.wkxToLatLngs(feature.newGeom).map(function (ring) {
+  //         if (ring[0] != ring[ring.length - 1]) {
+  //           ring.push(ring[0]);
+  //         }
+  //         return ring;
+  //       }),
+  //       <any>{
+  //         featureId: feature.id,
+  //         globalLayerId: kvm.getActiveLayer().getGlobalId(),
+  //       }
+  //     );
+  //   }
+  //   vectorLayer["feature"] = feature;
+  //   feature.leafletLayer = vectorLayer;
 
-    // const popupFct = () => {
-    //   console.log("popupFct for activelayer: %o in saveGeometry", kvm.activeLayer);
-    //   return this.getPopup(feature);
-    // };
-    // vectorLayer.bindPopup(popupFct);
+  //   // const popupFct = () => {
+  //   //   console.log("popupFct for activelayer: %o in saveGeometry", kvm.activeLayer);
+  //   //   return this.getPopup(feature);
+  //   // };
+  //   // vectorLayer.bindPopup(popupFct);
 
-    //console.log('Style der neuen Geometrie auf default setzen');
-    //vectorLayer.setStyle(feature.getNormalStyle()); veraltet wird nicht mehr verwendet
+  //   //console.log('Style der neuen Geometrie auf default setzen');
+  //   //vectorLayer.setStyle(feature.getNormalStyle()); veraltet wird nicht mehr verwendet
 
-    const style = this.hasClasses() ? feature.getStyle() : this.getDefaultPathOptions();
-    // console.log("SetStyle after saveGeometry: %o", style);
-    vectorLayer.setStyle(style);
-    if (this.get("geometry_type") === "Point") {
-      (<CircleMarker>vectorLayer).setRadius(style.size);
-    }
+  //   const style = this.hasClasses() ? feature.getStyle() : this.getDefaultPathOptions();
+  //   // console.log("SetStyle after saveGeometry: %o", style);
+  //   vectorLayer.setStyle(style);
+  //   if (this.get("geometry_type") === "Point") {
+  //     (<CircleMarker>vectorLayer).setRadius(style.size);
+  //   }
 
-    //console.log('Setze click event for vectorLayer');
-    // vectorLayer.on("click", (evt) => {
-    //   evt.target.openPopup();
-    // });
-    // vectorLayer.on("popupopen", this.popupOpen);
-    vectorLayer.on("click", this.popupOpen);
-    //vectorLayer.on("popupclose", this.popupClose);
+  //   //console.log('Setze click event for vectorLayer');
+  //   // vectorLayer.on("click", (evt) => {
+  //   //   evt.target.openPopup();
+  //   // });
+  //   // vectorLayer.on("popupopen", this.popupOpen);
+  //   vectorLayer.on("click", this.popupOpen);
+  //   //vectorLayer.on("popupclose", this.popupClose);
 
-    //console.log('Füge vectorLayer zur layerGroup hinzu.');
-    // vectorLayer als Layer zur Layergruppe hinzufügen
-    this.layerGroup.addLayer(vectorLayer);
+  //   //console.log('Füge vectorLayer zur layerGroup hinzu.');
+  //   // vectorLayer als Layer zur Layergruppe hinzufügen
+  //   this.layerGroup.addLayer(vectorLayer);
 
-    //console.log('Frage layerId ab und ordne feature zu.');
-    // layer_id abfragen und in Feature als layerId speichern
-    // feature.layerId = this.layerGroup.getLayerId(vectorLayer);
-    // if ((<any>kvm.map)._layers[feature.layerId] === undefined) {
-    //   this.layerGroup.addTo(kvm.map);
-    // }
+  //   //console.log('Frage layerId ab und ordne feature zu.');
+  //   // layer_id abfragen und in Feature als layerId speichern
+  //   // feature.layerId = this.layerGroup.getLayerId(vectorLayer);
+  //   // if ((<any>kvm.map)._layers[feature.layerId] === undefined) {
+  //   //   this.layerGroup.addTo(kvm.map);
+  //   // }
 
-    //console.log('Setze feature auf nicht mehr editierbar.');
-    // editierbare Geometrie aus der Karte löschen und damit Popup der editierbaren Geometrie schließen
-    feature.setEditable(false);
+  //   //console.log('Setze feature auf nicht mehr editierbar.');
+  //   // editierbare Geometrie aus der Karte löschen und damit Popup der editierbaren Geometrie schließen
+  //   feature.setEditable(false);
 
-    //console.log('Zoome zum Feature');
-    // this.activateFeature(feature, false);
-  }
+  //   //console.log('Zoome zum Feature');
+  //   // this.activateFeature(feature, false);
+  // }
 
   /**
    * Callback function of popupOpen event of map features
@@ -2203,7 +2240,7 @@ export class Layer extends PropertyChangeSupport {
   /**
    * Function, die nach dem erfolgreichen Eintragen eines INSERT - Deltas Entrages ausgeführt werden soll
    */
-  afterCreateDataset(rs: SQLitePlugin.Results) {
+  afterCreateDataset(f: Feature) {
     console.log("afterCreateDataset");
 
     //console.log("set data for activeFeature: %o", rs.rows.item(0));
@@ -2220,7 +2257,7 @@ export class Layer extends PropertyChangeSupport {
     // }
     if (kvm.getConfigurationOption("newAfterCreate")) {
       console.log("option newAfterCreate is on");
-      this.newFeature(rs.rows.item(0));
+      this.newFeature(f.data);
       this.editFeature(this.activeFeature);
     } else {
       this.loadFeatureToView(this.activeFeature);
@@ -2244,7 +2281,9 @@ export class Layer extends PropertyChangeSupport {
       try {
         const rs = await LayerDBJobs.runUpdate(this._activeFeature, delta);
         this.activeFeature.setData(rs.rows.item(0));
-        // await this.afterUpdateDataset(rs);
+        if (this.activeFeature.leafletLayer) {
+          this.redrawFeature(this.activeFeature);
+        }
       } catch (reason) {
         console.error("Etwas ist schief gegangen", reason);
         throw new Error("Fehler beim Updaten", { cause: reason });
@@ -2263,12 +2302,10 @@ export class Layer extends PropertyChangeSupport {
       await this._processImageChanges(changes);
       try {
         const rs = await LayerDBJobs.runInsert(this._activeFeature, delta);
-        if (this._activeFeature) {
-          this._activeFeature.setData(rs.rows.item(0));
-          this._activeFeature.new = false;
-          this.addFeature(this._activeFeature);
-        }
-        // this.afterCreateDataset(rs);
+        this.activeFeature.setData(rs.rows.item(0));
+        this.activeFeature.new = false;
+        await this.addFeature(this._activeFeature);
+        this.drawFeature(this._activeFeature);
       } catch (ex) {
         const msg = `Fehler in Funktion nach dem Anlegen des Datensatzes in runInsertStrategy ${ex.message}`;
         console.error(msg);
@@ -2345,8 +2382,8 @@ export class Layer extends PropertyChangeSupport {
    * Function, die nach dem erfolgreichen Eintragen eines UPDATE ausgeführt werden soll
    * @param result set rs Resultset from a readDataset query
    */
-  async afterUpdateDataset(rs: SQLitePlugin.Results) {
-    console.log("afterUpdateDataset rs", rs);
+  async afterUpdateDataset(f: Feature) {
+    console.log("afterUpdateDataset rs", f);
     try {
       // this.activeFeature.setData(rs.rows.item(0));
       // if (this.hasGeometry) {
@@ -3292,6 +3329,14 @@ export class Layer extends PropertyChangeSupport {
   // }
 
   notNullValid() {
+    const att = this.attributes.filter((attribute) => {
+      return !attribute.isAutoAttribute("") && !attribute.isPseudoAttribute() && attribute.get("nullable") == 0 && attribute.formField.getValue() == null;
+    });
+
+    for (let i = 0; i < att.length; i++) {
+      console.error(att[i]);
+    }
+
     let errMsg = this.attributes
       .filter((attribute) => {
         return !attribute.isAutoAttribute("") && !attribute.isPseudoAttribute() && attribute.get("nullable") == 0 && attribute.formField.getValue() == null;

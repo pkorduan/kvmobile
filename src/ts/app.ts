@@ -129,8 +129,8 @@ export class Kvm extends PropertyChangeSupport {
   viewLoggings: ViewLoggings;
   viewMap: ViewMap;
   viewFeatureList: ViewFeatureList;
-  ViewDataView: any;
-  ViewFormular: any;
+  viewDataView: ViewDataView;
+  viewFormular: ViewFormular;
 
   constructor() {
     super();
@@ -143,7 +143,12 @@ export class Kvm extends PropertyChangeSupport {
   getActiveLayer() {
     return this._activeLayer;
   }
-  async setActiveLayer(layer: Layer | null) {
+  async setActiveLayer(layer: Layer): Promise<void>;
+  async setActiveLayer(globalLayerId: string): Promise<void>;
+  async setActiveLayer(layer: Layer | null | string): Promise<void> {
+    if (typeof layer === "string") {
+      layer = this.getLayer(layer);
+    }
     if (this._activeLayer === layer) {
       console.log(`zzz app.setActiveLayer ${layer?.title} again`);
       return;
@@ -336,32 +341,18 @@ export class Kvm extends PropertyChangeSupport {
   }
 
   async syncLayers() {
-    console.log(`syncLayers activeLayer="${this._activeLayer?.title}"`);
-
-    // merken, um nach der Synchronisierung den Layer wieder auszuwählen
-    // const activeLayerId = this._activeLayer ? this._activeLayer.getGlobalId() : null;
-
+    console.groupCollapsed("syncLayers");
     const syncResultImages = await this._activeStelle.syncImages();
     const syncResultData = await this._activeStelle.syncData();
-
-    // const layerStatus = await this._activeStelle.checkLayerVersions();
-    // if (layerStatus.hasChanges()) {
-    //   this._activeStelle.requestLayers();
-    // }
-
-    // if (activeLayerId) {
-    //   const activeLayerEntry = Array.from(this._layers).find((entry) => entry[1].getGlobalId() === activeLayerId);
-    //   if (activeLayerEntry) {
-    //     const activeLayer = activeLayerEntry[1];
-    //     console.log(`syncLayers: reaktiviere Layer ${activeLayer.title} ${activeLayer.getGlobalId()}`);
-    //     activeLayer.activate();
-    //   }
-    // }
-
+    console.groupEnd();
     return {
       deletedImages: syncResultImages.deletedImages,
       addedImages: syncResultImages.addedImages,
-      sendDataDeltas: syncResultData,
+      numExecutedDeltas: syncResultData?.applyDeltaResult?.numExecutedDeltas || 0,
+      numReturnedDeltas: syncResultData?.applyDeltaResult?.numReturnedDeltas || 0,
+      countOfNoSyncLayersChanged: syncResultData?.countOfNoSyncLayersChanged,
+      hasLayerStrucureChanged: syncResultData?.hasLayerStrucureChanged,
+      sendDataDeltas: syncResultData?.sendDataDeltas,
     };
   }
 
@@ -726,7 +717,7 @@ export class Kvm extends PropertyChangeSupport {
 
     let activeView = ["settings", "map", "featurelist"].includes(kvm.store.getItem("activeView")) ? kvm.store.getItem("activeView") : "featurelist";
 
-    this.views = [(this.viewEinstellungen = new ViewEinstellungen(this)), (this.viewLoggings = new ViewLoggings(this)), (this.viewFeatureList = new ViewFeatureList(this)), (this.viewMap = new ViewMap(this)), (this.ViewDataView = new ViewDataView(this)), (this.ViewFormular = new ViewFormular(this))];
+    this.views = [(this.viewEinstellungen = new ViewEinstellungen(this)), (this.viewLoggings = new ViewLoggings(this)), (this.viewFeatureList = new ViewFeatureList(this)), (this.viewMap = new ViewMap(this)), (this.viewDataView = new ViewDataView(this)), (this.viewFormular = new ViewFormular(this))];
     this.menu = new Menu(this);
 
     this.userId = kvm.store.getItem("userId");
@@ -784,7 +775,7 @@ export class Kvm extends PropertyChangeSupport {
 
     try {
       this.loadLogLevel();
-      this.openLogFile();
+      await this.openLogFile();
 
       // this.loadDeviceData();
       //    SyncStatus.load(this.store); ToDo: Wenn das nicht gebraucht wird auch in index.html löschen.
@@ -817,65 +808,28 @@ export class Kvm extends PropertyChangeSupport {
           sperrBildschirm.show("Lade Layerdaten.");
 
           for (const settings of layerSettings) {
-            // console.group("Init Layer " + settings.title);
+            console.groupCollapsed("Init Layer " + settings.title);
             if (settings.vector_tile_url) {
               const layer = new MapLibreLayer(settings, true, stelle);
               layer.appendToApp();
-              // stelle.finishLayerReading(layer);
             } else {
               const layer = new Layer(stelle, settings);
               this.addLayer(layer);
               // layer.appendToApp();
               try {
-                console.log("Layer " + layer.title + ": Only read data from local database.");
+                console.log("Layer " + layer.title + ": reading data from local database.");
                 await layer.readData(); // include drawFeatures
               } catch (error) {
                 const msg = `Fehler beim lesen der Daten des Layers "${layer.get("title")}" ${error.message}`;
                 console.error(error);
                 kvm.msg(msg, "App-Start");
               }
-
-              // if (navigator.onLine && layer.hasSyncPrivilege && layer.get("autoSync")) {
-              //   if (layer.hasEditPrivilege) {
-              //     try {
-              //       console.log("Layer " + layer.title + ": SyncData with local deltas if exists.");
-              //       // TODO Deltas
-              //       // layer.syncData();
-              //     } catch ({ name, message }) {
-              //       kvm.msg("Fehler beim synchronisieren des Layers id: " + layer.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
-              //     }
-              //     try {
-              //       console.log("Layer " + layer.title + ": SyncImages with local images if exists.");
-              //       // TODO Deltas
-              //       // layer.syncImages();
-              //     } catch ({ name, message }) {
-              //       kvm.msg("Fehler beim synchronisieren der Bilder des Layers id: " + layer.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
-              //     }
-              //   } else {
-              //     console.log("Layer " + layer.title + ": Only get deltas from server.");
-              //     try {
-              //       // TODO Deltas
-              //       // layer.sendDeltas({ rows: [] });
-              //     } catch ({ name, message }) {
-              //       kvm.msg("Fehler beim senden der Deltas des Layers id: " + layer.getGlobalId() + "! Fehlertyp: " + name + " Fehlermeldung: " + message);
-              //     }
-              //   }
-              // } else {
-              //   try {
-              //     console.log("Layer " + layer.title + ": Only read data from local database.");
-              //     await layer.readData(); // include drawFeatures
-              //   } catch (error) {
-              //     const msg = `Fehler beim lesen der Daten des Layers "${layer.get("title")}" ${error.message}`;
-              //     console.error(error);
-              //     kvm.msg(msg, "App-Start");
-              //   }
-              // }
               if (layer.get("id") == kvm.store.getItem("activeLayerId")) {
                 layer.isActive = true;
                 kvm.setActiveLayer(layer);
               }
             }
-            // console.groupEnd();
+            console.groupEnd();
           }
 
           stelle.sortOverlays();
@@ -883,8 +837,10 @@ export class Kvm extends PropertyChangeSupport {
           // ToDo pk: Synchronisieren
           if (kvm.getConfigurationOption("autoSync")) {
             try {
-              console.log(`autoSync steht auf: ${kvm.getConfigurationOption("autoSync")} Synchronisiere mit Server.`);
-              const result = await kvm.syncLayers();
+              console.groupCollapsed(`autoSync is ${kvm.getConfigurationOption("autoSync")}. Synchronisiere mit Server.`);
+              const result = await this.syncLayers();
+              console.info("Synchronisation wurde durchgeführt", result);
+              console.groupEnd();
             } catch (ex) {
               Util.alertNative("Beim Synchronisieren trat ein Fehler auf. Ursache: " + ex.message, "Warnung");
             }
@@ -1425,19 +1381,22 @@ export class Kvm extends PropertyChangeSupport {
       const deleteConfirmed = await Util.confirm("Datensatz wirklich Löschen?", "", "ja", "nein");
       if (deleteConfirmed) {
         const id_attribute = kvm._activeLayer.get("id_attribute");
-        console.log("Lösche Feature " + id_attribute + ": " + kvm._activeLayer.activeFeature.getDataValue(id_attribute));
+        console.groupCollapsed("Lösche Feature " + id_attribute + ": " + kvm._activeLayer.activeFeature.getDataValue(id_attribute));
         try {
           await kvm._activeLayer.runDeleteStrategy();
+          const feature = this._activeFeature;
+          this._activeLayer.removeFeature(feature);
           if (this.getConfigurationOption("autoSync") && this.networkStatus.online) {
             const activeLayerId = this._activeLayer.getGlobalId();
             const syncResults = await this.syncLayers();
-            this.activateFeature(activeLayerId, null);
-          } else {
-            this._activeLayer.afterDeleteDataset();
+            console.info("Synchronisation erfolgreich", syncResults);
+            this.setActiveLayer(activeLayerId);
           }
+          this.afterDeleteDataset(feature);
         } catch (ex) {
           console.error("Fehler beim Löschen", ex);
         }
+        console.groupEnd();
       }
       sperrBildschirm.close();
     } else {
@@ -1447,10 +1406,17 @@ export class Kvm extends PropertyChangeSupport {
 
   async saveFeatureButtonClicked(evt: MouseEvent) {
     sperrBildschirm.show();
-    try {
-      // printing all Changes fro debug reasons
-      console.table(kvm._activeLayer.getAllChanges("insert"));
+    let feature = kvm._activeLayer.activeFeature;
+    let layer = kvm._activeLayer;
+    const id_attribute = kvm._activeLayer.get("id_attribute");
+    console.groupCollapsed("saveFeature " + id_attribute + ":" + feature.getDataValue(id_attribute) + " neu:" + (feature.new ? "ja" : "nein"));
 
+    try {
+      const action = feature.new ? "insert" : "update";
+      const changes = layer.getAllChanges(action);
+      // printing all Changes fro debug reasons
+      // console.table(kvm._activeLayer.getAllChanges("insert"));
+      console.table(changes);
       let validationErrMsg: string = "";
 
       const notNullErrMsg: string = kvm._activeLayer.notNullValid();
@@ -1467,12 +1433,12 @@ export class Kvm extends PropertyChangeSupport {
       //   }
       // }
 
-      const notFKValidErrMsg: string = kvm._activeLayer.notFKValid();
+      const notFKValidErrMsg: string = layer.notFKValid();
       if (notFKValidErrMsg) {
         validationErrMsg += `\n\n${notFKValidErrMsg}`;
       }
 
-      const notGeomValid: string = kvm._activeLayer.notGeomValid();
+      const notGeomValid: string = layer.notGeomValid();
       if (notGeomValid) {
         validationErrMsg += `\n\nSie haben noch keine Koordinaten erfasst!`;
       }
@@ -1480,37 +1446,32 @@ export class Kvm extends PropertyChangeSupport {
       if (validationErrMsg) {
         kvm.msg(validationErrMsg, "Formular");
       } else {
-        const action = kvm._activeLayer.activeFeature.new ? "insert" : "update";
         let saveConfirmed = true;
         if (kvm.config.confirmSave) {
-          saveConfirmed = await Util.confirm("Datensatz Speichern?", kvm._activeLayer.title, "Speichern", "Abbruch");
+          saveConfirmed = await Util.confirm("Datensatz Speichern?", layer.title, "Speichern", "Abbruch");
         }
         if (saveConfirmed) {
-          const changes = kvm._activeLayer.getAllChanges(action);
-          let rs;
+          feature.setEditable(false);
           if (changes?.length > 0) {
             if (action == "insert") {
-              rs = await kvm._activeLayer.runInsertStrategy(changes);
+              await layer.runInsertStrategy(changes);
             } else {
-              rs = await kvm._activeLayer.runUpdateStrategy(changes);
-
-              kvm._activeLayer.fire(new PropertyChangeEvent(kvm._activeLayer, Layer.EVENTS.FEATURE_CHANGED, null, null));
+              await layer.runUpdateStrategy(changes);
+              layer.fire(new PropertyChangeEvent(kvm._activeLayer, Layer.EVENTS.FEATURE_CHANGED, null, null));
             }
             if (this.getConfigurationOption("autoSync") && this.networkStatus.online) {
-              const activeLayerId = this._activeLayer.getGlobalId();
-              const activeFeatureId = this._activeFeature.id;
+              const activeLayerId = layer.getGlobalId();
+              const activeFeatureId = feature.id;
               const syncResults = await this.syncLayers();
+              console.info("Synchronisation erfolgreich", syncResults);
               this.activateFeature(activeLayerId, activeFeatureId);
-            } else {
-              this._activeFeature.setData(rs.rows.item(0));
-              if (this._activeLayer.hasGeometry) {
-                this._activeLayer.saveGeometry(this._activeFeature);
-              }
+              layer = this._activeLayer;
+              feature = this._activeFeature;
             }
             if (action === "insert") {
-              this._activeLayer.afterCreateDataset(rs);
+              layer.afterCreateDataset(feature);
             } else {
-              this._activeLayer.afterUpdateDataset(rs);
+              layer.afterUpdateDataset(feature);
             }
           } else {
             sperrBildschirm.close("Keine Änderungen! Zum Abbrechen verwenden Sie den Button neben Speichern-Button.");
@@ -1524,6 +1485,23 @@ export class Kvm extends PropertyChangeSupport {
       // Util.alertNative("Beim Speicher tratt ein Fehler auf." + JSON.stringify(ex))
       // kvm.msg("Beim Speicher tratt ein Fehler auf. " + JSON.stringify(ex));
       console.error("Beim Speichern trat ein Fehler auf.", ex);
+    }
+    console.groupEnd();
+  }
+
+  /**
+   *
+   *
+   */
+  afterDeleteDataset(f: Feature) {
+    const parentFeature = f.findParentFeature();
+    if (parentFeature) {
+      kvm.editFeature(parentFeature);
+    } else {
+      //console.log('Wechsel die Ansicht zur Featurelist.');
+      kvm.showView(!kvm.menu.isActiveView("map") ? "featurelist" : "map");
+      //console.log('Scroll die FeatureListe nach ganz oben');
+      kvm.showNextItem(kvm.getConfigurationOption("viewAfterDelete"), f.layer);
     }
   }
 
@@ -1775,8 +1753,8 @@ export class Kvm extends PropertyChangeSupport {
       } else {
         //console.log("Änderungen am vorhandenen Feature verwerfen.");
         activeLayer.cancelEditGeometry(activeFeature.id); // Editierung der Geometrie abbrechen
-        activeLayer.loadFeatureToForm(activeFeature, { editable: false }); // Formular mit ursprünglichen Daten laden
-
+        // rtr activeLayer.loadFeatureToForm(activeFeature, { editable: false }); // Formular mit ursprünglichen Daten laden
+        this.viewFormular.loadFeatureToForm(activeFeature);
         if (kvm.controller.mapper.isMapVisible()) {
           // ToDo editableLayer existier im Moment nur, wenn man den Änderungsmodus im Popup in der Karte ausgelößt hat.
           // auch noch für neue Features einbauen.
@@ -1833,13 +1811,21 @@ export class Kvm extends PropertyChangeSupport {
    * Function open form to edit feature with featureId in layer with layerId.
    * If activeFeature has open changes a confirm dialog comes up.
    * Edit form only open if user confirm else nothing happens.
-   * @param layerId
-   * @param featureId
+   * @param feature
    */
-  async editFeature(layerId, featureId) {
+  async editFeature(feature: Feature): Promise<void>;
+  async editFeature(layerId: string, featureId: string): Promise<void>;
+  async editFeature(layerId: string | Feature, featureId?: string) {
     console.error(`editFeature(${layerId}, ${featureId}`);
-    const layer = kvm.getLayer(layerId);
-    const feature = layer.getFeature(featureId);
+    let layer: Layer;
+    let feature: Feature;
+    if (typeof layerId === "string") {
+      layer = this.getLayer(layerId);
+      feature = layer.getFeature(featureId);
+    } else {
+      feature = layerId;
+      layer = feature.layer;
+    }
     // ToDo:
     //parentLayerId und parentFeatureId müssen woanders hier kommen
     // denn editFeature kann ja auch von einem subform kommen in dem
@@ -2148,10 +2134,19 @@ export class Kvm extends PropertyChangeSupport {
     return sql;
   }
 
-  msg(msg, title = "") {
-    if (msg) {
-      navigator.notification.confirm(msg, function (buttonIndex) {}, title, ["ok"]);
-    }
+  msg(msg: string, title: string = "") {
+    return new Promise<void>((resolve, reject) => {
+      if (msg) {
+        navigator.notification.confirm(
+          msg,
+          function (buttonIndex) {
+            resolve();
+          },
+          title,
+          ["ok"]
+        );
+      }
+    });
   }
 
   mapHint(msg: string, showTime = 2500, fadeTime = 1000) {

@@ -1,5 +1,5 @@
 import * as wkx from "wkx";
-import { CircleMarker, GeoJSON, Layer as LeafletLayer, Marker, Path, Point } from "leaflet";
+import { CircleMarker, GeoJSON, Layer as LeafletLayer, Marker, Path, Point, Polygon, Polyline } from "leaflet";
 import { kvm } from "./app";
 import { Layer } from "./Layer";
 import { Klasse } from "./Klasse";
@@ -49,7 +49,7 @@ export class Feature {
 
   listElement: HTMLElement;
 
-  leafletLayer: CircleMarker | Path;
+  leafletLayer: CircleMarker | Polyline | Polygon;
 
   constructor(data: any = {}, layer: Layer, isNew?: boolean) {
     this.new = isNew ?? true;
@@ -460,10 +460,9 @@ export class Feature {
       if (this.layer.settings.geometry_type == "Point") {
         console.log("flyTo %s %o", this.isEditable ? "editableLayer: " : "feature latlng: ", layer.getLatLng());
         if (zoom) {
-          kvm.map.flyTo(layer.getLatLng(), 18, { animate: false});
-        }
-        else {
-          kvm.map.panTo(layer.getLatLng(), { animate: false});
+          kvm.map.flyTo(layer.getLatLng(), 18, { animate: false });
+        } else {
+          kvm.map.panTo(layer.getLatLng(), { animate: false });
         }
         // kvm.map.panTo(layer.getLatLng());
       } else {
