@@ -70,15 +70,15 @@ export class Menu {
 
     this.editFeatureButton.addEventListener("click", () => {
       const layer = app.getActiveLayer();
-      layer.editFeature(layer.activeFeature);
+      app.editFeature(layer.activeFeature);
     });
 
     this.newFeatureButton.addEventListener("click", async () => {
       sperrBildschirm.show();
       try {
         const layer = this.app.getActiveLayer();
-        const newFeature = await layer.newFeature();
-        await layer.editFeature(newFeature);
+        const newFeature = await layer.createNewFeature();
+        await app.editFeature(newFeature);
         sperrBildschirm.close();
       } catch (error) {
         console.error(error);
@@ -89,8 +89,8 @@ export class Menu {
     this.tplFeatureButton.addEventListener("click", async () => {
       const layer = this.app.getActiveLayer();
       const tplId = layer.activeFeature.id;
-      const f = await layer.newFeature();
-      layer.editFeature(f);
+      const f = await layer.createNewFeature();
+      app.editFeature(f);
       layer.loadTplFeatureToForm(tplId);
     });
 
@@ -105,7 +105,7 @@ export class Menu {
         navigator.notification.confirm(
           "Änderungen verwerfen?",
           (buttonIndex) => {
-            if (buttonIndex == 1) {
+            if (buttonIndex === 1) {
               this.app.cancelEditFeature();
             }
           },

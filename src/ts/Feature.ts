@@ -195,18 +195,18 @@ export class Feature {
    * und lößt den Trigger aus, der angibt, dass sich die Geom des Features geändert hat.
    */
   setGeom(wkx: wkx.Geometry) {
-    console.log("setGeom mit wkx: %o", wkx);
-    console.log("Überschreibe oldGeom: %o mit newGeom: %o", this.oldGeom, this.newGeom);
+    console.error("setGeom mit wkx: %o", wkx);
+    console.log("Überschreibe oldGeom: %o mit newGeom: %o", this.geom, this.newGeom);
     const oldGeom = this.newGeom;
     // console.log("Überschreibe newGeom mit wkx: %o", wkx);
     this.newGeom = wkx;
     // console.log("vergleiche oldGeom: %o mit newGeom: %o", oldGeom, this.newGeom);
 
-    if (oldGeom != this.newGeom) {
-      // console.log("Neuer Wert wurde gesetzt. Löse Trigger geomChanged mit exclude wkx aus.");
-      document.dispatchEvent(new CustomEvent("geomChanged", { detail: { geom: this.newGeom, exclude: "wkx" } }));
-      // $(document).trigger("geomChanged", [{ geom: this.newGeom, exclude: "wkx" }]);
-    }
+    // if (oldGeom != this.newGeom) {
+    //   // console.log("Neuer Wert wurde gesetzt. Löse Trigger geomChanged mit exclude wkx aus.");
+    //   document.dispatchEvent(new CustomEvent("geomChanged", { detail: { geom: this.newGeom, exclude: "wkx" } }));
+    //   // $(document).trigger("geomChanged", [{ geom: this.newGeom, exclude: "wkx" }]);
+    // }
   }
   oldGeom(arg0: string, oldGeom: any, newGeom: any) {
     throw new Error("Method not implemented.");
@@ -503,7 +503,7 @@ export class Feature {
    * @param boolean zoom Wenn Feature eine Geometrie hat und zoom=true wird auch auf das Feature gezoomt.
    */
   activate(zoom: boolean) {
-    // console.error(`zzz feature.activate ${this.layer?.title}`, this);
+    console.error(`zzz feature.activate ${this.layer?.title} ${this.getDataValue(this.layer.get("id_attribute"))}`, this);
     // if (!this.layer.isActive) {
     //   this.layer.activate();
     // }
@@ -562,6 +562,7 @@ export class Feature {
       //kvm.map.zoomOut(); // To refresh layer style
       // }
       this.leafletLayer.closePopup();
+      this.leafletLayer.unbindPopup();
     }
     // $(".feature-item").removeClass("selected-feature-item");
     this._isActive = false;

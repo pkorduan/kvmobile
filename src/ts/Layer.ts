@@ -1204,7 +1204,7 @@ export class Layer extends PropertyChangeSupport {
   /**
    * Setzt die Werte des Features im dataView
    */
-  loadFeatureToView(feature: Feature, options = {}) {
+  async loadFeatureToView(feature: Feature, options = {}) {
     console.groupCollapsed(this.get("title") + ": Lade Feature in View.");
 
     for (const attr of this.attributes) {
@@ -1216,6 +1216,10 @@ export class Layer extends PropertyChangeSupport {
         //   .map((attr) => {
         const key = attr.get("name");
         const val = feature.getDataValue(key) == "null" ? null : feature.getDataValue(key);
+
+        if (attr.get("visible") === "0") {
+          attr.viewField.hide();
+        }
 
         if (attr.hasVisibilityDependency()) {
           kvm.getActiveLayer().vcheckAttributes(key, val, attr.viewField, "dataView");
@@ -1372,7 +1376,7 @@ export class Layer extends PropertyChangeSupport {
 
       // Das angeklickte Feature selektieren wenn der Layer selektiert ist zu dem das Feature gehört
       // und gerade kein anderes feature editiert wird.
-      vectorLayer.on("click", this.popupOpen);
+      vectorLayer.on("click", kvm.featureClicked);
       // poupuclose event must not be considered because if the feature behind the popup
       // witch has to be closed will be unselected only if another feature is selected
       // popup close shall realy only close the popup not more.
@@ -1484,7 +1488,7 @@ export class Layer extends PropertyChangeSupport {
       editAnchor.href = "#";
       editAnchor.title = "Geometrie ändern";
       editAnchor.addEventListener("click", () => {
-        this.editFeature(feature);
+        kvm.editFeature(feature);
       });
       const span = Util.createHtmlElement("span", editAnchor, "fa-stack fa-lg");
       Util.createHtmlElement("i", span, "fa fa-square fa-stack-2x");
@@ -1685,18 +1689,16 @@ export class Layer extends PropertyChangeSupport {
   }
 
   /**
-   * Deselectiert das aktive Feature falls vorhanden
-   * Legt ein neues Feature Objekt ohne Geometry an und
-   * ordnet diese activeFeature zu
+   * erzeugt und initialisert eine neus Feature dieses Layers
    */
-  async newFeature(copyData?: { [id: string]: any }) {
+  async createNewFeature(copyData?: { [id: string]: any }) {
     console.log("Layer.newFeature");
-    this.deactivateFeature();
-    const feature = (this._activeFeature = new Feature(await this.getNewData(), this, true));
+    // this.deactivateFeature();
+    const feature = new Feature(await this.getNewData(), this, true);
     if (copyData) {
       feature.setCopyData(copyData);
     }
-    kvm.setActiveFeature(feature);
+    // kvm.setActiveFeature(feature);
 
     // if (this.get("geometry_type") === "Point") {
     //   const result = await Util.getCurrentPosition();
@@ -1725,7 +1727,7 @@ export class Layer extends PropertyChangeSupport {
     //   }
     // }
     // kvm.setActiveFeature(feature);
-    console.log(`Neues Feature mit id: ${this.activeFeature.id} erzeugt.`);
+    console.log(`Neues Feature mit id: ${feature.id} erzeugt.`);
     return feature;
   }
 
@@ -1953,7 +1955,7 @@ export class Layer extends PropertyChangeSupport {
       this.activateFeature(feature, false);
     } else {
       // Beende das Anlegen eines neuen Features
-      kvm.map.removeLayer(kvm.getActiveLayer().activeFeature.editableLayer);
+      kvm.map.removeLayer(kvm.getActiveFeature().editableLayer);
       // Löscht die editierbare Geometrie
       feature.deactivate();
       kvm.showView("map");
@@ -2125,6 +2127,7 @@ export class Layer extends PropertyChangeSupport {
 
   collectChanges(action: string): AttributteDelta[] {
     //kvm.log("Layer.collectChanges " + (action ? " with action: " + action : ""), 4);
+    console.groupCollapsed("collectChanges");
     const activeFeature = this.activeFeature;
     // changes = [];
 
@@ -2173,7 +2176,7 @@ export class Layer extends PropertyChangeSupport {
       })
       .filter((change) => change);
     console.info("changes:", changes);
-
+    console.groupEnd();
     return changes;
   }
 
@@ -2240,7 +2243,7 @@ export class Layer extends PropertyChangeSupport {
   /**
    * Function, die nach dem erfolgreichen Eintragen eines INSERT - Deltas Entrages ausgeführt werden soll
    */
-  afterCreateDataset(f: Feature) {
+  async afterCreateDataset(f: Feature) {
     console.log("afterCreateDataset");
 
     //console.log("set data for activeFeature: %o", rs.rows.item(0));
@@ -2257,8 +2260,8 @@ export class Layer extends PropertyChangeSupport {
     // }
     if (kvm.getConfigurationOption("newAfterCreate")) {
       console.log("option newAfterCreate is on");
-      this.newFeature(f.data);
-      this.editFeature(this.activeFeature);
+      const newFeature = await this.createNewFeature(f.data);
+      kvm.editFeature(newFeature);
     } else {
       this.loadFeatureToView(this.activeFeature);
       kvm.showNextItem(kvm.getConfigurationOption("viewAfterCreate"), this);
@@ -3226,15 +3229,15 @@ export class Layer extends PropertyChangeSupport {
     // this.loadFeatureToView(feature, { editable: false });
   }
 
-  /**
-   * Deactivate the selected feature if layer have one
-   */
-  deactivateFeature() {
-    if (this.activeFeature) {
-      this.activeFeature.deactivate();
-      this.setActiveFeature(null);
-    }
-  }
+  // /**
+  //  * Deactivate the selected feature if layer have one
+  //  */
+  // deactivateFeature() {
+  //   if (this.activeFeature) {
+  //     this.activeFeature.deactivate();
+  //     this.setActiveFeature(null);
+  //   }
+  // }
 
   /**
    * Function cancel current geometry edit,
@@ -3259,8 +3262,8 @@ export class Layer extends PropertyChangeSupport {
     subLayer.activate();
     const values = {};
     values[options.fkAttribute] = options.parentFeatureId;
-    const feature = await subLayer.newFeature(values);
-    await subLayer.editFeature(feature);
+    const feature = await subLayer.createNewFeature(values);
+    await kvm.editFeature(feature);
     // kvm.closeSperrDiv(`Neues Formular für Layer ${subLayer.title} geladen.`);
     sperrBildschirm.close();
   }

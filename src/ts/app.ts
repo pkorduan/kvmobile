@@ -21,7 +21,7 @@ import { Mapper } from "./controller/mapper";
 import maplibregl from "maplibre-gl";
 import "process";
 import { MapLibreLayer } from "./MapLibreLayer";
-import { Control, DomUtil, LatLngBounds, ErrorEvent as LErrorEvent, Map as LMap, Point as LPoint, Renderer, SVG } from "leaflet";
+import { Control, DomUtil, LatLngBounds, LeafletEvent, ErrorEvent as LErrorEvent, Map as LMap, Point as LPoint, Renderer, SVG } from "leaflet";
 import { objectToString, sperrBildschirm } from "./SperrBildschirm";
 import { Menu, ViewName } from "./Menu";
 import { PropertyChangeEvent, PropertyChangeSupport } from "./Observable";
@@ -36,6 +36,8 @@ import { ViewDataView } from "./views/ViewDataView";
 import { ViewFormular } from "./views/ViewFormular";
 import { LayerCtrl } from "./LayerCtrl";
 import * as Util from "./Util";
+
+import { Layer as LeafletLayer } from "leaflet";
 
 require("leaflet");
 require("leaflet.locatecontrol");
@@ -131,6 +133,7 @@ export class Kvm extends PropertyChangeSupport {
   viewFeatureList: ViewFeatureList;
   viewDataView: ViewDataView;
   viewFormular: ViewFormular;
+  isEditMode: boolean = false;
 
   constructor() {
     super();
@@ -843,6 +846,9 @@ export class Kvm extends PropertyChangeSupport {
               console.groupEnd();
             } catch (ex) {
               Util.alertNative("Beim Synchronisieren trat ein Fehler auf. Ursache: " + ex.message, "Warnung");
+              console.error("Beim Synchronisieren trat ein Fehler auf.", ex);
+
+              this.writeLog(ex);
             }
           }
         } else {
@@ -1469,9 +1475,9 @@ export class Kvm extends PropertyChangeSupport {
               feature = this._activeFeature;
             }
             if (action === "insert") {
-              layer.afterCreateDataset(feature);
+              await layer.afterCreateDataset(feature);
             } else {
-              layer.afterUpdateDataset(feature);
+              await layer.afterUpdateDataset(feature);
             }
           } else {
             sperrBildschirm.close("Keine Änderungen! Zum Abbrechen verwenden Sie den Button neben Speichern-Button.");
@@ -1496,12 +1502,12 @@ export class Kvm extends PropertyChangeSupport {
   afterDeleteDataset(f: Feature) {
     const parentFeature = f.findParentFeature();
     if (parentFeature) {
-      kvm.editFeature(parentFeature);
+      this.editFeature(parentFeature);
     } else {
       //console.log('Wechsel die Ansicht zur Featurelist.');
-      kvm.showView(!kvm.menu.isActiveView("map") ? "featurelist" : "map");
+      this.showView(!this.menu.isActiveView("map") ? "featurelist" : "map");
       //console.log('Scroll die FeatureListe nach ganz oben');
-      kvm.showNextItem(kvm.getConfigurationOption("viewAfterDelete"), f.layer);
+      this.showNextItem(this.getConfigurationOption("viewAfterDelete"), f.layer);
     }
   }
 
@@ -1738,13 +1744,14 @@ export class Kvm extends PropertyChangeSupport {
    */
   cancelEditFeature() {
     const activeLayer = this._activeLayer;
-    const activeFeature = activeLayer.activeFeature;
+    const activeFeature = this._activeFeature;
 
     if (activeLayer.hasGeometry) {
       //console.log("Feature ist neu? %s", activeFeature.new);
       if (activeFeature.new) {
         //console.log("Änderungen am neuen Feature verwerfen.");
         activeLayer.cancelEditGeometry();
+        this.setActiveFeature(null);
         if (kvm.controller.mapper.isMapVisible()) {
           kvm.showView("map");
         } else {
@@ -1773,7 +1780,9 @@ export class Kvm extends PropertyChangeSupport {
         }
       }
       kvm.showView("dataView");
+      this.isEditMode = false;
     }
+
     kvm.controller.mapper.clearWatch(); // GPS-Tracking ausschalten
   }
 
@@ -1798,6 +1807,7 @@ export class Kvm extends PropertyChangeSupport {
     if (this._activeLayer && this._activeLayer.activeFeature) {
       const changes = this._activeLayer.collectChanges("update");
       if (changes.length > 0) {
+        console.error(`app.newSubFeature changes: ${this._activeFeature.layer.title} ${this._activeFeature.getDataValue(this._activeLayer.get("id_attribute"))}`);
         const cancel = await Util.confirm("Es sind noch offene Änderungen. Diese müssen erst gespeichert werden.", "Bitte Bestätigen", "Abbrechen", "Ohne Speichern Fortfahren");
         if (cancel) {
           return;
@@ -1816,7 +1826,6 @@ export class Kvm extends PropertyChangeSupport {
   async editFeature(feature: Feature): Promise<void>;
   async editFeature(layerId: string, featureId: string): Promise<void>;
   async editFeature(layerId: string | Feature, featureId?: string) {
-    console.error(`editFeature(${layerId}, ${featureId}`);
     let layer: Layer;
     let feature: Feature;
     if (typeof layerId === "string") {
@@ -1826,6 +1835,8 @@ export class Kvm extends PropertyChangeSupport {
       feature = layerId;
       layer = feature.layer;
     }
+    console.error(`editFeature(${layer.title}, ${feature.getDataValue(layer.get("id_attribute"))}`);
+    this.isEditMode = true;
     // ToDo:
     //parentLayerId und parentFeatureId müssen woanders hier kommen
     // denn editFeature kann ja auch von einem subform kommen in dem
@@ -1838,19 +1849,21 @@ export class Kvm extends PropertyChangeSupport {
     // für die es auch layer in der Stelle gibt, um sicher zu gehen dass die Tabellen auch da sind.
     // Wenn man die Query nimmt kann man auch Joins machen und die in notsaveable-Attributes anzeigen.
     // Wie in kvwmap halt.
-    if (kvm._activeLayer && kvm._activeLayer.activeFeature) {
-      layer.parentLayerId = kvm._activeLayer.getGlobalId();
-      layer.parentFeatureId = kvm._activeLayer.activeFeature.id;
-      const changes = kvm._activeLayer.collectChanges(kvm._activeLayer.activeFeature.new ? "insert" : "update");
+    if (this._activeFeature) {
+      layer.parentLayerId = this._activeLayer.getGlobalId();
+      layer.parentFeatureId = kvm._activeFeature.id;
+      const changes = kvm._activeLayer.collectChanges(kvm._activeFeature.new ? "insert" : "update");
       if (changes.length > 0) {
+        console.error(`layer.editFeature: changes: ${this._activeFeature.layer.title} ${this._activeFeature.getDataValue(layer.get("id_attribute"))}`);
         const cancel = await Util.confirm("Es sind noch offene Änderungen. Diese müssen erst gespeichert werden.", "", "Abbrechen", "Ohne Speichern Fortfahren");
         if (cancel) {
           return;
         }
       }
+      this.setActiveFeature(null);
     }
     this.setActiveFeature(feature);
-    // layer.editFeature(featureId);
+    layer.editFeature(feature);
   }
 
   loadLogLevel() {
@@ -1863,6 +1876,26 @@ export class Kvm extends PropertyChangeSupport {
     }
     $("#logLevel").val(logLevel);
   }
+
+  featureClicked = (evt: LeafletEvent) => {
+    console.groupCollapsed("featureClicked isEditMode=" + this.isEditMode);
+    const leafletLayer = <LeafletLayer>evt.target;
+    const feature = <Feature>evt.target["feature"];
+    console.info(`clickedFeature: ${feature.layer.title} ${feature.getDataValue(feature.layer.get("id_attribute"))}`);
+    if (feature.isActive) {
+      this.setActiveFeature(null);
+      feature.deactivate();
+      leafletLayer.unbindPopup();
+    } else {
+      if (this.isEditMode) {
+        this.editFeature(feature);
+      } else {
+        this.setActiveFeature(feature);
+        feature.activate(false);
+      }
+    }
+    console.groupEnd();
+  };
 
   async openLogFile() {
     console.info("openLogFile " + kvm.getConfigurationOption("localBackupPath"));
@@ -1903,7 +1936,7 @@ export class Kvm extends PropertyChangeSupport {
         break;
       case "formular":
         {
-          layer.editFeature(layer.activeFeature);
+          this.editFeature(this.getActiveFeature());
         }
         break;
       case "last":
@@ -2196,7 +2229,7 @@ export class Kvm extends PropertyChangeSupport {
 
     if (!kvm.isValidJsonString(layerResult)) {
       // kvm.log("Das Ergebnis der Layerdatenanfrage ist kein JSON!", 4);
-      const errMsg = "Fehler beim Abfragen der Layerdaten. Abfrage liefert keine korrekten Daten vom Server. Entweder sind keine auf dem Server vorhanden, die URL der Anfrage ist nicht korrekt oder der es wird eine Fehlermeldung vom Server geliefert statt der Daten.\nURL der Anfrage:\n" + (<any>kvm._activeStelle).getLayerUrl({ hidePassword: true }) + "\nZurückgelieferte Result:\n" + layerResult;
+      const errMsg = "Fehler beim Abfragen der Layerdaten. Abfrage liefert keine korrekten Daten vom Server. Entweder sind keine auf dem Server vorhanden, die URL der Anfrage ist nicht korrekt oder der es wird eine Fehlermeldung vom Server geliefert statt der Daten.\nURL der Anfrage:\n" + this._activeStelle.get("url") + "\nZurückgelieferte Result:\n" + layerResult;
       return { success: false, errMsg: errMsg };
     }
 

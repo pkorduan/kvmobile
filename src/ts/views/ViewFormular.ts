@@ -200,6 +200,11 @@ export class ViewFormular extends View {
         // Blende Attribute aus, die keinen Wert haben und nur lesbar sind.
         // $(`#formFieldDiv_${attr.get("index")}`).hide();
       }
+
+      if (attr.get("visible") === "0") {
+        attr.formField.hide();
+      }
+
       if (this.app.coalesce(attr.get("required_by"), "") != "") {
         // TODO rtr
         const required_by_idx = layer.attribute_index[attr.get("required_by")];
@@ -215,12 +220,13 @@ export class ViewFormular extends View {
   }
 
   private async _updateFeature(f: Feature) {
+    console.log("ViewFormular._updateFeature", f);
     try {
       this.app.menu.enableSaveFeatureButton(false);
       if (f) {
         this._createForm(f.layer);
         console.log("ViewFormular._updateFeature=>loadFeatureToForm");
-        // await this.loadFeatureToForm(f, { editable: false });
+        await this.loadFeatureToForm(f, { editable: false });
       }
     } catch (ex) {
       await Util.showError("Fehler beim Aktivieren des Features im Formular", ex);
