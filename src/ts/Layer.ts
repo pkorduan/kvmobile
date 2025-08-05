@@ -386,8 +386,8 @@ export class Layer extends PropertyChangeSupport {
     // console.log(`Read Vorschaudatensätze für Attribute ${attribute.settings.name} Layer ${subLayer.title} with sql`, [sql]);
     // Das folgende geht noch nicht weil die Tabellen nicht so benannt sind  wie in sqlite
     //let sql = `${this.settings.query} AND ${filter.join(' AND ')}`;
-    vorschauElement.innerHTML = "";
-    const vorschauElements = [];
+    // vorschauElement.innerHTML = "";
+    // const vorschauElements = [];
     try {
       const rs = await Util.executeSQL(kvm.db, sql);
       // console.log("Layer.readVorschauAttributes");
@@ -397,8 +397,6 @@ export class Layer extends PropertyChangeSupport {
       if (numRows === 0) {
         vorschauElement.innerHTML = "keine";
       } else {
-        // console.log('vorschauOption: ', vorschauOption);
-        // const keys = Object.keys(rs.rows.item(0));
         const htmlList = Util.createHtmlElement("ul", null, "subFormEmbeddedPKFormField-list");
         const vorschauOptions = vorschauOption.split(" ");
         for (let i = 0; i < numRows; i++) {
@@ -412,18 +410,13 @@ export class Layer extends PropertyChangeSupport {
             }
             return value;
           });
-          // vorschauList = vorschauList + `<li onclick="kvm.${clickFunction}('${subLayerId}', '${item[subLayer.get("id_attribute")]}')" class="pointer">
-          // ${vorschauElements.join(' ')}<i class="fa fa-arrow-right" aria-hidden="true" style="margin-left: 10px"></i></li>`;
-
-          // vorschauList = `${vorschauList} <li onclick="kvm.${clickFunction}('${subLayerId}', '${item[subLayer.get("id_attribute")]}')"
-          // class="pointer">${vorschauElements.join(" ")}<i class="fa fa-arrow-right" aria-hidden="true" style="margin-left: 10px"></i></li>`;
           const vorschauListItem = Util.createHtmlElement("li", htmlList, "pointer");
           vorschauListItem.addEventListener("click", () => {
             kvm[clickFunction](subLayerId, item[subLayer.get("id_attribute")]);
           });
           vorschauListItem.innerHTML = vorschauElements.join(" ") + '<i class="fa fa-arrow-right" aria-hidden="true" style="margin-left: 10px"></i>';
         }
-        // vorschauElement.innerHTML = '<ul class="subFormEmbeddedPKFormField-list">' + vorschauList + "</ul>";
+        vorschauElement.innerHTML = "";
         vorschauElement.append(htmlList);
       }
     } catch (error) {
@@ -1234,8 +1227,8 @@ export class Layer extends PropertyChangeSupport {
           // }
         }
       }
-      console.groupEnd();
     }
+    console.groupEnd();
 
     //this.selectFeature(feature, true);
     if (feature.new) {

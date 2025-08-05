@@ -73,7 +73,7 @@ export class SubFormEmbeddedPKFormField implements Field {
    */
   async setValue(val) {
     const feature = this.attr.layer.activeFeature;
-    console.log("setValue of SubFormEmbeddedPK FormField " + typeof val);
+    console.log("setValue of SubFormEmbeddedPK FormField " + typeof val + " " + this.settings.name, val);
 
     if (feature.new) {
       this.bttNewSubItem.style.display = "none";
@@ -85,7 +85,7 @@ export class SubFormEmbeddedPKFormField implements Field {
     } else {
       this.bttNewSubItem.style.display = "";
       this.spanMsgNewFeature?.remove();
-      this.subItemList.innerHTML = '';
+      this.subItemList.innerHTML = "";
       await this.attr.layer.readVorschauAttributes(this.attr, feature.getDataValue(this.attr.getPKAttribute()), this.subItemList, "editFeature");
     }
   }

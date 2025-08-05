@@ -213,7 +213,6 @@ export class SelectAutoFormField extends AbstractField implements Field {
   }
 
   createAutoSelectField() {
-    // const inputField = (this.txtInputField = createHtmlElement("input", div));
     const wrapper = document.createElement("div");
     const inputField = (this.txtField = createHtmlElement("input", wrapper));
     inputField.id = `${this.settings.index}_autoSelectOutput`;
@@ -222,8 +221,7 @@ export class SelectAutoFormField extends AbstractField implements Field {
     inputField.disabled = this.settings.privilege === "0";
     inputField.style.float = "left";
 
-    const optionsPane = (this.optionsPane = createHtmlElement("div", null, "auto-complete-div"));
-    // optionsPane.id = "${this.settings.index}_autoSelect";
+    this.optionsPane = createHtmlElement("div", null, "auto-complete-div");
 
     const closeBttn = createHtmlElement("i", wrapper, "fa fa-times-circle");
     closeBttn.style.marginLeft = "-26px";
@@ -291,8 +289,9 @@ export class SelectAutoFormField extends AbstractField implements Field {
   }
 
   filterOptionPane(txt: string) {
+    const searchTxt = txt.toLocaleLowerCase();
     this.optionsPane.querySelectorAll("div").forEach((el) => {
-      el.style.display = el.innerHTML.indexOf(txt) >= 0 ? "" : "none";
+      el.style.display = el.innerHTML.toLocaleLowerCase().indexOf(searchTxt) >= 0 ? "" : "none";
     });
   }
 

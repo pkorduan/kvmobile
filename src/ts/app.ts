@@ -192,7 +192,7 @@ export class Kvm extends PropertyChangeSupport {
   }
 
   async setActiveFeature(feature: Feature) {
-    // console.error(`zzz app.setActiveFeature ${feature?.layer?.title}`, feature, this._activeFeature);
+    // console.error(`zzz app.setActiveFeature ${feature?.layer?.title} ${feature?.id}`, this._activeFeature);
     if (this._activeFeature === feature) {
       return;
     }
@@ -1850,9 +1850,10 @@ export class Kvm extends PropertyChangeSupport {
     // für die es auch layer in der Stelle gibt, um sicher zu gehen dass die Tabellen auch da sind.
     // Wenn man die Query nimmt kann man auch Joins machen und die in notsaveable-Attributes anzeigen.
     // Wie in kvwmap halt.
-    if (this._activeFeature) {
-      layer.parentLayerId = this._activeLayer.getGlobalId();
-      layer.parentFeatureId = kvm._activeFeature.id;
+    if (this._activeFeature !== feature) {
+      // rtr TODO ???
+      // layer.parentLayerId = this._activeLayer.getGlobalId();
+      // layer.parentFeatureId = kvm._activeFeature.id;
       const changes = kvm._activeLayer.collectChanges(kvm._activeFeature.new ? "insert" : "update");
       if (changes.length > 0) {
         console.error(`layer.editFeature: changes: ${this._activeFeature.layer.title} ${this._activeFeature.getDataValue(layer.get("id_attribute"))}`);
@@ -1861,7 +1862,7 @@ export class Kvm extends PropertyChangeSupport {
           return;
         }
       }
-      this.setActiveFeature(null);
+      // this.setActiveFeature(null);
     }
     this.setActiveFeature(feature);
     layer.editFeature(feature);

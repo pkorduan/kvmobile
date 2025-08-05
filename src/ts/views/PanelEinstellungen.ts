@@ -872,7 +872,6 @@ export class Sortierung extends PanelEinstellungen {
     this.anzeigeSortSelect.addEventListener("input", () => this.clickedAnzeigeSortSelect());
     this.setLayer(kvm.getActiveLayer());
     kvm.addEventListener(Kvm.EVENTS.ACTIVE_LAYER_CHANGED, (evt) => {
-      console.info("Sortierung", this);
       this.setLayer(evt.newValue);
     });
   }

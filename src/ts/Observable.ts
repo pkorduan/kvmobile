@@ -30,11 +30,6 @@ export class ObservableSupport<T extends ObservableEvent> {
   addEventListener(listener: Listener<T>): void;
   addEventListener(a: string, listener: Listener<T>): void;
   addEventListener(a: string | Listener<T>, listener?: Listener<T>) {
-    // console.info("addListener", a, listener)
-    // let prop: string;
-    let lst: Listener<T>;
-    // let lstn: Listener<T>[];
-
     if (typeof a === "string") {
       if (!this.mapPropToLstn) {
         this.mapPropToLstn = new Map();
@@ -85,7 +80,6 @@ export class ObservableSupport<T extends ObservableEvent> {
   async _fire(event: ObservableEvent, lstn: Listener<T>[]) {
     if (lstn) {
       for (let index = 0; index < lstn.length; index++) {
-        // console.info(lstn[index]);
         await lstn[index].call(this, event);
       }
     }

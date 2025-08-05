@@ -503,7 +503,7 @@ export class Feature {
    * @param boolean zoom Wenn Feature eine Geometrie hat und zoom=true wird auch auf das Feature gezoomt.
    */
   activate(zoom: boolean) {
-    console.error(`zzz feature.activate ${this.layer?.title} ${this.getDataValue(this.layer.get("id_attribute"))}`, this);
+    console.info(`zzz feature.activate ${this.layer?.title} ${this.getDataValue(this.layer.get("id_attribute"))}`, this);
     // if (!this.layer.isActive) {
     //   this.layer.activate();
     // }
