@@ -3,6 +3,7 @@
 
 import { kvm } from "./app";
 import { Attribute, AttributeSetting } from "./Attribute";
+import { Feature } from "./Feature";
 import { AbstractField, Field } from "./Field";
 import { confirm, createHtmlElement, fileExists, getWebviewUrl } from "./Util";
 
@@ -78,7 +79,7 @@ export class BilderFormField extends AbstractField {
    * example: {/var/www/data_streuobst/upload/bilder_kob_baum/1000068112.jpg,/var/www/data_streuobst/upload/bilder_kob_baum/1000068320.jpg}
    * @params any set to '' if val is undefined, null, 'null' or NAN
    */
-  async setValue(pics: string) {
+  async setValue(f: Feature, pics: string) {
     console.log("BilderFormField.setValue kvwmapFilePath=" + pics);
     // console.log("BilderFormField.setValue with value: " + val);
     this._oldValue = pics;
@@ -281,7 +282,7 @@ export class BilderFormField extends AbstractField {
     //console.log('BilderformField.dropAllPictures');
     const confirmed = await confirm("Wirklich alle Bilder in diesem Datensatz Löschen?", "Bitte Bestätigen", "ja", "nein");
     if (confirmed) {
-      this.setValue("");
+      this.setValue(this._feature, "");
       this.fireChanged();
     }
   }

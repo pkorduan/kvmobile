@@ -2,6 +2,7 @@ import { Attribute, AttributeSetting } from "./Attribute";
 import { AbstractField } from "./Field";
 import { kvm } from "./app";
 import { createHtmlElement } from "./Util";
+import { Feature } from "./Feature";
 /*
  * create a textarea form field in the structure
  *   <div class="form-field">
@@ -30,9 +31,10 @@ export class TextfeldFormField extends AbstractField {
     }
   }
 
-  async setValue(val: string) {
+  async setValue(f: Feature, val: string) {
     console.log("TextFormField.setValue with value: " + val);
     this._oldValue = val;
+    this._feature = f;
     if (kvm.coalesce(val, "") == "" && this.attr.settings.default) {
       val = this.attr.settings.default;
     }

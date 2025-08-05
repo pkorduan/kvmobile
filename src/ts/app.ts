@@ -203,7 +203,7 @@ export class Kvm extends PropertyChangeSupport {
     if (feature) {
       this.setActiveLayer(feature.layer);
       this._activeFeature = feature;
-      feature.layer.setActiveFeature(feature);
+      // feature.layer.setActiveFeature(feature);
       // feature.setActive(true);
       feature.activate(true);
     } else {
@@ -1145,22 +1145,22 @@ export class Kvm extends PropertyChangeSupport {
             navigator.notification.confirm(
               "Wie möchten Sie fortfahren?",
               function (buttonIndex) {
-                const lastLatlng = kvm.getActiveLayer().activeFeature.getWaypoint("last");
+                const lastLatlng = kvm._activeFeature.getWaypoint("last");
                 if (buttonIndex == 1) {
                   console.log("Vorhandenen Track löschen und neu beginnen.");
                   // Editierbarkeit ausschalten
-                  kvm.getActiveLayer().activeFeature.editableLayer.disableEdit();
+                  kvm._activeFeature.editableLayer.disableEdit();
                   // LatLngs zurücksetzen
-                  kvm.getActiveLayer().activeFeature.editableLayer.setLatLngs([]);
+                  kvm._activeFeature.editableLayer.setLatLngs([]);
                   // Tracking einschalten (latlngs hinzufügen auch im Hintergrund, wenn das Display aus ist.)
-                  kvm.controller.mapper.startGpsTracking(lastLatlng);
+                  kvm.controller.mapper.startGpsTracking(kvm._activeFeature, lastLatlng);
                   btn.state("track-aufnahme");
                 } else if (buttonIndex == 2) {
                   console.log("Vorhandenen Track weiterzeichnen.");
                   // Editierbarkeit ausschalten
-                  kvm.getActiveLayer().activeFeature.editableLayer.disableEdit();
+                  kvm._activeFeature.editableLayer.disableEdit();
                   // Tracking einschalten (latlngs hinzufügen)
-                  kvm.controller.mapper.startGpsTracking(lastLatlng);
+                  kvm.controller.mapper.startGpsTracking(kvm._activeFeature, lastLatlng);
                   btn.state("track-aufnahme");
                 } else {
                   console.log("Abbruch");
@@ -1185,7 +1185,7 @@ export class Kvm extends PropertyChangeSupport {
                   navigator.geolocation.clearWatch(kvm.controller.mapper.watchId);
                   // Track als Geometrie vom Feature übernehmen
                   //Editierbarkeit einschalten.
-                  kvm.getActiveLayer().activeFeature.editableLayer.enableEdit();
+                  kvm._activeFeature.editableLayer.enableEdit();
                   btn.state("track-aufzeichnen");
                 } else if (buttonIndex == 2) {
                   console.log("Aufnahme unterbrechen.");
@@ -1209,19 +1209,19 @@ export class Kvm extends PropertyChangeSupport {
             navigator.notification.confirm(
               "Wie möchten Sie fortfahren?",
               function (buttonIndex) {
-                const lastLatlng = kvm.getActiveLayer().activeFeature.getWaypoint("last");
+                const lastLatlng = kvm._activeFeature.getWaypoint("last");
                 if (buttonIndex == 1) {
                   console.log("Aufnahme beenden.");
                   // Tracking ausschalten
                   navigator.geolocation.clearWatch(kvm.controller.mapper.watchId);
                   // Track als Geometrie vom Feature übernehmen
                   //Editierbarkeit einschalten.
-                  kvm._activeLayer.activeFeature.editableLayer.enableEdit();
+                  kvm._activeFeature.editableLayer.enableEdit();
                   btn.state("track-aufzeichnen");
                 } else if (buttonIndex == 2) {
                   console.log("Aufnahme fortsetzen.");
                   // Tracking einschalten
-                  kvm.controller.mapper.startGpsTracking(lastLatlng);
+                  kvm.controller.mapper.startGpsTracking(kvm._activeFeature, lastLatlng);
                   btn.state("track-aufnahme");
                 } else {
                   console.log("Abbruch");
@@ -1387,10 +1387,10 @@ export class Kvm extends PropertyChangeSupport {
       const deleteConfirmed = await Util.confirm("Datensatz wirklich Löschen?", "", "ja", "nein");
       if (deleteConfirmed) {
         const id_attribute = kvm._activeLayer.get("id_attribute");
-        console.groupCollapsed("Lösche Feature " + id_attribute + ": " + kvm._activeLayer.activeFeature.getDataValue(id_attribute));
+        console.groupCollapsed("Lösche Feature " + id_attribute + ": " + kvm._activeFeature.getDataValue(id_attribute));
         try {
-          await kvm._activeLayer.runDeleteStrategy();
           const feature = this._activeFeature;
+          await kvm._activeLayer.runDeleteStrategy(feature);
           this._activeLayer.removeFeature(feature);
           this.setActiveFeature(null);
           if (this.getConfigurationOption("autoSync") && this.networkStatus.online) {
@@ -1413,20 +1413,20 @@ export class Kvm extends PropertyChangeSupport {
 
   async saveFeatureButtonClicked(evt: MouseEvent) {
     sperrBildschirm.show();
-    let feature = kvm._activeLayer.activeFeature;
-    let layer = kvm._activeLayer;
+    let feature = kvm._activeFeature;
+    let layer = kvm._activeFeature.layer;
     const id_attribute = kvm._activeLayer.get("id_attribute");
     console.groupCollapsed("saveFeature " + id_attribute + ":" + feature.getDataValue(id_attribute) + " neu:" + (feature.new ? "ja" : "nein"));
 
     try {
       const action = feature.new ? "insert" : "update";
-      const changes = layer.getAllChanges(action);
+      const changes = layer.getAllChanges(feature, action);
       // printing all Changes fro debug reasons
       // console.table(kvm._activeLayer.getAllChanges("insert"));
       console.table(changes);
       let validationErrMsg: string = "";
 
-      const notNullErrMsg: string = kvm._activeLayer.notNullValid();
+      const notNullErrMsg: string = layer.notNullValid();
       if (notNullErrMsg) {
         validationErrMsg += notNullErrMsg;
       }
@@ -1451,19 +1451,19 @@ export class Kvm extends PropertyChangeSupport {
       }
 
       if (validationErrMsg) {
-        kvm.msg(validationErrMsg, "Formular");
+        this.msg(validationErrMsg, "Formular");
       } else {
         let saveConfirmed = true;
-        if (kvm.config.confirmSave) {
+        if (this.config.confirmSave) {
           saveConfirmed = await Util.confirm("Datensatz Speichern?", layer.title, "Speichern", "Abbruch");
         }
         if (saveConfirmed) {
           feature.setEditable(false);
           if (changes?.length > 0) {
             if (action == "insert") {
-              await layer.runInsertStrategy(changes);
+              await layer.runInsertStrategy(feature, changes);
             } else {
-              await layer.runUpdateStrategy(changes);
+              await layer.runUpdateStrategy(feature, changes);
               layer.fire(new PropertyChangeEvent(kvm._activeLayer, Layer.EVENTS.FEATURE_CHANGED, null, null));
             }
             if (this.getConfigurationOption("autoSync") && this.networkStatus.online) {
@@ -1751,7 +1751,7 @@ export class Kvm extends PropertyChangeSupport {
       //console.log("Feature ist neu? %s", activeFeature.new);
       if (activeFeature.new) {
         //console.log("Änderungen am neuen Feature verwerfen.");
-        activeLayer.cancelEditGeometry();
+        activeLayer.cancelEditGeometry(activeFeature);
         this.setActiveFeature(null);
         if (kvm.controller.mapper.isMapVisible()) {
           kvm.showView("map");
@@ -1760,7 +1760,7 @@ export class Kvm extends PropertyChangeSupport {
         }
       } else {
         //console.log("Änderungen am vorhandenen Feature verwerfen.");
-        activeLayer.cancelEditGeometry(activeFeature.id); // Editierung der Geometrie abbrechen
+        activeLayer.cancelEditGeometry(activeFeature); // Editierung der Geometrie abbrechen
         // rtr activeLayer.loadFeatureToForm(activeFeature, { editable: false }); // Formular mit ursprünglichen Daten laden
         this.viewFormular.loadFeatureToForm(activeFeature);
         if (kvm.controller.mapper.isMapVisible()) {
@@ -1805,14 +1805,17 @@ export class Kvm extends PropertyChangeSupport {
    * Input form only open if user confirm else nothing happens.
    */
   async newSubFeature(options: { parentLayerId: string; subLayerId: string; fkAttribute: string; parentFeatureId: any }) {
-    if (this._activeLayer && this._activeLayer.activeFeature) {
-      const changes = this._activeLayer.collectChanges("update");
+    if (this._activeLayer && this._activeFeature) {
+      const changes = this._activeLayer.collectChanges(this._activeFeature, "update");
       if (changes.length > 0) {
         console.error(`app.newSubFeature changes: ${this._activeFeature.layer.title} ${this._activeFeature.getDataValue(this._activeLayer.get("id_attribute"))}`);
         const cancel = await Util.confirm("Es sind noch offene Änderungen. Diese müssen erst gespeichert werden.", "Bitte Bestätigen", "Abbrechen", "Ohne Speichern Fortfahren");
         if (cancel) {
           return;
         }
+      }
+      if (this._activeLayer.hasGeometry) {
+        this._activeLayer.cancelEditGeometry(this._activeFeature);
       }
       await this._activeLayer.newSubDataSet(options);
     }
@@ -1850,11 +1853,11 @@ export class Kvm extends PropertyChangeSupport {
     // für die es auch layer in der Stelle gibt, um sicher zu gehen dass die Tabellen auch da sind.
     // Wenn man die Query nimmt kann man auch Joins machen und die in notsaveable-Attributes anzeigen.
     // Wie in kvwmap halt.
-    if (this._activeFeature !== feature) {
+    if (this._activeFeature && this._activeFeature !== feature) {
       // rtr TODO ???
       // layer.parentLayerId = this._activeLayer.getGlobalId();
       // layer.parentFeatureId = kvm._activeFeature.id;
-      const changes = kvm._activeLayer.collectChanges(kvm._activeFeature.new ? "insert" : "update");
+      const changes = this._activeLayer.collectChanges(this._activeFeature, this._activeFeature.new ? "insert" : "update");
       if (changes.length > 0) {
         console.error(`layer.editFeature: changes: ${this._activeFeature.layer.title} ${this._activeFeature.getDataValue(layer.get("id_attribute"))}`);
         const cancel = await Util.confirm("Es sind noch offene Änderungen. Diese müssen erst gespeichert werden.", "", "Abbrechen", "Ohne Speichern Fortfahren");
@@ -2363,28 +2366,23 @@ export class Kvm extends PropertyChangeSupport {
     return `${jahr}-${monat}-${tag}${datePrefix}${[stunde, minute, sekunde].join(timeSeparator)}${timePrefix}`;
   }
 
-  today(): string {
-    const now = new Date();
-    return now.getFullYear() + "-" + String("0" + (now.getMonth() + 1).toString()).slice(-2) + "-" + String("0" + now.getDate()).slice(-2);
-  }
-
-  /*
-   * Zeigt die verschiedenen Werte der Geometrie
-   */
-  showGeomStatus() {
-    if (kvm._activeLayer && kvm._activeLayer.activeFeature) {
-      // console.log("activeFeature.point %o", kvm._activeLayer.activeFeature.getDataValue("point"));
-      // console.log("activeFeature.oldGeom %o", kvm._activeLayer.activeFeature.oldGeom);
-      // console.log("activeFeature.geom %o", kvm._activeLayer.activeFeature.geom);
-      // console.log("activeFeature.newGeom %o", kvm._activeLayer.activeFeature.newGeom);
-      // console.log("form geom_wkt: %s", $("#geom_wkt").val());
-      // TODO ???
-      // console.log("form " + (<any>kvm._activeLayer).get("geometry_attribute") + ": %s", $('.form-field [name="' + kvm._activeLayer.get("geometry_attribute") + '"]').val());
-    }
-    if (kvm._activeLayer.activeFeature.editableLayer) {
-      // console.log("editableLayer: %o", kvm._activeLayer.activeFeature.editableLayer.getLatLng());
-    }
-  }
+  // /*
+  //  * Zeigt die verschiedenen Werte der Geometrie
+  //  */
+  // showGeomStatus() {
+  //   if (kvm._activeLayer && kvm._activeFeature) {
+  //     // console.log("activeFeature.point %o", kvm._activeLayer.activeFeature.getDataValue("point"));
+  //     // console.log("activeFeature.oldGeom %o", kvm._activeLayer.activeFeature.oldGeom);
+  //     // console.log("activeFeature.geom %o", kvm._activeLayer.activeFeature.geom);
+  //     // console.log("activeFeature.newGeom %o", kvm._activeLayer.activeFeature.newGeom);
+  //     // console.log("form geom_wkt: %s", $("#geom_wkt").val());
+  //     // TODO ???
+  //     // console.log("form " + (<any>kvm._activeLayer).get("geometry_attribute") + ": %s", $('.form-field [name="' + kvm._activeLayer.get("geometry_attribute") + '"]').val());
+  //   }
+  //   if (kvm._activeLayer.activeFeature.editableLayer) {
+  //     // console.log("editableLayer: %o", kvm._activeLayer.activeFeature.editableLayer.getLatLng());
+  //   }
+  // }
 
   rgbToHex(rgb) {
     const parts = rgb.split(" "),

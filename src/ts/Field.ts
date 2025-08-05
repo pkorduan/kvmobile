@@ -1,5 +1,6 @@
 import { kvm } from "./app";
 import { Attribute, AttributeSetting } from "./Attribute";
+import { Feature } from "./Feature";
 import { createHtmlElement } from "./Util";
 
 export interface FieldChangeEvent {
@@ -10,8 +11,10 @@ export interface Field {
   settings?: AttributeSetting;
   selector?: string;
 
-  setValue: (val: string) => Promise<void>;
+  setValue: (f: Feature, val: string) => Promise<void>;
   getValue?: (action?: string) => any;
+
+  getAutoValue?: (f: Feature) => any;
 
   addChangeListener?: (lst: (src: Field, hasChanged: boolean) => void) => void;
   bindEvents?(): void;
@@ -33,6 +36,7 @@ export abstract class AbstractField implements Field {
 
   protected _value: any;
   protected _oldValue: any;
+  protected _feature: Feature;
 
   constructor(formId: string, attr: Attribute) {
     // this.settings = settings;
@@ -105,9 +109,10 @@ export abstract class AbstractField implements Field {
     return this._value;
   }
 
-  async setValue(val: string) {
+  async setValue(f: Feature, val: string) {
     this._value = val;
     this._oldValue = val;
+    this._feature = f;
     return;
   }
 

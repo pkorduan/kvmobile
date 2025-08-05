@@ -2,6 +2,7 @@ import { Attribute, AttributeSetting } from "./Attribute";
 import { AbstractField } from "./Field";
 import { kvm } from "./app";
 import { createHtmlElement } from "./Util";
+import { Feature } from "./Feature";
 
 /*
  * create a UserID form field in the structure
@@ -31,7 +32,7 @@ export class UserIDFormField extends AbstractField {
   //     return this.settings[key];
   // }
 
-  async setValue(val) {
+  async setValue(f: Feature, val) {
     if (kvm.coalesce(val, "") == "" && this.attr.settings.default) {
       val = this.attr.settings.default;
     }
@@ -47,7 +48,7 @@ export class UserIDFormField extends AbstractField {
     return val;
   }
 
-  getAutoValue() {
+  getAutoValue(f: Feature) {
     console.log("UserIDFormField.getAutoValue");
     return kvm.store.getItem("userId");
   }

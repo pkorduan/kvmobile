@@ -1,4 +1,5 @@
 import { Attribute, AttributeSetting } from "./Attribute";
+import { Feature } from "./Feature";
 import { AbstractField, Field } from "./Field";
 import { createHtmlElement } from "./Util";
 import { kvm } from "./app";
@@ -27,7 +28,7 @@ export class ClientIDFormField extends AbstractField {
     this.element.disabled = true;
   }
 
-  async setValue(val) {
+  async setValue(f: Feature, val) {
     if (kvm.coalesce(val, "") == "" && this.attr.settings.default) {
       val = this.attr.settings.default;
     }
@@ -43,8 +44,7 @@ export class ClientIDFormField extends AbstractField {
     return val;
   }
 
-  getAutoValue() {
-    console.log("ClientIDFormField.getAutoValue");
+  getAutoValue(f: Feature) {
     return device.uuid;
   }
 

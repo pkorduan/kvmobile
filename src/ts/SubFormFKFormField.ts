@@ -1,5 +1,6 @@
 import { kvm } from "./app";
 import { Attribute, AttributeSetting } from "./Attribute";
+import { Feature } from "./Feature";
 import { AbstractField, Field } from "./Field";
 import { executeSQL } from "./Util";
 import { createHtmlElement } from "./Util";
@@ -35,7 +36,7 @@ export class SubFormFKFormField extends AbstractField {
     });
   }
 
-  async setValue(val) {
+  async setValue(f: Feature, val) {
     console.log("Attribute: %s, SubFormFKFormField.setValue options: %o, value: %s", this.attr?.settings.name, this.attr?.settings.options, val);
     // ToDo: Prüfen warum hier noch mal default gesetzt wird. Das wird auch schon in getNewData gemacht.
     if (val) {
@@ -49,9 +50,9 @@ export class SubFormFKFormField extends AbstractField {
     return this.parentFeatureId;
   }
 
-  getAutoValue() {
+  getAutoValue(f: Feature) {
     const attributeName = this.attr.name;
-    return this.attr.layer.activeFeature.getDataValue(attributeName);
+    return f.getDataValue(attributeName);
   }
 
   /**

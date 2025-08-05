@@ -1,4 +1,5 @@
 import { Attribute, AttributeSetting } from "./Attribute";
+import { Feature } from "./Feature";
 import { AbstractField, Field } from "./Field";
 import { createHtmlElement } from "./Util";
 import { kvm } from "./app";
@@ -25,7 +26,7 @@ export class StelleIDFormField extends AbstractField {
     this.element.disabled = true;
   }
 
-  async setValue(val) {
+  async setValue(f: Feature, val: any) {
     if (kvm.coalesce(val, "") == "" && this.attr.settings.default) {
       val = this.attr.settings.default;
     }
@@ -41,7 +42,7 @@ export class StelleIDFormField extends AbstractField {
     return val;
   }
 
-  getAutoValue() {
+  getAutoValue(f: Feature) {
     console.log("StelleIDFormField.getAutoValue");
     return kvm.getActiveStelle().get("ID");
   }

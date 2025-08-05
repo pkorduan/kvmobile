@@ -2,6 +2,7 @@ import { Attribute, AttributeSetting } from "./Attribute";
 import { AbstractField, Field } from "./Field";
 import { kvm } from "./app";
 import { createHtmlElement } from "./Util";
+import { Feature } from "./Feature";
 
 /*
  * create a User form field in the structure
@@ -29,7 +30,7 @@ export class UserFormField extends AbstractField {
     this.element.disabled = true;
   }
 
-  async setValue(val) {
+  async setValue(f: Feature, val: any) {
     if (kvm.coalesce(val, "") == "" && this.attr.settings.default) {
       val = this.attr.settings.default;
     }
@@ -45,8 +46,8 @@ export class UserFormField extends AbstractField {
     return val;
   }
 
-  getAutoValue() {
-    console.log("UserFormField.getAutoValue");
+  getAutoValue(f: Feature) {
+    // console.log("UserFormField.getAutoValue");
     return kvm.store.getItem("userName");
   }
 

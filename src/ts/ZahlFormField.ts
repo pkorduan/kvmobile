@@ -2,6 +2,7 @@ import { Attribute, AttributeSetting } from "./Attribute";
 import { AbstractField, Field } from "./Field";
 import { kvm } from "./app";
 import { createHtmlElement } from "./Util";
+import { Feature } from "./Feature";
 
 /*
  * create a numeric form field in the structure
@@ -33,7 +34,7 @@ export class ZahlFormField extends AbstractField implements Field {
     }
   }
 
-  async setValue(val) {
+  async setValue(f: Feature, val) {
     console.log(`Attribute: ${this.attr.settings.name} ZahlFormField.setValue with value: ${val}`);
 
     const settings = this.attr.settings;
@@ -43,7 +44,7 @@ export class ZahlFormField extends AbstractField implements Field {
     const layer = kvm.getLayer(`${settings.stelleId}_${settings.layerId}`);
     let sql = "";
 
-    if (layer.activeFeature.new) {
+    if (f.new) {
       if (settings.default) {
         // console.log('TextFormField default: %s', this.get('default'));
         if (settings.default.startsWith("nextval")) {

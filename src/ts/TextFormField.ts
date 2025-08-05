@@ -1,4 +1,5 @@
 import { Attribute, AttributeSetting } from "./Attribute";
+import { Feature } from "./Feature";
 import { AbstractField, Field } from "./Field";
 import { createHtmlElement } from "./Util";
 import { kvm } from "./app";
@@ -32,8 +33,9 @@ export class TextFormField extends AbstractField implements Field {
     }
   }
 
-  async setValue(val: string) {
+  async setValue(f: Feature, val: string) {
     console.log("TextFormField " + this.attr.settings.name + " setValue with value: %o", val);
+    this._feature = f;
     this._oldValue = val;
     if (kvm.coalesce(val, "") == "" && this.attr.settings.default) {
       val = this.attr.settings.default;

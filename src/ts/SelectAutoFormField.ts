@@ -2,6 +2,7 @@ import { Attribute, AttributeSetting, OptionsAttributtes } from "./Attribute";
 import { AbstractField, Field } from "./Field";
 import { kvm } from "./app";
 import { createHtmlElement } from "./Util";
+import { Feature } from "./Feature";
 
 /*
  * create a select form field in the structure
@@ -59,9 +60,10 @@ export class SelectAutoFormField extends AbstractField implements Field {
    * set value or values in html element related to the type of value and type of element.
    * @param any val
    */
-  async setValue(val: any) {
+  async setValue(f: Feature, val: any) {
     this._value = val;
     this._oldValue = val;
+    this._feature = f;
 
     console.log("SelectFormField.setValue with value: " + val);
     if (kvm.coalesce(val, "") == "" && this.settings.default) {
@@ -168,7 +170,7 @@ export class SelectAutoFormField extends AbstractField implements Field {
     // console.log(
     //   `filter_by_required ${requiresAttName}=${requiresValue} => Anzahl=${this.filteredOptions.length}`
     // );
-    this.setValue(this.val);
+    this.setValue(this._feature, this.val);
   }
 
   setInputField(inputField: HTMLElement) {
@@ -255,7 +257,7 @@ export class SelectAutoFormField extends AbstractField implements Field {
    */
   private internalSet(value: string | string[]) {
     // console.log("_set", value);
-    this.setValue(value);
+    this.setValue(this._feature, value);
     this.fireChanged();
   }
 

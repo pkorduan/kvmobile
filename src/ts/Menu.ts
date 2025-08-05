@@ -69,8 +69,7 @@ export class Menu {
     });
 
     this.editFeatureButton.addEventListener("click", () => {
-      const layer = app.getActiveLayer();
-      app.editFeature(layer.activeFeature);
+      app.editFeature(app.getActiveFeature());
     });
 
     this.newFeatureButton.addEventListener("click", async () => {
@@ -88,7 +87,7 @@ export class Menu {
 
     this.tplFeatureButton.addEventListener("click", async () => {
       const layer = this.app.getActiveLayer();
-      const tplId = layer.activeFeature.id;
+      const tplId = app.getActiveFeature().id;
       const f = await layer.createNewFeature();
       app.editFeature(f);
       layer.loadTplFeatureToForm(tplId);
@@ -97,10 +96,10 @@ export class Menu {
     this.cancelFeatureButton.addEventListener("click", (evt) => {
       console.log("cancelFeatureButton geklickt.");
       const activeLayer = this.app.getActiveLayer();
-      const activeFeature = activeLayer.activeFeature;
-      const featureId = activeFeature.id;
+      const activeFeature = this.app.getActiveFeature();
+      // const featureId = activeFeature.id;
 
-      const changes = activeLayer.collectChanges(activeFeature.new ? "insert" : "update");
+      const changes = activeLayer.collectChanges(activeFeature, activeFeature.new ? "insert" : "update");
       if (changes.length > 0) {
         navigator.notification.confirm(
           "Änderungen verwerfen?",
@@ -126,7 +125,7 @@ export class Menu {
 
   showMenuMapEdit() {
     const items = [this.showFormEdit, this.saveFeatureButton, this.cancelFeatureButton];
-    if (this.app.getActiveLayer()?.hasDeletePrivilege && !this.app.getActiveLayer()?.activeFeature?.new) {
+    if (this.app.getActiveLayer()?.hasDeletePrivilege && !this.app.getActiveFeature()?.new) {
       items.push(this.deleteFeatureButton);
     }
     this.showItems(items);
@@ -142,7 +141,7 @@ export class Menu {
 
   showFormMenu() {
     const items = [this.showMapEdit, this.saveFeatureButton, this.cancelFeatureButton];
-    if (this.app.getActiveLayer()?.hasDeletePrivilege && !this.app.getActiveLayer()?.activeFeature?.new) {
+    if (this.app.getActiveLayer()?.hasDeletePrivilege && !this.app.getActiveFeature()?.new) {
       items.push(this.deleteFeatureButton);
     }
     this.showItems(items);
@@ -171,7 +170,7 @@ export class Menu {
     if (this.app.getActiveLayer()?.hasGeometry) {
       items.push(this.showMapEdit);
     }
-    if (this.app.getActiveLayer()?.hasDeletePrivilege && !this.app.getActiveLayer()?.activeFeature?.new) {
+    if (this.app.getActiveLayer()?.hasDeletePrivilege && !this.app.getActiveFeature()?.new) {
       items.push(this.deleteFeatureButton);
     }
 

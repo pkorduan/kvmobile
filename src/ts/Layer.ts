@@ -128,7 +128,7 @@ export class Layer extends PropertyChangeSupport {
   attribute_index: { [key: string]: number };
   classes: Klasse[];
   private _features: Map<string, Feature>;
-  private _activeFeature: Feature;
+  // private _activeFeature: Feature;
   numFeatures: number;
   // next: any;
 
@@ -249,18 +249,18 @@ export class Layer extends PropertyChangeSupport {
     this._features = new Map();
   }
 
-  get activeFeature() {
-    return this._activeFeature;
-  }
+  // get activeFeature() {
+  //   return this._activeFeature;
+  // }
 
-  setActiveFeature(feature: Feature) {
-    // console.error(`layer.setActiveFeature ${this.title}`, feature);
-    if (this._activeFeature === feature) {
-      return;
-    }
-    this._activeFeature = feature;
-    kvm.setActiveFeature(feature);
-  }
+  // setActiveFeature(feature: Feature) {
+  //   // console.error(`layer.setActiveFeature ${this.title}`, feature);
+  //   if (this._activeFeature === feature) {
+  //     return;
+  //   }
+  //   this._activeFeature = feature;
+  //   kvm.setActiveFeature(feature);
+  // }
 
   get<K extends keyof LayerSetting>(key: K): LayerSetting[K] {
     return this.settings[key];
@@ -321,11 +321,12 @@ export class Layer extends PropertyChangeSupport {
     await this.fire(new PropertyChangeEvent(this, Layer.EVENTS.FEATURE_ADDED, null, this.activateFeature));
   }
 
+  // todo
   async removeFeature(feature: Feature) {
     this._features.delete(feature.id);
     if (this.hasGeometry) {
       console.log("remove Editable");
-      kvm.controller.mapper.removeEditable(this.activeFeature);
+      kvm.controller.mapper.removeEditable(feature);
       console.log("remove Editable");
       this.layerGroup.removeLayer(feature.leafletLayer);
     }
@@ -461,7 +462,7 @@ export class Layer extends PropertyChangeSupport {
     // console.log("readdata", this);
     // let sql: string;
 
-    this._activeFeature = null;
+    // this._activeFeature = null;
 
     if (this.isActive) {
       // order = Util.getValueOfElement("anzeigeSortSelect");
@@ -1219,7 +1220,7 @@ export class Layer extends PropertyChangeSupport {
         }
 
         if (attr.get("privilege")) {
-          attr.viewField.setValue(val);
+          attr.viewField.setValue(feature, val);
           // Attribute die leer sind sollen im DataView trotzdem angezeigt werden.
           // if (val === null) {
           //   console.info("Blende aus: " + attr.get("name"));
@@ -1244,73 +1245,73 @@ export class Layer extends PropertyChangeSupport {
     // }
   }
 
-  /**
-   * - Befüllt das Formular des Layers mit den Attributwerten des übergebenen Features
-   * - Setzt das Feature als activeFeature im Layer
-   * - Startet das GPS-Tracking
-   */
-  async loadFeatureToForm(feature: Feature, options = { editable: false }) {
-    // console.log("Layer.loadFeature %o ToForm with options: %o", feature, options);
-    // this.app.menu.enableSaveFeatureButton(false);
-    console.error("Layer.loadFeatureToForm", feature);
-    console.groupCollapsed(`layer.loadFeatureToForm layer=´${this.title}`, feature.getDataValue(this.settings.id_attribute));
-    this._activeFeature = feature;
+  // /**
+  //  * - Befüllt das Formular des Layers mit den Attributwerten des übergebenen Features
+  //  * - Setzt das Feature als activeFeature im Layer
+  //  * - Startet das GPS-Tracking
+  //  */
+  // async loadFeatureToForm(feature: Feature, options = { editable: false }) {
+  //   // console.log("Layer.loadFeature %o ToForm with options: %o", feature, options);
+  //   // this.app.menu.enableSaveFeatureButton(false);
+  //   console.error("Layer.loadFeatureToForm", feature);
+  //   console.groupCollapsed(`layer.loadFeatureToForm layer=´${this.title}`, feature.getDataValue(this.settings.id_attribute));
+  //   this._activeFeature = feature;
 
-    // this.attributes.forEach((attr, idx) => async {^
-    for (const attr of this.attributes) {
-      const attrName = attr.get("name");
-      const val = feature.getDataValue(attrName) == "null" ? null : feature.getDataValue(attrName);
+  //   // this.attributes.forEach((attr, idx) => async {^
+  //   for (const attr of this.attributes) {
+  //     const attrName = attr.get("name");
+  //     const val = feature.getDataValue(attrName) == "null" ? null : feature.getDataValue(attrName);
 
-      await attr.formField.setValue(val);
+  //     await attr.formField.setValue(val);
 
-      // TODO
-      if (val === null && !attr.isEditable()) {
-        // attr.formField.getDom().style.display = "none";
-        // Blende Attribute aus, die keinen Wert haben und nur lesbar sind.
-        // $(`#formFieldDiv_${attr.get("index")}`).hide();
-      }
-      if (kvm.coalesce(attr.get("required_by"), "") != "") {
-        // TODO rtr
-        const required_by_idx = kvm.getActiveLayer().attribute_index[attr.get("required_by")];
-        console.info("FormField=" + kvm.getActiveLayer().attributes[required_by_idx].formField, this === kvm.getActiveLayer());
-        (<any>kvm.getActiveLayer().attributes[required_by_idx].formField).filter_by_required(attr.get("name"), val);
-      }
+  //     // TODO
+  //     if (val === null && !attr.isEditable()) {
+  //       // attr.formField.getDom().style.display = "none";
+  //       // Blende Attribute aus, die keinen Wert haben und nur lesbar sind.
+  //       // $(`#formFieldDiv_${attr.get("index")}`).hide();
+  //     }
+  //     if (kvm.coalesce(attr.get("required_by"), "") != "") {
+  //       // TODO rtr
+  //       const required_by_idx = kvm.getActiveLayer().attribute_index[attr.get("required_by")];
+  //       console.info("FormField=" + kvm.getActiveLayer().attributes[required_by_idx].formField, this === kvm.getActiveLayer());
+  //       (<any>kvm.getActiveLayer().attributes[required_by_idx].formField).filter_by_required(attr.get("name"), val);
+  //     }
 
-      if (attr.hasVisibilityDependency()) {
-        this.vcheckAttributes(attr.get("name"), val, attr.formField, "form");
-      }
-    }
+  //     if (attr.hasVisibilityDependency()) {
+  //       this.vcheckAttributes(attr.get("name"), val, attr.formField, "form");
+  //     }
+  //   }
 
-    // $.map(this.attributes, function (attr) {
-    //   const attrName = attr.get("name");
-    //   const val = feature.getDataValue(attrName) == "null" ? null : feature.getDataValue(attrName);
+  //   // $.map(this.attributes, function (attr) {
+  //   //   const attrName = attr.get("name");
+  //   //   const val = feature.getDataValue(attrName) == "null" ? null : feature.getDataValue(attrName);
 
-    //   //console.log("Set %s %s: %s", attr.get("form_element_type"), key, val);
-    //   //console.log('Set Value of feature: %s in formField: %s for key: %s with value: %s', JSON.stringify(this), attr.formField.constructor.name, key, val);
-    //   attr.formField.setValue(val);
-    //   if (val === null && !attr.isEditable()) {
-    //     // Blende Attribute aus, die keinen Wert haben und nur lesbar sind.
-    //     $(`#formFieldDiv_${attr.get("index")}`).hide();
-    //   }
-    //   if (kvm.coalesce(attr.get("required_by"), "") != "") {
-    //     const required_by_idx = kvm.getActiveLayer().attribute_index[attr.get("required_by")];
-    //     (<any>kvm.getActiveLayer().attributes[required_by_idx].formField).filter_by_required(attr.get("name"), val);
-    //   }
-    //   if (attr.hasVisibilityDependency()) {
-    //     kvm.getActiveLayer().vcheckAttributes(attr.get("name"), val, "form");
-    //   }
-    // });
+  //   //   //console.log("Set %s %s: %s", attr.get("form_element_type"), key, val);
+  //   //   //console.log('Set Value of feature: %s in formField: %s for key: %s with value: %s', JSON.stringify(this), attr.formField.constructor.name, key, val);
+  //   //   attr.formField.setValue(val);
+  //   //   if (val === null && !attr.isEditable()) {
+  //   //     // Blende Attribute aus, die keinen Wert haben und nur lesbar sind.
+  //   //     $(`#formFieldDiv_${attr.get("index")}`).hide();
+  //   //   }
+  //   //   if (kvm.coalesce(attr.get("required_by"), "") != "") {
+  //   //     const required_by_idx = kvm.getActiveLayer().attribute_index[attr.get("required_by")];
+  //   //     (<any>kvm.getActiveLayer().attributes[required_by_idx].formField).filter_by_required(attr.get("name"), val);
+  //   //   }
+  //   //   if (attr.hasVisibilityDependency()) {
+  //   //     kvm.getActiveLayer().vcheckAttributes(attr.get("name"), val, "form");
+  //   //   }
+  //   // });
 
-    // TODO RTR offen
-    // if (feature.geom) {
-    //   $("#geom_wkt").val(feature.geom.toWkt());
-    //   $("#goToGpsPositionButton").show();
-    //   if (options.editable) {
-    //     kvm.controller.mapper.watchGpsAccuracy();
-    //   }
-    // }
-    console.groupEnd();
-  }
+  //   // TODO RTR offen
+  //   // if (feature.geom) {
+  //   //   $("#geom_wkt").val(feature.geom.toWkt());
+  //   //   $("#goToGpsPositionButton").show();
+  //   //   if (options.editable) {
+  //   //     kvm.controller.mapper.watchGpsAccuracy();
+  //   //   }
+  //   // }
+  //   console.groupEnd();
+  // }
 
   async loadTplFeatureToForm(tplId: string) {
     console.log("Layer.loadTplFeatureToForm.");
@@ -1321,7 +1322,7 @@ export class Layer extends PropertyChangeSupport {
 
       if (!["uuid", "version", this.settings.geometry_attribute].includes(attrName)) {
         //console.log('Set %s %s: %s', attr.get('form_element_type'), key, val);
-        await attr.formField.setValue(val);
+        await attr.formField.setValue(feature, val);
       }
     } // .bind(this.features.get(tplId))
   }
@@ -1628,14 +1629,14 @@ export class Layer extends PropertyChangeSupport {
    * @async
    * @returns {*}
    */
-  private async _bestimmeUbergeordnetesObjekt(): Promise<string> {
+  private async _bestimmeUbergeordnetesObjekt(feature: Feature): Promise<string> {
     const parentFK = this.getParentFK();
     if (!parentFK || !parentFK.parentLayer.hasGeometry) {
       throw new Error("Layer hat kein Parent oder dieser hat keine Geometrie");
     }
     console.info(`_bestimmeUbergeordnetesObjekt ${parentFK}`);
     let featureId: string = "";
-    if (this.hasGeometry && this.activeFeature.new && this.activeFeature.newGeom) {
+    if (this.hasGeometry && feature.new && feature.newGeom) {
       // Abfragen des übergeordneten Layers
       const pkLayer = parentFK.parentLayer;
       console.log("Übergeordneter Layer %s", pkLayer.title);
@@ -1645,7 +1646,7 @@ export class Layer extends PropertyChangeSupport {
       let where: string[] = [
         `
           ST_Within(
-              ST_GeomFromText('${this.activeFeature.newGeom.toWkt()}', 4326),
+              ST_GeomFromText('${feature.newGeom.toWkt()}', 4326),
               GeomFromEWKB(${pkLayer.get("geometry_attribute")})
             )
         `,
@@ -1752,7 +1753,7 @@ export class Layer extends PropertyChangeSupport {
     if (this.hasGeometry) {
       if (feature.geom) {
         kvm.controller.mapper.clearWatch();
-        this.startEditing();
+        this.startEditing(feature);
       } else {
         // new
         let startLatLng: LatLngTuple;
@@ -1778,7 +1779,7 @@ export class Layer extends PropertyChangeSupport {
 
         const parentFK = this.getParentFK();
         if (parentFK && !feature.getDataValue(parentFK.fkColumn)) {
-          const parentFeatureId = await this._bestimmeUbergeordnetesObjekt();
+          const parentFeatureId = await this._bestimmeUbergeordnetesObjekt(feature);
           const parentLayer = parentFK.parentLayer;
           if (parentFeatureId) {
             feature.data[parentFK.fkColumn] = parentFeatureId;
@@ -1787,7 +1788,7 @@ export class Layer extends PropertyChangeSupport {
             await Util.alertNative(`Der Marker liegt nicht im räumlichen Bereich eines Objektes des Layers ${parentLayer.title}.`);
           }
         }
-        this.startEditing();
+        this.startEditing(feature);
       }
     } else {
       console.log("Layer.editFeature=>loadFeatureToForm");
@@ -1882,9 +1883,8 @@ export class Layer extends PropertyChangeSupport {
    * Wenn alatlng übergeben wurde beginne die Editierung an dieser Stelle statt an der Stelle der Koordinaten des activeFeatures
    * Wird verwendet wenn ein neues Feature angelegt wird, oder das Feature noch keine Geometrie hatte.
    */
-  startEditing(alatlng: number[] = [], startLatLng?: LatLngExpression) {
+  startEditing(feature: Feature, alatlng: number[] = [], startLatLng?: LatLngExpression) {
     // console.log("Layer.startEditing");
-    const feature = this.activeFeature;
     console.log("Layer.startEditing=>loadFeatureToForm");
     kvm.viewFormular.loadFeatureToForm(feature, { editable: true });
     kvm.map.closePopup();
@@ -1915,11 +1915,11 @@ export class Layer extends PropertyChangeSupport {
    * Binded das Popup an den dazugehörigen Layers
    * Selectiert das Feature in Karte und Liste
    */
-  cancelEditGeometry(featureId?) {
-    //kvm.log("cancelEditGeometry");
-    const feature = this.activeFeature;
+  cancelEditGeometry(feature: Feature) {
+    // kvm.log("cancelEditGeometry");
+    // const feature = this.activeFeature;
 
-    if (featureId && feature.leafletLayer) {
+    if (feature.leafletLayer) {
       // Ermittelt die layer_id des circleMarkers des Features
       // let vectorLayer = (<any>kvm.map)._layers[feature.layerId];
 
@@ -2060,30 +2060,30 @@ export class Layer extends PropertyChangeSupport {
   //   // this.activateFeature(feature, false);
   // }
 
-  /**
-   * Callback function of popupOpen event of map features
-   * activate the feature only if
-   * the layer is active and
-   * no active feature exists or
-   * (active feature is a different feature than the selected and its currently not editable)
-   * the feature is not already selcted and
-   * no other feature is currently active and editable
-   * @param evt
-   */
-  popupOpenOrg = (evt: LeafletEvent) => {
-    // console.error("popupOpen", evt);
-    const featureId = evt.target.options.featureId;
-    const globalLayerId = evt.target.options.globalLayerId;
-    const kvmLayer = kvm.getLayer(globalLayerId);
-    const activeFeature = kvm.getActiveLayer().activeFeature;
-    const feature = kvmLayer.getFeature(featureId);
-    const layer = feature.leafletLayer;
-    console.log("Event Open Popup of feature: %s in layer: %s globalLayerId: %s", featureId, kvmLayer.title, globalLayerId);
-    layer.bindPopup(kvmLayer.getPopup(feature)).openPopup();
-    if (kvmLayer.isActive && (!activeFeature || (activeFeature.id != featureId && !activeFeature.isEditable))) {
-      kvmLayer.activateFeature(kvmLayer.getFeature(featureId), false);
-    }
-  };
+  // /**
+  //  * Callback function of popupOpen event of map features
+  //  * activate the feature only if
+  //  * the layer is active and
+  //  * no active feature exists or
+  //  * (active feature is a different feature than the selected and its currently not editable)
+  //  * the feature is not already selcted and
+  //  * no other feature is currently active and editable
+  //  * @param evt
+  //  */
+  // popupOpenOrg = (evt: LeafletEvent) => {
+  //   // console.error("popupOpen", evt);
+  //   const featureId = evt.target.options.featureId;
+  //   const globalLayerId = evt.target.options.globalLayerId;
+  //   const kvmLayer = kvm.getLayer(globalLayerId);
+  //   const activeFeature = kvm.getActiveLayer().activeFeature;
+  //   const feature = kvmLayer.getFeature(featureId);
+  //   const layer = feature.leafletLayer;
+  //   console.log("Event Open Popup of feature: %s in layer: %s globalLayerId: %s", featureId, kvmLayer.title, globalLayerId);
+  //   layer.bindPopup(kvmLayer.getPopup(feature)).openPopup();
+  //   if (kvmLayer.isActive && (!activeFeature || (activeFeature.id != featureId && !activeFeature.isEditable))) {
+  //     kvmLayer.activateFeature(kvmLayer.getFeature(featureId), false);
+  //   }
+  // };
 
   popupOpen = (evt: LeafletEvent) => {
     // console.error("popupOpen", evt);
@@ -2110,18 +2110,19 @@ export class Layer extends PropertyChangeSupport {
     }
   };
 
-  hasActiveFeature() {
-    return this.activeFeature ? true : false;
-  }
+  // TODO
+  // hasActiveFeature() {
+  //   return this.activeFeature ? true : false;
+  // }
+  // TODO
+  // isActiveFeature(feature: Feature) {
+  //   return this.hasActiveFeature() && this.activeFeature.id === feature.id;
+  // }
 
-  isActiveFeature(feature: Feature) {
-    return this.hasActiveFeature() && this.activeFeature.id === feature.id;
-  }
-
-  collectChanges(action: string): AttributteDelta[] {
+  collectChanges(f: Feature, action: string): AttributteDelta[] {
     //kvm.log("Layer.collectChanges " + (action ? " with action: " + action : ""), 4);
     console.groupCollapsed("collectChanges");
-    const activeFeature = this.activeFeature;
+    // const activeFeature = f;
     // changes = [];
 
     // const geometry_attribute = this.get("geometry_attribute");
@@ -2134,7 +2135,7 @@ export class Layer extends PropertyChangeSupport {
         //console.log('attr.privilege: %s', attr.get('privilege'));
         if (attr.get("name") != id_attribute && !attr.isAutoAttribute(action) && !attr.isPseudoAttribute() && attr.settings.privilege != "0") {
           const attrName = attr.settings.name;
-          let oldVal = activeFeature.getDataValue(attrName) == "null" ? null : activeFeature.getDataValue(attrName);
+          let oldVal = f.getDataValue(attrName) == "null" ? null : f.getDataValue(attrName);
           let newVal = attr.formField.getValue(action);
 
           if (typeof oldVal == "string") oldVal = oldVal.trim();
@@ -2238,30 +2239,15 @@ export class Layer extends PropertyChangeSupport {
    */
   async afterCreateDataset(f: Feature) {
     console.log("afterCreateDataset");
-
-    //console.log("set data for activeFeature: %o", rs.rows.item(0));
-    //console.log("with geom: %o", rs.rows.item(0).geom);
-    // this.activeFeature.setData(rs.rows.item(0));
-    // this.activeFeature.new = false;
-
-    // this.addFeature(this.activeFeature);
-
-    // // kvm.msg(this.succMsg, "Hinweis");
-
-    // if (this.hasGeometry) {
-    //   this.saveGeometry(this.activeFeature);
-    // }
     if (kvm.getConfigurationOption("newAfterCreate")) {
       console.log("option newAfterCreate is on");
       const newFeature = await this.createNewFeature(f.data);
       kvm.editFeature(newFeature);
     } else {
-      this.loadFeatureToView(this.activeFeature);
+      // this._activeFeature = f;
+      this.loadFeatureToView(f);
       kvm.showNextItem(kvm.getConfigurationOption("viewAfterCreate"), this);
     }
-    // ToDo: Layer gleich syncronisieren
-    // kvm.closeSperrDiv(`${this.title}: Datensatz gespeichert.`);
-    // sperrBildschirm.close();
   }
 
   /**
@@ -2270,15 +2256,15 @@ export class Layer extends PropertyChangeSupport {
    * create the appropriated delta dataset in the deltas table
    * @param changes Data from the activeFeature for the update
    */
-  async runUpdateStrategy(changes: AttributteDelta[]) {
+  async runUpdateStrategy(f: Feature, changes: AttributteDelta[]) {
     if (changes?.length > 0) {
-      const delta = this.getUpdateDelta(changes);
-      await this._processImageChanges(changes);
+      const delta = this.getUpdateDelta(f, changes);
+      await this._processImageChanges(f, changes);
       try {
-        const rs = await LayerDBJobs.runUpdate(this._activeFeature, delta);
-        this.activeFeature.setData(rs.rows.item(0));
-        if (this.activeFeature.leafletLayer) {
-          this.redrawFeature(this.activeFeature);
+        const rs = await LayerDBJobs.runUpdate(f, delta);
+        f.setData(rs.rows.item(0));
+        if (f.leafletLayer) {
+          this.redrawFeature(f);
         }
       } catch (reason) {
         console.error("Etwas ist schief gegangen", reason);
@@ -2292,16 +2278,16 @@ export class Layer extends PropertyChangeSupport {
    * create the appropriated delta dataset in the deltas table
    * @param changes Data from the activeFeature for the new dataset
    */
-  async runInsertStrategy(changes: AttributteDelta[]) {
+  async runInsertStrategy(feature: Feature, changes: AttributteDelta[]) {
     if (changes?.length > 0) {
-      const delta = this.getInsertDelta(changes);
-      await this._processImageChanges(changes);
+      const delta = this.getInsertDelta(feature, changes);
+      await this._processImageChanges(feature, changes);
       try {
-        const rs = await LayerDBJobs.runInsert(this._activeFeature, delta);
-        this.activeFeature.setData(rs.rows.item(0));
-        this.activeFeature.new = false;
-        await this.addFeature(this._activeFeature);
-        this.drawFeature(this._activeFeature);
+        const rs = await LayerDBJobs.runInsert(feature, delta);
+        feature.setData(rs.rows.item(0));
+        feature.new = false;
+        await this.addFeature(feature);
+        this.drawFeature(feature);
       } catch (ex) {
         const msg = `Fehler in Funktion nach dem Anlegen des Datensatzes in runInsertStrategy ${ex.message}`;
         console.error(msg);
@@ -2310,19 +2296,19 @@ export class Layer extends PropertyChangeSupport {
     }
   }
 
-  private async _processImageChanges(changes: AttributteDelta[]) {
+  private async _processImageChanges(f: Feature, changes: AttributteDelta[]) {
     const dokumentAttributeNames = this.getDokumentAttributeNames();
     const imgChanges = changes.filter((change) => {
       return dokumentAttributeNames.includes(change.key);
     });
 
     if (imgChanges.length > 0) {
-      await this.createImgDeltas(imgChanges);
+      await this.createImgDeltas(f, imgChanges);
     }
   }
 
-  getAllChanges(type: "update" | "insert") {
-    let changes = this.collectChanges(type);
+  getAllChanges(f: Feature, type: "update" | "insert") {
+    let changes = this.collectChanges(f, type);
 
     if (changes.length > 0) {
       kvm.alog("Changes gefunden: ", changes, 4);
@@ -2334,7 +2320,7 @@ export class Layer extends PropertyChangeSupport {
       // if (imgChanges.length > 0) {
       //   this.createImgDeltas(imgChanges);
       // }
-      changes = this.addAutoChanges(changes, type);
+      changes = this.addAutoChanges(f, changes, type);
     }
     return changes;
   }
@@ -2346,7 +2332,7 @@ export class Layer extends PropertyChangeSupport {
    * @param action insert or update used to determine if auto value shall be created pending on option of the attribute
    * @return array The array of changes including the auto values
    */
-  addAutoChanges(changes: AttributteDelta[], action: string): AttributteDelta[] {
+  addAutoChanges(f: Feature, changes: AttributteDelta[], action: string): AttributteDelta[] {
     console.log("Layer.addAutoChanges mit action " + action);
     const changesKeys = changes.map((change) => {
       return change.key;
@@ -2357,11 +2343,11 @@ export class Layer extends PropertyChangeSupport {
       if (attr.isAutoAttribute(action) && !changesKeys.includes(attr.get("name"))) {
         console.log("getAutoValue from attribute: %s formfield: %s", attr.get("name"), attr.formField.constructor.name);
         try {
-          const autoValue = (<any>attr.formField).getAutoValue();
+          const autoValue = attr.formField.getAutoValue(f);
           console.log("Ergänze Autowert: " + attr.get("name") + " = " + autoValue);
           results.push({
             key: attr.get("name"),
-            oldVal: kvm.getActiveLayer().activeFeature.getDataValue(attr.get("name")),
+            oldVal: f.getDataValue(attr.get("name")),
             newVal: autoValue,
             type: attr.getSqliteType(),
           });
@@ -2381,22 +2367,9 @@ export class Layer extends PropertyChangeSupport {
   async afterUpdateDataset(f: Feature) {
     console.log("afterUpdateDataset rs", f);
     try {
-      // this.activeFeature.setData(rs.rows.item(0));
-      // if (this.hasGeometry) {
-      //   this.saveGeometry(this.activeFeature);
-      // }
-      this.loadFeatureToView(this.activeFeature, { editable: false });
+      this.loadFeatureToView(f, { editable: false });
       kvm.showNextItem(kvm.getConfigurationOption("viewAfterUpdate"), this);
-
-      // $("#saveFeatureButton").toggleClass("active-button inactive-button");
       kvm.controller.mapper.clearWatch();
-      // $("#numDatasetsText_" + this.getGlobalId()).html(`${this._features.size}`);
-      //kvm.closeSperrDiv(`${layer.title}: Update des Datensatzes erfolgreich beendet.`);
-
-      // ToDo: Layer gleich syncronisieren
-      // Noch offene Fehler:
-      // - Feature nach dem Speichern nicht aktiv (lässt sich nicht zum Editieren öffnen nach dem Speichern)
-      // const result = await kvm.syncLayers();
     } catch (ex) {
       throw new Error("Error in afterUpdateDataset", { cause: ex });
     }
@@ -2407,11 +2380,10 @@ export class Layer extends PropertyChangeSupport {
    * delete it in the local database and
    * create and remove the appropriated delta datasets in the deltas table
    */
-  async runDeleteStrategy() {
+  async runDeleteStrategy(feature: Feature) {
     try {
-      const delta = this.getDeleteDelta(this.activeFeature.id);
-      const rs = await LayerDBJobs.runDelete(this._activeFeature, delta);
-      // this.afterDeleteDataset(rs);
+      const delta = this.getDeleteDelta(feature.id);
+      const rs = await LayerDBJobs.runDelete(feature, delta);
     } catch (ex) {
       throw new Error("Error in runDeleteStrategy", { cause: ex });
     }
@@ -2422,25 +2394,25 @@ export class Layer extends PropertyChangeSupport {
    * Do every thing to delete the feature, geometry, Layer and listelement
    *
    */
-  afterDeleteDataset() {
+  afterDeleteDataset(feature: Feature) {
     console.log("afterDeleteDataset");
-    let layerId = this.activeFeature.leafletLayer;
+    // let layerId = this.activeFeature.leafletLayer;
     let parentLayerId = this.parentLayerId;
     let parentFeatureId = this.parentFeatureId;
 
     if (this.hasGeometry) {
       //console.log('Remove Editable Geometrie');
-      kvm.controller.mapper.removeEditable(this.activeFeature);
+      kvm.controller.mapper.removeEditable(feature);
 
       //console.log('Löscht Layer mit layerId: %s aus Layergroup', layer.activeFeature.layerId);
-      this.layerGroup.removeLayer(layerId);
+      this.layerGroup.removeLayer(feature.leafletLayer);
     }
 
     //console.log('Löscht Feature aus FeatureList : %o', layer.activeFeature);
     // $("#" + this.activeFeature.id).remove();
 
     //console.log('Lösche Feature aus features Array des activeLayer');
-    this.removeFeature(this.activeFeature);
+    this.removeFeature(feature);
 
     //console.log('Lösche activeFeature')
     // delete this._activeFeature;
@@ -2467,7 +2439,7 @@ export class Layer extends PropertyChangeSupport {
    * @param changes
    * @return object The insert delta object.
    */
-  getInsertDelta(changes: AttributteDelta[]): { action: "insert"; sql: string } {
+  getInsertDelta(f: Feature, changes: AttributteDelta[]): { action: "insert"; sql: string } {
     const delta = {
       action: "insert" as "insert",
       sql: `
@@ -2492,7 +2464,7 @@ export class Layer extends PropertyChangeSupport {
               }
             })
             .join(", ")},
-          '${this.activeFeature.id}'
+          '${f.id}'
         )
       `,
     };
@@ -2504,7 +2476,7 @@ export class Layer extends PropertyChangeSupport {
   /**
    * Create update delta
    */
-  getUpdateDelta(changes: AttributteDelta[]): { action: "update"; sql: string } {
+  getUpdateDelta(f: Feature, changes: AttributteDelta[]): { action: "update"; sql: string } {
     //kvm.log("Erzeuge SQL für UPDATE Delta", 3);
     const delta = {
       action: "update" as "update",
@@ -2524,7 +2496,7 @@ export class Layer extends PropertyChangeSupport {
             })
             .join(", ")}
         WHERE
-        	${this.get("id_attribute")} = '${this.activeFeature.id}'
+        	${this.get("id_attribute")} = '${f.id}'
       `,
     };
     console.log("UPDATE Delta sql: " + JSON.stringify(delta), 3);
@@ -2567,7 +2539,7 @@ export class Layer extends PropertyChangeSupport {
   //   });
   // }
 
-  async createImgDeltas(changes: AttributteDelta[]) {
+  async createImgDeltas(f: Feature, changes: AttributteDelta[]) {
     //kvm.log("Layer.createImgDeltas with changes: " + JSON.stringify(changes), 4);
     for (const change of changes) {
       const oldImages: string[] = change.oldVal && change.oldVal != "null" ? change.oldVal.slice(1, -1).split(",") : [];
@@ -2581,7 +2553,7 @@ export class Layer extends PropertyChangeSupport {
             action: "insert" as "insert",
             file: img,
           };
-          await LayerDBJobs.writeImgDelta(this._activeFeature, delta);
+          await LayerDBJobs.writeImgDelta(f, delta);
         }
       }
 
@@ -2614,10 +2586,7 @@ export class Layer extends PropertyChangeSupport {
             action: "delete" as "delete",
             file: img,
           };
-          await LayerDBJobs.writeImgDelta(this._activeFeature, delta);
-          // navigator.notification.alert("Fehler bei der Speicherung der Änderungsdaten für das Bild in der delta-Tabelle!\nFehlercode: " + error.code + "\nMeldung: " + error.message);
-          // navigator.notification.alert("Fehler bei der Speicherung der Änderungsdaten für das Bild in der delta-Tabelle!\nFehlercode: " + (<any>error).code + "\nMeldung: " + error.message, undefined);
-          // }
+          await LayerDBJobs.writeImgDelta(f, delta);
         }
       }
     }
@@ -3178,24 +3147,24 @@ export class Layer extends PropertyChangeSupport {
     }
   }
 
-  /**
-   * Function deactivate the layer. If the layer have an activeFeature
-   * deactivate this also before.
-   */
-  deactivate() {
-    if (this.activeFeature) {
-      this.activeFeature.deactivate();
-    }
+  // /**
+  //  * Function deactivate the layer. If the layer have an activeFeature
+  //  * deactivate this also before.
+  //  */
+  // deactivate() {
+  //   if (this.activeFeature) {
+  //     this.activeFeature.deactivate();
+  //   }
 
-    if (this.isActive) {
-      this.isActive = false;
-      // TODO
-      // kvm.addLayer(this);
-      // kvm.setActiveLayer(null);
-      // kvm.store.removeItem("activeLayerId");
-      // $("#searchFeatureField").val("");
-    }
-  }
+  //   if (this.isActive) {
+  //     this.isActive = false;
+  //     // TODO
+  //     // kvm.addLayer(this);
+  //     // kvm.setActiveLayer(null);
+  //     // kvm.store.removeItem("activeLayerId");
+  //     // $("#searchFeatureField").val("");
+  //   }
+  // }
 
   /**
    * Activated feature means
@@ -3208,6 +3177,7 @@ export class Layer extends PropertyChangeSupport {
    * @param feature
    * @param zoom
    */
+  // TODO
   activateFeature(feature: Feature, zoom = true) {
     // console.log(
     // 	"Activate Feature id: %s in Layer %s globalLayerId: %s, in LeafletLayer id: %s as activeFeature.",
@@ -3217,7 +3187,7 @@ export class Layer extends PropertyChangeSupport {
     // 	feature.layerId
     // );
     // console.error("activate Feature");
-    this.setActiveFeature(feature.activate(zoom));
+    feature.activate(zoom);
     // RTR
     // this.loadFeatureToView(feature, { editable: false });
   }
@@ -3245,13 +3215,13 @@ export class Layer extends PropertyChangeSupport {
     // parentLayerId, parentFeatureId, subLayerId, subLayerFKAttribute) {
     sperrBildschirm.show("Neuer Sublayer-Datensatz");
     const parentLayer = kvm.getLayer(options.parentLayerId);
-    if (parentLayer.hasGeometry) {
-      parentLayer.cancelEditGeometry();
-    }
+    // if (parentLayer.hasGeometry) {
+    //   parentLayer.cancelEditGeometry();
+    // }
     const subLayer = kvm.getLayer(options.subLayerId);
     subLayer.parentLayerId = options.parentLayerId;
-    subLayer.parentFeatureId = parentLayer.activeFeature.id;
-    subLayer.specifiedValues[options.fkAttribute] = parentLayer.activeFeature.id;
+    subLayer.parentFeatureId = this.parentFeatureId;
+    subLayer.specifiedValues[options.fkAttribute] = this.parentFeatureId;
     subLayer.activate();
     const values = {};
     values[options.fkAttribute] = options.parentFeatureId;

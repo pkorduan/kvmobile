@@ -4,6 +4,7 @@ import * as wkx from "wkx";
 import { AbstractField, Field } from "./Field";
 import { Attribute, AttributeSetting } from "./Attribute";
 import { alertNative, confirm, createHtmlElement } from "./Util";
+import { Feature } from "./Feature";
 /*
  * create a geometry form field in the structure
  *   <div class="form-field">
@@ -60,7 +61,7 @@ export class GeometrieFormField extends AbstractField implements Field {
       bttnDiv.append(svg);
       svg.addEventListener("click", () => {
         const genauigkeit = Math.round(kvm.controller.mapper.getGPSAccuracy());
-        const msg = (genauigkeit === 0 ? 'Es ist kein GPS-Signal vorhanden oder die Genauigkeit kann gerade nicht ermittelt werden!' : `Die GPS-Genauigkeit beträgt ca. ${genauigkeit} Meter.`);
+        const msg = genauigkeit === 0 ? "Es ist kein GPS-Signal vorhanden oder die Genauigkeit kann gerade nicht ermittelt werden!" : `Die GPS-Genauigkeit beträgt ca. ${genauigkeit} Meter.`;
         kvm.msg(msg);
       });
 
@@ -70,7 +71,7 @@ export class GeometrieFormField extends AbstractField implements Field {
       goToGpsPositionButton.addEventListener("click", () => {
         console.log("Fly to feature position.");
         kvm.showView("mapEdit");
-        kvm.map.flyTo(kvm.getActiveLayer().activeFeature.editableLayer.getLatLng(), 18);
+        kvm.map.flyTo(this._feature.editableLayer.getLatLng(), 18);
       });
       //     valueDiv.innerHTML =
       //       '<i id="saveGpsPositionButton" class="fa fa-map-marker fa-2x" aria-hidden="true"
@@ -116,8 +117,9 @@ export class GeometrieFormField extends AbstractField implements Field {
   //     return this.settings[key];
   // }
 
-  async setValue(val) {
+  async setValue(f: Feature, val: any) {
     console.log(`GeometrieFormField(${val})`, val);
+    this._feature = f;
     this._value = val;
     this._oldValue = val;
     console.log("GeometrieFormField.setValue with value:" + val);
@@ -153,7 +155,7 @@ export class GeometrieFormField extends AbstractField implements Field {
         const confirmed = await confirm("Position:\n" + geoLocation.coords.longitude + " " + geoLocation.coords.latitude + "\nübernehmen?", "neue Position");
         if (confirmed) {
           console.log("Set new Position " + geoLocation.coords.latitude + " " + geoLocation.coords.longitude);
-          const feature = kvm.getActiveLayer().activeFeature;
+          const feature = this._feature;
           const newGeom = feature.aLatLngsToWkx([{ lat: geoLocation.coords.latitude, lng: geoLocation.coords.longitude }]);
 
           this.geomWkt.value = newGeom.toWkt();
@@ -242,7 +244,7 @@ export class GeometrieFormField extends AbstractField implements Field {
     // $(document).on("geomChanged", function (event, options) {
     document.addEventListener("geomChanged", (event: CustomEvent) => {
       console.log("GeometrieFormField.geomChanged", event, event.detail);
-      const feature = kvm.getActiveLayer().activeFeature;
+      const feature = this._feature;
       const geom = event.detail.geom;
       const exclude = event.detail.exclude;
 

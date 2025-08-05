@@ -310,60 +310,60 @@ export class MapLibreLayer extends LLayer {
   bindLayerEvents(layerGlobalId) {
     // console.error("wwww activate");
     return;
-    console.log("bindLayerEvents for layerGlobalId: %s", layerGlobalId);
-    // Schaltet alle layer function button events zunächst aus.
-    $(".layer-function-button").off();
-    //
-    // Schaltet einen anderen Layer und deren Sync-Funktionen aktiv
-    // Die Einstellungen des Layers werden aus dem Store geladen
-    // Die Featureliste und Kartenelemente werden falls vorhanden aus der Datenbank geladen.
-    //
-    $("input[name=activeLayerId]" + (layerGlobalId ? "[value='" + layerGlobalId + "']" : "")).on("change", function (evt) {
-      const globalId = (<any>evt.target).value;
-      const layer = kvm.getLayer(globalId);
+    // console.log("bindLayerEvents for layerGlobalId: %s", layerGlobalId);
+    // // Schaltet alle layer function button events zunächst aus.
+    // $(".layer-function-button").off();
+    // //
+    // // Schaltet einen anderen Layer und deren Sync-Funktionen aktiv
+    // // Die Einstellungen des Layers werden aus dem Store geladen
+    // // Die Featureliste und Kartenelemente werden falls vorhanden aus der Datenbank geladen.
+    // //
+    // $("input[name=activeLayerId]" + (layerGlobalId ? "[value='" + layerGlobalId + "']" : "")).on("change", function (evt) {
+    //   const globalId = (<any>evt.target).value;
+    //   const layer = kvm.getLayer(globalId);
 
-      // unselect activeLayer
-      // unselect activeFeature
-      kvm.map.closePopup();
-      if (kvm.getActiveLayer()) {
-        kvm.getActiveLayer().deactivate();
-      }
-      sperrBildschirm.tick(`${layer.title}:<br>&nbsp;&nbsp;Setze Layer aktiv.`);
-      layer.activate(); // include loading filter, sort, data view, form and readData
-    });
+    //   // unselect activeLayer
+    //   // unselect activeFeature
+    //   kvm.map.closePopup();
+    //   if (kvm.getActiveLayer()) {
+    //     kvm.getActiveLayer().deactivate();
+    //   }
+    //   sperrBildschirm.tick(`${layer.title}:<br>&nbsp;&nbsp;Setze Layer aktiv.`);
+    //   layer.activate(); // include loading filter, sort, data view, form and readData
+    // });
 
-    $("#layer-functions-button_" + layerGlobalId).on("click", function (evt) {
-      var target = $(evt.target);
-      console.log("click on layer-functions-button von div %o", target.parent().attr("id"));
-      target.parent().children().filter(".layer-functions-div").toggle();
-      target.toggleClass("fa-ellipsis-vertical fa-square-xmark");
-    });
+    // $("#layer-functions-button_" + layerGlobalId).on("click", function (evt) {
+    //   var target = $(evt.target);
+    //   console.log("click on layer-functions-button von div %o", target.parent().attr("id"));
+    //   target.parent().children().filter(".layer-functions-div").toggle();
+    //   target.toggleClass("fa-ellipsis-vertical fa-square-xmark");
+    // });
 
-    $(".reload-layer-button" + (layerGlobalId > 0 ? "[id='reloadLayerButton_" + layerGlobalId + "']" : "")).on("click", function (evt) {
-      var id = (<any>evt.target).value;
-      // const layer = kvm.activeLayer;
-      let target = $(evt.target);
+    // $(".reload-layer-button" + (layerGlobalId > 0 ? "[id='reloadLayerButton_" + layerGlobalId + "']" : "")).on("click", function (evt) {
+    //   var id = (<any>evt.target).value;
+    //   // const layer = kvm.activeLayer;
+    //   let target = $(evt.target);
 
-      if (target.hasClass("fa")) {
-        target = target.parent();
-      }
+    //   if (target.hasClass("fa")) {
+    //     target = target.parent();
+    //   }
 
-      navigator.notification.confirm(
-        "Den Layer mit aktuellen Daten neu laden.",
-        function (buttonIndex) {
-          if (buttonIndex == 1) {
-            // ja
-            // var layer = kvm.activeLayer;
-            kvm.msg("Die Funktion ist noch nicht implementiert.");
-          }
-          if (buttonIndex == 2) {
-            // nein
-            // Do nothing
-          }
-        },
-        "",
-        ["ja", "nein"]
-      );
-    });
+    //   navigator.notification.confirm(
+    //     "Den Layer mit aktuellen Daten neu laden.",
+    //     function (buttonIndex) {
+    //       if (buttonIndex == 1) {
+    //         // ja
+    //         // var layer = kvm.activeLayer;
+    //         kvm.msg("Die Funktion ist noch nicht implementiert.");
+    //       }
+    //       if (buttonIndex == 2) {
+    //         // nein
+    //         // Do nothing
+    //       }
+    //     },
+    //     "",
+    //     ["ja", "nein"]
+    //   );
+    // });
   }
 }

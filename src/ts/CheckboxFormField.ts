@@ -1,4 +1,5 @@
 import { Attribute, AttributeSetting } from "./Attribute";
+import { Feature } from "./Feature";
 import { AbstractField, Field } from "./Field";
 import { createHtmlElement } from "./Util";
 
@@ -20,8 +21,9 @@ export class CheckboxFormField extends AbstractField implements Field {
     });
   }
 
-  async setValue(val: string) {
+  async setValue(f: Feature, val: string) {
     this._oldValue = val;
+    this._feature = f;
 
     if (!val && this.attr.settings.default) {
       val = this.attr.settings.default;

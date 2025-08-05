@@ -1,6 +1,7 @@
 import { kvm } from "./app";
 import { createHtmlElement, getWebviewUrl, confirm } from "./Util";
 import { Attribute, AttributeSetting } from "./Attribute";
+import { Feature } from "./Feature";
 
 export class DataViewField {
   settings: AttributeSetting;
@@ -209,7 +210,7 @@ export class DataViewField {
     return output;
   }
 
-  setValue(val) {
+  setValue(f: Feature, val: any) {
     if (val == "null") {
       val = null;
     }
@@ -224,8 +225,7 @@ export class DataViewField {
     else if (this.get("form_element_type") == "SubFormFK") {
       this.setSubFormFKValue(val);
     } else if (this.get("form_element_type") == "SubFormEmbeddedPK") {
-      const feature = this.attribute.layer.activeFeature;
-      this.attribute.layer.readVorschauAttributes(this.attribute, feature.getDataValue(this.attribute.getPKAttribute()), this.element, "activateFeature");
+      this.attribute.layer.readVorschauAttributes(this.attribute, f.getDataValue(this.attribute.getPKAttribute()), this.element, "activateFeature");
     } else if (this.get("form_element_type") == "Auswahlfeld") {
       this.setAuswahlfeldValue(val);
     } else if (this.get("form_element_type") == "Checkbox") {

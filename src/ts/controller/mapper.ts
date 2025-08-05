@@ -198,7 +198,7 @@ export class Mapper {
     );
   }
 
-  startGpsTracking(startLatlng) {
+  startGpsTracking(f: Feature, startLatlng) {
     this.lastLatlng = startLatlng;
     this.watchId = navigator.geolocation.watchPosition((location) => {
       const latlng = L.latLng(location.coords.latitude, location.coords.longitude);
@@ -206,7 +206,7 @@ export class Mapper {
       if (this.lastLatlng.distanceTo(latlng) > (kvm.getConfigurationOption("minTrackDistance") ? kvm.getConfigurationOption("minTrackDistance") : 5)) {
         //console.log("Add Point to Line at Location: %s", latlng.toString());
         kvm.map.flyTo(latlng);
-        kvm.getActiveLayer().activeFeature.editableLayer.setLatLng(latlng);
+        f.editableLayer.setLatLng(latlng);
         this.lastLatlng = latlng;
       }
     });

@@ -2,6 +2,7 @@ import { Attribute, AttributeSetting } from "./Attribute";
 import { AbstractField, Field } from "./Field";
 import { kvm } from "./app";
 import { createHtmlElement } from "./Util";
+import { Feature } from "./Feature";
 
 /**
  * create a dateTime form field in the structure
@@ -32,10 +33,11 @@ export class DateTimeFormField extends AbstractField implements Field {
     });
   }
 
-  async setValue(val) {
+  async setValue(f: Feature, val) {
     console.log("DateTimeFormField setVal val: -%s-", val);
     this._value = val;
     this._oldValue = val;
+    this._feature = f;
 
     val = kvm.coalesce(val, "");
     if (val != "") {
@@ -61,7 +63,7 @@ export class DateTimeFormField extends AbstractField implements Field {
     return datetime.toLocaleDateString() + " " + datetime.toLocaleTimeString();
   }
 
-  getAutoValue() {
+  getAutoValue(f: Feature) {
     console.log("DateTimeFormField.getAutoValue");
     return kvm.now("T", "");
   }

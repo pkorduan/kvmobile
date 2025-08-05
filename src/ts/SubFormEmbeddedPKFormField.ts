@@ -1,5 +1,6 @@
 import { kvm } from "./app";
 import { Attribute, AttributeSetting } from "./Attribute";
+import { Feature } from "./Feature";
 import { Field } from "./Field";
 import { createHtmlElement } from "./Util";
 
@@ -31,6 +32,8 @@ export class SubFormEmbeddedPKFormField implements Field {
   bttNewSubItem: HTMLButtonElement;
   subItemList: HTMLDivElement;
   spanMsgNewFeature: HTMLSpanElement;
+
+  protected _feature: Feature;
 
   constructor(formId: string, attribute: Attribute) {
     console.info(`new SubFormEmbeddedPKFormField(${formId}, ${attribute.settings.name})`);
@@ -71,11 +74,11 @@ export class SubFormEmbeddedPKFormField implements Field {
    * @param val Der Wert ist leer weil in einem SubFormEmbedded die Werte erst abgefragt
    * werden über die ID des Datensatzes der in id_attribut steht
    */
-  async setValue(val) {
-    const feature = this.attr.layer.activeFeature;
+  async setValue(f: Feature, val: any) {
+    this._feature = f;
     console.log("setValue of SubFormEmbeddedPK FormField " + typeof val + " " + this.settings.name, val);
 
-    if (feature.new) {
+    if (f.new) {
       this.bttNewSubItem.style.display = "none";
       if (!this.spanMsgNewFeature) {
         this.spanMsgNewFeature = createHtmlElement("span");
@@ -86,7 +89,7 @@ export class SubFormEmbeddedPKFormField implements Field {
       this.bttNewSubItem.style.display = "";
       this.spanMsgNewFeature?.remove();
       this.subItemList.innerHTML = "";
-      await this.attr.layer.readVorschauAttributes(this.attr, feature.getDataValue(this.attr.getPKAttribute()), this.subItemList, "editFeature");
+      await this.attr.layer.readVorschauAttributes(this.attr, f.getDataValue(this.attr.getPKAttribute()), this.subItemList, "editFeature");
     }
   }
 

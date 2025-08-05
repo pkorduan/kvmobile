@@ -2,6 +2,7 @@ import { Attribute, AttributeSetting } from "./Attribute";
 import { AbstractField } from "./Field";
 import { kvm } from "./app";
 import { createHtmlElement } from "./Util";
+import { Feature } from "./Feature";
 
 /*
  * create a date form field in the structure
@@ -35,8 +36,9 @@ export class DateFormField extends AbstractField {
   // get(key: string) {
   //     return this.settings[key];
   // }
-  async setValue(val) {
+  async setValue(f: Feature, val) {
     this._oldValue = val;
+    this._feature = f;
     console.debug("val: " + val, 4);
     val = kvm.coalesce(val, "");
     if (this.isValidDate(val)) {
@@ -51,8 +53,9 @@ export class DateFormField extends AbstractField {
     return this._value;
   }
 
-  getAutoValue() {
-    return kvm.today();
+  getAutoValue(f: Feature) {
+    const now = new Date();
+    return now.getFullYear() + "-" + String("0" + (now.getMonth() + 1).toString()).slice(-2) + "-" + String("0" + now.getDate()).slice(-2);
   }
 
   toISO(date) {

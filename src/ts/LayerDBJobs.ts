@@ -17,7 +17,7 @@ export async function runInsert(feature: Feature, delta: { action: "insert"; sql
       const sql = delta.sql;
       await executeSQL(kvm.db, sql);
       await writeDelta(feature, delta);
-      const rsNew = await readDataset(feature.layer);
+      const rsNew = await readDataset(feature);
       resolve(rsNew);
     } catch (ex) {
       reject(ex);
@@ -39,7 +39,7 @@ export async function runUpdate(feature: Feature, delta: { action: "update"; sql
       const sql = delta.sql + " AND endet IS NULL";
       await executeSQL(kvm.db, sql);
       await writeDelta(feature, delta);
-      const rsNew = await readDataset(feature.layer);
+      const rsNew = await readDataset(feature);
       resolve(rsNew);
     } catch (ex) {
       reject(ex);
@@ -90,12 +90,13 @@ export async function runDelete(feature: Feature, delta: { action: "delete"; sql
  * if not allready exists
  * @param object strategy Object with context and information about following processes
  */
-async function backupDataset(layer: Layer) {
+async function backupDataset(feature: Feature) {
   // console.log("backupDataset");
+  const layer = feature.layer;
   const table = layer.getSqliteTableName();
   const tableColumns = layer.getTableColumns();
   const id_attribute = layer.get("id_attribute");
-  const id = layer.activeFeature.getDataValue(id_attribute);
+  const id = feature.getDataValue(id_attribute);
   const sql =
     "\
       INSERT INTO " +
@@ -221,7 +222,7 @@ async function writeDelta(feature: Feature, delta: { action: "insert" | "delete"
       FROM
         deltas 
       WHERE
-        INSTR(sql, '${layer.activeFeature.id}') > 0 AND
+        INSTR(sql, '${feature.id}') > 0 AND
         (
           (action = 'insert' AND '${delta.action}' = 'delete') OR
           (action = 'delete' AND '${delta.action}' = 'insert')
@@ -269,23 +270,24 @@ export async function writeImgDelta(feature: Feature, delta: { action: "insert" 
  * read feature data from database and call function this.next.succFunc
  * @param resultset rs Result set from former function is here not used
  */
-async function readDataset(layer: Layer) {
+async function readDataset(f: Feature) {
   // console.log("readDataset");
+  const layer = f.layer;
   const id_attribute = layer.get("id_attribute");
-  const featureId = layer.activeFeature.getDataValue(id_attribute);
+  const featureId = f.getDataValue(id_attribute);
   const sql = layer.extentSql(kvm.getActiveStelle().replaceParams(layer.settings.query), [`${layer.settings.table_alias}.${id_attribute} = '${featureId}'`, `${layer.settings.table_alias}.endet IS NULL`]);
   console.log("LayerDBJobs->readDataset: ", [sql]);
   return executeSQL(kvm.db, sql);
 }
 
-async function deleteDeltas(layer: Layer) {
+async function deleteDeltas(f: Feature, layer: Layer) {
   // console.log("deleteDeltas");
   let sql = `
     DELETE FROM ${layer.getSqliteTableName()}_deltas
     WHERE
       type = 'sql' AND
       (change = 'update' OR change = 'insert') AND
-      INSTR(delta, '${layer.activeFeature.id}') > 0
+      INSTR(delta, '${f.id}') > 0
   `;
   console.log("Lösche Deltas mit sql: %s", sql);
   return executeSQL(kvm.db, sql);

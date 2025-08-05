@@ -192,7 +192,7 @@ export class ViewFormular extends View {
       const attrName = attr.get("name");
       const val = feature.getDataValue(attrName) == "null" ? null : feature.getDataValue(attrName);
 
-      await attr.formField.setValue(val);
+      await attr.formField.setValue(feature, val);
 
       // TODO
       if (val === null && !attr.isEditable()) {
