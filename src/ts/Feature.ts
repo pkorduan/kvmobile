@@ -101,14 +101,15 @@ export class Feature {
       switch (true) {
         case attribute.settings.default.startsWith("gdi_conditional_val"):
           {
-            const parentLayer = kvm.getLayer(layer.parentLayerId);
-            const parentFeature = parentLayer.getFeature(layer.parentFeatureId);
+            // const parentLayer = kvm.getLayer(layer.parentLayerId);
+            // const parentFeature = parentLayer.getFeature(layer.parentFeatureId);
             // Frage den Spaltennamen ab, von dem der Defaultwert des parentLayers abgefragt werden soll.
             //z.B: entwicklungsphase_id aus gdi_conditional_val('kob', 'baum', 'entwicklungsphase_id', 'uuid = ''$baum_uuid''')
             const column = attribute.settings.default
               .split(",")[2]
               .trim()
               .replace(/^["'](.+(?=["']$))["']$/, "$1");
+            const parentFeature = layer.getParentFeature(this);
             value = parentFeature.getDataValue(column);
             // value = kvm.layers[this.parentLayerId].features.get(this.parentFeatureId).get(column)
           }

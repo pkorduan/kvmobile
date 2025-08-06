@@ -37,7 +37,7 @@ export class SubFormFKFormField extends AbstractField {
   }
 
   async setValue(f: Feature, val) {
-    console.log("Attribute: %s, SubFormFKFormField.setValue options: %o, value: %s", this.attr?.settings.name, this.attr?.settings.options, val);
+    console.error("Attribute: %s, SubFormFKFormField.setValue options: %o, value: %s", this.attr?.settings.name, this.attr?.settings.options, val);
     // ToDo: Prüfen warum hier noch mal default gesetzt wird. Das wird auch schon in getNewData gemacht.
     if (val) {
       this.parentFeatureId = val;

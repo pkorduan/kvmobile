@@ -150,9 +150,9 @@ export class Layer extends PropertyChangeSupport {
   numExecutedDeltas: number;
   isLoaded: boolean = false;
   isActive: boolean = false;
-  specifiedValues: { [key: string]: any } = {};
-  parentLayerId: string;
-  parentFeatureId: string;
+  // specifiedValues: { [key: string]: any } = {};
+  // parentLayerId: string;
+  // parentFeatureId: string;
 
   layerFilter = new Map<string, { operator: string; value: string }>();
   parentFK: { parentLayer: Layer; parentIdColumn: string; fkColumn: string } = undefined;
@@ -281,6 +281,22 @@ export class Layer extends PropertyChangeSupport {
         return feature.getDataValue(fkAttr) === featureId;
       })
     );
+  }
+
+  /**
+   * gibt den ParentFeature zurück, falls es einen gibt
+   *
+   * @returns {Feature}
+   */
+  getParentFeature(f: Feature): Feature {
+    const parentFK = this.getParentFK();
+    if (parentFK) {
+      const parentFeatureId = f.getDataValue(parentFK.fkColumn);
+      if (parentFeatureId) {
+        parentFK.parentLayer.getFeature(parentFeatureId);
+      }
+    }
+    return;
   }
 
   /**
@@ -1553,7 +1569,8 @@ export class Layer extends PropertyChangeSupport {
             break;
           case attribute.get("form_element_type") == "SubFormFK":
             {
-              value = this.specifiedValues[attribute.getFKAttribute()];
+              // ParentF
+              // value = this.specifiedValues[attribute.getFKAttribute()];
             }
             break;
           case attribute.get("default") &&
@@ -1564,8 +1581,9 @@ export class Layer extends PropertyChangeSupport {
               switch (true) {
                 case defAttr.startsWith("gdi_conditional_val"):
                   {
-                    const parentLayer = kvm.getLayer(this.parentLayerId);
-                    const parentFeature = parentLayer.getFeature(this.parentFeatureId);
+                    debugger;
+                    // const parentLayer = kvm.getLayer(this.parentLayerId);
+                    // const parentFeature = parentLayer.getFeature(this.parentFeatureId);
                     // Frage den Spaltennamen ab, von dem der Defaultwert des parentLayers abgefragt werden soll.
                     //z.B: entwicklungsphase_id aus gdi_conditional_val('kob', 'baum', 'entwicklungsphase_id', 'uuid = ''$baum_uuid''')
                     const column = attribute
@@ -1573,7 +1591,7 @@ export class Layer extends PropertyChangeSupport {
                       .split(",")[2]
                       .trim()
                       .replace(/^["'](.+(?=["']$))["']$/, "$1");
-                    value = parentFeature.getDataValue(column);
+                    // value = parentFeature.getDataValue(column);
                     // value = kvm.layers[this.parentLayerId].features.get(this.parentFeatureId).get(column)
                   }
                   break;
@@ -1777,6 +1795,7 @@ export class Layer extends PropertyChangeSupport {
         feature.geom = feature.newGeom;
         feature.setDataValue(this.settings.geometry_attribute, feature.wkxToEwkb(feature.geom));
 
+        // RTR Parent
         const parentFK = this.getParentFK();
         if (parentFK && !feature.getDataValue(parentFK.fkColumn)) {
           const parentFeatureId = await this._bestimmeUbergeordnetesObjekt(feature);
@@ -1785,7 +1804,7 @@ export class Layer extends PropertyChangeSupport {
             feature.data[parentFK.fkColumn] = parentFeatureId;
             kvm.mapHint(`Übergeordnetes Objekt "${parentLayer.getFeature(parentFeatureId).getDataValue(parentLayer.get("name_attribute"))}" aus Layer ${parentLayer.title} über Markerposition ermittelt.`, 5000);
           } else {
-            await Util.alertNative(`Der Marker liegt nicht im räumlichen Bereich eines Objektes des Layers ${parentLayer.title}.`);
+            await Util.alertNative(`Der Marker liegt nicht im räumlichen Bereich eines Objektes des Layers ${parentLayer.title}.`, "Warnung");
           }
         }
         this.startEditing(feature);
@@ -1948,7 +1967,11 @@ export class Layer extends PropertyChangeSupport {
       this.activateFeature(feature, false);
     } else {
       // Beende das Anlegen eines neuen Features
-      kvm.map.removeLayer(kvm.getActiveFeature().editableLayer);
+      if (feature.editableLayer) {
+        kvm.map.removeLayer(feature.editableLayer);
+      } else {
+        console.error("feature.editableLayer was null");
+      }
       // Löscht die editierbare Geometrie
       feature.deactivate();
       kvm.showView("map");
@@ -2281,17 +2304,17 @@ export class Layer extends PropertyChangeSupport {
   async runInsertStrategy(feature: Feature, changes: AttributteDelta[]) {
     if (changes?.length > 0) {
       const delta = this.getInsertDelta(feature, changes);
-      await this._processImageChanges(feature, changes);
       try {
+        await this._processImageChanges(feature, changes);
         const rs = await LayerDBJobs.runInsert(feature, delta);
         feature.setData(rs.rows.item(0));
         feature.new = false;
         await this.addFeature(feature);
         this.drawFeature(feature);
       } catch (ex) {
-        const msg = `Fehler in Funktion nach dem Anlegen des Datensatzes in runInsertStrategy ${ex.message}`;
+        const msg = `Fehler in Funktion beim Speichern des Datensatzes in runInsertStrategy ${ex.message}`;
         console.error(msg);
-        throw new Error(msg, { cause: ex });
+        throw new Error("Fehler beim Speichern.", { cause: ex });
       }
     }
   }
@@ -2397,8 +2420,8 @@ export class Layer extends PropertyChangeSupport {
   afterDeleteDataset(feature: Feature) {
     console.log("afterDeleteDataset");
     // let layerId = this.activeFeature.leafletLayer;
-    let parentLayerId = this.parentLayerId;
-    let parentFeatureId = this.parentFeatureId;
+    const parentFK = this.getParentFK();
+    // let parentFeatureId = this.parentFeatureId;
 
     if (this.hasGeometry) {
       //console.log('Remove Editable Geometrie');
@@ -2417,8 +2440,9 @@ export class Layer extends PropertyChangeSupport {
     //console.log('Lösche activeFeature')
     // delete this._activeFeature;
 
-    if (parentLayerId && parentFeatureId) {
-      kvm.editFeature(parentLayerId, parentFeatureId);
+    const parentFeature = this.getParentFeature(feature);
+    if (parentFeature) {
+      kvm.editFeature(parentFeature);
     } else {
       //console.log('Wechsel die Ansicht zur Featurelist.');
       kvm.showView(!kvm.menu.isActiveView("map") ? "featurelist" : "map");
@@ -3219,13 +3243,14 @@ export class Layer extends PropertyChangeSupport {
     //   parentLayer.cancelEditGeometry();
     // }
     const subLayer = kvm.getLayer(options.subLayerId);
-    subLayer.parentLayerId = options.parentLayerId;
-    subLayer.parentFeatureId = this.parentFeatureId;
-    subLayer.specifiedValues[options.fkAttribute] = this.parentFeatureId;
+    // subLayer.parentLayerId = options.parentLayerId;
+    // subLayer.parentFeatureId = this.parentFeatureId;
+    // subLayer.specifiedValues[options.fkAttribute] = this.parentFeatureId;
     subLayer.activate();
     const values = {};
     values[options.fkAttribute] = options.parentFeatureId;
     const feature = await subLayer.createNewFeature(values);
+
     await kvm.editFeature(feature);
     // kvm.closeSperrDiv(`Neues Formular für Layer ${subLayer.title} geladen.`);
     sperrBildschirm.close();
@@ -3295,6 +3320,7 @@ export class Layer extends PropertyChangeSupport {
   // }
 
   notNullValid() {
+    console.error("layer.notNullValid");
     const att = this.attributes.filter((attribute) => {
       return !attribute.isAutoAttribute("") && !attribute.isPseudoAttribute() && attribute.get("nullable") == 0 && attribute.formField.getValue() == null;
     });
