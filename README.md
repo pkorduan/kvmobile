@@ -16,6 +16,23 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 
 # Change log
 
+## 1.20.2
+- Bugfixes
+  - Korrekte Anzeige Copyright
+  - Korrektur beim Speichern von Datensätzen
+  - Korrektur nach Speichern mit Plus-Button
+  - Sync von mehreren Bildern
+  - Korrektur des Fehlers nach Löschen eines Baumes
+  - Richtige Anwendung des Attributes visible zum Ausblenden oder konditionalen Ausblenden
+- Features
+  - Anzeige des Namen der Stelle nachdem man sie geladen hat.
+  - Auswahl eines Layers mit Geometrie nach dem Laden der Layer.
+  - Sofortiges Laden der Layer wenn man nur zu einer Stelle gehört.
+  - Anzeige des richtigen Layertitel im Popup
+- Maintainance
+  - Anpassung des Sync-Modus auf sync_all für alle Layer
+  - Anpassung zindex neuer Features
+
 ## 1.20.1
 
 - Bugfixes
