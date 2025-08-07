@@ -1781,8 +1781,8 @@ export class Kvm extends PropertyChangeSupport {
         }
       }
       kvm.showView("dataView");
-      this.isEditMode = false;
     }
+    this.isEditMode = false;
 
     kvm.controller.mapper.clearWatch(); // GPS-Tracking ausschalten
   }
