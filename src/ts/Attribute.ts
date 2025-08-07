@@ -19,12 +19,24 @@ import { Field } from "./Field";
 import { Layer } from "./Layer";
 import { createHtmlElement } from "./Util";
 import { kvm } from "./app";
+import { fork } from "child_process";
 
 export type OptionsAttributtes = {
   value: any;
   output: string;
   requires_value?: any;
 };
+
+export type ReferenceKeys = {
+  pk_id: string;
+  fk_id: string;
+}
+export interface AttributeOptions {
+  ref_layer_id: number;
+  keys: ReferenceKeys[];
+  window_type: string;
+  display: string;
+}
 
 export interface AttributeSetting {
   index?: number;
@@ -73,6 +85,7 @@ export class Attribute {
   layer: Layer;
   formField: Field;
   viewField: DataViewField;
+  options: AttributeOptions;
 
   constructor(layer: Layer, settings: AttributeSetting) {
     //console.log('Erzeuge Attributeobjekt with settings %o', settings);
@@ -83,6 +96,7 @@ export class Attribute {
     this.settings.layerId = layer.get("id");
     this.formField = this.createFormField();
     this.viewField = this.createViewField();
+    this.options = this.getOptions();
     return this;
   }
 
@@ -128,7 +142,7 @@ export class Attribute {
    * @return string: ID of sublayer
    */
   getGlobalSubLayerId() {
-    return `${this.settings.stelleId}_${this.settings.options.split(";")[0].split(",")[0]}`;
+    return `${this.settings.stelleId}_${this.options.ref_layer_id}`;
   }
 
   /**
@@ -146,10 +160,48 @@ export class Attribute {
     return this.settings.stelleId + "_" + this.settings.layerId;
   }
 
+  getOptions() {
+    let options:AttributeOptions;
+    if (this.settings.options.startsWith('{')) {
+      options = JSON.parse(this.settings.options);
+    }
+    else {
+      const keyType = this.settings.form_element_type.toLowerCase().slice(-2);
+      const semicolonParts = this.settings.options.split(";");
+      const commaParts = semicolonParts[0].split(",");
+      let colonParts = [];
+      let keys:ReferenceKeys[];
+      // loop over commaParts starting whith second element
+      for (let i = 1; i < commaParts.length; i++) {
+        colonParts = commaParts[i].split(':');
+        if (keyType === 'pk') { // pk first fk second
+          keys.push({
+            "pk_id": colonParts[0],
+            "fk_id": colonParts[colonParts.length - 1]
+          });
+        }
+        else { // fk first pk second
+          keys.push({
+            "pk_id": colonParts[colonParts.length - 1],
+            "fk_id": colonParts[0]
+          });
+        }
+      }
+      options = {
+        "ref_layer_id": parseInt(commaParts[0]),
+        "keys": keys,
+        "window_type": semicolonParts[1],
+        "display": (commaParts.length === 2 ? commaParts[1].split(':')[commaParts[1].split(':').length - 1] : commaParts[commaParts.length - 1]) // for only two comma parts (id and keys), take display from the only or second key, else the last comma part, Note: SubFormFK normaly have not display (Vorschau)
+      }
+    }
+    return options;
+  }
+
   /**
    * Return the name of the attribute in sub-layer that is the foreign key to the table of the layer of this form element.
    * It extracts uuid from this attribute options string.
    * 832,uuid:baumuuid,datum bearbeiter K kontrolluuid;no_new_window
+   * Works only correctly if we have one key reference column in that options!
    * @return string
    */
   getPKAttribute() {
@@ -166,6 +218,7 @@ export class Attribute {
    * Return baumuuid from this sample attribute options string
    * 832,uuid:baumuuid,datum bearbeiter K kontrolluuid;no_new_window or
    * 832,baumuuid,datum bearbeiter K kontrolluuid;no_new_window
+   * Works only correctly if we have one key referecne column in that options!
    * @return string
    */
   getFKAttribute() {
@@ -185,7 +238,7 @@ export class Attribute {
    * @returns string
    */
   getVorschauOption() {
-    let vorschauOption = this.settings.options.split(";")[0].split(",")[2];
+    let vorschauOption = this.options.display;
     if (typeof vorschauOption == "undefined") {
       const layer = kvm.getLayer(this.getGlobalParentLayerId());
       vorschauOption = layer ? layer.title : "zurück";
