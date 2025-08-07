@@ -25,6 +25,8 @@ export interface Field {
 
   hide(): void;
   show(): void;
+
+  isVisible(): boolean;
 }
 
 export abstract class AbstractField implements Field {
@@ -148,5 +150,9 @@ export abstract class AbstractField implements Field {
     // if (dom?.parentElement) {
     //   dom.parentElement.style.display = "";
     // }
+  }
+
+  isVisible() {
+    return this.dom && this.dom.style.display !== "none";
   }
 }

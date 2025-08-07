@@ -95,6 +95,31 @@ export class ViewFormular extends View {
     console.groupEnd();
   }
 
+  hideEmptyGroups(f: Feature) {
+    const layer = f.layer;
+    for (let attrGroupId = 0; attrGroupId < layer.attributeGroups.length; attrGroupId++) {
+      const attrGrp = layer.attributeGroups[attrGroupId];
+      const attrGroupBody = document.getElementById("attribute-group-body-" + attrGroupId);
+      console.info(attrGroupBody);
+      function hasVisibleItems() {
+        for (let attrIdx = 0; attrIdx < attrGrp.attributeIds.length; attrIdx++) {
+          const attr = layer.attributes[attrGrp.attributeIds[attrIdx]];
+          console.info(attr);
+          const isVisible = attr.formField.isVisible();
+          if (isVisible) {
+            return true;
+          }
+        }
+        return false;
+      }
+      if (!hasVisibleItems()) {
+        attrGroupBody.parentElement.style.display = "none";
+      } else {
+        attrGroupBody.parentElement.style.display = "";
+      }
+    }
+  }
+
   private hasChanged(): boolean {
     const layer = this.feature.layer;
     for (const attr of layer.attributes) {
@@ -217,6 +242,7 @@ export class ViewFormular extends View {
         layer.vcheckAttributes(attr.get("name"), val, attr.formField, "form");
       }
     }
+    this.hideEmptyGroups(feature);
     console.groupEnd();
   }
 

@@ -80,7 +80,7 @@ export class ViewDataView extends View {
     h1.innerText = layer.title + " (DataView)";
     const dataViewContent = createHtmlElement("div", dataView);
     // $("#dataView").append(`<h1 style="margin-left: 5px;">${this.title}</h1>`).append('<div id="dataViewDiv">');
-    layer.attributeGroups.forEach((attributeGroup) => {
+    layer.attributeGroups.forEach((attributeGroup, idx) => {
       if (attributeGroup.attributeIds.length > 0) {
         const attrGroupDiv = (attributeGroup.div = createHtmlElement("div", dataViewContent, "attribute-group" + (attributeGroup.collapsed ? " collapsed" : "")));
 
@@ -89,6 +89,7 @@ export class ViewDataView extends View {
           attrGroupDiv.classList.toggle("collapsed");
         });
         const attrGrpBody = createHtmlElement("div", attrGroupDiv, "attribute-group-body");
+        attrGrpBody.id = "dataview-attribute-group-body-" + idx;
         attrGrpHead.append(attributeGroup.name); // befülle group header
         attributeGroup.attributeIds.forEach((attributeId) => {
           const attr = layer.attributes[attributeId];
