@@ -103,7 +103,7 @@ export abstract class AbstractField implements Field {
     return this.dom;
   }
 
-  lsts: { (src: Field, hasChanged: boolean): void }[] = [];
+  lsts: { (src: Field, hasChanged: boolean): void | Promise<any> }[] = [];
 
   getValue(action?: string) {
     return this._value;
@@ -124,9 +124,9 @@ export abstract class AbstractField implements Field {
     this.lsts.push(lst);
   }
 
-  fireChanged() {
+  async fireChanged() {
     for (let i = 0; i < this.lsts.length; i++) {
-      this.lsts[i](this, this.hasChanged());
+      await this.lsts[i](this, this.hasChanged());
     }
   }
 

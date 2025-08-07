@@ -78,6 +78,7 @@ export class ViewFormular extends View {
               attr.formField.addChangeListener((formField) => {
                 // const attributeId = $(evt.target).attr("id");
                 // const attribute = kvm.getActiveLayer().attributes[attributeId];
+                console.error("check for changes");
                 const hasChanged = this.hasChanged();
                 // console.log("Attribute: %s changed to value: %s hasChanged=%s", attr.get("name"), attr.formField.getValue(), hasChanged);
                 this.app.menu.enableSaveFeatureButton(hasChanged);
