@@ -1248,17 +1248,48 @@ export class Layer extends PropertyChangeSupport {
     console.groupEnd();
 
     //this.selectFeature(feature, true);
-    if (feature.new) {
-      // TODO jquery
-      $("#newAfterCreateDiv").show();
-    } else {
-      $("#newAfterCreateDiv").hide();
+    // if (feature.new) {
+    //   // TODO jquery
+    //   $("#newAfterCreateDiv").show();
+    // } else {
+    //   $("#newAfterCreateDiv").hide();
+    // }
+
+    try {
+      // this.hideEmptyGroups(feature);
+    } catch (ex) {
+      console.error("FGFGGF", ex);
     }
     // if (this.hasEditiersperreAttribute && feature.getDataValue(this.editiersperreAttribute.get("name"))) {
     //   $("#editFeatureButton").hide();
     // } else {
     //   $("#editFeatureButton").show();
     // }
+  }
+
+  hideEmptyGroups(f: Feature) {
+    const layer = f.layer;
+    for (let attrGroupId = 0; attrGroupId < layer.attributeGroups.length; attrGroupId++) {
+      const attrGrp = layer.attributeGroups[attrGroupId];
+      const attrGroupBody = document.getElementById("dataview-attribute-group-body-" + attrGroupId);
+      console.info(attrGroupBody);
+      function hasVisibleItems() {
+        for (let attrIdx = 0; attrIdx < attrGrp.attributeIds.length; attrIdx++) {
+          const attr = layer.attributes[attrGrp.attributeIds[attrIdx]];
+          console.info(attr);
+          const isVisible = attr.formField.isVisible();
+          if (isVisible) {
+            return true;
+          }
+        }
+        return false;
+      }
+      // if (!hasVisibleItems()) {
+      //   attrGroupBody.parentElement.style.backgroundColor = "blue";
+      // } else {
+      //   attrGroupBody.parentElement.style.backgroundColor = "";
+      // }
+    }
   }
 
   // /**
@@ -1594,12 +1625,11 @@ export class Layer extends PropertyChangeSupport {
                     // value = parentFeature.getDataValue(column);
                     // value = kvm.layers[this.parentLayerId].features.get(this.parentFeatureId).get(column)
                     if (copyData) {
-                      const args = kvm.get_args(attribute.get('default'), copyData);
+                      const args = kvm.get_args(attribute.get("default"), copyData);
                       if (args?.length === 4) {
                         value = await kvm.gdi_conditional_val(args[0], args[1], args[2], args[3]);
-                      }
-                      else {
-                        throw new Error(`Kann Default-Wert für Parameter ${attribute_name} an Hand der Definition "${attribute.get('default')}" nicht ermitteln!`);
+                      } else {
+                        throw new Error(`Kann Default-Wert für Parameter ${attribute_name} an Hand der Definition "${attribute.get("default")}" nicht ermitteln!`);
                       }
                     }
                   }
@@ -2152,10 +2182,10 @@ export class Layer extends PropertyChangeSupport {
   // }
 
   /**
-   * 
-   * @param f 
-   * @param action 
-   * @returns 
+   *
+   * @param f
+   * @param action
+   * @returns
    */
   collectChanges(f: Feature, action: string): AttributteDelta[] {
     //kvm.log("Layer.collectChanges " + (action ? " with action: " + action : ""), 4);
@@ -2171,7 +2201,7 @@ export class Layer extends PropertyChangeSupport {
       .map((attr: Attribute): AttributteDelta => {
         console.log("attr name: %s", attr.get("name"));
         //console.log('attr.privilege: %s', attr.get('privilege'));
-        if (attr.get("name") != id_attribute && !attr.isAutoAttribute(action) && !attr.isPseudoAttribute() && attr.get("saveable") !== '0' && attr.get('table_name') === this.get('table_name')) {
+        if (attr.get("name") != id_attribute && !attr.isAutoAttribute(action) && !attr.isPseudoAttribute() && attr.get("saveable") !== "0" && attr.get("table_name") === this.get("table_name")) {
           const attrName = attr.settings.name;
           let oldVal = f.getDataValue(attrName) == "null" ? null : f.getDataValue(attrName);
           let newVal = attr.formField.getValue(action);

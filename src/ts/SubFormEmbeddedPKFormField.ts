@@ -68,9 +68,8 @@ export class SubFormEmbeddedPKFormField implements Field {
         fkAttribute: attribute.getFKAttribute(),
         parentFeatureId: kvm.getActiveFeature().id,
       });
-    }
-    catch (err) {
-      await alertNative(err.message, 'Warnung');
+    } catch (err) {
+      await alertNative(err.message, "Warnung");
       kvm.writeLog(err.message);
     }
   }
@@ -149,5 +148,9 @@ export class SubFormEmbeddedPKFormField implements Field {
     if (this.element) {
       this.element.style.display = "";
     }
+  }
+
+  isVisible(): boolean {
+    return this.element && this.element.style.display !== "none";
   }
 }
