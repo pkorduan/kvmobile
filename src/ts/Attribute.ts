@@ -169,8 +169,9 @@ export class Attribute {
       const keyType = this.settings.form_element_type.toLowerCase().slice(-2);
       const semicolonParts = this.settings.options.split(";");
       const commaParts = semicolonParts[0].split(",");
+      let display;
       let colonParts = [];
-      let keys:ReferenceKeys[];
+      let keys:ReferenceKeys[] = [];
       // loop over commaParts starting whith second element
       for (let i = 1; i < commaParts.length; i++) {
         colonParts = commaParts[i].split(':');
@@ -187,11 +188,16 @@ export class Attribute {
           });
         }
       }
+      if (keyType === 'pk') {
+        // for only two comma parts (id and keys), take display from the only or second key, else the last comma part, Note: SubFormFK normaly have not display (Vorschau)
+        display = (commaParts.length === 2 ? commaParts[1].split(':')[commaParts[1].split(':').length - 1] : commaParts[commaParts.length - 1]);
+      }
+
       options = {
         "ref_layer_id": parseInt(commaParts[0]),
         "keys": keys,
         "window_type": semicolonParts[1],
-        "display": (commaParts.length === 2 ? commaParts[1].split(':')[commaParts[1].split(':').length - 1] : commaParts[commaParts.length - 1]) // for only two comma parts (id and keys), take display from the only or second key, else the last comma part, Note: SubFormFK normaly have not display (Vorschau)
+        "display": display
       }
     }
     return options;

@@ -24,6 +24,7 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
   - Sync von mehreren Bildern
   - Korrektur des Fehlers nach Löschen eines Baumes
   - Richtige Anwendung des Attributes visible zum Ausblenden oder konditionalen Ausblenden
+  - Fix Bildanlage
 - Features
   - Anzeige des Namen der Stelle nachdem man sie geladen hat.
   - Auswahl eines Layers mit Geometrie nach dem Laden der Layer.
