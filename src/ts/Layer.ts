@@ -1522,7 +1522,7 @@ export class Layer extends PropertyChangeSupport {
    * e.g. sequence attributes, version and the uuid attribute
    * @returns
    */
-  async getNewData() {
+  async getNewData(copyData?: { [id: string]: any }) {
     // loop through the attributes and generate key value pairs for autoAttributes
     const newData = {};
 
@@ -1581,18 +1581,27 @@ export class Layer extends PropertyChangeSupport {
               switch (true) {
                 case defAttr.startsWith("gdi_conditional_val"):
                   {
-                    debugger;
+                    // debugger;
                     // const parentLayer = kvm.getLayer(this.parentLayerId);
                     // const parentFeature = parentLayer.getFeature(this.parentFeatureId);
                     // Frage den Spaltennamen ab, von dem der Defaultwert des parentLayers abgefragt werden soll.
                     //z.B: entwicklungsphase_id aus gdi_conditional_val('kob', 'baum', 'entwicklungsphase_id', 'uuid = ''$baum_uuid''')
-                    const column = attribute
-                      .get("default")
-                      .split(",")[2]
-                      .trim()
-                      .replace(/^["'](.+(?=["']$))["']$/, "$1");
+                    // const column = attribute
+                    //   .get("default")
+                    //   .split(",")[2]
+                    //   .trim()
+                    //   .replace(/^["'](.+(?=["']$))["']$/, "$1");
                     // value = parentFeature.getDataValue(column);
                     // value = kvm.layers[this.parentLayerId].features.get(this.parentFeatureId).get(column)
+                    if (copyData) {
+                      const args = kvm.get_args(attribute.get('default'), copyData);
+                      if (args?.length === 4) {
+                        value = await kvm.gdi_conditional_val(args[0], args[1], args[2], args[3]);
+                      }
+                      else {
+                        throw new Error(`Kann Default-Wert für Parameter ${attribute_name} an Hand der Definition "${attribute.get('default')}" nicht ermitteln!`);
+                      }
+                    }
                   }
                   break;
                 case defAttr.includes("gdi_current_date"):
@@ -1706,7 +1715,7 @@ export class Layer extends PropertyChangeSupport {
   async createNewFeature(copyData?: { [id: string]: any }) {
     console.log("Layer.newFeature");
     // this.deactivateFeature();
-    const feature = new Feature(await this.getNewData(), this, true);
+    const feature = new Feature(await this.getNewData(copyData), this, true);
     if (copyData) {
       feature.setCopyData(copyData);
     }
@@ -2142,6 +2151,12 @@ export class Layer extends PropertyChangeSupport {
   //   return this.hasActiveFeature() && this.activeFeature.id === feature.id;
   // }
 
+  /**
+   * 
+   * @param f 
+   * @param action 
+   * @returns 
+   */
   collectChanges(f: Feature, action: string): AttributteDelta[] {
     //kvm.log("Layer.collectChanges " + (action ? " with action: " + action : ""), 4);
     console.groupCollapsed("collectChanges");
@@ -2156,7 +2171,7 @@ export class Layer extends PropertyChangeSupport {
       .map((attr: Attribute): AttributteDelta => {
         console.log("attr name: %s", attr.get("name"));
         //console.log('attr.privilege: %s', attr.get('privilege'));
-        if (attr.get("name") != id_attribute && !attr.isAutoAttribute(action) && !attr.isPseudoAttribute() && attr.settings.privilege != "0") {
+        if (attr.get("name") != id_attribute && !attr.isAutoAttribute(action) && !attr.isPseudoAttribute() && attr.get("saveable") !== '0' && attr.get('table_name') === this.get('table_name')) {
           const attrName = attr.settings.name;
           let oldVal = f.getDataValue(attrName) == "null" ? null : f.getDataValue(attrName);
           let newVal = attr.formField.getValue(action);
@@ -2344,6 +2359,7 @@ export class Layer extends PropertyChangeSupport {
       //   this.createImgDeltas(imgChanges);
       // }
       changes = this.addAutoChanges(f, changes, type);
+      // changes = this.addDefaultValues(f, changes, type);
     }
     return changes;
   }

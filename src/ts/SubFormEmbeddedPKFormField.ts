@@ -2,7 +2,7 @@ import { kvm } from "./app";
 import { Attribute, AttributeSetting } from "./Attribute";
 import { Feature } from "./Feature";
 import { Field } from "./Field";
-import { createHtmlElement } from "./Util";
+import { alertNative, createHtmlElement } from "./Util";
 
 /*
  * create a SubFormEmbeddedPK form field in the structure
@@ -59,14 +59,20 @@ export class SubFormEmbeddedPKFormField implements Field {
   }
 
   async bttNewSubItemClicked() {
-    const attribute = this.attr;
-    console.info(`new SubLayerItem globalLayerId=${attribute.getGlobalLayerId()} globalSubLayerId=${attribute.getGlobalSubLayerId()} FKAttribute=${attribute.getFKAttribute()}`);
-    await kvm.newSubFeature({
-      parentLayerId: attribute.getGlobalLayerId(),
-      subLayerId: attribute.getGlobalSubLayerId(),
-      fkAttribute: attribute.getFKAttribute(),
-      parentFeatureId: kvm.getActiveFeature().id,
-    });
+    try {
+      const attribute = this.attr;
+      console.info(`new SubLayerItem globalLayerId=${attribute.getGlobalLayerId()} globalSubLayerId=${attribute.getGlobalSubLayerId()} FKAttribute=${attribute.getFKAttribute()}`);
+      await kvm.newSubFeature({
+        parentLayerId: attribute.getGlobalLayerId(),
+        subLayerId: attribute.getGlobalSubLayerId(),
+        fkAttribute: attribute.getFKAttribute(),
+        parentFeatureId: kvm.getActiveFeature().id,
+      });
+    }
+    catch (err) {
+      await alertNative(err.message, 'Warnung');
+      kvm.writeLog(err.message);
+    }
   }
 
   /**

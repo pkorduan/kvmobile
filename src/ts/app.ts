@@ -2160,7 +2160,7 @@ export class Kvm extends PropertyChangeSupport {
     return sql;
   }
 
-  gdi_conditional_val(schema_name, table_name, column_name, condition) {
+  async gdi_conditional_val(schema_name:string, table_name:string, column_name:string, condition:string) {
     const sql = `
       SELECT
         ${column_name} AS val
@@ -2169,7 +2169,22 @@ export class Kvm extends PropertyChangeSupport {
       WHERE
         ${condition}
     `;
-    return sql;
+
+    const rs = await executeSQL(kvm.db, sql);
+    return (rs.rows.length === 0 ? null : rs.rows.item(0).val);
+  }
+
+  get_args(input, data) {
+    let match = input.match(/\(([\s\S]*)\)/); // [\s\S]* matches everything including newlines
+    let arr:string[] = [];
+    if (match) {
+      const parts = match[1].replace(/''/g, "'").replace(/\$(\w+)/g, (_, key) => data[key] ?? `$${key}`).split(',');
+      arr.push(parts[0].trim().replace(/^'(.*)'$/, '$1'));
+      arr.push(parts[1].trim().replace(/^'(.*)'$/, '$1'));
+      arr.push(parts[2].trim().replace(/^'(.*)'$/, '$1'));
+      arr.push(parts[3].trim().replace(/^'(.*)'$/, '$1'));
+      return arr;
+    }
   }
 
   msg(msg: string, title: string = "") {
