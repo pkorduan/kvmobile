@@ -1781,8 +1781,8 @@ export class Kvm extends PropertyChangeSupport {
         }
       }
       kvm.showView("dataView");
-      this.isEditMode = false;
     }
+    this.isEditMode = false;
 
     kvm.controller.mapper.clearWatch(); // GPS-Tracking ausschalten
   }
@@ -1809,8 +1809,8 @@ export class Kvm extends PropertyChangeSupport {
       const changes = this._activeLayer.collectChanges(this._activeFeature, "update");
       if (changes.length > 0) {
         console.error(`app.newSubFeature changes: ${this._activeFeature.layer.title} ${this._activeFeature.getDataValue(this._activeLayer.get("id_attribute"))}`);
-        const cancel = await Util.confirm("Es sind noch offene Änderungen. Diese müssen erst gespeichert werden.", "Bitte Bestätigen", "Abbrechen", "Ohne Speichern Fortfahren");
-        if (cancel) {
+        const proceed = await Util.confirm("Es sind noch offene Änderungen. Diese müssen erst gespeichert werden.", "Bitte Bestätigen", "Ohne Speichern Fortfahren", "Abbrechen");
+        if (!proceed) {
           return;
         }
       }
@@ -1860,8 +1860,8 @@ export class Kvm extends PropertyChangeSupport {
       const changes = this._activeLayer.collectChanges(this._activeFeature, this._activeFeature.new ? "insert" : "update");
       if (changes.length > 0) {
         console.error(`layer.editFeature: changes: ${this._activeFeature.layer.title} ${this._activeFeature.getDataValue(layer.get("id_attribute"))}`);
-        const cancel = await Util.confirm("Es sind noch offene Änderungen. Diese müssen erst gespeichert werden.", "", "Abbrechen", "Ohne Speichern Fortfahren");
-        if (cancel) {
+        const proceed = await Util.confirm("Es sind noch offene Änderungen. Diese müssen erst gespeichert werden.", "Bitte Bestätigen", "Ohne Speichern Fortfahren", "Abbrechen");
+        if (!proceed) {
           return;
         }
       }
@@ -2160,7 +2160,7 @@ export class Kvm extends PropertyChangeSupport {
     return sql;
   }
 
-  async gdi_conditional_val(schema_name:string, table_name:string, column_name:string, condition:string) {
+  async gdi_conditional_val(schema_name: string, table_name: string, column_name: string, condition: string) {
     const sql = `
       SELECT
         ${column_name} AS val
@@ -2171,18 +2171,21 @@ export class Kvm extends PropertyChangeSupport {
     `;
 
     const rs = await executeSQL(kvm.db, sql);
-    return (rs.rows.length === 0 ? null : rs.rows.item(0).val);
+    return rs.rows.length === 0 ? null : rs.rows.item(0).val;
   }
 
   get_args(input, data) {
     let match = input.match(/\(([\s\S]*)\)/); // [\s\S]* matches everything including newlines
-    let arr:string[] = [];
+    let arr: string[] = [];
     if (match) {
-      const parts = match[1].replace(/''/g, "'").replace(/\$(\w+)/g, (_, key) => data[key] ?? `$${key}`).split(',');
-      arr.push(parts[0].trim().replace(/^'(.*)'$/, '$1'));
-      arr.push(parts[1].trim().replace(/^'(.*)'$/, '$1'));
-      arr.push(parts[2].trim().replace(/^'(.*)'$/, '$1'));
-      arr.push(parts[3].trim().replace(/^'(.*)'$/, '$1'));
+      const parts = match[1]
+        .replace(/''/g, "'")
+        .replace(/\$(\w+)/g, (_, key) => data[key] ?? `$${key}`)
+        .split(",");
+      arr.push(parts[0].trim().replace(/^'(.*)'$/, "$1"));
+      arr.push(parts[1].trim().replace(/^'(.*)'$/, "$1"));
+      arr.push(parts[2].trim().replace(/^'(.*)'$/, "$1"));
+      arr.push(parts[3].trim().replace(/^'(.*)'$/, "$1"));
       return arr;
     }
   }

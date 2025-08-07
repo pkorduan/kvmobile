@@ -337,6 +337,7 @@ export async function confirm(message: string, title?: string, okButtonText?: st
     navigator.notification.confirm(
       message,
       (buttonIndex) => {
+        console.info("confirmed: " + (buttonIndex === 1));
         resolve(buttonIndex === 1);
       },
       title,

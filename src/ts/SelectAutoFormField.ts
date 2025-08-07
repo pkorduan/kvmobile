@@ -322,7 +322,7 @@ export class SelectAutoFormField extends AbstractField implements Field {
     this.lsts.push(lst);
   }
 
-  fireChanged() {
+  async fireChanged() {
     for (let i = 0; i < this.lsts.length; i++) {
       this.lsts[i](this, this.hasChanged());
     }
