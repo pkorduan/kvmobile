@@ -65,6 +65,10 @@ export class DataViewField {
     }
   }
 
+  isVisible(): boolean {
+    return this.dom && this.dom.style.display !== "none";
+  }
+
   async setDocumentValue(val) {
     try {
       console.error(`DataViewField.setDocumentValue(${val})`);

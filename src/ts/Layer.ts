@@ -1256,7 +1256,7 @@ export class Layer extends PropertyChangeSupport {
     // }
 
     try {
-      // this.hideEmptyGroups(feature);
+      this.hideEmptyGroups(feature);
     } catch (ex) {
       console.error("FGFGGF", ex);
     }
@@ -1272,23 +1272,20 @@ export class Layer extends PropertyChangeSupport {
     for (let attrGroupId = 0; attrGroupId < layer.attributeGroups.length; attrGroupId++) {
       const attrGrp = layer.attributeGroups[attrGroupId];
       const attrGroupBody = document.getElementById("dataview-attribute-group-body-" + attrGroupId);
-      console.info(attrGroupBody);
+
       function hasVisibleItems() {
         for (let attrIdx = 0; attrIdx < attrGrp.attributeIds.length; attrIdx++) {
           const attr = layer.attributes[attrGrp.attributeIds[attrIdx]];
-          console.info(attr);
-          const isVisible = attr.formField.isVisible();
+          const isVisible = attr.viewField.isVisible();
           if (isVisible) {
+            console.info(`visible=true  "${attrGrp.name}"."${attr.settings.alias || attr.name}"`);
             return true;
           }
+          console.info(`visible=false "${attrGrp.name}"."${attr.settings.alias || attr.name}"`);
         }
         return false;
       }
-      // if (!hasVisibleItems()) {
-      //   attrGroupBody.parentElement.style.backgroundColor = "blue";
-      // } else {
-      //   attrGroupBody.parentElement.style.backgroundColor = "";
-      // }
+      attrGrp.div.style.display = hasVisibleItems() ? "" : "none";
     }
   }
 

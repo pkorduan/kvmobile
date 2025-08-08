@@ -85,6 +85,7 @@ export class ViewFormular extends View {
                 if (attr.hasVisibilityDependency()) {
                   layer.vcheckAttributes(attr.get("name"), attr.formField.getValue(), attr.formField, "form");
                 }
+                this.hideEmptyGroups(this.feature);
               });
             }
           }

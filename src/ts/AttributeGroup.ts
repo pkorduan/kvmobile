@@ -2,7 +2,7 @@ export class AttributeGroup {
   name: string;
   collapsed: boolean;
   attributeIds: number[] = [];
-  div: JQuery<HTMLElement> | HTMLElement;
+  div: HTMLElement;
 
   constructor(name: string, collapsed = false) {
     this.name = name;
