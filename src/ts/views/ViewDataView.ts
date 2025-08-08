@@ -77,7 +77,7 @@ export class ViewDataView extends View {
     const dataView = document.getElementById("dataView");
     dataView.innerHTML = "";
     const h1 = createHtmlElement("h1", dataView);
-    h1.innerText = layer.title + " (DataView)";
+    h1.innerText = layer.title; // + " (DataView)";
     const dataViewContent = createHtmlElement("div", dataView);
     // $("#dataView").append(`<h1 style="margin-left: 5px;">${this.title}</h1>`).append('<div id="dataViewDiv">');
     layer.attributeGroups.forEach((attributeGroup, idx) => {

@@ -25,11 +25,14 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
   - Korrektur des Fehlers nach Löschen eines Baumes
   - Richtige Anwendung des Attributes visible zum Ausblenden oder konditionalen Ausblenden
   - Fix Bildanlage
+  - Gruppen mit nur ausgeblendeten Attributen ausblenden
 - Features
   - Anzeige des Namen der Stelle nachdem man sie geladen hat.
   - Auswahl eines Layers mit Geometrie nach dem Laden der Layer.
   - Sofortiges Laden der Layer wenn man nur zu einer Stelle gehört.
   - Anzeige des richtigen Layertitel im Popup
+  - Maßstab unten rechts über dem Copy-Right und metrisch
+  - ReloadLayer Control rausgenommen
 - Maintainance
   - Anpassung des Sync-Modus auf sync_all für alle Layer
   - Anpassung zindex neuer Features

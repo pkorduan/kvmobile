@@ -81,7 +81,7 @@ export class BilderFormField extends AbstractField {
    * @params any set to '' if val is undefined, null, 'null' or NAN
    */
   async setValue(f: Feature, pics: string) {
-    console.error("BilderFormField.setValue kvwmapFilePath=" + pics);
+    // console.error("BilderFormField.setValue kvwmapFilePath=" + pics);
     // console.log("BilderFormField.setValue with value: " + val);
     this._oldValue = pics;
 

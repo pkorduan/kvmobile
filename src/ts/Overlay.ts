@@ -17,7 +17,7 @@ export class OverlayX {
 
   constructor(stelle: Stelle, settings = {}) {
     // const overlay_ = this;
-    console.error("OverlayX.new");
+    // console.error("OverlayX.new");
     this.stelle = stelle;
     this.settings = typeof settings == "string" ? JSON.parse(settings) : settings;
 
@@ -58,7 +58,7 @@ export class OverlayX {
   };
 
   getGlobalId() {
-    console.error("Overlay.getGlobalId");
+    // console.error("Overlay.getGlobalId");
     return this.stelle.get("ID") + "_" + this.get("id");
   }
 
@@ -135,7 +135,7 @@ export class OverlayX {
     this.layerGroup = new GeoJSON(features, {
       style: this.getOverlayStyle.bind(this),
     });
-    console.error("Add Overlay with title: %s to layers control.", title);
+    // console.error("Add Overlay with title: %s to layers control.", title);
     kvm.controls.layerCtrl?.addOverlay(this.layerGroup, title);
     //    this.layerGroup.bringToBack();
   };

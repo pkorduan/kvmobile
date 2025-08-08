@@ -1258,7 +1258,7 @@ export class Layer extends PropertyChangeSupport {
     try {
       this.hideEmptyGroups(feature);
     } catch (ex) {
-      console.error("FGFGGF", ex);
+      console.error("Fehler beim Ausblenden leerer Gruppen. ", ex);
     }
     // if (this.hasEditiersperreAttribute && feature.getDataValue(this.editiersperreAttribute.get("name"))) {
     //   $("#editFeatureButton").hide();
@@ -3363,13 +3363,13 @@ export class Layer extends PropertyChangeSupport {
   // }
 
   notNullValid() {
-    console.error("layer.notNullValid");
+    // console.error("layer.notNullValid");
     const att = this.attributes.filter((attribute) => {
       return !attribute.isAutoAttribute("") && !attribute.isPseudoAttribute() && attribute.get("nullable") == 0 && attribute.formField.getValue() == null;
     });
 
     for (let i = 0; i < att.length; i++) {
-      console.error(att[i]);
+      // console.error(att[i]);
     }
 
     let errMsg = this.attributes

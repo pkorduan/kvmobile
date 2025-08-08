@@ -12,17 +12,17 @@ export class ViewMap extends View {
     console.info(`show ViewMap`, this);
     this.app.map.invalidateSize();
     // TODO
-    const geolocation_div = document.getElementById("geolocation_div");
-    if (geolocation_div.innerHTML != "") {
-      geolocation_div.style.display = "";
-    }
+    // const geolocation_div = document.getElementById("geolocation_div");
+    // if (geolocation_div.innerHTML != "") {
+    //   geolocation_div.style.display = "";
+    // }
   }
   hide() {
     // super.hide();
     this.dom.style.zIndex = "0";
     console.info(`hide ViewMap`, this);
 
-    const geolocation_div = document.getElementById("geolocation_div");
-    geolocation_div.style.display = "none";
+    // const geolocation_div = document.getElementById("geolocation_div");
+    // geolocation_div.style.display = "none";
   }
 }
