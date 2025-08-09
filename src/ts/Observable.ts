@@ -6,13 +6,17 @@ export interface Listener<T extends ObservableEvent> {
   (event: T): Promise<any> | any;
 }
 
-export class PropertyChangeEvent implements ObservableEvent {
+export interface PropertyChangeListener<T extends PropertyChangeEvent<T>> {
+  (event: T): Promise<T> | any;
+}
+
+export class PropertyChangeEvent<K> implements ObservableEvent {
   static type = "propertyChanged";
 
   type = "propertyChanged";
   prop: string;
-  newValue: any;
-  oldValue: any;
+  newValue: K;
+  oldValue: K;
   target: any;
 
   constructor(target: any, prop: string, oldValue: any, newValue: any) {
@@ -97,7 +101,7 @@ export class ObservableSupport<T extends ObservableEvent> {
   }
 }
 
-export class PropertyChangeSupport extends ObservableSupport<PropertyChangeEvent> {
+export class PropertyChangeSupport extends ObservableSupport<PropertyChangeEvent<any>> {
   async set(prop: any, value: any) {
     const oldValue = this[prop];
     if (oldValue !== value) {

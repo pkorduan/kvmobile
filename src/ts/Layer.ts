@@ -3483,4 +3483,20 @@ export class Layer extends PropertyChangeSupport {
 
     return sql;
   }
+
+  createOnlyByParent(): boolean {
+    let hasSubFormFK = false;
+    for (const attr of this.attributes) {
+      if (attr.get("form_element_type") === "SubFormFK") {
+        hasSubFormFK = true;
+        if (this.hasGeometry) {
+          const parentLayer = kvm.getLayer(attr.getGlobalParentLayerId());
+          if (parentLayer.hasGeometry) {
+            return false;
+          }
+        }
+      }
+    }
+    return hasSubFormFK;
+  }
 }

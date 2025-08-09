@@ -422,13 +422,18 @@ ul.subformlist {
   border-bottom: 1px solid gray;
   background-color: #eeeeee;
   padding: 4px;
+  padding-left: 0px;
 }
 
 .attribute-group-header:before {
-  content: "- ";
+  content: "-";
   color: #263286;
   display: inline-block;
   width: 18px;
+  text-align: center;
+}
+.collapsed .attribute-group-header:before {
+  content: "+";
 }
 
 .attribute-group-body {
@@ -436,13 +441,6 @@ ul.subformlist {
 }
 .collapsed .attribute-group-body {
   display: none;
-}
-
-.collapsed .attribute-group-header:before {
-  content: "+ ";
-  color: #263286;
-  display: inline-block;
-  width: 18px;
 }
 
 .filter-view-field {

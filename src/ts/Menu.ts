@@ -117,6 +117,7 @@ export class Menu {
     });
 
     this.app.addEventListener(Kvm.EVENTS.ACTIVE_LAYER_CHANGED, (evt) => {
+      // Todo fff
       if (this.activeView?.id !== "formular") {
         this.newFeatureButton.style.display = evt.newValue?.hasEditPrivilege ? "" : "none";
       }
@@ -132,6 +133,7 @@ export class Menu {
   }
 
   showDefaultMenu() {
+    // TODO fff
     const items = [this.showSettings, this.showFeatureList, this.showMap];
     if (this.app.getActiveLayer()?.hasEditPrivilege) {
       items.push(this.newFeatureButton);
