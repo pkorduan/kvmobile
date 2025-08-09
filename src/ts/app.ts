@@ -1055,6 +1055,14 @@ export class Kvm extends PropertyChangeSupport {
     //   sortLayers: false,
     //   sortFunction: (layerA, layerB, nameA, nameB) => (parseInt(layerA.getAttribution()) > parseInt(layerB.getAttribution()) ? parseInt(layerA.getAttribution()) : parseInt(layerB.getAttribution())),
     // }).addTo(map);
+    kvm.controls.betterscale = (<any>L).control
+      .betterscale({
+        metric: true,
+        imperial: false,
+        position: "bottomright"
+      })
+      .addTo(map);
+
     this.controls.layerCtrl = new LayerCtrl(this, baseMaps, null, {
       autoZIndex: true,
       sortLayers: true,
@@ -1089,26 +1097,26 @@ export class Kvm extends PropertyChangeSupport {
         outsideMapBoundsMsg: "Sie sind außerhalb des darstellbaren Bereiches der Karte.",
       },
     }).addTo(map);
-    const ReloadLayers = Control.extend({
-      onAdd: function (map: LMap) {
-        // console.log("Add leaflet control reloadLayers %o to Map: %o", this, map);
-        this._div = DomUtil.create("div", "leaflet-bar leaflet-control-reloadlayers"); // create a div with a class "reloadlayers-control-div"
-        this._div.innerHTML = '<a class="leaflet-control-reloadlayers-icon"><span><i class="fa fa-refresh" onclick="kvm.reloadFeatures()"></i></span></a>';
-        return this._div;
-      },
-      onClick: function (evt) {
-        // console.log("Click on leaflet control reloadLayers with event: %o", evt);
-      },
-      onRemove: function (map) {
-        // console.log("Remove leaflet control reloadLayers %o to Map: %o", this, map);
-      },
-    });
-    // (<any>L).Control.reloadLayers = function (opts) {
-    //     return new (<any>L).Control.ReloadLayers(opts);
-    // };
-    kvm.controls.reloadLayers = new ReloadLayers({
-      position: "topleft",
-    }).addTo(map);
+    // const ReloadLayers = Control.extend({
+    //   onAdd: function (map: LMap) {
+    //     // console.log("Add leaflet control reloadLayers %o to Map: %o", this, map);
+    //     this._div = DomUtil.create("div", "leaflet-bar leaflet-control-reloadlayers"); // create a div with a class "reloadlayers-control-div"
+    //     this._div.innerHTML = '<a class="leaflet-control-reloadlayers-icon"><span><i class="fa fa-refresh" onclick="kvm.reloadFeatures()"></i></span></a>';
+    //     return this._div;
+    //   },
+    //   onClick: function (evt) {
+    //     // console.log("Click on leaflet control reloadLayers with event: %o", evt);
+    //   },
+    //   onRemove: function (map) {
+    //     // console.log("Remove leaflet control reloadLayers %o to Map: %o", this, map);
+    //   },
+    // });
+    // // (<any>L).Control.reloadLayers = function (opts) {
+    // //     return new (<any>L).Control.ReloadLayers(opts);
+    // // };
+    // kvm.controls.reloadLayers = new ReloadLayers({
+    //   position: "topleft",
+    // }).addTo(map);
 
     const ZoomLevelControl = Control.extend({
       options: {
@@ -1130,11 +1138,6 @@ export class Kvm extends PropertyChangeSupport {
     });
     kvm.controls.zoomLevelControl = new ZoomLevelControl().addTo(map);
 
-    kvm.controls.betterscale = (<any>L).control
-      .betterscale({
-        metric: true,
-      })
-      .addTo(map);
     kvm.controls.trackControl = new Control.EasyButton({
       id: "trackControl",
       position: "topright",
@@ -1811,7 +1814,7 @@ export class Kvm extends PropertyChangeSupport {
     if (this._activeLayer && this._activeFeature) {
       const changes = this._activeLayer.collectChanges(this._activeFeature, "update");
       if (changes.length > 0) {
-        console.error(`app.newSubFeature changes: ${this._activeFeature.layer.title} ${this._activeFeature.getDataValue(this._activeLayer.get("id_attribute"))}`);
+        // console.error(`app.newSubFeature changes: ${this._activeFeature.layer.title} ${this._activeFeature.getDataValue(this._activeLayer.get("id_attribute"))}`);
         const proceed = await Util.confirm("Es sind noch offene Änderungen. Diese müssen erst gespeichert werden.", "Bitte Bestätigen", "Ohne Speichern Fortfahren", "Abbrechen");
         if (!proceed) {
           return;
@@ -1842,7 +1845,7 @@ export class Kvm extends PropertyChangeSupport {
       feature = layerId;
       layer = feature.layer;
     }
-    console.error(`editFeature(${layer.title}, ${feature.getDataValue(layer.get("id_attribute"))}`);
+    // console.error(`editFeature(${layer.title}, ${feature.getDataValue(layer.get("id_attribute"))}`);
     this.isEditMode = true;
     // ToDo:
     //parentLayerId und parentFeatureId müssen woanders hier kommen
@@ -1862,7 +1865,7 @@ export class Kvm extends PropertyChangeSupport {
       // layer.parentFeatureId = kvm._activeFeature.id;
       const changes = this._activeLayer.collectChanges(this._activeFeature, this._activeFeature.new ? "insert" : "update");
       if (changes.length > 0) {
-        console.error(`layer.editFeature: changes: ${this._activeFeature.layer.title} ${this._activeFeature.getDataValue(layer.get("id_attribute"))}`);
+        // console.error(`layer.editFeature: changes: ${this._activeFeature.layer.title} ${this._activeFeature.getDataValue(layer.get("id_attribute"))}`);
         const proceed = await Util.confirm("Es sind noch offene Änderungen. Diese müssen erst gespeichert werden.", "Bitte Bestätigen", "Ohne Speichern Fortfahren", "Abbrechen");
         if (!proceed) {
           return;

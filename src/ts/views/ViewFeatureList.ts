@@ -71,7 +71,7 @@ export class ViewFeatureList extends View {
   }
 
   setActiveLayer(layer: Layer) {
-    console.error(`ViewFeatureList.setActiveLayer ${layer?.title}`);
+    // console.error(`ViewFeatureList.setActiveLayer ${layer?.title}`);
     if (layer === this.activeLayer) {
       return;
     }

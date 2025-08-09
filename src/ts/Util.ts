@@ -24,7 +24,7 @@ export function listFiles(dir: string) {
   window.resolveLocalFileSystemURL(
     dir,
     function (entry) {
-      console.error("listFiles: " + dir);
+      // console.error("listFiles: " + dir);
       if (entry.isDirectory) {
         (<DirectoryEntry>entry).createReader().readEntries(
           (fileSystemEntries) => {
@@ -110,7 +110,7 @@ export async function openDatabase(dbname: String) {
 }
 
 export async function deleteDatabase(dbname: String) {
-  console.error("deleteDatabase");
+  // console.error("deleteDatabase");
   return new Promise<boolean>((resolve, reject) => {
     window.sqlitePlugin.deleteDatabase(
       {

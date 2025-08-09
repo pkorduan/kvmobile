@@ -38,7 +38,7 @@ export class ViewFormular extends View {
     this.dom.innerHTML = "";
     const h1 = Util.createHtmlElement("h1", this.dom);
     h1.innerText = layer.title;
-    h1.innerText = layer.title + " (FeatureForm)";
+    h1.innerText = layer.title; // + " (FeatureForm)";
     h1.style.cssText = "margin-left: 5px;";
     this.app.menu.enableSaveFeatureButton(false);
     const formDiv = Util.createHtmlElement("div", this.dom);
