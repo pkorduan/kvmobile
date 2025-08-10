@@ -5,6 +5,7 @@ import { AbstractField, Field } from "./Field";
 import { Attribute, AttributeSetting } from "./Attribute";
 import { alertNative, confirm, createHtmlElement } from "./Util";
 import { Feature } from "./Feature";
+import { sperrBildschirm } from "./SperrBildschirm";
 /*
  * create a geometry form field in the structure
  *   <div class="form-field">
@@ -174,62 +175,7 @@ export class GeometrieFormField extends AbstractField implements Field {
   }
 
   bindEvents() {
-    //console.log('SelectFormField.bindEvents');
-    // $("#featureFormular input[id=" + this.settings.index + "]").on("change", function () {
-    //   if (!$("#saveFeatureButton").hasClass("active-button")) {
-    //     $("#saveFeatureButton").toggleClass("active-button inactive-button");
-    //   }
-    // });
-
-    // $("#goToGpsPositionButton").on("click", function () {
-    //   console.log("Fly to feature position.");
-    //   kvm.showView("mapEdit");
-    //   kvm.map.flyTo(kvm.getActiveLayer().activeFeature.editableLayer.getLatLng(), 18);
-    // });
-
-    // $("#saveGpsPositionButton").on("click", function () {
-    //   //console.log('click on saveGpsPositionButton');
-    //   navigator.geolocation.getCurrentPosition(
-    //     function (geoLocation) {
-    //       navigator.notification.confirm(
-    //         "Neue Position:\n" + geoLocation.coords.longitude + " " + geoLocation.coords.latitude + "\nübernehmen?",
-    //         function (buttonIndex) {
-    //           if (buttonIndex == 1) {
-    //             console.log("Set new Position " + geoLocation.coords.latitude + " " + geoLocation.coords.longitude);
-    //             const feature = kvm.getActiveLayer().activeFeature;
-    //             const newGeom = feature.aLatLngsToWkx([{ lat: geoLocation.coords.latitude, lng: geoLocation.coords.longitude }]);
-
-    //             $("#geom_wkt").val(newGeom.toWkt());
-
-    //             //console.log("Trigger geomChanged mit coords der Geolocation: %o", geoLocation.coords);
-    //             document.dispatchEvent(new CustomEvent("geomChanged", { detail: { geom: newGeom, exclude: "wkt" } }));
-    //             // $(document).trigger("geomChanged", [{ geom: newGeom, exclude: "wkt" }]);
-    //           }
-    //         },
-    //         "GPS-Position",
-    //         ["ja", "nein"]
-    //       );
-    //     },
-    //     function (error) {
-    //       navigator.notification.confirm(
-    //         "Es kann keine GPS-Position bestimmt werden. Schalten Sie die GPS Funktion auf Ihrem Gerät ein, suchen Sie einen Ort unter freiem Himmel auf und versuchen Sie es dann noch einmal.",
-    //         function (buttonIndex) {
-    //           if (buttonIndex == 1) {
-    //             kvm.log("Einschalten der GPS-Funktion.", 3);
-    //           }
-    //         },
-    //         "GPS-Position",
-    //         ["ok", "abbrechen"]
-    //       );
-    //     },
-    //     {
-    //       maximumAge: 2000, // duration to cache current position
-    //       timeout: 5000, // timeout for try to call successFunction, else call errorFunction
-    //       enableHighAccuracy: true, // take position from gps not network-based method
-    //     }
-    //   );
-    // });
-
+    console.error("GeometrieFormField.bindEvents");
     /*
      * Setzt die Geometrien auf gleiche Werte in
      * -> WKX Geometry Objekt im Feature
@@ -243,59 +189,77 @@ export class GeometrieFormField extends AbstractField implements Field {
      */
     // $(document).on("geomChanged", function (event, options) {
     document.addEventListener("geomChanged", (event: CustomEvent) => {
-      console.log("GeometrieFormField.geomChanged", event, event.detail);
-      const feature = this._feature;
-      const geom = event.detail.geom;
-      const exclude = event.detail.exclude;
-
-      //console.log("Trigger Funktion geomChanged: geom: %o und exclude: %s", geom, exclude);
-      if (exclude != "wkx") {
-        const oldGeom = feature.newGeom,
-          newGeom = geom;
-        if (newGeom != oldGeom) {
-          feature.newGeom = newGeom;
-          //console.log("Trigger Funktion geomChanged: Neue WKX Geometrie im Feature: %o", feature);
-        }
+      try {
+        sperrBildschirm.show();
+        this.geomChanged(event);
+      } catch (ex) {
+        console.error("Fehler", ex);
       }
-
-      // Das kann eigentlich auch gemacht werden beim Speichern.
-      // TODO jquery
-      if (exclude != "wkb") {
-        const oldGeom: any = $("#featureFormular input[name=" + kvm.getActiveLayer().get("geometry_attribute") + "]").val();
-
-        const newGeom = geom.toEwkb().toString("hex");
-
-        //console.log("Trigger Funktion geomChanged: newGeom: " + newGeom);
-        //console.log("Trigger Funktion geomChanged: oldGeom: " + oldGeom);
-        if (newGeom != oldGeom) {
-          $("#featureFormular input[name=" + kvm.getActiveLayer().get("geometry_attribute") + "]")
-            .val(newGeom)
-            .change();
-          //console.log("Trigger Funktion geomChanged: Neue WKB Geometrie im Hidden-Field von geom_attribut im Formular: %s", newGeom);
-          //kvm.deb("Trigger Funktion geomChanged: Neue WKB Geometrie im Formular Attribut " + kvm.activeLayer.get("geometry_attribute") + ": " + newGeom);
-        }
-      }
-
-      if (exclude != "wkt") {
-        const oldGeom: any = this.geomWkt.value,
-          newGeom = geom.toWkt();
-
-        // console.log("Trigger Funktion geomChanged: Vergleiche alt: %s mit neu: %s", oldGeom, newGeom);
-        if (newGeom != oldGeom) {
-          this.geomWkt.value = newGeom;
-          // console.log("Trigger Funktion geomChanged: Neue WKT Geometrie für die Anzeige als Text im Formular: %s", newGeom);
-        }
-      }
-
-      if (exclude != "latlngs") {
-        feature.setLatLngs(geom);
-      }
-      //        kvm.activeLayer.features.get(feature.id) = feature;
-      //        kvm.activeLayer.activeFeature = feature;
-      // console.log("Trigger Funktion geomChanged: fertig");
-
-      this.fireChanged();
+      sperrBildschirm.close();
     });
+  }
+
+  async geomChanged(event: CustomEvent) {
+    console.log("GeometrieFormField.geomChanged", event, event.detail);
+    const feature = this._feature;
+    const geom = event.detail.geom;
+    const exclude = event.detail.exclude;
+    if (feature.layer.getParentFK()?.bothHasGeom) {
+      const isInside = await feature.checkInsideParent(geom);
+      if (!isInside) {
+        await alertNative(`Die Geometrie liegt nicht mehr innerhalb des übergeordneten Objektes (${feature.layer.getParentFK().parentLayer.title}). Die Geometrie wird nicht übernommen.`, "Warnung");
+        return;
+      }
+      console.log("GeometrieFormField.geomChanged", event, event.detail, isInside);
+    }
+
+    //console.log("Trigger Funktion geomChanged: geom: %o und exclude: %s", geom, exclude);
+    if (exclude != "wkx") {
+      const oldGeom = feature.newGeom,
+        newGeom = geom;
+      if (newGeom != oldGeom) {
+        feature.newGeom = newGeom;
+        //console.log("Trigger Funktion geomChanged: Neue WKX Geometrie im Feature: %o", feature);
+      }
+    }
+
+    // Das kann eigentlich auch gemacht werden beim Speichern.
+    // TODO jquery
+    if (exclude != "wkb") {
+      const oldGeom: any = $("#featureFormular input[name=" + kvm.getActiveLayer().get("geometry_attribute") + "]").val();
+
+      const newGeom = geom.toEwkb().toString("hex");
+
+      //console.log("Trigger Funktion geomChanged: newGeom: " + newGeom);
+      //console.log("Trigger Funktion geomChanged: oldGeom: " + oldGeom);
+      if (newGeom != oldGeom) {
+        $("#featureFormular input[name=" + kvm.getActiveLayer().get("geometry_attribute") + "]")
+          .val(newGeom)
+          .change();
+        //console.log("Trigger Funktion geomChanged: Neue WKB Geometrie im Hidden-Field von geom_attribut im Formular: %s", newGeom);
+        //kvm.deb("Trigger Funktion geomChanged: Neue WKB Geometrie im Formular Attribut " + kvm.activeLayer.get("geometry_attribute") + ": " + newGeom);
+      }
+    }
+
+    if (exclude != "wkt") {
+      const oldGeom: any = this.geomWkt.value,
+        newGeom = geom.toWkt();
+
+      // console.log("Trigger Funktion geomChanged: Vergleiche alt: %s mit neu: %s", oldGeom, newGeom);
+      if (newGeom != oldGeom) {
+        this.geomWkt.value = newGeom;
+        // console.log("Trigger Funktion geomChanged: Neue WKT Geometrie für die Anzeige als Text im Formular: %s", newGeom);
+      }
+    }
+
+    if (exclude != "latlngs") {
+      feature.setLatLngs(geom);
+    }
+    //        kvm.activeLayer.features.get(feature.id) = feature;
+    //        kvm.activeLayer.activeFeature = feature;
+    // console.log("Trigger Funktion geomChanged: fertig");
+
+    this.fireChanged();
   }
 
   createInputElement(): HTMLElement {

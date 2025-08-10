@@ -155,7 +155,7 @@ export class Layer extends PropertyChangeSupport {
   // parentFeatureId: string;
 
   layerFilter = new Map<string, { operator: string; value: string }>();
-  parentFK: { parentLayer: Layer; parentIdColumn: string; fkColumn: string } = undefined;
+  parentFK: { parentLayer: Layer; parentIdColumn: string; fkColumn: string; bothHasGeom: boolean } = undefined;
 
   constructor(stelle: Stelle, settings: LayerSetting | string) {
     super();
@@ -305,7 +305,7 @@ export class Layer extends PropertyChangeSupport {
    * @param {(Layer | string)} layer
    * @returns {({ parentLayer: Layer; parentIdColumn: string; fkColumn: string; }|null)}
    */
-  getParentFK(): { parentLayer: Layer; parentIdColumn: string; fkColumn: string } | null {
+  getParentFK(): { parentLayer: Layer; parentIdColumn: string; fkColumn: string; bothHasGeom: boolean } | null {
     if (this.parentFK === undefined) {
       const attrFK = this.attributes.find((attr) => attr.get("form_element_type") === "SubFormFK");
       this.parentFK = null;
@@ -315,10 +315,12 @@ export class Layer extends PropertyChangeSupport {
         if (options) {
           const sA = options.split(/[,:;]/);
           this.getGlobalId;
+          const parentLayer = kvm.getLayer(this.stelle.get("ID") + "_" + sA[0]);
           this.parentFK = {
-            parentLayer: kvm.getLayer(this.stelle.get("ID") + "_" + sA[0]),
+            parentLayer: parentLayer,
             fkColumn: sA[1],
             parentIdColumn: sA[2],
+            bothHasGeom: this.hasGeometry && parentLayer.hasGeometry,
           };
         }
       }
@@ -1683,14 +1685,16 @@ export class Layer extends PropertyChangeSupport {
    * @async
    * @returns {*}
    */
-  private async _bestimmeUbergeordnetesObjekt(feature: Feature): Promise<string> {
+  private async _bestimmeUbergeordnetesObjekt(feature: Feature, geom?: any): Promise<string> {
     const parentFK = this.getParentFK();
     if (!parentFK || !parentFK.parentLayer.hasGeometry) {
       throw new Error("Layer hat kein Parent oder dieser hat keine Geometrie");
     }
     console.info(`_bestimmeUbergeordnetesObjekt ${parentFK}`);
     let featureId: string = "";
-    if (this.hasGeometry && feature.new && feature.newGeom) {
+    // if (this.hasGeometry && feature.new && feature.newGeom) {
+    const geomToCheck = geom || feature.newGeom;
+    if (this.hasGeometry && geomToCheck) {
       // Abfragen des übergeordneten Layers
       const pkLayer = parentFK.parentLayer;
       console.log("Übergeordneter Layer %s", pkLayer.title);
@@ -1700,7 +1704,7 @@ export class Layer extends PropertyChangeSupport {
       let where: string[] = [
         `
           ST_Within(
-              ST_GeomFromText('${feature.newGeom.toWkt()}', 4326),
+              ST_GeomFromText('${geomToCheck.toWkt()}', 4326),
               GeomFromEWKB(${pkLayer.get("geometry_attribute")})
             )
         `,
@@ -1717,7 +1721,7 @@ export class Layer extends PropertyChangeSupport {
         for (let i = 0; i < rs.rows.length; i++) {
           if (typeof rs.rows.item(i).geom != "undefined" && rs.rows.item(i).geom != "") {
             featureId = rs.rows.item(i)[pkLayer.get("id_attribute")];
-            kvm.mapHint(`Übergeordnetes Objekt ${pkLayer.getFeature(featureId).getDataValue(pkLayer.get("name_attribute"))} aus Layer ${pkLayer.title} über Markerposition ermittelt.`, 5000);
+            // kvm.mapHint(`Übergeordnetes Objekt ${pkLayer.getFeature(featureId).getDataValue(pkLayer.get("name_attribute"))} aus Layer ${pkLayer.title} über Markerposition ermittelt.`, 5000);
             // att.formField.setValue(featureId);
 
             break;
@@ -1850,6 +1854,17 @@ export class Layer extends PropertyChangeSupport {
       kvm.viewFormular.loadFeatureToForm(feature, { editable: true });
       kvm.showView("formular");
     }
+  }
+
+  async checkInsideParent(f: Feature, geom: any) {
+    console.error("Layer.checkInsideParent", f, geom);
+    const parentFK = this.getParentFK();
+    if (parentFK) {
+      const currentParent = f.getDataValue(parentFK.fkColumn);
+      const parentFeatureId = await this._bestimmeUbergeordnetesObjekt(f, geom);
+      return currentParent === parentFeatureId;
+    }
+    return false;
   }
 
   /**

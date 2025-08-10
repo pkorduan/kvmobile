@@ -1,4 +1,5 @@
 import { Kvm } from "./app";
+import { Layer } from "./Layer";
 import { sperrBildschirm } from "./SperrBildschirm";
 import * as PanelEinstellungen from "./views/PanelEinstellungen";
 import { View } from "./views/View";
@@ -119,7 +120,8 @@ export class Menu {
     this.app.addEventListener(Kvm.EVENTS.ACTIVE_LAYER_CHANGED, (evt) => {
       // Todo fff
       if (this.activeView?.id !== "formular") {
-        this.newFeatureButton.style.display = evt.newValue?.hasEditPrivilege ? "" : "none";
+        const l = <Layer>evt.newValue;
+        this.newFeatureButton.style.display = l?.hasEditPrivilege && !l.createOnlyByParent() ? "" : "none";
       }
     });
   }

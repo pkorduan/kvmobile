@@ -839,7 +839,7 @@ export class Kvm extends PropertyChangeSupport {
           }
 
           stelle.sortOverlays();
-          stelle.sortLayers();
+          // stelle.sortLayers();
           // ToDo pk: Synchronisieren
           if (kvm.getConfigurationOption("autoSync")) {
             try {
@@ -1059,7 +1059,7 @@ export class Kvm extends PropertyChangeSupport {
       .betterscale({
         metric: true,
         imperial: false,
-        position: "bottomright"
+        position: "bottomright",
       })
       .addTo(map);
 
