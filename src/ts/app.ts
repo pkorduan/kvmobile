@@ -848,10 +848,10 @@ export class Kvm extends PropertyChangeSupport {
               console.info("Synchronisation wurde durchgeführt", result);
               console.groupEnd();
             } catch (ex) {
-              Util.alertNative("Beim Synchronisieren trat ein Fehler auf. Ursache: " + ex.message, "Warnung");
-              console.error("Beim Synchronisieren trat ein Fehler auf.", ex);
-
-              this.writeLog(ex);
+              const msg = "Beim Synchronisieren trat ein Fehler auf. " + ex.message + ' ' + ex.cause.response.message;
+              Util.alertNative(msg, "Fehler");
+              console.error(msg, ex);
+              this.writeLog(msg);
             }
           }
         } else {
@@ -1493,18 +1493,18 @@ export class Kvm extends PropertyChangeSupport {
       }
       sperrBildschirm.close();
     } catch (ex) {
-      sperrBildschirm.close("Beim Speichern trat ein Fehler auf", ex);
-      this.writeLog("Beim Speichern trat ein Fehler auf\n" + objectToString(ex));
+      const msg = "Beim Speichern trat ein Fehler auf!\n"
+      sperrBildschirm.close(`${msg} ${ex.cause.response.message}`);
+      this.writeLog(msg + objectToString(ex));
       // Util.alertNative("Beim Speicher tratt ein Fehler auf." + JSON.stringify(ex))
       // kvm.msg("Beim Speicher tratt ein Fehler auf. " + JSON.stringify(ex));
-      console.error("Beim Speichern trat ein Fehler auf.", ex);
+      console.error(msg, ex);
     }
     console.groupEnd();
   }
 
   /**
-   *
-   *
+   * Things that shall be done after deleting a dataset
    */
   afterDeleteDataset(f: Feature) {
     const parentFeature = f.findParentFeature();

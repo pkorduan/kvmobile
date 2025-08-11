@@ -1086,7 +1086,7 @@ export class Stelle {
    * @returns Promise<SyncDataResult>
    */
   async syncData(): Promise<SyncDataResult> {
-    console.log(`syncData`);
+    // console.log(`syncData`);
     return new Promise<SyncDataResult>(async (resolve, reject) => {
       try {
         sperrBildschirm.tick(`Starte Synchronisation der Daten mit dem Server.`);
@@ -1143,7 +1143,7 @@ export class Stelle {
               result.countOfNoSyncLayersChanged = changedNoSyncLayers.length;
             }
           } else {
-            reject(new Error("Negative Antwort auf Upload der Deltas", { cause: { response: sendDeltasResponse, deltas: deltas } }));
+            reject(new Error("Negative Antwort auf Upload der Deltas.", { cause: { response: sendDeltasResponse, deltas: deltas } }));
           }
         } else {
           await this.requestLayers(layerRequestResult);
@@ -1159,7 +1159,7 @@ export class Stelle {
   async _upload(fileEntry: FileEntry): Promise<FileUploadResult> {
     // const fileURL = fileEntry.toURL();
     const fileURL = fileEntry.nativeURL;
-    console.log(`going to upload deltas fileURL: "${fileURL}`);
+    // console.log(`going to upload deltas fileURL: "${fileURL}`);
 
     const url = this.get("url");
     const file = Stelle.getUrlFile(url);
