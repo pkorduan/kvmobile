@@ -246,6 +246,7 @@ export class LayerCtrl extends Control {
   // @method collapse(): this
   // Collapse the control container if expanded.
   collapse() {
+    console.error("LayerCtrl.collapse");
     DomUtil.removeClass(this._container, "leaflet-control-layers-expanded");
     return this;
   }
@@ -264,16 +265,48 @@ export class LayerCtrl extends Control {
     const section = (this._section = DomUtil.create("section", className + "-list"));
 
     if (collapsed) {
-      this._map.on("click", this.collapse, this);
-
-      DomEvent.on(
-        container,
-        {
-          mouseenter: this._expandSafely,
-          mouseleave: this.collapse,
+      this._map.on(
+        "click",
+        () => {
+          console.info("LayerCtrl.clicked");
+          this.collapse();
         },
         this
       );
+
+      // DomEvent.on(
+      //   container,
+      //   {
+      //     mouseenter: this._expandSafely,
+      //     mouseleave: this.collapse,
+      //   },
+      //   this
+      // );
+
+      container.addEventListener("mouseenter", (evt) => {
+        console.info("LayerCtrl container.mouseenter", evt);
+        this._expandSafely();
+      });
+
+      container.addEventListener("touchstart", (evt) => {
+        console.info("LayerCtrl container.touchstart", evt);
+        this._expandSafely();
+      });
+
+      container.addEventListener("mouseleave", (evt) => {
+        console.info("LayerCtrl container.mouseleave", evt);
+        this.collapse();
+        evt.composed;
+      });
+
+      // DomEvent.on(container, "mouseenter", (evt) => {
+      //   console.info("LayerCtrl container.mouseenter", evt);
+      //   this._expandSafely();
+      // });
+      // DomEvent.on(container, "mouseleave", (evt) => {
+      //   console.info("LayerCtrl container.mouseleave", evt);
+      //   this.collapse();
+      // });
     }
 
     const link = (this._layersLink = DomUtil.create("a", className + "-toggle", container));

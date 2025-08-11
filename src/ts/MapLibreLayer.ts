@@ -294,7 +294,7 @@ export class MapLibreLayer extends LLayer {
   }
 
   activate() {
-    // console.error("wwww activate");
+    console.error("wwww activate");
     // TODO jquery
     (<any>$("input[value=" + this.getGlobalId() + "]")[0]).checked = true;
     $(".layer-functions-button, .layer-functions-div").hide();

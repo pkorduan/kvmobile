@@ -21,10 +21,10 @@ import { Mapper } from "./controller/mapper";
 import maplibregl from "maplibre-gl";
 import "process";
 import { MapLibreLayer } from "./MapLibreLayer";
-import { Control, DomUtil, LatLngBounds, LeafletEvent, ErrorEvent as LErrorEvent, Map as LMap, Point as LPoint, Renderer, SVG } from "leaflet";
+import { Control, DomUtil, Events, LatLngBounds, LeafletEvent, ErrorEvent as LErrorEvent, Map as LMap, Point as LPoint, Renderer, SVG } from "leaflet";
 import { objectToString, sperrBildschirm } from "./SperrBildschirm";
 import { Menu, ViewName } from "./Menu";
-import { PropertyChangeEvent, PropertyChangeSupport } from "./Observable";
+import { Listener, PropertyChangeEvent, PropertyChangeSupport } from "./Observable";
 import { View } from "./views/View";
 import * as PanelEinstellungen from "./views/PanelEinstellungen";
 
@@ -168,7 +168,7 @@ export class Kvm extends PropertyChangeSupport {
     } else {
       kvm.store.removeItem("activeLayerId");
     }
-    await this.fire(new PropertyChangeEvent(this, Kvm.EVENTS.ACTIVE_LAYER_CHANGED, oldLayer, layer));
+    await this.fire(new PropertyChangeEvent<Layer>(this, Kvm.EVENTS.ACTIVE_LAYER_CHANGED, oldLayer, layer));
   }
 
   getActiveFeature() {
@@ -834,9 +834,12 @@ export class Kvm extends PropertyChangeSupport {
             }
             console.groupEnd();
           }
+          for (const item of this._layers.values()) {
+            console.info("createOnlyByParent " + item.title + " " + item.createOnlyByParent());
+          }
 
           stelle.sortOverlays();
-          stelle.sortLayers();
+          // stelle.sortLayers();
           // ToDo pk: Synchronisieren
           if (kvm.getConfigurationOption("autoSync")) {
             try {
@@ -1056,7 +1059,7 @@ export class Kvm extends PropertyChangeSupport {
       .betterscale({
         metric: true,
         imperial: false,
-        position: "bottomright"
+        position: "bottomright",
       })
       .addTo(map);
 

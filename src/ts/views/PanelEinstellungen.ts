@@ -392,7 +392,7 @@ export class Server extends PanelEinstellungen {
 export class Layers extends PanelEinstellungen {
   divLayerList: HTMLElement;
 
-  layerId2layerListIem = new Map<string, { dom: HTMLElement; setActiv(activ: boolean): void }>();
+  layerId2layerListIem = new Map<string, { dom: HTMLElement; layer: Layer; setActiv(activ: boolean): void }>();
 
   activeLayer: Layer;
 
@@ -550,6 +550,7 @@ export class Layers extends PanelEinstellungen {
     this.divLayerList.append(dom);
     this.layerId2layerListIem.set(layer.getGlobalId(), {
       dom: dom,
+      layer: layer,
       setActiv: (activ: boolean) => {
         radioInput.checked = activ;
         menuBttn.style.display = activ ? "" : "none";
@@ -561,7 +562,42 @@ export class Layers extends PanelEinstellungen {
         }
       },
     });
+    this.orderList();
   }
+
+  orderList() {
+    console.error("orderList");
+    const values = Array.from(this.layerId2layerListIem.values());
+    for (const item of values) {
+      item.dom.remove();
+    }
+
+    values.sort((l1, l2) => {
+      const l01standAlone = !l1.layer.createOnlyByParent() && l1.layer.hasEditPrivilege;
+      const l02standAlone = !l2.layer.createOnlyByParent() && l2.layer.hasEditPrivilege;
+      if (!l01standAlone && l02standAlone) {
+        return -1;
+      }
+      if (l01standAlone && !l02standAlone) {
+        return 1;
+      }
+      return l1.layer.title < l2.layer.title ? -1 : 1;
+
+      // console.info(`${l1.layer.title} ${l1.layer.hasEditPrivilege} > ${l2.layer.title} ${l2.layer.hasEditPrivilege} ==> ${returnV}`);
+      // return returnV;
+    });
+    const fragment = document.createDocumentFragment();
+    for (const item of values) {
+      // const item = newArr[i];
+      console.error(item.layer.title + "  " + item.layer.hasEditPrivilege);
+      this.divLayerList.appendChild(item.dom);
+    }
+    // this.divLayerList.innerHTML = "";
+    // console.info(this.divLayerList);
+    // this.divLayerList.appendChild(fragment);
+    // console.info(this.divLayerList);
+  }
+
   removeLayer(layer: Layer) {
     const layerListIem = this.layerId2layerListIem.get(layer.getGlobalId());
     if (layerListIem) {

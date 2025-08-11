@@ -1295,16 +1295,16 @@ export class Stelle {
     };
   }
 
-  /**
-   * This function sort the layer list div by layer setting order by.
-   * @param orderBy
-   */
-  sortLayers(orderBy: string = "legendorder") {
-    const layerDivs = document.querySelectorAll(".layer-list-div");
-    const layerDivsArray = Array.from(layerDivs);
-    const sorted = layerDivsArray.sort(this.orderComparatorFunction(orderBy));
-    sorted.forEach((e) => document.querySelector("#layer_list").appendChild(e));
-  }
+  // /**
+  //  * This function sort the layer list div by layer setting order by.
+  //  * @param orderBy
+  //  */
+  // sortLayers(orderBy: string = "legendorder") {
+  //   const layerDivs = document.querySelectorAll(".layer-list-div");
+  //   const layerDivsArray = Array.from(layerDivs);
+  //   const sorted = layerDivsArray.sort(this.orderComparatorFunction(orderBy));
+  //   sorted.forEach((e) => document.querySelector("#layer_list").appendChild(e));
+  // }
 
   // /**
   //  * Function returns the layer with the lowest value in settings element specified in param orderBy.

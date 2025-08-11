@@ -213,6 +213,11 @@ export class Feature {
     throw new Error("Method not implemented.");
   }
 
+  async checkInsideParent(geom: any) {
+    console.error("checkInsideParent", geom);
+    return this.layer.checkInsideParent(this, geom);
+  }
+
   /*
    * Setzt die LatLngs des editableLayers auf die übergebene Geometrie
    * falls das Feature schon einen editableLayer zugewiesen bekommen hat.
