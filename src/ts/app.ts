@@ -1066,7 +1066,17 @@ export class Kvm extends PropertyChangeSupport {
     this.controls.layerCtrl = new LayerCtrl(this, baseMaps, null, {
       autoZIndex: true,
       sortLayers: true,
-      sortFunction: (layerA, layerB, nameA, nameB) => (parseInt(layerA.getAttribution()) > parseInt(layerB.getAttribution()) ? parseInt(layerA.getAttribution()) : parseInt(layerB.getAttribution())),
+      sortFunction: (layerA, layerB, nameA, nameB) => {
+        // {layer: , name: '<span id="layerCtrLayerDiv_12_277">Baum</span>', overlay: true}
+        // {layer: leafletLayer, name: 'Luftbilder WMS', overlay: false}
+        if (layerA["legendorder"] && layerB["legendorder"]) {
+          return layerA["legendorder"] < layerB["legendorder"] ? -1 : 1;
+        }
+        if (!layerA["legendorder"] && !layerB["legendorder"]) {
+          return nameA < nameB ? -1 : 1;
+        }
+        return layerA["legendorder"] ? 1 : -1;
+      },
     }).addTo(map);
 
     kvm.controls.locate = new Control.Locate({
@@ -1275,7 +1285,12 @@ export class Kvm extends PropertyChangeSupport {
     try {
       const backgroundLayerSettings = this.getBackgroundLayerSettings();
       for (let i = 0; i < backgroundLayerSettings.length; ++i) {
-        this.backgroundLayers.push(new BackgroundLayer(this.backgroundLayerSettings[i]));
+        try {
+          this.backgroundLayers.push(new BackgroundLayer(this.backgroundLayerSettings[i]));
+        } catch (error) {
+          console.error(error);
+          kvm.msg("Fehler beim Einrichten des Hintergrundlayers: " + this.backgroundLayerSettings[i].label, error);
+        }
       }
     } catch (error) {
       console.error(error);

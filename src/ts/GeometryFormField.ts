@@ -24,6 +24,7 @@ export class GeometrieFormField extends AbstractField implements Field {
   saveGpsPositionButton: HTMLElement;
   showGpsStatusButton: SVGSVGElement;
   goToGpsPositionButton: HTMLElement;
+  private _alertIsShown: boolean = false;
 
   constructor(formId: string, attr: Attribute) {
     super(formId, attr);
@@ -207,7 +208,11 @@ export class GeometrieFormField extends AbstractField implements Field {
     if (feature.layer.getParentFK()?.bothHasGeom) {
       const isInside = await feature.checkInsideParent(geom);
       if (!isInside) {
-        await alertNative(`Die Geometrie liegt nicht mehr innerhalb des übergeordneten Objektes (${feature.layer.getParentFK().parentLayer.title}). Die Geometrie wird nicht übernommen.`, "Warnung");
+        if (!this._alertIsShown) {
+          this._alertIsShown = true;
+          await alertNative(`Die Geometrie liegt nicht mehr innerhalb des übergeordneten Objektes (${feature.layer.getParentFK().parentLayer.title}). Die Geometrie wird nicht übernommen.`, "Warnung");
+          this._alertIsShown = false;
+        }
         return;
       }
       console.log("GeometrieFormField.geomChanged", event, event.detail, isInside);

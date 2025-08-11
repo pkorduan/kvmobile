@@ -200,7 +200,7 @@ export class Layer extends PropertyChangeSupport {
       attribution: this.get("attribution"),
       pane: this.title,
     });
-
+    this.layerGroup["legendorder"] = this.settings.legendorder;
     if (this.settings.attributes) {
       this.attributes = this.settings.attributes.map((attribute) => {
         const groupName = attribute.group ? attribute.group.split(";")[0] : "";
@@ -1423,6 +1423,7 @@ export class Layer extends PropertyChangeSupport {
       //
       //vectorLayer.on("popupclose", this.popupClose);
       vectorLayer.setStyle(style);
+
       // Kartenobjekt als Layer zur Layergruppe hinzufügen
       this.layerGroup.addLayer(vectorLayer);
 
