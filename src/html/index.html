@@ -77,7 +77,7 @@ child-src * 'self' blob: http:
           <i class="fa fa-list fa-2x" aria-hidden="true"></i>
         </a>
         <a id="cancelFeatureButton" class="menu-button text-button" style="display: none">
-          <i class="fa fa-arrow-left" aria-hidden="true"></i>
+          <i class="fa fa-undo" aria-hidden="true"></i>
         </a>
       </div>
       <div class="col-xs-3" style="text-align: center">
@@ -428,7 +428,7 @@ child-src * 'self' blob: http:
         <div class="h2-div">
           <h2 id="h2_sachdateneinstellungen" class="b-collapsed">Sachdateneinstellungen</h2>
           <div id="viewSettingsDiv" class="conf-panel" style="padding-left: 10px">
-            Was soll nach dem Speichern eines neuen Datensatzes angezeigt werden? <i class="fa fa-circle-exclamation" style="color: #f57802" onclick="kvm.msg(`<b>Hinweis</b><br>Wirkt sich nicht aus wenn die Option 'und neuen Datensatz erzeugen' unten im Eingabeformular ausgewählt ist.`);"></i><br />
+            Was soll nach dem Speichern eines neuen Datensatzes angezeigt werden?<i class="fa fa-circle-exclamation" style="color: #f57802" onclick="kvm.msg(`Wirkt sich nur aus wenn kein neuer Datensatz nach dem Speichern erzeugt wird.`, 'Hinweis');"></i><br />
             <select id="viewAfterCreate" name="viewAfterCreate">
               <option value="featurelist">Liste der Datensätze</option>
               <option value="map">Kartenansicht</option>
@@ -436,6 +436,7 @@ child-src * 'self' blob: http:
               <option value="dataView">Erzeugter Datensatz zum Lesen</option>
               <option value="formular">Erzeugter Datensatz im Formular</option>
             </select>
+            <input id="newAfterCreate" type="checkbox" style="margin-top: 20px" /> Nach dem Speichern gleich weiteren Datensatz anlegen
             <div style="margin-top: 20px">Was soll nach dem Aktualisieren eines vorhandenen Datensatzes angezeigt werden?</div>
             <select id="viewAfterUpdate" name="viewAfterUpdate">
               <option value="featurelist">Liste der Datensätze</option>

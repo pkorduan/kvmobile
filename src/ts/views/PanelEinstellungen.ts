@@ -1118,11 +1118,18 @@ export class Sachdaten extends PanelEinstellungen {
     const viewAfterUpdate = <HTMLSelectElement>document.getElementById("viewAfterUpdate");
     viewAfterUpdate.value = kvm.getConfigurationOption("viewAfterUpdate");
 
+    const newAfterCreate = <HTMLInputElement>document.getElementById("newAfterCreate");
+    newAfterCreate.checked = <boolean>kvm.getConfigurationOption("newAfterCreate");
+
     const confirmSave = <HTMLInputElement>document.getElementById("confirmSave");
     confirmSave.checked = <boolean>kvm.getConfigurationOption("confirmSave");
 
     viewAfterCreate.addEventListener("change", () => {
       kvm.setConfigurationOption("viewAfterCreate", viewAfterCreate.value);
+    });
+
+    newAfterCreate.addEventListener("change", () => {
+      kvm.setConfigurationOption("newAfterCreate", newAfterCreate.checked);
     });
 
     viewAfterUpdate.addEventListener("change", () => {

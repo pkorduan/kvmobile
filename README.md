@@ -33,6 +33,7 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
   - Anzeige des richtigen Layertitel im Popup
   - Maßstab unten rechts über dem Copy-Right und metrisch
   - ReloadLayer Control rausgenommen
+  - Option "Neuen Datensatz erfassen nach Speichern" aktiviert. 
 - Maintainance
   - Anpassung des Sync-Modus auf sync_all für alle Layer
   - Anpassung zindex neuer Features

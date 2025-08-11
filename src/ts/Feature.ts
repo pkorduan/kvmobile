@@ -196,7 +196,7 @@ export class Feature {
    * und lößt den Trigger aus, der angibt, dass sich die Geom des Features geändert hat.
    */
   setGeom(wkx: wkx.Geometry) {
-    console.error("setGeom mit wkx: %o", wkx);
+    // console.error("setGeom mit wkx: %o", wkx);
     console.log("Überschreibe oldGeom: %o mit newGeom: %o", this.geom, this.newGeom);
     const oldGeom = this.newGeom;
     // console.log("Überschreibe newGeom mit wkx: %o", wkx);

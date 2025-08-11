@@ -71,7 +71,7 @@ export class DataViewField {
 
   async setDocumentValue(val) {
     try {
-      console.error(`DataViewField.setDocumentValue(${val})`);
+      // console.error(`DataViewField.setDocumentValue(${val})`);
       val = kvm.coalesce(val, "");
       this.element.innerHTML = "";
       const imgPrevDiv = createHtmlElement("div", this.element);

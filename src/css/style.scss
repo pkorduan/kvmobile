@@ -664,8 +664,8 @@ ul.subformlist {
 .text-button {
   font-size: 1.25em;
   border: 2px solid #263286;
-  padding-left: 10px;
-  padding-right: 10px;
+  padding-left: 5px;
+  padding-right: 4px;
   border-radius: 5px;
   background-color: white;
 }
@@ -1256,4 +1256,8 @@ li.pointer:hover {
   padding: 9px;
   font-size: large;
   border-radius: 13px;
+}
+
+i .fa-undo {
+  font-size: 0.9;
 }
