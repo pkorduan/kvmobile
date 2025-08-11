@@ -575,10 +575,10 @@ export class Layers extends PanelEinstellungen {
     values.sort((l1, l2) => {
       const l01standAlone = !l1.layer.createOnlyByParent() && l1.layer.hasEditPrivilege;
       const l02standAlone = !l2.layer.createOnlyByParent() && l2.layer.hasEditPrivilege;
-      if (!l01standAlone && l02standAlone) {
+      if (l01standAlone && !l02standAlone) {
         return -1;
       }
-      if (l01standAlone && !l02standAlone) {
+      if (!l01standAlone && l02standAlone) {
         return 1;
       }
       return l1.layer.title < l2.layer.title ? -1 : 1;
