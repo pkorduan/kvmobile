@@ -120,7 +120,6 @@ export class GeometrieFormField extends AbstractField implements Field {
   // }
 
   async setValue(f: Feature, val: any) {
-    console.log(`GeometrieFormField(${val})`, val);
     this._feature = f;
     this._value = val;
     this._oldValue = val;

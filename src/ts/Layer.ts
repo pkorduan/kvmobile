@@ -336,7 +336,7 @@ export class Layer extends PropertyChangeSupport {
    */
   async addFeature(feature: Feature) {
     this._features.set(feature.id, feature);
-    await this.fire(new PropertyChangeEvent(this, Layer.EVENTS.FEATURE_ADDED, null, this.activateFeature));
+    await this.fire(new PropertyChangeEvent(this, Layer.EVENTS.FEATURE_ADDED, null, feature));
   }
 
   // todo
@@ -348,7 +348,7 @@ export class Layer extends PropertyChangeSupport {
       console.log("remove Editable");
       this.layerGroup.removeLayer(feature.leafletLayer);
     }
-    await this.fire(new PropertyChangeEvent(this, Layer.EVENTS.FEATURE_REMOVED, null, this.activateFeature));
+    await this.fire(new PropertyChangeEvent(this, Layer.EVENTS.FEATURE_REMOVED, null, feature));
   }
 
   getDokumentAttributeNames() {
@@ -2016,7 +2016,8 @@ export class Layer extends PropertyChangeSupport {
       // };
       // vectorLayer.bindPopup(popupFct);
 
-      this.activateFeature(feature, false);
+      // this.activateFeature(feature, false);
+      feature.activate(false);
     } else {
       // Beende das Anlegen eines neuen Features
       if (feature.editableLayer) {
@@ -2160,30 +2161,30 @@ export class Layer extends PropertyChangeSupport {
   //   }
   // };
 
-  popupOpen = (evt: LeafletEvent) => {
-    // console.error("popupOpen", evt);
-    // const featureId = evt.target.options.featureId;
-    // const globalLayerId = evt.target.options.globalLayerId;
-    // const kvmLayer = kvm.getLayer(globalLayerId);
-    // const activeFeature = kvm.getActiveLayer().activeFeature;
-    // const feature = kvmLayer.getFeature(featureId);
-    // const layer = (<any>kvm.map)._layers[feature.layerId];
-    // console.log("Event Open Popup of feature: %s in layer: %s globalLayerId: %s", featureId, kvmLayer.title, globalLayerId);
-    // layer.bindPopup(kvmLayer.getPopup(feature)).openPopup();
-    // if (kvmLayer.isActive && (!activeFeature || (activeFeature.id != featureId && !activeFeature.isEditable))) {
-    //   kvmLayer.activateFeature(kvmLayer.getFeature(featureId), false);
-    // }
-    const leafletLayer = <LeafletLayer>evt.target;
-    const feature = <Feature>evt.target["feature"];
-    if (feature.isActive) {
-      kvm.setActiveFeature(null);
-      feature.deactivate();
-      leafletLayer.unbindPopup();
-    } else {
-      kvm.setActiveFeature(feature);
-      feature.activate(false);
-    }
-  };
+  // popupOpen = (evt: LeafletEvent) => {
+  //   // console.error("popupOpen", evt);
+  //   // const featureId = evt.target.options.featureId;
+  //   // const globalLayerId = evt.target.options.globalLayerId;
+  //   // const kvmLayer = kvm.getLayer(globalLayerId);
+  //   // const activeFeature = kvm.getActiveLayer().activeFeature;
+  //   // const feature = kvmLayer.getFeature(featureId);
+  //   // const layer = (<any>kvm.map)._layers[feature.layerId];
+  //   // console.log("Event Open Popup of feature: %s in layer: %s globalLayerId: %s", featureId, kvmLayer.title, globalLayerId);
+  //   // layer.bindPopup(kvmLayer.getPopup(feature)).openPopup();
+  //   // if (kvmLayer.isActive && (!activeFeature || (activeFeature.id != featureId && !activeFeature.isEditable))) {
+  //   //   kvmLayer.activateFeature(kvmLayer.getFeature(featureId), false);
+  //   // }
+  //   const leafletLayer = <LeafletLayer>evt.target;
+  //   const feature = <Feature>evt.target["feature"];
+  //   if (feature.isActive) {
+  //     kvm.setActiveFeature(null);
+  //     feature.deactivate();
+  //     leafletLayer.unbindPopup();
+  //   } else {
+  //     kvm.setActiveFeature(feature);
+  //     feature.activate(false);
+  //   }
+  // };
 
   // TODO
   // hasActiveFeature() {
@@ -2202,7 +2203,8 @@ export class Layer extends PropertyChangeSupport {
    */
   collectChanges(f: Feature, action: string): AttributteDelta[] {
     //kvm.log("Layer.collectChanges " + (action ? " with action: " + action : ""), 4);
-    console.groupCollapsed("collectChanges");
+    console.error(`collectChanges ${f?.layer?.title}:${f?.id} app.ActiveFeature=${kvm.getActiveLayer()?.title}:${kvm.getActiveFeature()?.id}`);
+    console.group(`collectChanges ${f?.layer?.title}:${f?.id} app.ActiveFeature=${kvm.getActiveLayer()?.title}:${kvm.getActiveFeature()?.id}`);
     // const activeFeature = f;
     // changes = [];
 

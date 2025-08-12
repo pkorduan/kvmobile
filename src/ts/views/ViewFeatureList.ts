@@ -119,7 +119,7 @@ export class ViewFeatureList extends View {
         kvm.setActiveFeature(feature);
         if (layer.hasGeometry && feature.getDataValue(layer.get("geometry_attribute"))) {
           kvm.showView("map");
-          feature.activate(true);
+          // feature.activate(true);
         } else {
           kvm.showView("dataView");
         }

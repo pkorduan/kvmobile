@@ -246,7 +246,6 @@ export class LayerCtrl extends Control {
   // @method collapse(): this
   // Collapse the control container if expanded.
   collapse() {
-    console.error("LayerCtrl.collapse");
     DomUtil.removeClass(this._container, "leaflet-control-layers-expanded");
     return this;
   }
@@ -268,7 +267,6 @@ export class LayerCtrl extends Control {
       this._map.on(
         "click",
         () => {
-          console.info("LayerCtrl.clicked");
           this.collapse();
         },
         this
@@ -284,17 +282,14 @@ export class LayerCtrl extends Control {
       // );
 
       container.addEventListener("mouseenter", (evt) => {
-        console.info("LayerCtrl container.mouseenter", evt);
         this._expandSafely();
       });
 
       container.addEventListener("touchstart", (evt) => {
-        console.info("LayerCtrl container.touchstart", evt);
         this._expandSafely();
       });
 
       container.addEventListener("mouseleave", (evt) => {
-        console.info("LayerCtrl container.mouseleave", evt);
         this.collapse();
         evt.composed;
       });

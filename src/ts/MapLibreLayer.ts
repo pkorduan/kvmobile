@@ -296,12 +296,12 @@ export class MapLibreLayer extends LLayer {
   activate() {
     console.error("wwww activate");
     // TODO jquery
-    (<any>$("input[value=" + this.getGlobalId() + "]")[0]).checked = true;
-    $(".layer-functions-button, .layer-functions-div").hide();
-    $("#layer_" + this.getGlobalId() + " > .layer-functions-button").show();
-    $("#layer_" + this.getGlobalId() + " > .layer-functions-button").removeClass("fa-ellipsis-vertical fa-square-xmark");
-    $("#layer_" + this.getGlobalId() + " > .layer-functions-button").addClass("fa-ellipsis-vertical");
-    $("#newFeatureButton").hide();
+    // (<any>$("input[value=" + this.getGlobalId() + "]")[0]).checked = true;
+    // $(".layer-functions-button, .layer-functions-div").hide();
+    // $("#layer_" + this.getGlobalId() + " > .layer-functions-button").show();
+    // $("#layer_" + this.getGlobalId() + " > .layer-functions-button").removeClass("fa-ellipsis-vertical fa-square-xmark");
+    // $("#layer_" + this.getGlobalId() + " > .layer-functions-button").addClass("fa-ellipsis-vertical");
+    // $("#newFeatureButton").hide();
   }
 
   /*

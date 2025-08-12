@@ -191,8 +191,33 @@ export class Kvm extends PropertyChangeSupport {
     return null;
   }
 
-  async setActiveFeature(feature: Feature) {
+  async activateFeature(layerId: string, featureId?: string): Promise<void> {
+    return this.setActiveFeature(layerId, featureId);
+  }
+
+  // console.error(`kvm.activateFeature ${layerId}=>${layer?.title} ${featureId}=>${feature}`);
+  /**
+   * activates the feature.
+   * @param layerId
+   * @param featureId
+   */
+  async setActiveFeature(feature: Feature): Promise<void>;
+  /**
+   * activates the feature with featureId in layer with layerId.
+   * @param layerId
+   * @param featureId
+   */
+  async setActiveFeature(layerId: string, featureId: string): Promise<void>;
+  async setActiveFeature(layerId: string | Feature, featureId?: string): Promise<void> {
     // console.error(`zzz app.setActiveFeature ${feature?.layer?.title} ${feature?.id}`, this._activeFeature);
+    let feature: Feature;
+    if (typeof layerId === "string") {
+      const layer = kvm.getLayer(layerId);
+      feature = featureId ? layer.getFeature(featureId) : null;
+    } else {
+      feature = layerId;
+    }
+
     if (this._activeFeature === feature) {
       return;
     }
@@ -344,7 +369,7 @@ export class Kvm extends PropertyChangeSupport {
   }
 
   async syncLayers() {
-    console.groupCollapsed("syncLayers");
+    console.group("syncLayers");
     const syncResultImages = await this._activeStelle.syncImages();
     const syncResultData = await this._activeStelle.syncData();
     console.groupEnd();
@@ -848,7 +873,7 @@ export class Kvm extends PropertyChangeSupport {
               console.info("Synchronisation wurde durchgeführt", result);
               console.groupEnd();
             } catch (ex) {
-              const msg = "Beim Synchronisieren trat ein Fehler auf. " + ex.message + ' ' + ex.cause.response.message;
+              const msg = "Beim Synchronisieren trat ein Fehler auf. " + ex.message + " " + ex.cause.response.message;
               Util.alertNative(msg, "Fehler");
               console.error(msg, ex);
               this.writeLog(msg);
@@ -1408,7 +1433,7 @@ export class Kvm extends PropertyChangeSupport {
       const deleteConfirmed = await Util.confirm("Datensatz wirklich Löschen?", "", "ja", "nein");
       if (deleteConfirmed) {
         const id_attribute = kvm._activeLayer.get("id_attribute");
-        console.groupCollapsed("Lösche Feature " + id_attribute + ": " + kvm._activeFeature.getDataValue(id_attribute));
+        console.group("Lösche Feature " + id_attribute + ": " + kvm._activeFeature.getDataValue(id_attribute));
         try {
           const feature = this._activeFeature;
           await kvm._activeLayer.runDeleteStrategy(feature);
@@ -1437,7 +1462,7 @@ export class Kvm extends PropertyChangeSupport {
     let feature = kvm._activeFeature;
     let layer = kvm._activeFeature.layer;
     const id_attribute = kvm._activeLayer.get("id_attribute");
-    console.groupCollapsed("saveFeature " + id_attribute + ":" + feature.getDataValue(id_attribute) + " neu:" + (feature.new ? "ja" : "nein"));
+    console.group("saveFeature " + id_attribute + ":" + feature.getDataValue(id_attribute) + " neu:" + (feature.new ? "ja" : "nein"));
 
     try {
       const action = feature.new ? "insert" : "update";
@@ -1492,7 +1517,7 @@ export class Kvm extends PropertyChangeSupport {
               const activeFeatureId = feature.id;
               const syncResults = await this.syncLayers();
               console.info("Synchronisation erfolgreich", syncResults);
-              this.activateFeature(activeLayerId, activeFeatureId);
+              this.setActiveFeature(activeLayerId, activeFeatureId);
               layer = this._activeLayer;
               feature = this._activeFeature;
             }
@@ -1508,7 +1533,7 @@ export class Kvm extends PropertyChangeSupport {
       }
       sperrBildschirm.close();
     } catch (ex) {
-      const msg = "Beim Speichern trat ein Fehler auf!\n"
+      const msg = "Beim Speichern trat ein Fehler auf!\n";
       sperrBildschirm.close(`${msg} ${ex.cause.response.message}`);
       this.writeLog(msg + objectToString(ex));
       // Util.alertNative("Beim Speicher tratt ein Fehler auf." + JSON.stringify(ex))
@@ -1716,14 +1741,14 @@ export class Kvm extends PropertyChangeSupport {
     }
   }
 
-  featureItemClickEventFunction(evt: MouseEvent) {
-    console.info("zzz featureItemClickEventFunction");
-    const id = (<HTMLElement>evt.currentTarget).dataset.id;
-    console.log("featureItemClickEvent on feature id: %o", id);
-    const feature = kvm._activeLayer.getFeature(id);
-    kvm.showView(kvm._activeLayer.hasGeometry && feature.getDataValue(kvm._activeLayer.get("geometry_attribute")) != "null" ? "map" : "dataView");
-    kvm._activeLayer.activateFeature(feature, true);
-  }
+  // featureItemClickEventFunction(evt: MouseEvent) {
+  //   console.info("zzz featureItemClickEventFunction");
+  //   const id = (<HTMLElement>evt.currentTarget).dataset.id;
+  //   console.log("featureItemClickEvent on feature id: %o", id);
+  //   const feature = kvm._activeLayer.getFeature(id);
+  //   kvm.showView(kvm._activeLayer.hasGeometry && feature.getDataValue(kvm._activeLayer.get("geometry_attribute")) != "null" ? "map" : "dataView");
+  //   kvm._activeLayer.activateFeature(feature, true);
+  // }
 
   backupDatabase(filename = "", msg = "") {
     console.log("Sichere Datenbank");
@@ -1767,6 +1792,7 @@ export class Kvm extends PropertyChangeSupport {
   cancelEditFeature() {
     const activeLayer = this._activeLayer;
     const activeFeature = this._activeFeature;
+    console.error(`app.cancelEditFeature ${activeLayer?.title} ${activeFeature?.id} ${activeFeature.new} app=${this.isEditMode}`);
 
     if (activeLayer.hasGeometry) {
       //console.log("Feature ist neu? %s", activeFeature.new);
@@ -1797,8 +1823,8 @@ export class Kvm extends PropertyChangeSupport {
       if (activeFeature.new) {
         let parentFeature = activeFeature.findParentFeature();
         if (parentFeature) {
-          const parentLayer = parentFeature.layer;
-          parentLayer.activateFeature(parentFeature, true);
+          // const parentLayer = parentFeature.layer;
+          this.setActiveFeature(parentFeature);
         }
       }
       kvm.showView("dataView");
@@ -1808,17 +1834,17 @@ export class Kvm extends PropertyChangeSupport {
     kvm.controller.mapper.clearWatch(); // GPS-Tracking ausschalten
   }
 
-  /**
-   * Function activate the feature with featureId in layer with layerId and show it in dataView.
-   * @param layerId
-   * @param featureId
-   */
-  activateFeature(layerId: string, featureId: string) {
-    const layer = kvm.getLayer(layerId);
-    const feature = featureId ? layer.getFeature(featureId) : null;
-    // console.error(`kvm.activateFeature ${layerId}=>${layer?.title} ${featureId}=>${feature}`);
-    this.setActiveFeature(feature);
-  }
+  // /**
+  //  * Function activate the feature with featureId in layer with layerId and show it in dataView.
+  //  * @param layerId
+  //  * @param featureId
+  //  */
+  // activateFeature(layerId: string, featureId: string) {
+  //   const layer = kvm.getLayer(layerId);
+  //   const feature = featureId ? layer.getFeature(featureId) : null;
+  //   // console.error(`kvm.activateFeature ${layerId}=>${layer?.title} ${featureId}=>${feature}`);
+  //   this.setActiveFeature(feature);
+  // }
 
   /**
    * Function open form to create a new feature for a subLayer.
@@ -1826,6 +1852,7 @@ export class Kvm extends PropertyChangeSupport {
    * Input form only open if user confirm else nothing happens.
    */
   async newSubFeature(options: { parentLayerId: string; subLayerId: string; fkAttribute: string; parentFeatureId: any }) {
+    console.error(`app.newSubFeature vom Typ ${this.getLayer(options.subLayerId)?.title} am feature ${this._activeFeature.layer.title} ${this._activeFeature.getDataValue(this._activeLayer.get("id_attribute"))}`);
     if (this._activeLayer && this._activeFeature) {
       const changes = this._activeLayer.collectChanges(this._activeFeature, "update");
       if (changes.length > 0) {
@@ -1860,7 +1887,7 @@ export class Kvm extends PropertyChangeSupport {
       feature = layerId;
       layer = feature.layer;
     }
-    // console.error(`editFeature(${layer.title}, ${feature.getDataValue(layer.get("id_attribute"))}`);
+    console.error(`editFeature(${layer.title}, ${feature.getDataValue(layer.get("id_attribute"))} editMode=${this.isEditMode}`, this._activeFeature);
     this.isEditMode = true;
     // ToDo:
     //parentLayerId und parentFeatureId müssen woanders hier kommen
@@ -1904,10 +1931,9 @@ export class Kvm extends PropertyChangeSupport {
   }
 
   featureClicked = (evt: LeafletEvent) => {
-    console.groupCollapsed("featureClicked isEditMode=" + this.isEditMode);
     const leafletLayer = <LeafletLayer>evt.target;
     const feature = <Feature>evt.target["feature"];
-    console.info(`clickedFeature: ${feature.layer.title} ${feature.getDataValue(feature.layer.get("id_attribute"))}`);
+    console.group(`featureClicked isEditMode=${this.isEditMode} clickedFeature: ${feature.layer.title} ${feature.getDataValue(feature.layer.get("id_attribute"))}`);
     if (feature.isActive) {
       this.setActiveFeature(null);
       feature.deactivate();

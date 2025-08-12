@@ -166,7 +166,7 @@ export class DataViewField {
     const vorschauOption = this.attribute.getVorschauOption();
     const div = createHtmlElement("div", this.element);
     div.addEventListener("click", () => {
-      kvm.activateFeature(globalParentLayerId, val);
+      kvm.setActiveFeature(globalParentLayerId, val);
     });
     const iBttn = createHtmlElement("div", div, "fa fa-arrow-left");
     iBttn.ariaHidden = "true";

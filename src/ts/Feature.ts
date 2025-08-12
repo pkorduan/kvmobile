@@ -510,15 +510,9 @@ export class Feature {
    */
   activate(zoom: boolean) {
     console.info(`zzz feature.activate ${this.layer?.title} ${this.getDataValue(this.layer.get("id_attribute"))}`, this);
-    // if (!this.layer.isActive) {
-    //   this.layer.activate();
-    // }
-    // this.layer.setActiveFeature(this);
 
     if (this.layer.hasGeometry) {
-      // let mapLayer = (<any>kvm.map)._layers[this.layerId];
       if (this.newGeom) {
-        //console.log("Feature has newGeom");
         console.log("Markiere Feature %s in Layer %s", this.id, this.layer.title);
         this.leafletLayer.setStyle(this.layer.getSelectedStyle(this.getStyle()));
         this.leafletLayer.bindPopup(this.layer.getPopup(this)).openPopup();
@@ -528,14 +522,8 @@ export class Feature {
         if (zoom) {
           this.zoomTo(zoom);
         }
-      } else {
-        // console.log("Feature hat noch keine newGeom und ist noch nicht in Karte");
-        // kvm.msg("Das Feature hat noch keine Geometrie und ist deshalb nicht in der Karte zu sehen!", "Hinweis");
       }
     }
-    console.log("Select feature in list " + this.id);
-    //  $("#" + this.id).addClass("selected-feature-item");
-    // this.setActive(true);
     this._isActive = true;
     return this;
   }
