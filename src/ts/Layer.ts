@@ -1217,7 +1217,7 @@ export class Layer extends PropertyChangeSupport {
    * Setzt die Werte des Features im dataView
    */
   async loadFeatureToView(feature: Feature, options = {}) {
-    console.groupCollapsed(this.get("title") + ": Lade Feature in View.");
+    console.group(this.get("title") + ": Lade Feature in View.");
 
     for (const attr of this.attributes) {
       if (attr.get("type") != "geometry") {
@@ -1780,7 +1780,7 @@ export class Layer extends PropertyChangeSupport {
     //   }
     // }
     // kvm.setActiveFeature(feature);
-    console.log(`Neues Feature mit id: ${feature.id} erzeugt.`);
+    console.log(`Neues Feature des Layers ${feature?.layer?.title} mit id: ${feature.id} erzeugt.`);
     return feature;
   }
 
@@ -2017,7 +2017,7 @@ export class Layer extends PropertyChangeSupport {
       // vectorLayer.bindPopup(popupFct);
 
       // this.activateFeature(feature, false);
-      feature.activate(false);
+      feature.deactivate();
     } else {
       // Beende das Anlegen eines neuen Features
       if (feature.editableLayer) {
@@ -2204,7 +2204,7 @@ export class Layer extends PropertyChangeSupport {
   collectChanges(f: Feature, action: string): AttributteDelta[] {
     //kvm.log("Layer.collectChanges " + (action ? " with action: " + action : ""), 4);
     console.error(`collectChanges ${f?.layer?.title}:${f?.id} app.ActiveFeature=${kvm.getActiveLayer()?.title}:${kvm.getActiveFeature()?.id}`);
-    console.group(`collectChanges ${f?.layer?.title}:${f?.id} app.ActiveFeature=${kvm.getActiveLayer()?.title}:${kvm.getActiveFeature()?.id}`);
+    console.groupCollapsed(`collectChanges ${f?.layer?.title}:${f?.id} app.ActiveFeature=${kvm.getActiveLayer()?.title}:${kvm.getActiveFeature()?.id}`);
     // const activeFeature = f;
     // changes = [];
 

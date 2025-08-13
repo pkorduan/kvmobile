@@ -64,7 +64,7 @@ export class Mapper {
 
   createEditable(feature: Feature) {
     //ToDo auch implementieren für polyongs
-    console.log("Erzeuge Editierbare Geometrie für %s: %o", feature.layer.settings.geometry_type, feature);
+    console.error(`Erzeuge Editierbare Geometrie für für feature: ${feature?.layer?.title} ${feature?.id}`);
     // var editableLayer;
 
     // Erzeugt eine editierbare Geometrie der Featuregeometrie
@@ -97,7 +97,7 @@ export class Mapper {
   }
 
   bindEventHandler(feature: Feature) {
-    console.log("bindEventHandler für feature: %o", feature);
+    console.error(`bindEventHandler für feature: ${feature?.layer?.title} ${feature?.id}`);
 
     // kein Popup am Draggable, ist nicht notwendig wegen der Button im Menü   kvm.map._layers[draggable._leaflet_id].bindPopup(this.getDraggablePopup(feature, draggable));
     if (feature.layer.settings.geometry_type == "Point") {
@@ -144,6 +144,7 @@ export class Mapper {
   }
 
   removeEditable(feature: Feature) {
+    console.error(`removeEditable für feature: ${feature?.layer?.title} ${feature?.id}`);
     if (feature.layer.settings.geometry_type == "Line") {
       if (document.getElementById("trackControl")?.parentElement) {
         document.getElementById("trackControl").parentElement.style.display = "none";

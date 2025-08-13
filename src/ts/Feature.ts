@@ -462,7 +462,7 @@ export class Feature {
   zoomTo(zoom: boolean, startLatLng?: L.LatLngExpression) {
     console.info("feature.zoomTo");
     if (this.leafletLayer) {
-      let layer = this.isEditable ? this.editableLayer : this.leafletLayer;
+      const layer = this.editableLayer || this.leafletLayer;
       if (this.layer.settings.geometry_type == "Point") {
         console.log("flyTo %s %o", this.isEditable ? "editableLayer: " : "feature latlng: ", layer.getLatLng());
         if (zoom) {
@@ -536,9 +536,10 @@ export class Feature {
    */
   deactivate() {
     // Beende das Anlegen eines neuen Features
-    // console.error(`zzz feature.deactivate ${this.layer?.title}`, this);
+    console.error(`zzz feature.deactivate ${this.layer?.title} ${this.id}`, this.editableLayer);
     if (this.editableLayer) {
       kvm.map.removeLayer(this.editableLayer);
+      this.editableLayer = null;
     }
     // const mapLayer = (<any>kvm.map)._layers[this.layerId];
     if (this.leafletLayer) {

@@ -376,18 +376,40 @@ export async function alertOverlay(message: string, title?: string, okButtonText
   msgTitle.innerText = title || "";
   const msgTextWrapper = createHtmlElement("div", msgDiv, "msg-text-wrapper");
   const msgText = createHtmlElement("div", msgTextWrapper, "msg-text");
-  msgText.innerText = message + (exMsg || ' ' + exMsg);
-  const okBttn = createHtmlElement("button", msgDiv, "msg-button");
-  okBttn.innerText = okButtonText || "ok";
+  msgText.innerText = message;
+
+  const divBttns = createHtmlElement("div", null, "msg-button-div");
+  if (exMsg) {
+    const divShowMore = createHtmlElement("div", msgDiv);
+    const bttnShowMore = createHtmlElement("span", divBttns, "msg-button");
+    bttnShowMore.innerText = "mehr";
+    const showMoreText = createHtmlElement("div", msgDiv, "msg-details");
+    showMoreText.innerHTML = exMsg.trim();
+    showMoreText.style.display = "none";
+    bttnShowMore.addEventListener("click", () => {
+      if (bttnShowMore.innerText === "mehr") {
+        showMoreText.style.display = "";
+        bttnShowMore.innerText = "weniger";
+      } else {
+        showMoreText.style.display = "none";
+        bttnShowMore.innerText = "mehr";
+      }
+    });
+  }
+
+  const okBttn = createHtmlElement("button", divBttns, "msg-button");
+  okBttn.innerText = okButtonText || "OK";
   okBttn.addEventListener("click", () => {
     div.remove();
   });
+  msgDiv.appendChild(divBttns);
+
   document.body.appendChild(div);
 }
 
 export async function showError(msg: string, ex: Error | any) {
   console.trace("errorMesg", msg, ex);
-  let exMsg = '';
+  let exMsg = "";
   if (ex) {
     let indent = "\t";
     while (ex) {

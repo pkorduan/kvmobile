@@ -72,7 +72,7 @@ export class ViewDataView extends View {
   // }
 
   _createDataView(layer: Layer) {
-    console.groupCollapsed("Layer.createDataView for Layer " + layer.title);
+    console.group("Layer.createDataView for Layer " + layer.title);
     // sperrBildschirm.tick(`${layer.title}:<br>&nbsp;&nbsp;Erzeuge Sachdatenanzeige neu.`);
     const dataView = document.getElementById("dataView");
     dataView.innerHTML = "";

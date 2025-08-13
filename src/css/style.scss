@@ -1205,7 +1205,8 @@ li.pointer:hover {
 
 .msg-background {
   z-index: 999;
-  background-color: rgb(187 187 187 / 31%);
+  /*background-color: rgba(55, 55, 55, 0.51);*/
+  background-color: #0037fffc;
   position: absolute;
   top: 0px;
   left: 0px;
@@ -1216,9 +1217,10 @@ li.pointer:hover {
   justify-content: center;
   align-items: center;
 }
+
 .msg-pane {
   background-color: white;
-  // display: flex;
+  display: flex;
   flex-direction: column;
   max-height: 95%;
   max-width: 95%;
@@ -1227,17 +1229,18 @@ li.pointer:hover {
   gap: 5px;
   text-align: center;
 }
+
 .msg-title {
   font-weight: bold;
-  flex-grow: 1;
-  flex-shrink: 1;
+  text-align: left;
+  padding-bottom: 0.3em;
+  font-size: 0.8em;
 }
 .msg-text-wrapper {
   font-weight: normal;
   flex-shrink: 100;
   overflow: auto;
   max-height: 90%;
-  // white-space: pre;
   max-width: 100%;
   text-align: left;
 }
@@ -1245,16 +1248,32 @@ li.pointer:hover {
   overflow: auto;
   font-size: medium;
 }
+
+.msg-details {
+  text-align: left;
+  max-width: 100%;
+  overflow: auto;
+  position: relative;
+  font-size: 0.6em;
+  white-space: pre;
+}
+.msg-button-div {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .msg-button {
-  background-color: inherit;
-  flex-grow: 1;
-  flex-shrink: 1;
-  margin: 10px;
-  max-width: 20%;
-  align-self: flex-end;
-  padding: 9px;
+  background-color: white;
+  /* flex-grow: 1; */
+  /* flex-shrink: 1; */
+  margin: 5px;
+  /* max-width: 20%; */
+  /* align-self: flex-end; */
+  /* padding: 9px; */
   font-size: large;
-  border-radius: 13px;
+  /* border-radius: 13px; */
+  border: none;
+  color: blue;
 }
 
 i .fa-undo {

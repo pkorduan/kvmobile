@@ -7,6 +7,7 @@ import { View } from "./View";
 import * as Util from "../Util";
 import { Menu } from "../Menu";
 import { Attribute } from "../Attribute";
+import { GeometrieFormField } from "../GeometryFormField";
 
 export class ViewFormular extends View {
   header: HTMLHeadingElement;
@@ -25,6 +26,23 @@ export class ViewFormular extends View {
       console.log("ViewFormular.update", evt.newValue);
       this.update(<Feature>evt.newValue);
     });
+
+    document.addEventListener("geomChanged", (event: CustomEvent) => {
+      try {
+        console.error(`GeometrieFormField.geom changed ${this.feature?.layer.title} ${this.feature?.id}`);
+        sperrBildschirm.show();
+        if (this.feature) {
+          const layer = this.feature?.layer;
+          const attr = layer.getAttribute(layer.settings.geometry_attribute);
+          if (attr.formField instanceof GeometrieFormField) {
+            attr.formField.geomChanged(event);
+          }
+        }
+      } catch (ex) {
+        console.error("Fehler", ex);
+      }
+      sperrBildschirm.close();
+    });
   }
 
   update(f: Feature) {
@@ -34,7 +52,7 @@ export class ViewFormular extends View {
   }
 
   _createForm(layer: Layer) {
-    console.groupCollapsed("ViewFormular create Form for Layer " + layer.title);
+    console.group("ViewFormular create Form for Layer " + layer.title);
     this.dom.innerHTML = "";
     const h1 = Util.createHtmlElement("h1", this.dom);
     h1.innerText = layer.title;
@@ -211,7 +229,7 @@ export class ViewFormular extends View {
    */
   async loadFeatureToForm(feature: Feature, options = { editable: false }) {
     const layer = feature.layer;
-    console.groupCollapsed(`ViewFormular.loadFeatureToForm layer=´${layer.title}`, feature.getDataValue(layer.settings.id_attribute));
+    console.group(`ViewFormular.loadFeatureToForm layer=´${layer.title}`, feature.getDataValue(layer.settings.id_attribute));
 
     for (const attr of layer.attributes) {
       const attrName = attr.get("name");

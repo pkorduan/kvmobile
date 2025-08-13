@@ -914,6 +914,9 @@ export class Kvm extends PropertyChangeSupport {
     //kvm.log("Liste der Datensätze angezeigt.", 4);
     this.showView(<ViewName>activeView);
     sperrBildschirm.close();
+
+    const testErr = new Error("TestFehler", { cause: new Error("Der Wert dard nicht null sein") });
+    Util.showError("Bei der Initialisierung tratt in Fehler auf.", testErr);
   }
 
   // reloadFeatures() {
@@ -1914,6 +1917,7 @@ export class Kvm extends PropertyChangeSupport {
           return;
         }
       }
+
       // this.setActiveFeature(null);
     }
     this.setActiveFeature(feature);

@@ -188,19 +188,20 @@ export class GeometrieFormField extends AbstractField implements Field {
      *   exclude: Die Variante zum setzen der Geometrie nicht verwenden
      */
     // $(document).on("geomChanged", function (event, options) {
-    document.addEventListener("geomChanged", (event: CustomEvent) => {
-      try {
-        sperrBildschirm.show();
-        this.geomChanged(event);
-      } catch (ex) {
-        console.error("Fehler", ex);
-      }
-      sperrBildschirm.close();
-    });
+    // document.addEventListener("geomChanged", (event: CustomEvent) => {
+    //   try {
+    //     console.error(`GeometrieFormField.geom changed ${this._feature?.layer.title} ${this._feature?.id}`);
+    //     sperrBildschirm.show();
+    //     this.geomChanged(event);
+    //   } catch (ex) {
+    //     console.error("Fehler", ex);
+    //   }
+    //   sperrBildschirm.close();
+    // });
   }
 
   async geomChanged(event: CustomEvent) {
-    console.log("GeometrieFormField.geomChanged", event, event.detail);
+    console.error("GeometrieFormField.geomChanged", event, event.detail);
     const feature = this._feature;
     const geom = event.detail.geom;
     const exclude = event.detail.exclude;
