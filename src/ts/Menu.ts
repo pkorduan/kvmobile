@@ -1,4 +1,5 @@
 import { Kvm } from "./app";
+import { Feature } from "./Feature";
 import { Layer } from "./Layer";
 import { sperrBildschirm } from "./SperrBildschirm";
 import * as PanelEinstellungen from "./views/PanelEinstellungen";
@@ -119,9 +120,13 @@ export class Menu {
 
     this.app.addEventListener(Kvm.EVENTS.ACTIVE_LAYER_CHANGED, (evt) => {
       // Todo fff
-      if (this.activeView?.id !== "formular") {
+      if (this.activeView && this.activeView?.id !== "formular") {
         const l = <Layer>evt.newValue;
         this.newFeatureButton.style.display = l?.hasEditPrivilege && !l.createOnlyByParent() ? "" : "none";
+      }
+      if (this.activeView?.id === "formular") {
+        const l = <Layer>evt.newValue;
+        this.showMapEdit.style.display = l?.hasGeometry ? "" : "none";
       }
     });
   }
@@ -137,16 +142,19 @@ export class Menu {
   showDefaultMenu() {
     // TODO fff
     const items = [this.showSettings, this.showFeatureList, this.showMap];
-    if (this.app.getActiveLayer()?.hasEditPrivilege) {
+    if (this.app.getActiveLayer()?.hasEditPrivilege && !this.app.getActiveLayer().createOnlyByParent()) {
       items.push(this.newFeatureButton);
     }
     this.showItems(items);
   }
 
   showFormMenu() {
-    const items = [this.showMapEdit, this.saveFeatureButton, this.cancelFeatureButton];
+    const items = [this.saveFeatureButton, this.cancelFeatureButton];
     if (this.app.getActiveLayer()?.hasDeletePrivilege && !this.app.getActiveFeature()?.new) {
       items.push(this.deleteFeatureButton);
+    }
+    if (this.app.getActiveLayer()?.hasGeometry) {
+      items.push(this.showMapEdit);
     }
     this.showItems(items);
   }
@@ -159,27 +167,29 @@ export class Menu {
     if ($("#historyFilter").is(":checked")) {
       $("#restoreFeatureButton").show();
     } else {
-      if (this.app.getActiveLayer()?.hasEditPrivilege && !this.app.getActiveFeature().hasEditiersperre()) {
+      if (this.app.getActiveLayer()?.hasEditPrivilege && !this.app.getActiveFeature()?.hasEditiersperre()) {
         // erstmal rausgenommen weil es zu Fehler führen kann.
         // klären was mit den die Kopiert wird passiert beim Speichern und Sync.
         // $("#editFeatureButton, #tplFeatureButton").show();
         items.push(this.editFeatureButton);
+        if (!this.app.getActiveLayer().createOnlyByParent()) {
+          items.push(this.newFeatureButton);
+        }
       }
     }
     this.showItems(items);
   }
 
-  getFormularMenu() {
-    const items = [this.saveFeatureButton, this.cancelFeatureButton];
-    if (this.app.getActiveLayer()?.hasGeometry) {
-      items.push(this.showMapEdit);
-    }
-    if (this.app.getActiveLayer()?.hasDeletePrivilege && !this.app.getActiveFeature()?.new) {
-      items.push(this.deleteFeatureButton);
-    }
-
-    this.showItems(items);
-  }
+  // getFormularMenu() {
+  //   const items = [this.saveFeatureButton, this.cancelFeatureButton];
+  //   if (this.app.getActiveLayer()?.hasGeometry) {
+  //     items.push(this.showMapEdit);
+  //   }
+  //   if (this.app.getActiveLayer()?.hasDeletePrivilege && !this.app.getActiveFeature()?.new) {
+  //     items.push(this.deleteFeatureButton);
+  //   }
+  //   this.showItems(items);
+  // }
 
   activate(item: ViewName) {
     // console.info(`yyyy newView=${item}  oldView=${this.activeView?.id}`);
