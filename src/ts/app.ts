@@ -873,8 +873,9 @@ export class Kvm extends PropertyChangeSupport {
               console.info("Synchronisation wurde durchgeführt", result);
               console.groupEnd();
             } catch (ex) {
-              const msg = "Beim Synchronisieren trat ein Fehler auf. " + ex.message + " " + ex.cause.response.message;
-              Util.alertNative(msg, "Fehler");
+              const msg = "Beim Synchronisieren trat ein Fehler auf.";
+              // await Util.alertNative(msg + ' ' + objectToString(ex));
+              await Util.showError(msg, ex);
               console.error(msg, ex);
               this.writeLog(msg);
             }
@@ -1534,7 +1535,7 @@ export class Kvm extends PropertyChangeSupport {
       sperrBildschirm.close();
     } catch (ex) {
       const msg = "Beim Speichern trat ein Fehler auf!\n";
-      sperrBildschirm.close(`${msg} ${ex.cause.response.message}`);
+      sperrBildschirm.close(msg, ex);
       this.writeLog(msg + objectToString(ex));
       // Util.alertNative("Beim Speicher tratt ein Fehler auf." + JSON.stringify(ex))
       // kvm.msg("Beim Speicher tratt ein Fehler auf. " + JSON.stringify(ex));

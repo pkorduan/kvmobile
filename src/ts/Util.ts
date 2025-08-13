@@ -367,7 +367,7 @@ export async function alertNative(message: string, title?: string, buttonText?: 
   });
 }
 
-export async function alertOverlay(message: string, title?: string, okButtonText?: string) {
+export async function alertOverlay(message: string, title?: string, okButtonText?: string, exMsg?: string) {
   console.trace("Util.alert");
   const div = document.createElement("div");
   div.className = "msg-background";
@@ -376,7 +376,7 @@ export async function alertOverlay(message: string, title?: string, okButtonText
   msgTitle.innerText = title || "";
   const msgTextWrapper = createHtmlElement("div", msgDiv, "msg-text-wrapper");
   const msgText = createHtmlElement("div", msgTextWrapper, "msg-text");
-  msgText.innerText = message;
+  msgText.innerText = message + (exMsg || ' ' + exMsg);
   const okBttn = createHtmlElement("button", msgDiv, "msg-button");
   okBttn.innerText = okButtonText || "ok";
   okBttn.addEventListener("click", () => {
@@ -387,21 +387,21 @@ export async function alertOverlay(message: string, title?: string, okButtonText
 
 export async function showError(msg: string, ex: Error | any) {
   console.trace("errorMesg", msg, ex);
-
+  let exMsg = '';
   if (ex) {
     let indent = "\t";
     while (ex) {
-      msg += "\nUrsache:\n";
+      exMsg += "\nUrsache:\n";
       if (ex instanceof Error) {
         // msg += indent + ex.message + "\n";
-        msg += ex.stack;
+        exMsg += ex.stack;
       } else {
-        msg += indent + JSON.stringify(ex);
+        exMsg += indent + JSON.stringify(ex);
       }
       ex = ex.cause;
     }
   }
-  await alertOverlay(msg, "Fehler", "ok");
+  await alertOverlay(msg, "Fehler", "ok", exMsg);
 }
 // export async function runStrategy(fcts: AsyncFunction<any>[], paramOfFirsFct: any) {
 //     const results = [];
