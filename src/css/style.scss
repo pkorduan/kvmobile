@@ -1279,3 +1279,32 @@ li.pointer:hover {
 i .fa-undo {
   font-size: 0.9;
 }
+
+.delta-anzeige {
+  position: absolute;
+  right: 0px;
+  top: 0px;
+  display: flex;
+  justify-content: center;
+  padding: 0px 3px;
+  background-color: white;
+}
+
+.delta-count-anzeige {
+  position: absolute;
+  right: -25%;
+  bottom: -1px;
+  background-color: white;
+  font-size: 12px;
+  border: black thin solid;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+  width: fit-content;
+  border-radius: 50%;
+  min-width: 20px;
+  border: none;
+  aspect-ratio: 1 / 1;
+}

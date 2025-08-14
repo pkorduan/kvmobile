@@ -368,10 +368,80 @@ export class Kvm extends PropertyChangeSupport {
     this._layers.clear();
   }
 
+  async updateDeltaDisplay() {
+    console.error("updateDeltaDisplay");
+    try {
+      const sql = "SELECT count(*) as count FROM deltas";
+      const rs = await executeSQL(kvm.db, sql);
+      const divDeltaAnzeige = document.getElementById("delta-count-anzeige");
+      const count = rs.rows.item(0).count;
+      if (count === 0) {
+        divDeltaAnzeige.style.display = "none";
+      } else {
+        divDeltaAnzeige.innerText = count;
+        divDeltaAnzeige.style.display = "";
+      }
+    } catch (ex) {
+      console.error(ex);
+    }
+  }
+
+  // async initDeltaAnzeige() {
+  //   // const divDeltaAnzeige = createHtmlElement("div", document.body, "delta-anzeige");
+  //   // divDeltaAnzeige.id = "div-delta-anzeige";
+  //   const
+  //   const sql = "SELECT count(*) as count FROM deltas";
+  //   const rs = await executeSQL(kvm.db, sql);
+  //   divDeltaAnzeige.innerText = rs.rows.item(0).count;
+  // const clickFct = async () => {
+  //   sperrBildschirm.show();
+  //   let showDeltas;
+  //   try {
+  //     const rs = await executeSQL(kvm.db, sql);
+  //     const count = rs.rows.item(0).count;
+  //     if (count === 0) {
+  //       await Util.alertOverlay("Es sind alle Änderungen zum Server übertragen worden", "Info");
+  //     } else {
+  //       showDeltas = await Util.confirm("" + count + " Änderungen wurden noch nicht zum Server übertragen", "Info", "Änderungen anzeigen");
+  //     }
+  //   } finally {
+  //     sperrBildschirm.close();
+  //   }
+  //   if (showDeltas) {
+  //     this.showDeltas();
+  //   }
+  // };
+  // divDeltaAnzeige.addEventListener("click", () => {
+  //   clickFct();
+  // });
+  // }
+
+  showDeltas() {
+    this.showView("settings");
+    const view = this.menu.activeView;
+    if (view instanceof ViewEinstellungen) {
+      PanelEinstellungen.showMehr();
+      view.panelDatabase.expand();
+      view.panelDatabase.showDeltas();
+    }
+  }
+
   async syncLayers() {
     console.group("syncLayers");
-    const syncResultImages = await this._activeStelle.syncImages();
-    const syncResultData = await this._activeStelle.syncData();
+    let syncResultImages;
+    let syncResultData;
+    try {
+      syncResultImages = await this._activeStelle.syncImages();
+      syncResultData = await this._activeStelle.syncData();
+    } catch (ex) {
+      const autoSync = kvm.getConfigurationOption("autoSync");
+      if (autoSync) {
+        kvm.setConfigurationOption("autoSync", false);
+        throw new Error("Bei dem Datenabgleich mit dem Server tratt eine Fehler auf. Die automatische Synchronierung wird abgestellt.", { cause: ex });
+      }
+      throw new Error("Bei dem Datenabgleich mit dem Server tratt eine Fehler auf.", { cause: ex });
+    }
+    this.updateDeltaDisplay();
     console.groupEnd();
     return {
       deletedImages: syncResultImages.deletedImages,
@@ -869,8 +939,13 @@ export class Kvm extends PropertyChangeSupport {
           if (kvm.getConfigurationOption("autoSync")) {
             try {
               console.groupCollapsed(`autoSync is ${kvm.getConfigurationOption("autoSync")}. Synchronisiere mit Server.`);
-              const result = await this.syncLayers();
-              console.info("Synchronisation wurde durchgeführt", result);
+              try {
+                const result = await this.syncLayers();
+                console.info("Synchronisation wurde durchgeführt", result);
+              } catch (ex) {
+                kvm.setConfigurationOption("autoSync", false);
+                Util.alertOverlay("Bei der Synchronisation mit dem Ser");
+              }
               console.groupEnd();
             } catch (ex) {
               const msg = "Beim Synchronisieren trat ein Fehler auf.";
@@ -917,6 +992,8 @@ export class Kvm extends PropertyChangeSupport {
 
     const testErr = new Error("TestFehler", { cause: new Error("Der Wert dard nicht null sein") });
     Util.showError("Bei der Initialisierung tratt in Fehler auf.", testErr);
+
+    this.updateDeltaDisplay();
   }
 
   // reloadFeatures() {

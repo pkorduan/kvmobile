@@ -710,6 +710,7 @@ export class Stelle {
     if (layerRequestResult.success) {
       await executeSQL(kvm.db, "delete from deltas");
       await executeSQL(kvm.db, "delete from image_deltas");
+      kvm.updateDeltaDisplay();
 
       await this.clearLayers();
       this.numLayers = layerRequestResult.layers.length;

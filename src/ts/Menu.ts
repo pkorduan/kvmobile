@@ -24,8 +24,8 @@ export class Menu {
 
   private id2View = new Map<string, View>();
 
-  private activeView: View;
-  private activeViewName: ViewName;
+  private _activeView: View;
+  private _activeViewName: ViewName;
   app: Kvm;
 
   constructor(app: Kvm) {
@@ -120,11 +120,11 @@ export class Menu {
 
     this.app.addEventListener(Kvm.EVENTS.ACTIVE_LAYER_CHANGED, (evt) => {
       // Todo fff
-      if (this.activeView && this.activeView?.id !== "formular") {
+      if (this._activeView && this._activeView?.id !== "formular") {
         const l = <Layer>evt.newValue;
         this.newFeatureButton.style.display = l?.hasEditPrivilege && !l.createOnlyByParent() ? "" : "none";
       }
-      if (this.activeView?.id === "formular") {
+      if (this._activeView?.id === "formular") {
         const l = <Layer>evt.newValue;
         this.showMapEdit.style.display = l?.hasGeometry ? "" : "none";
       }
@@ -193,8 +193,8 @@ export class Menu {
 
   activate(item: ViewName) {
     // console.info(`yyyy newView=${item}  oldView=${this.activeView?.id}`);
-    if (this.activeView) {
-      this.activeView.hide();
+    if (this._activeView) {
+      this._activeView.hide();
     }
 
     let newView: View;
@@ -236,8 +236,8 @@ export class Menu {
         this.showDefaultMenu();
         newView = this.id2View.get("settings");
     }
-    this.activeView = newView;
-    this.activeViewName = item;
+    this._activeView = newView;
+    this._activeViewName = item;
     newView.show();
 
     if (item === "settings") {
@@ -246,8 +246,12 @@ export class Menu {
     // newView.scrollTop(0);
   }
 
+  get activeView() {
+    return this._activeView;
+  }
+
   isActiveView(viewName: ViewName) {
-    return viewName === this.activeViewName;
+    return viewName === this._activeViewName;
   }
 
   private showItems(items: HTMLElement[]) {

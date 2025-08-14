@@ -235,6 +235,12 @@ async function writeDelta(feature: Feature, delta: { action: "insert" | "delete"
   } catch (ex) {
     throw ex;
     console.error("Error in writeDelta", ex);
+  } finally {
+    try {
+      kvm.updateDeltaDisplay();
+    } catch (ex) {
+      console.error(ex);
+    }
   }
 }
 
@@ -280,15 +286,15 @@ async function readDataset(f: Feature) {
   return executeSQL(kvm.db, sql);
 }
 
-async function deleteDeltas(f: Feature, layer: Layer) {
-  // console.log("deleteDeltas");
-  let sql = `
-    DELETE FROM ${layer.getSqliteTableName()}_deltas
-    WHERE
-      type = 'sql' AND
-      (change = 'update' OR change = 'insert') AND
-      INSTR(delta, '${f.id}') > 0
-  `;
-  console.log("Lösche Deltas mit sql: %s", sql);
-  return executeSQL(kvm.db, sql);
-}
+// async function deleteDeltas(f: Feature, layer: Layer) {
+//   // console.log("deleteDeltas");
+//   let sql = `
+//     DELETE FROM ${layer.getSqliteTableName()}_deltas
+//     WHERE
+//       type = 'sql' AND
+//       (change = 'update' OR change = 'insert') AND
+//       INSTR(delta, '${f.id}') > 0
+//   `;
+//   console.log("Lösche Deltas mit sql: %s", sql);
+//   return executeSQL(kvm.db, sql);
+// }

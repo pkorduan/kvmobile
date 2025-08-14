@@ -36,6 +36,17 @@ abstract class PanelEinstellungen {
     }
   }
 
+  expand() {
+    if (!this.domHeader.classList.toggle("b-collapsed")) {
+      if (PanelEinstellungen.currentPanel) {
+        PanelEinstellungen.currentPanel.domHeader.classList.add("b-collapsed");
+        PanelEinstellungen.currentPanel.hide();
+      }
+      PanelEinstellungen.currentPanel = this;
+      this.show();
+    }
+  }
+
   show(): void {
     console.info("show", this);
     this.domHeader.scrollIntoView();
@@ -49,14 +60,10 @@ abstract class PanelEinstellungen {
     const toggleMehr = document.getElementById("toggle_mehr");
     const toggleWeniger = document.getElementById("toggle_weniger");
     toggleMehr.addEventListener("click", () => {
-      document.getElementById("switchable_settings_div").style.display = "";
-      toggleMehr.style.display = "none";
-      toggleWeniger.style.display = "";
+      showMehr();
     });
     toggleWeniger.addEventListener("click", () => {
-      document.getElementById("switchable_settings_div").style.display = "none";
-      toggleMehr.style.display = "";
-      toggleWeniger.style.display = "none";
+      showWeniger();
     });
   }
 }
@@ -76,6 +83,21 @@ export function show(id: string) {
     }
     panel.domHeader.scrollIntoView();
   }
+}
+
+export function showMehr() {
+  const toggleMehr = document.getElementById("toggle_mehr");
+  const toggleWeniger = document.getElementById("toggle_weniger");
+  document.getElementById("switchable_settings_div").style.display = "";
+  toggleMehr.style.display = "none";
+  toggleWeniger.style.display = "";
+}
+export function showWeniger() {
+  const toggleMehr = document.getElementById("toggle_mehr");
+  const toggleWeniger = document.getElementById("toggle_weniger");
+  document.getElementById("switchable_settings_div").style.display = "none";
+  toggleMehr.style.display = "";
+  toggleWeniger.style.display = "none";
 }
 
 export class Konfiguration extends PanelEinstellungen {
@@ -1428,12 +1450,12 @@ export class Database extends PanelEinstellungen {
     const showDeltasButton = (this.showDeltasButton = <HTMLButtonElement>document.getElementById("showDeltasButton"));
     this.showDeltasWaiting = <HTMLElement>document.getElementById("showDeltasWaiting");
     const hideDeltasButton = (this.hideDeltasButton = <HTMLButtonElement>document.getElementById("hideDeltasButton"));
-    // const showDeltasDiv = (this.showDeltasDiv = <HTMLElement>document.getElementById("showDeltasDiv"));
+    const showDeltasDiv = (this.showDeltasDiv = <HTMLElement>document.getElementById("showDeltasDiv"));
 
     const showImageDeltasButton = (this.showImageDeltasButton = <HTMLButtonElement>document.getElementById("showImageDeltasButton"));
     this.showImageDeltasWaiting = <HTMLElement>document.getElementById("showImageDeltasWaiting");
     const hideImageDeltasButton = (this.hideImageDeltasButton = <HTMLButtonElement>document.getElementById("hideImageDeltasButton"));
-    // const showImageDeltasDiv = (this.showImageDeltasDiv = <HTMLElement>document.getElementById("showImageDeltasDiv"));
+    const showImageDeltasDiv = (this.showImageDeltasDiv = <HTMLElement>document.getElementById("showImageDeltasDiv"));
 
     const localBackupPath = <HTMLInputElement>document.getElementById("localBackupPath");
     localBackupPath.value = kvm.getConfigurationOption("localBackupPath");
@@ -1548,6 +1570,8 @@ export class Database extends PanelEinstellungen {
         this.showDeltasDiv.append(fragm);
         this.showDeltasDiv.style.display = "";
         this.hideDeltasButton.style.display = "";
+        // this.domHeader.scrollIntoView();
+        this.show();
       } else {
         kvm.msg("Keine Änderungen vorhanden");
         this.showDeltasDiv.style.display = "";
