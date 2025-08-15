@@ -374,47 +374,52 @@ export class Kvm extends PropertyChangeSupport {
       const sql = "SELECT count(*) as count FROM deltas";
       const rs = await executeSQL(kvm.db, sql);
       const divDeltaAnzeige = document.getElementById("delta-count-anzeige");
+      const divDeltaCount = document.getElementById("delta-count");
       const count = rs.rows.item(0).count;
       if (count === 0) {
         divDeltaAnzeige.style.display = "none";
+        divDeltaCount.style.display = "none";
       } else {
         divDeltaAnzeige.innerText = count;
         divDeltaAnzeige.style.display = "";
+        divDeltaCount.innerHTML = count + '<i class="fa fa-exclamation-circle"></i>';
+        divDeltaCount.style.display = "";
       }
     } catch (ex) {
       console.error(ex);
     }
   }
 
-  // async initDeltaAnzeige() {
-  //   // const divDeltaAnzeige = createHtmlElement("div", document.body, "delta-anzeige");
-  //   // divDeltaAnzeige.id = "div-delta-anzeige";
-  //   const
-  //   const sql = "SELECT count(*) as count FROM deltas";
-  //   const rs = await executeSQL(kvm.db, sql);
-  //   divDeltaAnzeige.innerText = rs.rows.item(0).count;
-  // const clickFct = async () => {
-  //   sperrBildschirm.show();
-  //   let showDeltas;
-  //   try {
-  //     const rs = await executeSQL(kvm.db, sql);
-  //     const count = rs.rows.item(0).count;
-  //     if (count === 0) {
-  //       await Util.alertOverlay("Es sind alle Änderungen zum Server übertragen worden", "Info");
-  //     } else {
-  //       showDeltas = await Util.confirm("" + count + " Änderungen wurden noch nicht zum Server übertragen", "Info", "Änderungen anzeigen");
-  //     }
-  //   } finally {
-  //     sperrBildschirm.close();
-  //   }
-  //   if (showDeltas) {
-  //     this.showDeltas();
-  //   }
-  // };
-  // divDeltaAnzeige.addEventListener("click", () => {
-  //   clickFct();
-  // });
-  // }
+  async initDeltaAnzeige() {
+    // const divDeltaAnzeige = createHtmlElement("div", document.body, "delta-anzeige");
+    // divDeltaAnzeige.id = "div-delta-anzeige";
+
+    const sql = "SELECT count(*) as count FROM deltas";
+    // const rs = await executeSQL(kvm.db, sql);
+    // divDeltaAnzeige.innerText = rs.rows.item(0).count;
+    const clickFct = async () => {
+      sperrBildschirm.show();
+      let showDeltas;
+      try {
+        const rs = await executeSQL(kvm.db, sql);
+        const count = rs.rows.item(0).count;
+        if (count === 0) {
+          await Util.alertOverlay("Es sind alle Änderungen zum Server übertragen worden", "Info");
+        } else {
+          showDeltas = await Util.confirm("" + count + " Änderungen wurden noch nicht zum Server übertragen", "Info", "Änderungen anzeigen");
+        }
+      } finally {
+        sperrBildschirm.close();
+      }
+      if (showDeltas) {
+        this.showDeltas();
+      }
+    };
+    document.getElementById("delta-count").addEventListener("click", () => {
+      clickFct();
+    });
+    this.updateDeltaDisplay();
+  }
 
   showDeltas() {
     this.showView("settings");
@@ -993,7 +998,7 @@ export class Kvm extends PropertyChangeSupport {
     const testErr = new Error("TestFehler", { cause: new Error("Der Wert dard nicht null sein") });
     Util.showError("Bei der Initialisierung tratt in Fehler auf.", testErr);
 
-    this.updateDeltaDisplay();
+    this.initDeltaAnzeige();
   }
 
   // reloadFeatures() {
