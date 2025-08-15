@@ -536,7 +536,7 @@ export class Feature {
    */
   deactivate() {
     // Beende das Anlegen eines neuen Features
-    console.error(`zzz feature.deactivate ${this.layer?.title} ${this.id}`, this.editableLayer);
+    // console.error(`zzz feature.deactivate ${this.layer?.title} ${this.id}`, this.editableLayer);
     if (this.editableLayer) {
       kvm.map.removeLayer(this.editableLayer);
       this.editableLayer = null;

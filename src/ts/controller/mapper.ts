@@ -144,7 +144,7 @@ export class Mapper {
   }
 
   removeEditable(feature: Feature) {
-    console.error(`removeEditable für feature: ${feature?.layer?.title} ${feature?.id}`);
+    // console.error(`removeEditable für feature: ${feature?.layer?.title} ${feature?.id}`);
     if (feature.layer.settings.geometry_type == "Line") {
       if (document.getElementById("trackControl")?.parentElement) {
         document.getElementById("trackControl").parentElement.style.display = "none";

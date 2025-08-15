@@ -369,7 +369,7 @@ export class Kvm extends PropertyChangeSupport {
   }
 
   async updateDeltaDisplay() {
-    console.error("updateDeltaDisplay");
+    // console.error("updateDeltaDisplay");
     try {
       const sql = "SELECT count(*) as count FROM deltas";
       const rs = await executeSQL(kvm.db, sql);
@@ -1574,7 +1574,7 @@ export class Kvm extends PropertyChangeSupport {
 
       const notGeomValid: string = layer.notGeomValid();
       if (notGeomValid) {
-        validationErrMsg += `\n\nSie haben noch keine Koordinaten erfasst!`;
+        validationErrMsg += `\n\nDie erfassten Koordinaten sind nicht gültig!`;
       }
 
       if (validationErrMsg) {

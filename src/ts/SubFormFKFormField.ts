@@ -46,7 +46,7 @@ export class SubFormFKFormField extends AbstractField {
   }
 
   getValue(action = "") {
-    console.log(`SubFormFKFormField ${this.attr.layer.title}.${this.attr.settings.name}.getValue => ${this.parentFeatureId}`);
+    // console.log(`SubFormFKFormField ${this.attr.layer.title}.${this.attr.settings.name}.getValue => ${this.parentFeatureId}`);
     return this.parentFeatureId;
   }
 
