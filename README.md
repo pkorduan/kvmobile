@@ -36,10 +36,13 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
   - Option "Neuen Datensatz erfassen nach Speichern" aktiviert
   - Plus-Button ausgeschaltet für Layer die man nicht ohne übergeordnetes Objekt hinzufügen darf
   - Reihenfolge der Layer im Layer-Control nach Drawingorder
+  - Anzeige wie viele Änderungen noch nicht Synchronisiert worden sind.
+  - Autosync wird ausgeschaltet wenn ein Fehler aufgetreten ist. Nutzer bekommt die Anzahl der offenen Änderungen angezeigt und kann selber das Autosync wieder einschalten um zu prüfen ob der Sync dann geht.
 - Maintainance
   - Anpassung des Sync-Modus auf sync_all für alle Layer
   - Anpassung zindex neuer Features
   - Bessere Ausgaber von Fehlermeldungen
+  - Deltas vom Client werden vom Server robuster behandelt. Falls es die uuid in der Tabelle bei Insert schon gibt oder bei Update und Delete nicht gibt werden die Deltas auf dem Server ignoriert. Außerdem werden bei einem Fehler nicht vorhandene Spalten gelöscht und die so korrigierten SQL noch mal ausgeführt als weiterer Versuch das Delta auf dem Server los zu werden. Der Client wird darüber aber noch nicht informiert. Falls sich der Layer aber geändert hat wird der Layer ja anschließend sowieso aktualisert und dann ist eine Attribut was vorher im Client vorhanden war aber auf dem Server nicht sowieso auch auf dem Client weg. Solche Indiskrepanzen führen nicht mehr zu Sync-Fehlern. 
 
 ## 1.20.1
 

@@ -261,7 +261,7 @@ export class Menu {
   }
 
   enableSaveFeatureButton(enable: boolean) {
-    console.error("enableSaveFeatureButton: " + enable);
+    // console.error("enableSaveFeatureButton: " + enable);
     if (enable) {
       this.saveFeatureButton.classList.remove("inactive-button");
     } else {
