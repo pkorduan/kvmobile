@@ -1,4 +1,5 @@
 import { Kvm, kvm } from "../app";
+import { Feature } from "../Feature";
 import { Layer } from "../Layer";
 import { PropertyChangeEvent } from "../Observable";
 import { toggle } from "../Util";
@@ -6,7 +7,8 @@ import { show as showEinstellung } from "./PanelEinstellungen";
 import { View } from "./View";
 
 export class ViewFeatureList extends View {
-  activeLayer: Layer = null;
+  private activeLayer: Layer = null;
+  private activeFeature: Feature = null;
 
   // featurelistHeading: HTMLElement;
   featurelistHeadingTxt: HTMLElement;
@@ -64,8 +66,10 @@ export class ViewFeatureList extends View {
         const el = <HTMLElement>this.featurelistBody.querySelector('[data-id="' + evt.newValue.getFeatureId() + '"]');
         if (el) {
           el.classList.add("selected-feature-item");
+          el.scrollIntoView();
         }
       }
+      this.activeFeature = evt.newValue;
     });
     this.setActiveLayer(app.getActiveLayer());
   }
@@ -99,6 +103,13 @@ export class ViewFeatureList extends View {
   private update(evt: PropertyChangeEvent<any>) {
     // console.log(`ViewFeatureList.update ${this.activeLayer?.title}`, evt);
     this.addFeatures(this.activeLayer);
+    if (this.activeFeature) {
+      const el = <HTMLElement>this.featurelistBody.querySelector('[data-id="' + this.activeFeature.getFeatureId() + '"]');
+      if (el) {
+        el.classList.add("selected-feature-item");
+        el.scrollIntoView();
+      }
+    }
   }
 
   /**

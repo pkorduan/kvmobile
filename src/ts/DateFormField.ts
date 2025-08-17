@@ -72,25 +72,25 @@ export class DateFormField extends AbstractField {
    * changed from: https://www.c-sharpcorner.com/article/date-validation-as-text-format-in-javascript/
    */
   isValidDate(dateString) {
-    if (!(typeof dateString === "string" || dateString instanceof String)) {
+    if (dateString === "") {
+      return false;
+    }
+    if (typeof dateString !== "string") {
       console.log(dateString + " ist kein String.");
       return false;
     }
-    let dateformat = /^\d{4}[-](0?[1-9]|1[0-2])[-](0?[1-9]|[1-2][0-9]|3[01])$/;
+    const dateformat = /^\d{4}[-](0?[1-9]|1[0-2])[-](0?[1-9]|[1-2][0-9]|3[01])$/;
     if (dateString.match(dateformat)) {
       //console.log('Datumsformat passt zur Form YYYY-MM-DD');
-      let operator = dateString.split("-");
-      let datepart = [];
-      if (operator.length > 1) {
-        //console.log('Es sind mehr als 1 - vorhanden');
-        datepart = dateString.split("-");
-      } else {
-        //console.log('Es fehlen - Zeichen');
+      const operator = dateString.split("-");
+      const datepart = operator.length > 1 ? dateString.split("-") : null;
+      if (!datepart || datepart.length < 3) {
+        return false;
       }
-      let year = parseInt(datepart[0]);
-      let month = parseInt(datepart[1]);
-      let day = parseInt(datepart[2]);
-      let ListofDays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+      const year = parseInt(datepart[0]);
+      const month = parseInt(datepart[1]);
+      const day = parseInt(datepart[2]);
+      const ListofDays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
       if (year < 1970) {
         console.log("Es werden nur Datumsangaben ab 1970 zugelassen.");
         return false;

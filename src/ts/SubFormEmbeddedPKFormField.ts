@@ -88,7 +88,9 @@ export class SubFormEmbeddedPKFormField implements Field {
       if (!this.spanMsgNewFeature) {
         this.spanMsgNewFeature = createHtmlElement("span");
         this.spanMsgNewFeature.innerText = "Können erst angelegt werden wenn der neue Datensatz gespeichert ist.";
-        this.element.append(this.spanMsgNewFeature);
+        this.spanMsgNewFeature.style.fontSize = "0.8em";
+        // this.subItemList.innerHTML = "";
+        this.subItemList.replaceChildren(this.spanMsgNewFeature);
       }
     } else {
       this.bttNewSubItem.style.display = "";

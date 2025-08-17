@@ -386,7 +386,7 @@ export class Layer extends PropertyChangeSupport {
    * @param clickFunction
    */
   async readVorschauAttributes(attribute: Attribute, featureId: string, vorschauElement: HTMLElement, clickFunction = "activateFeature") {
-    console.info(`layer.readVorschauAttributes Attribute=${attribute.get("name")} für Layer=${this.title}`);
+    console.log(`layer.readVorschauAttributes Attribute=${attribute.get("name")} für Layer=${this.title}`);
     const subLayerId = attribute.getGlobalSubLayerId();
     const fkAttribute: String = attribute.getFKAttribute();
     const vorschauOption: String = attribute.getVorschauOption();
@@ -525,12 +525,6 @@ export class Layer extends PropertyChangeSupport {
     const query = this.stelle.replaceParams(this.settings.query);
 
     const sql = this.extentSql(query, where, order, limit, offset, filter);
-
-    // console.log(`Lese Daten von Layer ${this.title} mit sql: "${sql}"`);
-
-    if ("Standorte" === this.title) {
-      // console.error(sql);
-    }
 
     try {
       const rs = await Util.executeSQL(kvm.db, sql);
@@ -1863,9 +1857,13 @@ export class Layer extends PropertyChangeSupport {
     if (parentFK) {
       const currentParent = f.getDataValue(parentFK.fkColumn);
       const parentFeatureId = await this._bestimmeUbergeordnetesObjekt(f, geom);
-      return currentParent === parentFeatureId;
+      if (currentParent === parentFeatureId) {
+        return { inside: true, parentFeatureId: parentFeatureId };
+      } else {
+        return { inside: false, parentFeatureId: parentFeatureId };
+      }
     }
-    return false;
+    return { inside: false, parentFeatureId: null };
   }
 
   /**
@@ -1944,10 +1942,7 @@ export class Layer extends PropertyChangeSupport {
 
   getAttribute(attributeName: string): Attribute {
     const idx = this.attribute_index[attributeName];
-    if (idx) {
-      return this.attributes[idx];
-    }
-    return null;
+    return isNaN(idx) ? null : this.attributes[idx];
   }
 
   /**
@@ -2203,7 +2198,7 @@ export class Layer extends PropertyChangeSupport {
    */
   collectChanges(f: Feature, action: string): AttributteDelta[] {
     //kvm.log("Layer.collectChanges " + (action ? " with action: " + action : ""), 4);
-    console.error(`collectChanges ${f?.layer?.title}:${f?.id} app.ActiveFeature=${kvm.getActiveLayer()?.title}:${kvm.getActiveFeature()?.id}`);
+    console.info(`collectChanges ${f?.layer?.title}:${f?.id} app.ActiveFeature=${kvm.getActiveLayer()?.title}:${kvm.getActiveFeature()?.id}`);
     console.groupCollapsed(`collectChanges ${f?.layer?.title}:${f?.id} app.ActiveFeature=${kvm.getActiveLayer()?.title}:${kvm.getActiveFeature()?.id}`);
     // const activeFeature = f;
     // changes = [];
@@ -3386,9 +3381,9 @@ export class Layer extends PropertyChangeSupport {
       return !attribute.isAutoAttribute("") && !attribute.isPseudoAttribute() && attribute.get("nullable") == 0 && attribute.formField.getValue() == null;
     });
 
-    for (let i = 0; i < att.length; i++) {
-      // console.error(att[i]);
-    }
+    // for (let i = 0; i < att.length; i++) {
+    //   // console.error(att[i]);
+    // }
 
     let errMsg = this.attributes
       .filter((attribute) => {

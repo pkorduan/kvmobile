@@ -195,7 +195,6 @@ export class Kvm extends PropertyChangeSupport {
     return this.setActiveFeature(layerId, featureId);
   }
 
-  // console.error(`kvm.activateFeature ${layerId}=>${layer?.title} ${featureId}=>${feature}`);
   /**
    * activates the feature.
    * @param layerId
@@ -369,7 +368,7 @@ export class Kvm extends PropertyChangeSupport {
   }
 
   async updateDeltaDisplay() {
-    console.error("updateDeltaDisplay");
+    console.log("updateDeltaDisplay");
     try {
       const sql = "SELECT count(*) as count FROM deltas";
       const rs = await executeSQL(kvm.db, sql);
@@ -995,18 +994,11 @@ export class Kvm extends PropertyChangeSupport {
     this.showView(<ViewName>activeView);
     sperrBildschirm.close();
 
-    const testErr = new Error("TestFehler", { cause: new Error("Der Wert dard nicht null sein") });
-    Util.showError("Bei der Initialisierung tratt in Fehler auf.", testErr);
+    // const testErr = new Error("TestFehler", { cause: new Error("Der Wert dard nicht null sein") });
+    // Util.showError("Bei der Initialisierung tratt in Fehler auf.", testErr);
 
     this.initDeltaAnzeige();
   }
-
-  // reloadFeatures() {
-  //   // console.error("app.reloadFeatures");
-  //   this._layers.forEach((layer) => {
-  //     layer.readData();
-  //   });
-  // }
 
   /**
    * setzt und schreibt diese als JSON in den store
@@ -1878,7 +1870,7 @@ export class Kvm extends PropertyChangeSupport {
   cancelEditFeature() {
     const activeLayer = this._activeLayer;
     const activeFeature = this._activeFeature;
-    console.error(`app.cancelEditFeature ${activeLayer?.title} ${activeFeature?.id} ${activeFeature.new} app=${this.isEditMode}`);
+    console.info(`app.cancelEditFeature ${activeLayer?.title} ${activeFeature?.id} ${activeFeature.new} app=${this.isEditMode}`);
 
     if (activeLayer.hasGeometry) {
       //console.log("Feature ist neu? %s", activeFeature.new);
@@ -1920,25 +1912,13 @@ export class Kvm extends PropertyChangeSupport {
     kvm.controller.mapper.clearWatch(); // GPS-Tracking ausschalten
   }
 
-  // /**
-  //  * Function activate the feature with featureId in layer with layerId and show it in dataView.
-  //  * @param layerId
-  //  * @param featureId
-  //  */
-  // activateFeature(layerId: string, featureId: string) {
-  //   const layer = kvm.getLayer(layerId);
-  //   const feature = featureId ? layer.getFeature(featureId) : null;
-  //   // console.error(`kvm.activateFeature ${layerId}=>${layer?.title} ${featureId}=>${feature}`);
-  //   this.setActiveFeature(feature);
-  // }
-
   /**
    * Function open form to create a new feature for a subLayer.
    * If activeFeature has open changes a confirm dialog comes up.
    * Input form only open if user confirm else nothing happens.
    */
   async newSubFeature(options: { parentLayerId: string; subLayerId: string; fkAttribute: string; parentFeatureId: any }) {
-    console.error(`app.newSubFeature vom Typ ${this.getLayer(options.subLayerId)?.title} am feature ${this._activeFeature.layer.title} ${this._activeFeature.getDataValue(this._activeLayer.get("id_attribute"))}`);
+    console.info(`app.newSubFeature vom Typ ${this.getLayer(options.subLayerId)?.title} am feature ${this._activeFeature.layer.title} ${this._activeFeature.getDataValue(this._activeLayer.get("id_attribute"))}`);
     if (this._activeLayer && this._activeFeature) {
       const changes = this._activeLayer.collectChanges(this._activeFeature, "update");
       if (changes.length > 0) {
@@ -1973,7 +1953,7 @@ export class Kvm extends PropertyChangeSupport {
       feature = layerId;
       layer = feature.layer;
     }
-    console.error(`editFeature(${layer.title}, ${feature.getDataValue(layer.get("id_attribute"))} editMode=${this.isEditMode}`, this._activeFeature);
+    console.info(`editFeature(${layer.title}, ${feature.getDataValue(layer.get("id_attribute"))} editMode=${this.isEditMode}`, this._activeFeature);
     this.isEditMode = true;
     // ToDo:
     //parentLayerId und parentFeatureId müssen woanders hier kommen

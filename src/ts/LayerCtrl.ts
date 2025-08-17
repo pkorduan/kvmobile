@@ -346,9 +346,7 @@ export class LayerCtrl extends Control {
   }
 
   private _addLayer(layer: LeafletLayer, name: string, overlay?: boolean) {
-    if (this._map) {
-      layer.on("add remove", this._onLayerChange, this);
-    }
+    layer.on("add remove", this._onLayerChange, this);
 
     this._layers.push({
       layer: layer,
@@ -404,6 +402,7 @@ export class LayerCtrl extends Control {
   }
 
   _onLayerChange(e) {
+    console.error("layerCtrl._onLayerChange", e);
     if (!this._handlingClick) {
       this._update();
     }

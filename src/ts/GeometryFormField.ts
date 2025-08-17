@@ -205,17 +205,27 @@ export class GeometrieFormField extends AbstractField implements Field {
     const feature = this._feature;
     const geom = event.detail.geom;
     const exclude = event.detail.exclude;
-    if (feature.layer.getParentFK()?.bothHasGeom) {
-      const isInside = await feature.checkInsideParent(geom);
-      if (!isInside) {
-        if (!this._alertIsShown) {
-          this._alertIsShown = true;
-          await alertNative(`Die Geometrie liegt nicht mehr innerhalb des übergeordneten Objektes (${feature.layer.getParentFK().parentLayer.title}). Die Geometrie wird nicht übernommen.`, "Warnung");
-          this._alertIsShown = false;
+    const parentFK = feature.layer.getParentFK();
+    if (parentFK?.bothHasGeom) {
+      const result = await feature.checkInsideParent(geom);
+      if (!result.inside) {
+        if (result.parentFeatureId) {
+          const moveToNewParent = await confirm(`Die Geometrie liegt nicht mehr innerhalb des übergeordneten Objektes (${feature.layer.getParentFK().parentLayer.title}). Soll das Objekt neuzugeordnet werden?`, "Warnung", "JA", "NEIN");
+          if (moveToNewParent) {
+            this._feature.layer.getAttribute(parentFK.fkColumn).formField.setValue(this._feature, result.parentFeatureId);
+          } else {
+            return;
+          }
+        } else {
+          if (!this._alertIsShown) {
+            this._alertIsShown = true;
+            await alertNative(`Die Geometrie liegt nicht mehr innerhalb des übergeordneten Objektes (${feature.layer.getParentFK().parentLayer.title}). Die Geometrie wird nicht übernommen.`, "Warnung");
+            this._alertIsShown = false;
+          }
+          return;
         }
-        return;
       }
-      console.log("GeometrieFormField.geomChanged", event, event.detail, isInside);
+      console.log("GeometrieFormField.geomChanged", event, event.detail, result);
     }
 
     //console.log("Trigger Funktion geomChanged: geom: %o und exclude: %s", geom, exclude);
