@@ -1529,9 +1529,11 @@ export class Kvm extends PropertyChangeSupport {
   async newFeatureButtonClicked() {
     sperrBildschirm.show();
     try {
+      sperrBildschirm.show("neues Objekt wird erzeugt");
       const layer = this._activeLayer;
       const newFeature = await layer.createNewFeature();
       await this.editFeature(newFeature);
+      newFeature.zoomTo(true);
       sperrBildschirm.close();
     } catch (error) {
       console.error(error);
@@ -2009,7 +2011,7 @@ export class Kvm extends PropertyChangeSupport {
     }
     this.isEditMode = true;
     this.setActiveFeature(feature);
-    layer.editFeature(feature);
+    await layer.editFeature(feature);
     // $("#deleteFeatureButton").hide();
     if (layer.hasGeometry && !this.isActiveView("dataView") && !this.isActiveView("formular")) {
       this.showView("mapEdit");

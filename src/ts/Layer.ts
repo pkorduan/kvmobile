@@ -1784,12 +1784,13 @@ export class Layer extends PropertyChangeSupport {
         let startLatLng: LatLngTuple;
         if (kvm.mapSettings.newPosSelect == 1) {
           const result = await Util.getCurrentPosition();
+          sperrBildschirm.show("GPS-Position wird abgerufen.");
           if (result instanceof GeolocationPosition) {
             console.log("Starte Editierung an GPS-Coordinate");
             startLatLng = [result.coords.latitude, result.coords.longitude];
           } else {
             console.log("Starte Editierung in Bildschirmmitte", result);
-            await Util.confirm("Da keine GPS-Position ermittelt werden kann, wird die neue Geometrie in der Mitte der Karte gezeichnet. Schalten Sie die GPS Funktion auf Ihrem Gerät ein und suchen Sie einen Ort unter freiem Himmel auf um GPS benutzen zu können.", "GPS-Position", "ok", "ohne GPS weitermachen");
+            await Util.alertNative("Da keine GPS-Position ermittelt werden kann, wird die neue Geometrie in der Mitte der Karte gezeichnet. Schalten Sie die GPS Funktion auf Ihrem Gerät ein und suchen Sie einen Ort unter freiem Himmel auf um GPS benutzen zu können.", "Warnung", "ok");
           }
         }
         if (!startLatLng) {
@@ -1801,6 +1802,7 @@ export class Layer extends PropertyChangeSupport {
         feature.setGeom(feature.aLatLngsToWkx(initialGeom));
         feature.geom = feature.newGeom;
         feature.setDataValue(this.settings.geometry_attribute, feature.wkxToEwkb(feature.geom));
+        feature.zoomTo(true, startLatLng);
 
         // RTR Parent
         const parentFK = this.getParentFK();
