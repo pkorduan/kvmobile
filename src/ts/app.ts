@@ -1998,37 +1998,24 @@ export class Kvm extends PropertyChangeSupport {
       layer = feature.layer;
     }
     console.info(`editFeature(${layer.title}, ${feature.getDataValue(layer.get("id_attribute"))} editMode=${this.isEditMode}`, this._activeFeature);
-
-    // ToDo:
-    //parentLayerId und parentFeatureId müssen woanders hier kommen
-    // denn editFeature kann ja auch von einem subform kommen in dem
-    // der parent aufgerufen wird. Das hier geht nur wenn man von einem
-    // parent ein child feature aufruft zum editieren.
-    // z.B. mit feature.findParentFeature
-    // Anpassungen erforderlich für die Abfrage der default Attribute
-    // Am besten man fragt die Pseudoattribute gleich über sql mit ab.
-    // dann gilt halt die Konvention dass nur Tables in der Query verwendet werden dürfen,
-    // für die es auch layer in der Stelle gibt, um sicher zu gehen dass die Tabellen auch da sind.
-    // Wenn man die Query nimmt kann man auch Joins machen und die in notsaveable-Attributes anzeigen.
-    // Wie in kvwmap halt.
     if (this.isEditMode && this._activeFeature && this._activeFeature !== feature) {
-      // rtr TODO ???
-      // layer.parentLayerId = this._activeLayer.getGlobalId();
-      // layer.parentFeatureId = kvm._activeFeature.id;
       const changes = this._activeLayer.collectChanges(this._activeFeature, this._activeFeature.new ? "insert" : "update");
       if (changes.length > 0) {
-        // console.error(`layer.editFeature: changes: ${this._activeFeature.layer.title} ${this._activeFeature.getDataValue(layer.get("id_attribute"))}`);
         const proceed = await Util.confirm("Es sind noch offene Änderungen. Diese müssen erst gespeichert werden.", "Bitte Bestätigen", "Ohne Speichern Fortfahren", "Abbrechen");
         if (!proceed) {
           return;
         }
       }
-
-      // this.setActiveFeature(null);
     }
     this.isEditMode = true;
     this.setActiveFeature(feature);
     layer.editFeature(feature);
+    // $("#deleteFeatureButton").hide();
+    if (layer.hasGeometry && !this.isActiveView("dataView") && !this.isActiveView("formular")) {
+      this.showView("mapEdit");
+    } else {
+      this.showView("formular");
+    }
   }
 
   loadLogLevel() {

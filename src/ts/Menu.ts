@@ -15,7 +15,7 @@ export class Menu {
   private cancelFeatureButton: HTMLElement;
   private showMap: HTMLElement;
   private saveFeatureButton: HTMLElement;
-  private saveFeatureButton2: HTMLElement;
+  private saveFeatureButtonNextRecord: HTMLElement;
   private newFeatureButton: HTMLElement;
   private editFeatureButton: HTMLElement;
   private tplFeatureButton: HTMLElement;
@@ -44,7 +44,7 @@ export class Menu {
       (this.cancelFeatureButton = <HTMLElement>document.getElementById("cancelFeatureButton")),
       (this.showMap = <HTMLElement>document.getElementById("showMap")),
       (this.saveFeatureButton = <HTMLElement>document.getElementById("saveFeatureButton")),
-      (this.saveFeatureButton2 = <HTMLElement>document.getElementById("saveFeatureButton2")),
+      (this.saveFeatureButtonNextRecord = <HTMLElement>document.getElementById("saveFeatureButton2")),
       (this.newFeatureButton = <HTMLElement>document.getElementById("newFeatureButton")),
       (this.editFeatureButton = <HTMLElement>document.getElementById("editFeatureButton")),
       (this.tplFeatureButton = <HTMLElement>document.getElementById("tplFeatureButton")),
@@ -124,10 +124,16 @@ export class Menu {
     });
   }
 
-  showMenuMapEdit() {
+  showMapEditMenu() {
     const items = [this.showFormEdit, this.saveFeatureButton, this.cancelFeatureButton];
     if (this.app.getActiveLayer()?.hasDeletePrivilege && !this.app.getActiveFeature()?.new) {
       items.push(this.deleteFeatureButton);
+    }
+    if (this.app.getActiveFeature()?.new) {
+      items.push(this.saveFeatureButtonNextRecord);
+    }
+    if (this.app.getActiveFeature()?.new) {
+      items.push(this.saveFeatureButtonNextRecord);
     }
     this.showItems(items);
   }
@@ -142,12 +148,15 @@ export class Menu {
   }
 
   showFormMenu() {
-    const items = [this.saveFeatureButton, this.saveFeatureButton2, this.cancelFeatureButton];
+    const items = [this.saveFeatureButton, this.cancelFeatureButton];
     if (this.app.getActiveLayer()?.hasDeletePrivilege && !this.app.getActiveFeature()?.new) {
       items.push(this.deleteFeatureButton);
     }
     if (this.app.getActiveLayer()?.hasGeometry) {
       items.push(this.showMapEdit);
+    }
+    if (this.app.getActiveFeature()?.new) {
+      items.push(this.saveFeatureButtonNextRecord);
     }
     this.showItems(items);
   }
@@ -211,7 +220,7 @@ export class Menu {
         this.app.lastMapOrListView = "map";
         break;
       case "mapEdit":
-        this.showMenuMapEdit();
+        this.showMapEditMenu();
         newView = this.id2View.get("mapView");
         this.app.map.invalidateSize();
         break;
@@ -257,10 +266,10 @@ export class Menu {
     // console.error("enableSaveFeatureButton: " + enable);
     if (enable) {
       this.saveFeatureButton.classList.remove("inactive-button");
-      this.saveFeatureButton2.classList.remove("inactive-button");
+      this.saveFeatureButtonNextRecord.classList.remove("inactive-button");
     } else {
       this.saveFeatureButton.classList.add("inactive-button");
-      this.saveFeatureButton2.classList.add("inactive-button");
+      this.saveFeatureButtonNextRecord.classList.add("inactive-button");
     }
   }
 }

@@ -1940,15 +1940,6 @@ export class Layer extends PropertyChangeSupport {
     feature.setEditable(true);
 
     feature.zoomTo(true, startLatLng);
-
-    // $("#deleteFeatureButton").hide();
-    if (this.hasGeometry && !kvm.isActiveView("dataView") && !kvm.isActiveView("formular")) {
-      //console.log('Map is Visible, keep panel map open.');
-      kvm.showView("mapEdit");
-    } else {
-      //console.log('Map Is not Visible, open in formular');
-      kvm.showView("formular");
-    }
   }
 
   /**
@@ -3176,7 +3167,7 @@ export class Layer extends PropertyChangeSupport {
    * - Wenn dieser Layer gesynct wurde und aktiv ist
    */
   activate() {
-    console.log(`Layer.activate ${this.title}`);
+    console.error(`xxxxxx Layer.activate ${this.title}`);
     // console.error("Setze Layer " + this.get("title") + " (" + (this.get("alias") ? this.get("alias") : "kein Aliasname") + ") aktiv.");
     try {
       this.isActive = true;
