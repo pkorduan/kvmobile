@@ -195,6 +195,44 @@ export class Kvm extends PropertyChangeSupport {
     return this.setActiveFeature(layerId, featureId);
   }
 
+  async checkForUpdate() {
+    try {
+      const response = await fetch(kvm.appUrl);
+      if (!response.ok) {
+        throw new Error(`Die Seite ${kvm.appUrl} zur Ermittlung der letzten Programmversion konnte nicht abgefragt werden. Status-code: ${response.status} ${response.statusText}`);
+      }
+      const txt = await response.text();
+      const regex = /href="k[^"]*"/g;
+      const found = txt.match(regex);
+      found.sort((a, b) => {
+        const av = a.match(/\d+/g);
+        const bv = b.match(/\d+/g);
+        if (av[0] !== bv[0]) {
+          return parseInt(av[0]) < parseInt(bv[0]) ? -1 : 1;
+        }
+
+        if (av[1] !== bv[1]) {
+          return parseInt(av[1]) < parseInt(bv[1]) ? -1 : 1;
+        }
+        if (av[2] !== bv[2]) {
+          return parseInt(av[2]) < parseInt(bv[2]) ? -1 : 1;
+        }
+      });
+      const lastServerVersion = found[found.length - 1];
+      const latestVersionNumber = lastServerVersion.match(/\d+\.\d+\.\d+/)[0];
+
+      console.error("latestVersionNumber=" + latestVersionNumber + "   currentVersion=" + this.versionNumber);
+      if (latestVersionNumber != this.versionNumber) {
+        const runLater = await Util.confirm(`Es ist eine neue App-Version ${latestVersionNumber} vorhanden.`, "Update-Info", "Später", "zur Download-Seite");
+        if (!runLater) {
+          window.open(kvm.appUrl, "_system");
+        }
+      }
+    } catch (ex) {
+      console.error("ERR in checkForUpdate", ex);
+    }
+  }
+
   /**
    * activates the feature.
    * @param layerId
@@ -712,45 +750,45 @@ export class Kvm extends PropertyChangeSupport {
     }
   }
 
-  /**
-   * Download the new App and request the user to install it
-   * If user confirm, save and reset settings and database first.
-   */
-  async checkAppVersion() {
-    try {
-      const response = await fetch(kvm.appUrl);
-      if (!response.ok) {
-        throw new Error(`Die Seite ${kvm.appUrl} zur Ermittlung der letzten Programmversion konnte nicht abgefragt werden. Status-code: ${response.status} ${response.statusText}`);
-      }
+  // /**
+  //  * Download the new App and request the user to install it
+  //  * If user confirm, save and reset settings and database first.
+  //  */
+  // async checkAppVersion() {
+  //   try {
+  //     const response = await fetch(kvm.appUrl);
+  //     if (!response.ok) {
+  //       throw new Error(`Die Seite ${kvm.appUrl} zur Ermittlung der letzten Programmversion konnte nicht abgefragt werden. Status-code: ${response.status} ${response.statusText}`);
+  //     }
 
-      const result = await response.text();
-      const versions = Array.from(result.matchAll(/kvmobile-(\d+\.\d+\.\d+)\.apk/g)).map((match) => match[1]);
-      const latestVersionNumber = versions
-        .sort((a, b) => {
-          const pa = a.split(".").map(Number);
-          const pb = b.split(".").map(Number);
-          for (let i = 0; i < 3; i++) {
-            if (pa[i] > pb[i]) return 1;
-            if (pa[i] < pb[i]) return -1;
-          }
-          return 0;
-        })
-        .pop();
-      console.log("Latest App-Version:", latestVersionNumber);
+  //     const result = await response.text();
+  //     const versions = Array.from(result.matchAll(/kvmobile-(\d+\.\d+\.\d+)\.apk/g)).map((match) => match[1]);
+  //     const latestVersionNumber = versions
+  //       .sort((a, b) => {
+  //         const pa = a.split(".").map(Number);
+  //         const pb = b.split(".").map(Number);
+  //         for (let i = 0; i < 3; i++) {
+  //           if (pa[i] > pb[i]) return 1;
+  //           if (pa[i] < pb[i]) return -1;
+  //         }
+  //         return 0;
+  //       })
+  //       .pop();
+  //     console.log("Latest App-Version:", latestVersionNumber);
 
-      if (latestVersionNumber != kvm.versionNumber) {
-        // if (true) {
-        // navigator.notification.confirm(`Es ist eine neue App-Version ${latestVersionNumber} vorhanden.`, kvm.openUpdatePage, "Update-Info", ["Später", "zur Download-Seite"]);
-        const runLater = await Util.confirm(`Es ist eine neue App-Version ${latestVersionNumber} vorhanden.`, "Update-Info", "Später", "zur Download-Seite");
-        if (!runLater) {
-          window.open(kvm.appUrl, "_system");
-        }
-      }
-    } catch (error) {
-      console.error("Fehler in checkAppVersion %o", error);
-      throw new Error(`Fehler beim Abfragen der letzten App-Version! Typ: ${error.name} Fehler: ${error.message}`);
-    }
-  }
+  //     if (latestVersionNumber != kvm.versionNumber) {
+  //       // if (true) {
+  //       // navigator.notification.confirm(`Es ist eine neue App-Version ${latestVersionNumber} vorhanden.`, kvm.openUpdatePage, "Update-Info", ["Später", "zur Download-Seite"]);
+  //       const runLater = await Util.confirm(`Es ist eine neue App-Version ${latestVersionNumber} vorhanden.`, "Update-Info", "Später", "zur Download-Seite");
+  //       if (!runLater) {
+  //         window.open(kvm.appUrl, "_system");
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error("Fehler in checkAppVersion %o", error);
+  //     throw new Error(`Fehler beim Abfragen der letzten App-Version! Typ: ${error.name} Fehler: ${error.message}`);
+  //   }
+  // }
 
   /**
    * Function to compare semantic versions
@@ -998,6 +1036,8 @@ export class Kvm extends PropertyChangeSupport {
     // Util.showError("Bei der Initialisierung tratt in Fehler auf.", testErr);
 
     this.initDeltaAnzeige();
+
+    this.checkForUpdate();
   }
 
   /**
