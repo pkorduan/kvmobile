@@ -64,6 +64,7 @@ export interface LayerSetting {
   checksum?: string;
   data_version?: string;
   attribution?: string;
+  visible?: boolean;
 }
 
 export interface BackgroundLayerSetting {
@@ -1447,7 +1448,9 @@ export class Layer extends PropertyChangeSupport {
     });
     try {
       this.layerGroup.setZIndex(parseInt(this.settings.drawingorder));
-      this.layerGroup.addTo(kvm.map);
+      if (this.settings.visible !== false) {
+        this.layerGroup.addTo(kvm.map);
+      }
     } catch (error) {
       const msg = `Fehler beim Hinzufügen der Layergruppe in Layer id: ${this.getGlobalId()}! Fehlertyp: ${error.name} Fehlermeldung: ${error.message}`;
       kvm.msg(msg);
@@ -1739,41 +1742,10 @@ export class Layer extends PropertyChangeSupport {
    * erzeugt und initialisert eine neus Feature dieses Layers
    */
   async createNewFeature(copyData?: { [id: string]: any }) {
-    console.log("Layer.newFeature");
-    // this.deactivateFeature();
     const feature = new Feature(await this.getNewData(copyData), this, true);
     if (copyData) {
       feature.setCopyData(copyData);
     }
-    // kvm.setActiveFeature(feature);
-
-    // if (this.get("geometry_type") === "Point") {
-    //   const result = await Util.getCurrentPosition();
-    //   if (result instanceof GeolocationPosition) {
-    //     console.log("Starte Editierung an GPS-Coordinate");
-    //     const startLatLng: LatLngTuple = [result.coords.latitude, result.coords.longitude];
-    //     this.startEditing(kvm.getActiveLayer().getStartGeomAtLatLng(startLatLng), startLatLng);
-    //     if (this.get("geometry_type") === "Point") {
-    //       this.getAttribute(this.get("geometry_attribute")).formField.setValue(String(result.coords));
-    //       console.log("Starte laufende Übernahme der aktuellen GPS-Position.");
-    //       kvm.controller.mapper.startUpdateMarkerWithGps();
-    //     }
-    //   } else {
-    //     console.log("Starte Editierung in Bildschirmmitte", result);
-    //     const center = kvm.map.getCenter();
-    //     const startLatLng: LatLngTuple = [center.lat, center.lng];
-    //     this.startEditing(this.getStartGeomAtLatLng(startLatLng), startLatLng);
-    //     await Util.confirm("Da keine GPS-Position ermittelt werden kann, wird die neue Geometrie in der Mitte der Karte gezeichnet. Schalten Sie die GPS Funktion auf Ihrem Gerät ein und suchen Sie einen Ort unter freiem Himmel auf um GPS benutzen zu können.", "GPS-Position", "ok", "ohne GPS weitermachen");
-    //     this.getAttribute(this.get("geometry_attribute")).formField.setValue(String(startLatLng));
-    //   }
-
-    //   for (let att of this.attributes) {
-    //     if (att.get("form_element_type") === "SubFormFK") {
-    //       await this._bestimmeUbergeordnetesObjekt(att);
-    //     }
-    //   }
-    // }
-    // kvm.setActiveFeature(feature);
     console.log(`Neues Feature des Layers ${feature?.layer?.title} mit id: ${feature.id} erzeugt.`);
     return feature;
   }
@@ -1856,8 +1828,13 @@ export class Layer extends PropertyChangeSupport {
     const parentFK = this.getParentFK();
     if (parentFK) {
       const currentParent = f.getDataValue(parentFK.fkColumn);
+      const currentNewParent = this.getAttribute(parentFK.fkColumn).formField.getValue();
       const parentFeatureId = await this._bestimmeUbergeordnetesObjekt(f, geom);
-      if (currentParent === parentFeatureId) {
+      console.info(`checkInsideParent ${currentParent} ${currentNewParent} newParent=${parentFeatureId}`);
+      // if (currentParent === parentFeatureId) {
+      //   return { inside: true, parentFeatureId: parentFeatureId };
+      // }
+      if (currentNewParent === parentFeatureId) {
         return { inside: true, parentFeatureId: parentFeatureId };
       } else {
         return { inside: false, parentFeatureId: parentFeatureId };
@@ -2317,15 +2294,15 @@ export class Layer extends PropertyChangeSupport {
    */
   async afterCreateDataset(f: Feature) {
     console.log("afterCreateDataset");
-    if (kvm.getConfigurationOption("newAfterCreate")) {
-      console.log("option newAfterCreate is on");
-      const newFeature = await this.createNewFeature(f.data);
-      kvm.editFeature(newFeature);
-    } else {
-      // this._activeFeature = f;
-      this.loadFeatureToView(f);
-      kvm.showNextItem(kvm.getConfigurationOption("viewAfterCreate"), this);
-    }
+    // if (kvm.getConfigurationOption("newAfterCreate")) {
+    //   console.log("option newAfterCreate is on");
+    //   const newFeature = await this.createNewFeature(f.data);
+    //   kvm.editFeature(newFeature);
+    // } else {
+    //   // this._activeFeature = f;
+    this.loadFeatureToView(f);
+    kvm.showNextItem(kvm.getConfigurationOption("viewAfterCreate"), this);
+    // }
   }
 
   /**

@@ -21,7 +21,7 @@ import { Mapper } from "./controller/mapper";
 import maplibregl from "maplibre-gl";
 import "process";
 import { MapLibreLayer } from "./MapLibreLayer";
-import { Control, DomUtil, Events, LatLngBounds, LeafletEvent, ErrorEvent as LErrorEvent, Map as LMap, Point as LPoint, Renderer, SVG } from "leaflet";
+import { Control, DomUtil, Events, LatLngBounds, LayersControlEvent, LeafletEvent, ErrorEvent as LErrorEvent, Map as LMap, Point as LPoint, Renderer, SVG } from "leaflet";
 import { objectToString, sperrBildschirm } from "./SperrBildschirm";
 import { Menu, ViewName } from "./Menu";
 import { Listener, PropertyChangeEvent, PropertyChangeSupport } from "./Observable";
@@ -1088,6 +1088,27 @@ export class Kvm extends PropertyChangeSupport {
       layers: this.backgroundLayers[this.getConfigurationOption("activeBackgroundLayerId") || 0].leafletLayer,
       renderer: this.myRenderer,
     });
+    map.on("addLayer", (evt) => {
+      console.error("addLayer", evt);
+    });
+
+    const fct = (evt: LayersControlEvent) => {
+      console.error(evt);
+      const layer = this.getLayers().find((layer, idx) => layer.layerGroup === evt.layer);
+      if (layer) {
+        if (evt.type === "overlayadd") {
+          console.error("added   " + layer.title);
+          layer.settings.visible = true;
+        } else {
+          console.error("removed " + layer.title);
+          layer.settings.visible = false;
+        }
+        kvm.store.setItem("layerSettings_" + layer.getGlobalId(), JSON.stringify(layer.settings));
+      }
+    };
+    map.on("overlayremove", fct);
+    map.on("overlayadd", fct);
+
     const baseMaps = {};
     map.on("popupopen", function (evt) {
       kvm.controls.layerCtrl.collapse();
@@ -1505,7 +1526,20 @@ export class Kvm extends PropertyChangeSupport {
     );
   }
 
-  async deleteFeatureButtonClicked(ect: MouseEvent) {
+  async newFeatureButtonClicked() {
+    sperrBildschirm.show();
+    try {
+      const layer = this._activeLayer;
+      const newFeature = await layer.createNewFeature();
+      await this.editFeature(newFeature);
+      sperrBildschirm.close();
+    } catch (error) {
+      console.error(error);
+      sperrBildschirm.close("Fehler beim Anlegen eines neuen Features", error);
+    }
+  }
+
+  async deleteFeatureButtonClicked() {
     if (kvm._activeLayer?.hasDeletePrivilege) {
       sperrBildschirm.show();
       const deleteConfirmed = await Util.confirm("Datensatz wirklich Löschen?", "", "ja", "nein");
@@ -1535,7 +1569,7 @@ export class Kvm extends PropertyChangeSupport {
     }
   }
 
-  async saveFeatureButtonClicked(evt: MouseEvent) {
+  async saveFeatureButtonClicked(newAfterSave: boolean) {
     sperrBildschirm.show();
     let feature = kvm._activeFeature;
     let layer = kvm._activeFeature.layer;
@@ -1590,6 +1624,7 @@ export class Kvm extends PropertyChangeSupport {
               await layer.runUpdateStrategy(feature, changes);
               layer.fire(new PropertyChangeEvent(kvm._activeLayer, Layer.EVENTS.FEATURE_CHANGED, null, null));
             }
+            kvm.isEditMode = false;
             if (this.getConfigurationOption("autoSync") && this.networkStatus.online) {
               const activeLayerId = layer.getGlobalId();
               const activeFeatureId = feature.id;
@@ -1600,7 +1635,13 @@ export class Kvm extends PropertyChangeSupport {
               feature = this._activeFeature;
             }
             if (action === "insert") {
-              await layer.afterCreateDataset(feature);
+              console.log("option newAfterCreate is on");
+              if (newAfterSave) {
+                const newFeature = await this._activeLayer.createNewFeature(feature.data);
+                this.editFeature(newFeature);
+              } else {
+                await layer.afterCreateDataset(feature);
+              }
             } else {
               await layer.afterUpdateDataset(feature);
             }
@@ -1684,12 +1725,15 @@ export class Kvm extends PropertyChangeSupport {
       }
     });
 
-    document.getElementById("deleteFeatureButton").addEventListener("click", (evt) => {
-      this.deleteFeatureButtonClicked(evt);
+    document.getElementById("deleteFeatureButton").addEventListener("click", () => {
+      this.deleteFeatureButtonClicked();
     });
 
     document.getElementById("saveFeatureButton").addEventListener("click", (evt) => {
-      this.saveFeatureButtonClicked(evt);
+      this.saveFeatureButtonClicked(false);
+    });
+    document.getElementById("saveFeatureButton2").addEventListener("click", (evt) => {
+      this.saveFeatureButtonClicked(true);
     });
 
     // $("#tplFeatureButton").on("click", function () {
@@ -1954,7 +1998,7 @@ export class Kvm extends PropertyChangeSupport {
       layer = feature.layer;
     }
     console.info(`editFeature(${layer.title}, ${feature.getDataValue(layer.get("id_attribute"))} editMode=${this.isEditMode}`, this._activeFeature);
-    this.isEditMode = true;
+
     // ToDo:
     //parentLayerId und parentFeatureId müssen woanders hier kommen
     // denn editFeature kann ja auch von einem subform kommen in dem
@@ -1967,7 +2011,7 @@ export class Kvm extends PropertyChangeSupport {
     // für die es auch layer in der Stelle gibt, um sicher zu gehen dass die Tabellen auch da sind.
     // Wenn man die Query nimmt kann man auch Joins machen und die in notsaveable-Attributes anzeigen.
     // Wie in kvwmap halt.
-    if (this._activeFeature && this._activeFeature !== feature) {
+    if (this.isEditMode && this._activeFeature && this._activeFeature !== feature) {
       // rtr TODO ???
       // layer.parentLayerId = this._activeLayer.getGlobalId();
       // layer.parentFeatureId = kvm._activeFeature.id;
@@ -1982,6 +2026,7 @@ export class Kvm extends PropertyChangeSupport {
 
       // this.setActiveFeature(null);
     }
+    this.isEditMode = true;
     this.setActiveFeature(feature);
     layer.editFeature(feature);
   }

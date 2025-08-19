@@ -15,6 +15,7 @@ export class Menu {
   private cancelFeatureButton: HTMLElement;
   private showMap: HTMLElement;
   private saveFeatureButton: HTMLElement;
+  private saveFeatureButton2: HTMLElement;
   private newFeatureButton: HTMLElement;
   private editFeatureButton: HTMLElement;
   private tplFeatureButton: HTMLElement;
@@ -43,6 +44,7 @@ export class Menu {
       (this.cancelFeatureButton = <HTMLElement>document.getElementById("cancelFeatureButton")),
       (this.showMap = <HTMLElement>document.getElementById("showMap")),
       (this.saveFeatureButton = <HTMLElement>document.getElementById("saveFeatureButton")),
+      (this.saveFeatureButton2 = <HTMLElement>document.getElementById("saveFeatureButton2")),
       (this.newFeatureButton = <HTMLElement>document.getElementById("newFeatureButton")),
       (this.editFeatureButton = <HTMLElement>document.getElementById("editFeatureButton")),
       (this.tplFeatureButton = <HTMLElement>document.getElementById("tplFeatureButton")),
@@ -74,17 +76,8 @@ export class Menu {
       app.editFeature(app.getActiveFeature());
     });
 
-    this.newFeatureButton.addEventListener("click", async () => {
-      sperrBildschirm.show();
-      try {
-        const layer = this.app.getActiveLayer();
-        const newFeature = await layer.createNewFeature();
-        await app.editFeature(newFeature);
-        sperrBildschirm.close();
-      } catch (error) {
-        console.error(error);
-        sperrBildschirm.close("Fehler beim Anlegen eines neuen Features", error);
-      }
+    this.newFeatureButton.addEventListener("click", () => {
+      this.app.newFeatureButtonClicked();
     });
 
     this.tplFeatureButton.addEventListener("click", async () => {
@@ -149,7 +142,7 @@ export class Menu {
   }
 
   showFormMenu() {
-    const items = [this.saveFeatureButton, this.cancelFeatureButton];
+    const items = [this.saveFeatureButton, this.saveFeatureButton2, this.cancelFeatureButton];
     if (this.app.getActiveLayer()?.hasDeletePrivilege && !this.app.getActiveFeature()?.new) {
       items.push(this.deleteFeatureButton);
     }
@@ -192,7 +185,7 @@ export class Menu {
   // }
 
   activate(item: ViewName) {
-    // console.info(`yyyy newView=${item}  oldView=${this.activeView?.id}`);
+    console.error(`Menu.activate newView=${item}  oldView=${this.activeView?.id}`);
     if (this._activeView) {
       this._activeView.hide();
     }
@@ -264,8 +257,10 @@ export class Menu {
     // console.error("enableSaveFeatureButton: " + enable);
     if (enable) {
       this.saveFeatureButton.classList.remove("inactive-button");
+      this.saveFeatureButton2.classList.remove("inactive-button");
     } else {
       this.saveFeatureButton.classList.add("inactive-button");
+      this.saveFeatureButton2.classList.add("inactive-button");
     }
   }
 }
