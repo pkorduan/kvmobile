@@ -44,7 +44,7 @@ export class DateFormField extends AbstractField {
     if (this.isValidDate(val)) {
       val = this.toISO(val);
     }
-    console.info("DateFormField " + this.attr.settings.name + " setValue with value: " + JSON.stringify(val));
+    // console.info("DateFormField " + this.attr.settings.name + " setValue with value: " + JSON.stringify(val));
     this._value = val || null;
     this.element.value = val;
   }

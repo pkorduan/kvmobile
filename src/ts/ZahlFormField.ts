@@ -35,7 +35,7 @@ export class ZahlFormField extends AbstractField implements Field {
   }
 
   async setValue(f: Feature, val) {
-    console.log(`Attribute: ${this.attr.settings.name} ZahlFormField.setValue with value: ${val}`);
+    // console.log(`Attribute: ${this.attr.settings.name} ZahlFormField.setValue with value: ${val}`);
 
     const settings = this.attr.settings;
     this._oldValue = val;

@@ -1189,8 +1189,7 @@ export class Stelle {
   }
 
   async applyDeltas(response: SendDeltasResponse): Promise<{ numExecutedDeltas: number; numReturnedDeltas: number }> {
-    // console.error(`applyDeltas`, response);
-    // const response = JSON.parse(fileUploadResult.response);
+    console.error(`applyDeltas`, response);
 
     if (response.success) {
       kvm.writeLog(`Deltas wurden empfangen.`);
