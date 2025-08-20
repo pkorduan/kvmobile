@@ -1134,7 +1134,7 @@ export const configurations: Configuration[] = [
         label: "Luftbilder WMS",
         online: true,
         type: "wms",
-        url: "https://mvbio.de/ows/luftbilder?TRANSPARENT=true",
+        url: "https://obstbaum.pomologen-verein.de/ows/luftbilder?TRANSPARENT=true",
         params: {
           layers: "Luftbilder",
           format: "image/png",
