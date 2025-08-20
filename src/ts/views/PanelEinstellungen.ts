@@ -495,9 +495,9 @@ export class Layers extends PanelEinstellungen {
         try {
           const result = await kvm.syncLayers();
           if (result.hasLayerStrucureChanged) {
-            await kvm.msg(`Es wurden\n${result.sendDataDeltas} Datensätze gesendet\n${result.addedImages} Bilder wurden hinzugefügt\n${result.addedImages} Bilder wurden gelöscht\nDie Datenstruktur hat sich geändert. Die Layer wurden aktualisiert.`);
+            await kvm.msg(`Es wurden\n${result.sendDataDeltas} Datensätze gesendet\n${result.addedImages} Bilder wurden hinzugefügt\n${result.deletedImages} Bilder wurden gelöscht\nDie Datenstruktur hat sich geändert. Die Layer wurden aktualisiert.`);
           } else {
-            await kvm.msg(`Es wurden\n${result.sendDataDeltas} Datensätze gesendet\n${result.addedImages} Bilder wurden hinzugefügt\n${result.addedImages} Bilder wurden gelöscht\n${result.numExecutedDeltas} Änderungen empfangen.`);
+            await kvm.msg(`Es wurden\n${result.sendDataDeltas} Datensätze gesendet\n${result.addedImages} Bilder wurden hinzugefügt\n${result.deletedImages} Bilder wurden gelöscht\n${result.numExecutedDeltas} Änderungen empfangen.`);
           }
           sperrBildschirm.close();
         } catch (ex) {

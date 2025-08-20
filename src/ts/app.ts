@@ -1584,7 +1584,23 @@ export class Kvm extends PropertyChangeSupport {
   async deleteFeatureButtonClicked() {
     if (kvm._activeLayer?.hasDeletePrivilege) {
       sperrBildschirm.show();
-      const deleteConfirmed = await Util.confirm("Datensatz wirklich Löschen?", "", "ja", "nein");
+      const fkAtts = this._activeLayer.attributes.filter((att) => att.settings.form_element_type === "SubFormEmbeddedPK");
+      const fkLayers: Layer[] = [];
+      for (let i = 0; i < fkAtts.length; i++) {
+        const layerId = fkAtts[i].options?.ref_layer_id;
+        if (layerId) {
+          const l = this.getLayer(this._activeStelle.get("ID") + "_" + layerId);
+          if (l) {
+            fkLayers.push(l);
+          }
+        }
+      }
+      const fkLayersNames = fkLayers.length > 0 ? fkLayers.map((l) => l.title) : null;
+      let msg = "Datensatz wirklich Löschen?";
+      if (fkLayersNames) {
+        msg += ` Bitte beachten Sie: Es werden auch die zugehörigen Feature der Layer ${fkLayersNames} gelöscht.`;
+      }
+      const deleteConfirmed = await Util.confirm(msg, "", "ja", "nein");
       if (deleteConfirmed) {
         const id_attribute = kvm._activeLayer.get("id_attribute");
         console.group("Lösche Feature " + id_attribute + ": " + kvm._activeFeature.getDataValue(id_attribute));
@@ -1598,7 +1614,12 @@ export class Kvm extends PropertyChangeSupport {
             const syncResults = await this.syncLayers();
             console.info("Synchronisation erfolgreich", syncResults);
             this.setActiveLayer(activeLayerId);
+          } else {
+            for (let fkLayer of fkLayers) {
+              fkLayer.readData(this.getConfigurationOption("limit"), this.getConfigurationOption("offset"));
+            }
           }
+
           this.afterDeleteDataset(feature);
         } catch (ex) {
           console.error("Fehler beim Löschen", ex);
@@ -1680,7 +1701,7 @@ export class Kvm extends PropertyChangeSupport {
               console.log("option newAfterCreate is on");
               if (newAfterSave) {
                 const newFeature = await this._activeLayer.createNewFeature(feature.data);
-                this.editFeature(newFeature);
+                await this.editFeature(newFeature);
               } else {
                 await layer.afterCreateDataset(feature);
               }

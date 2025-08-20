@@ -1783,11 +1783,12 @@ export class Layer extends PropertyChangeSupport {
         // new
         let startLatLng: LatLngTuple;
         if (kvm.mapSettings.newPosSelect == 1) {
+          sperrBildschirm.tick("GPS-Position wird abgerufen.");
           const result = await Util.getCurrentPosition();
-          sperrBildschirm.show("GPS-Position wird abgerufen.");
           if (result instanceof GeolocationPosition) {
             console.log("Starte Editierung an GPS-Coordinate");
             startLatLng = [result.coords.latitude, result.coords.longitude];
+            sperrBildschirm.tick("GPS-Position wurde bestimmt.");
           } else {
             console.log("Starte Editierung in Bildschirmmitte", result);
             await Util.alertNative("Da keine GPS-Position ermittelt werden kann, wird die neue Geometrie in der Mitte der Karte gezeichnet. Schalten Sie die GPS Funktion auf Ihrem Gerät ein und suchen Sie einen Ort unter freiem Himmel auf um GPS benutzen zu können.", "Warnung", "ok");
@@ -1836,13 +1837,14 @@ export class Layer extends PropertyChangeSupport {
       // if (currentParent === parentFeatureId) {
       //   return { inside: true, parentFeatureId: parentFeatureId };
       // }
+      const parentLayer = parentFK.parentLayer;
       if (currentNewParent === parentFeatureId) {
-        return { inside: true, parentFeatureId: parentFeatureId };
+        return { inside: true, parentFeature: parentLayer.getFeature(parentFeatureId) };
       } else {
-        return { inside: false, parentFeatureId: parentFeatureId };
+        return { inside: false, parentFeature: parentLayer.getFeature(parentFeatureId), oldParentFeature: parentLayer.getFeature(currentNewParent) };
       }
     }
-    return { inside: false, parentFeatureId: null };
+    return { inside: false, parentFeature: null };
   }
 
   /**
@@ -2757,6 +2759,7 @@ export class Layer extends PropertyChangeSupport {
     }
   }
   bttnReloadLayerClicked(evt: MouseEvent) {
+    // xxxxxxxxx
     console.info(`bttnReloadLayerClicked`);
     if ((<HTMLElement>evt.currentTarget).classList.contains("inactive-button")) {
       kvm.msg("Keine Internetverbindung! Kann Layer jetzt nicht neu laden.");
