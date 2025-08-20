@@ -1120,17 +1120,6 @@ export const configurations: Configuration[] = [
       },
       {
         layer_id: 2,
-        label: "Luftbilder Bing",
-        online: true,
-        type: "bing",
-        url: "https://learn.microsoft.com/en-us/bingmaps/rest-services/directly-accessing-the-bing-maps-tiles",
-        params: {
-          BING_KEY: "AqPPMA0XK54KqnsEpK_wSbcg4laDT0eqrS3c-XrMKhW10FJODMwETRJp5nbYPb-u",
-          attribution: "© 2024 Microsoft Corporation",
-        },
-      },
-      {
-        layer_id: 3,
         label: "Luftbilder WMS",
         online: true,
         type: "wms",
@@ -1141,7 +1130,7 @@ export const configurations: Configuration[] = [
           transparent: "true",
           attribution: "OpenData der Länder",
           maxZoom: 20
-        },
+        }
       },
     ],
   }, // Streuobst
@@ -1211,17 +1200,7 @@ export const configurations: Configuration[] = [
           attribution: "Basemap DE dl-de/by-2-0",
         },
       },
-      {
-        layer_id: 2,
-        label: "Luftbilder",
-        online: true,
-        type: "bing",
-        url: "https://learn.microsoft.com/en-us/bingmaps/rest-services/directly-accessing-the-bing-maps-tiles",
-        params: {
-          BING_KEY: "AqPPMA0XK54KqnsEpK_wSbcg4laDT0eqrS3c-XrMKhW10FJODMwETRJp5nbYPb-u",
-          attribution: "© 2024 Microsoft Corporation",
-        },
-      },
+
     ],
   }, // Streuobst KOB
   {

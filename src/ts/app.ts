@@ -1113,7 +1113,10 @@ export class Kvm extends PropertyChangeSupport {
     // });
     //this.myRenderer = new L.Canvas({ padding: 0.5, tolerance: 5 });
     this.myRenderer = new SVG();
-
+    let activeBackgroundIdIndex = this.getConfigurationOption("activeBackgroundLayerId") || 0;
+    if (activeBackgroundIdIndex > this.backgroundLayers.length - 1) {
+      activeBackgroundIdIndex = 0;
+    };
     const map = new LMap("map", <any>{
       // crs: crs25833,
       editable: true,
@@ -1125,7 +1128,7 @@ export class Kvm extends PropertyChangeSupport {
         [this.mapSettings.south, this.mapSettings.west],
         [this.mapSettings.north, this.mapSettings.east],
       ],
-      layers: this.backgroundLayers[this.getConfigurationOption("activeBackgroundLayerId") || 0].leafletLayer,
+      layers: this.backgroundLayers[activeBackgroundIdIndex].leafletLayer,
       renderer: this.myRenderer,
     });
     map.on("addLayer", (evt) => {
