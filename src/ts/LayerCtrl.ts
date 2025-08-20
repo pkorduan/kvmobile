@@ -410,7 +410,7 @@ export class LayerCtrl extends Control {
   }
 
   _onLayerChange(e) {
-    console.error("layerCtrl._onLayerChange", e);
+    // console.error("layerCtrl._onLayerChange", e);
     if (!this._handlingClick) {
       this._update();
     }
