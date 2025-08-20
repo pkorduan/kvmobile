@@ -194,7 +194,7 @@ export class Menu {
   // }
 
   activate(item: ViewName) {
-    console.error(`Menu.activate newView=${item}  oldView=${this.activeView?.id}`);
+    // console.error(`Menu.activate newView=${item}  oldView=${this.activeView?.id}`);
     if (this._activeView) {
       this._activeView.hide();
     }

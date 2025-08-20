@@ -221,7 +221,7 @@ export class Kvm extends PropertyChangeSupport {
       const lastServerVersion = found[found.length - 1];
       const latestVersionNumber = lastServerVersion.match(/\d+\.\d+\.\d+/)[0];
 
-      console.error("latestVersionNumber=" + latestVersionNumber + "   currentVersion=" + this.versionNumber);
+      // console.error("latestVersionNumber=" + latestVersionNumber + "   currentVersion=" + this.versionNumber);
       if (latestVersionNumber != this.versionNumber) {
         const runLater = await Util.confirm(`Es ist eine neue App-Version ${latestVersionNumber} vorhanden.`, "Update-Info", "Später", "zur Download-Seite");
         if (!runLater) {
@@ -1137,10 +1137,10 @@ export class Kvm extends PropertyChangeSupport {
       const layer = this.getLayers().find((layer, idx) => layer.layerGroup === evt.layer);
       if (layer) {
         if (evt.type === "overlayadd") {
-          console.error("added   " + layer.title);
+          // console.error("added   " + layer.title);
           layer.settings.visible = true;
         } else {
-          console.error("removed " + layer.title);
+          // console.error("removed " + layer.title);
           layer.settings.visible = false;
         }
         kvm.store.setItem("layerSettings_" + layer.getGlobalId(), JSON.stringify(layer.settings));
