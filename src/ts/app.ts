@@ -1731,12 +1731,25 @@ export class Kvm extends PropertyChangeSupport {
   afterDeleteDataset(f: Feature) {
     const parentFeature = f.findParentFeature();
     if (parentFeature) {
-      this.editFeature(parentFeature);
+      if (this.isActiveView("mapEdit")) {
+        this.showView("map");
+        if (f.layer.hasGeometry) {
+          this.setActiveFeature(null);
+        } else {
+          if (parentFeature.layer.hasGeometry) {
+            this.setActiveFeature(parentFeature);
+          } else {
+            this.setActiveFeature(null);
+          }
+        }
+      } else {
+        this.showView("dataView");
+        this.setActiveFeature(parentFeature);
+      }
     } else {
-      //console.log('Wechsel die Ansicht zur Featurelist.');
-      this.showView(!this.menu.isActiveView("map") ? "featurelist" : "map");
+      this.showView(this.isActiveView("mapEdit") ? "map" : "featurelist");
       //console.log('Scroll die FeatureListe nach ganz oben');
-      this.showNextItem(this.getConfigurationOption("viewAfterDelete"), f.layer);
+      // this.showNextItem(this.getConfigurationOption("viewAfterDelete"), f.layer);
     }
   }
 
