@@ -20,7 +20,7 @@ export type Configuration = {
   confirmSaveNew: boolean;
   viewAfterCreate: string;
   viewAfterUpdate: string;
-  viewAfterDelete?: string;
+  viewAfterDelete?: string; // nicht mehr genutzt
   newAfterCreate: boolean;
   /*
    * Beispiele für Pfade in denen Bilder gespeichert werden
@@ -1129,8 +1129,8 @@ export const configurations: Configuration[] = [
           format: "image/png",
           transparent: "true",
           attribution: "OpenData der Länder",
-          maxZoom: 20
-        }
+          maxZoom: 20,
+        },
       },
     ],
   }, // Streuobst
@@ -1176,7 +1176,6 @@ export const configurations: Configuration[] = [
       maxZoom: 20,
       startZoom: 8,
 
-       
       west: 7.38648,
       south: 47.48946,
       east: 10.52808,
@@ -1200,7 +1199,6 @@ export const configurations: Configuration[] = [
           attribution: "Basemap DE dl-de/by-2-0",
         },
       },
-
     ],
   }, // Streuobst KOB
   {

@@ -1116,7 +1116,7 @@ export class Kvm extends PropertyChangeSupport {
     let activeBackgroundIdIndex = this.getConfigurationOption("activeBackgroundLayerId") || 0;
     if (activeBackgroundIdIndex > this.backgroundLayers.length - 1) {
       activeBackgroundIdIndex = 0;
-    };
+    }
     const map = new LMap("map", <any>{
       // crs: crs25833,
       editable: true,
@@ -1585,7 +1585,7 @@ export class Kvm extends PropertyChangeSupport {
   }
 
   async deleteFeatureButtonClicked() {
-    if (kvm._activeLayer?.hasDeletePrivilege) {
+    if (this._activeLayer?.hasDeletePrivilege) {
       sperrBildschirm.show();
       const fkAtts = this._activeLayer.attributes.filter((att) => att.settings.form_element_type === "SubFormEmbeddedPK");
       const fkLayers: Layer[] = [];
@@ -1598,18 +1598,19 @@ export class Kvm extends PropertyChangeSupport {
           }
         }
       }
+
       const fkLayersNames = fkLayers.length > 0 ? fkLayers.map((l) => l.title) : null;
       let msg = "Datensatz wirklich Löschen?";
       if (fkLayersNames) {
-        msg += ` Bitte beachten Sie: Es werden auch die zugehörigen Feature der Layer ${fkLayersNames} gelöscht.`;
+        msg += `\n\nBitte beachten Sie:\nEs werden alle Objekte gelöscht, die an diesem ${this._activeLayer.title} hängen. Dazu gehören die Einträge in folgenden Layern: ${fkLayersNames.join(", ")} und die Einträge der darunter liegenden Layer.`;
       }
       const deleteConfirmed = await Util.confirm(msg, "", "ja", "nein");
       if (deleteConfirmed) {
-        const id_attribute = kvm._activeLayer.get("id_attribute");
+        const id_attribute = this._activeLayer.get("id_attribute");
         console.group("Lösche Feature " + id_attribute + ": " + kvm._activeFeature.getDataValue(id_attribute));
         try {
           const feature = this._activeFeature;
-          await kvm._activeLayer.runDeleteStrategy(feature);
+          await this._activeLayer.runDeleteStrategy(feature);
           this._activeLayer.removeFeature(feature);
           this.setActiveFeature(null);
           if (this.getConfigurationOption("autoSync") && this.networkStatus.online) {
@@ -1637,9 +1638,9 @@ export class Kvm extends PropertyChangeSupport {
 
   async saveFeatureButtonClicked(newAfterSave: boolean) {
     sperrBildschirm.show();
-    let feature = kvm._activeFeature;
-    let layer = kvm._activeFeature.layer;
-    const id_attribute = kvm._activeLayer.get("id_attribute");
+    let feature = this._activeFeature;
+    let layer = this._activeFeature.layer;
+    const id_attribute = layer.get("id_attribute");
     console.group("saveFeature " + id_attribute + ":" + feature.getDataValue(id_attribute) + " neu:" + (feature.new ? "ja" : "nein"));
 
     try {
@@ -1688,9 +1689,8 @@ export class Kvm extends PropertyChangeSupport {
               await layer.runInsertStrategy(feature, changes);
             } else {
               await layer.runUpdateStrategy(feature, changes);
-              layer.fire(new PropertyChangeEvent(kvm._activeLayer, Layer.EVENTS.FEATURE_CHANGED, null, null));
+              layer.fire(new PropertyChangeEvent(this._activeLayer, Layer.EVENTS.FEATURE_CHANGED, null, null));
             }
-            kvm.isEditMode = false;
             if (this.getConfigurationOption("autoSync") && this.networkStatus.online) {
               const activeLayerId = layer.getGlobalId();
               const activeFeatureId = feature.id;
@@ -1734,12 +1734,25 @@ export class Kvm extends PropertyChangeSupport {
   afterDeleteDataset(f: Feature) {
     const parentFeature = f.findParentFeature();
     if (parentFeature) {
-      this.editFeature(parentFeature);
+      if (this.isActiveView("mapEdit")) {
+        this.showView("map");
+        if (f.layer.hasGeometry) {
+          this.setActiveFeature(null);
+        } else {
+          if (parentFeature.layer.hasGeometry) {
+            this.setActiveFeature(parentFeature);
+          } else {
+            this.setActiveFeature(null);
+          }
+        }
+      } else {
+        this.showView("dataView");
+        this.setActiveFeature(parentFeature);
+      }
     } else {
-      //console.log('Wechsel die Ansicht zur Featurelist.');
-      this.showView(!this.menu.isActiveView("map") ? "featurelist" : "map");
+      this.showView(this.isActiveView("mapEdit") ? "map" : "featurelist");
       //console.log('Scroll die FeatureListe nach ganz oben');
-      this.showNextItem(this.getConfigurationOption("viewAfterDelete"), f.layer);
+      // this.showNextItem(this.getConfigurationOption("viewAfterDelete"), f.layer);
     }
   }
 

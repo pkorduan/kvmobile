@@ -2440,51 +2440,52 @@ export class Layer extends PropertyChangeSupport {
     }
   }
 
-  /**
-   * function called after writing a delete Statement into Client sqlite DB
-   * Do every thing to delete the feature, geometry, Layer and listelement
-   *
-   */
-  afterDeleteDataset(feature: Feature) {
-    console.log("afterDeleteDataset");
-    // let layerId = this.activeFeature.leafletLayer;
-    const parentFK = this.getParentFK();
-    // let parentFeatureId = this.parentFeatureId;
+  // /**
+  //  * function called after writing a delete Statement into Client sqlite DB
+  //  * Do every thing to delete the feature, geometry, Layer and listelement
+  //  *
+  //  */
+  // afterDeleteDataset(feature: Feature) {
+  //   debugger;
+  //   console.log("afterDeleteDataset");
+  //   // let layerId = this.activeFeature.leafletLayer;
+  //   const parentFK = this.getParentFK();
+  //   // let parentFeatureId = this.parentFeatureId;
 
-    if (this.hasGeometry) {
-      //console.log('Remove Editable Geometrie');
-      kvm.controller.mapper.removeEditable(feature);
+  //   if (this.hasGeometry) {
+  //     //console.log('Remove Editable Geometrie');
+  //     kvm.controller.mapper.removeEditable(feature);
 
-      //console.log('Löscht Layer mit layerId: %s aus Layergroup', layer.activeFeature.layerId);
-      this.layerGroup.removeLayer(feature.leafletLayer);
-    }
+  //     //console.log('Löscht Layer mit layerId: %s aus Layergroup', layer.activeFeature.layerId);
+  //     this.layerGroup.removeLayer(feature.leafletLayer);
+  //   }
 
-    //console.log('Löscht Feature aus FeatureList : %o', layer.activeFeature);
-    // $("#" + this.activeFeature.id).remove();
+  //   //console.log('Löscht Feature aus FeatureList : %o', layer.activeFeature);
+  //   // $("#" + this.activeFeature.id).remove();
 
-    //console.log('Lösche Feature aus features Array des activeLayer');
-    this.removeFeature(feature);
+  //   //console.log('Lösche Feature aus features Array des activeLayer');
+  //   this.removeFeature(feature);
 
-    //console.log('Lösche activeFeature')
-    // delete this._activeFeature;
+  //   //console.log('Lösche activeFeature')
+  //   // delete this._activeFeature;
 
-    const parentFeature = this.getParentFeature(feature);
-    if (parentFeature) {
-      kvm.editFeature(parentFeature);
-    } else {
-      //console.log('Wechsel die Ansicht zur Featurelist.');
-      kvm.showView(!kvm.menu.isActiveView("map") ? "featurelist" : "map");
-      //console.log('Scroll die FeatureListe nach ganz oben');
-      kvm.showNextItem(kvm.getConfigurationOption("viewAfterDelete"), this);
-    }
+  //   const parentFeature = this.getParentFeature(feature);
+  //   if (parentFeature) {
+  //     kvm.editFeature(parentFeature);
+  //   } else {
+  //     //console.log('Wechsel die Ansicht zur Featurelist.');
+  //     kvm.showView(!kvm.menu.isActiveView("map") ? "featurelist" : "map");
+  //     //console.log('Scroll die FeatureListe nach ganz oben');
+  //     kvm.showNextItem(kvm.getConfigurationOption("viewAfterDelete"), this);
+  //   }
 
-    //console.log('Blende Sperrdiv aus');
-    // Sperrdiv entfernen
-    sperrBildschirm.close(`${this.title}: Datensatz erfolgreich gelöscht.`);
+  //   //console.log('Blende Sperrdiv aus');
+  //   // Sperrdiv entfernen
+  //   sperrBildschirm.close(`${this.title}: Datensatz erfolgreich gelöscht.`);
 
-    // ToDo: Layer gleich syncronisieren
-    //kvm.msg(this.succMsg, "Hinweis");
-  }
+  //   // ToDo: Layer gleich syncronisieren
+  //   //kvm.msg(this.succMsg, "Hinweis");
+  // }
 
   /**
    * function return insert delta based on changes of a dataset
