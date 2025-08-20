@@ -183,7 +183,7 @@ export class SelectAutoFormField extends AbstractField implements Field {
     selectField.multiple = this.isArrayType();
     selectField.disabled = this.settings.privilege == "0";
 
-    if (this.settings.nullable === "1") {
+    if (this.settings.nullable === "1" && !this.isArrayType()) {
       const opt = createHtmlElement("option", selectField);
       opt.innerText = "-";
     }
