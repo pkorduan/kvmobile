@@ -21,7 +21,7 @@ import { Mapper } from "./controller/mapper";
 import maplibregl from "maplibre-gl";
 import "process";
 import { MapLibreLayer } from "./MapLibreLayer";
-import { Control, DomUtil, Events, LatLngBounds, LeafletEvent, ErrorEvent as LErrorEvent, Map as LMap, Point as LPoint, Renderer, SVG } from "leaflet";
+import { Control, DomUtil, Events, LatLngBounds, LayersControlEvent, LeafletEvent, ErrorEvent as LErrorEvent, Map as LMap, Point as LPoint, Renderer, SVG } from "leaflet";
 import { objectToString, sperrBildschirm } from "./SperrBildschirm";
 import { Menu, ViewName } from "./Menu";
 import { Listener, PropertyChangeEvent, PropertyChangeSupport } from "./Observable";
@@ -193,6 +193,44 @@ export class Kvm extends PropertyChangeSupport {
 
   async activateFeature(layerId: string, featureId?: string): Promise<void> {
     return this.setActiveFeature(layerId, featureId);
+  }
+
+  async checkForUpdate() {
+    try {
+      const response = await fetch(kvm.appUrl);
+      if (!response.ok) {
+        throw new Error(`Die Seite ${kvm.appUrl} zur Ermittlung der letzten Programmversion konnte nicht abgefragt werden. Status-code: ${response.status} ${response.statusText}`);
+      }
+      const txt = await response.text();
+      const regex = /href="k[^"]*"/g;
+      const found = txt.match(regex);
+      found.sort((a, b) => {
+        const av = a.match(/\d+/g);
+        const bv = b.match(/\d+/g);
+        if (av[0] !== bv[0]) {
+          return parseInt(av[0]) < parseInt(bv[0]) ? -1 : 1;
+        }
+
+        if (av[1] !== bv[1]) {
+          return parseInt(av[1]) < parseInt(bv[1]) ? -1 : 1;
+        }
+        if (av[2] !== bv[2]) {
+          return parseInt(av[2]) < parseInt(bv[2]) ? -1 : 1;
+        }
+      });
+      const lastServerVersion = found[found.length - 1];
+      const latestVersionNumber = lastServerVersion.match(/\d+\.\d+\.\d+/)[0];
+
+      console.error("latestVersionNumber=" + latestVersionNumber + "   currentVersion=" + this.versionNumber);
+      if (latestVersionNumber != this.versionNumber) {
+        const runLater = await Util.confirm(`Es ist eine neue App-Version ${latestVersionNumber} vorhanden.`, "Update-Info", "Später", "zur Download-Seite");
+        if (!runLater) {
+          window.open(kvm.appUrl, "_system");
+        }
+      }
+    } catch (ex) {
+      console.error("ERR in checkForUpdate", ex);
+    }
   }
 
   /**
@@ -712,45 +750,45 @@ export class Kvm extends PropertyChangeSupport {
     }
   }
 
-  /**
-   * Download the new App and request the user to install it
-   * If user confirm, save and reset settings and database first.
-   */
-  async checkAppVersion() {
-    try {
-      const response = await fetch(kvm.appUrl);
-      if (!response.ok) {
-        throw new Error(`Die Seite ${kvm.appUrl} zur Ermittlung der letzten Programmversion konnte nicht abgefragt werden. Status-code: ${response.status} ${response.statusText}`);
-      }
+  // /**
+  //  * Download the new App and request the user to install it
+  //  * If user confirm, save and reset settings and database first.
+  //  */
+  // async checkAppVersion() {
+  //   try {
+  //     const response = await fetch(kvm.appUrl);
+  //     if (!response.ok) {
+  //       throw new Error(`Die Seite ${kvm.appUrl} zur Ermittlung der letzten Programmversion konnte nicht abgefragt werden. Status-code: ${response.status} ${response.statusText}`);
+  //     }
 
-      const result = await response.text();
-      const versions = Array.from(result.matchAll(/kvmobile-(\d+\.\d+\.\d+)\.apk/g)).map((match) => match[1]);
-      const latestVersionNumber = versions
-        .sort((a, b) => {
-          const pa = a.split(".").map(Number);
-          const pb = b.split(".").map(Number);
-          for (let i = 0; i < 3; i++) {
-            if (pa[i] > pb[i]) return 1;
-            if (pa[i] < pb[i]) return -1;
-          }
-          return 0;
-        })
-        .pop();
-      console.log("Latest App-Version:", latestVersionNumber);
+  //     const result = await response.text();
+  //     const versions = Array.from(result.matchAll(/kvmobile-(\d+\.\d+\.\d+)\.apk/g)).map((match) => match[1]);
+  //     const latestVersionNumber = versions
+  //       .sort((a, b) => {
+  //         const pa = a.split(".").map(Number);
+  //         const pb = b.split(".").map(Number);
+  //         for (let i = 0; i < 3; i++) {
+  //           if (pa[i] > pb[i]) return 1;
+  //           if (pa[i] < pb[i]) return -1;
+  //         }
+  //         return 0;
+  //       })
+  //       .pop();
+  //     console.log("Latest App-Version:", latestVersionNumber);
 
-      if (latestVersionNumber != kvm.versionNumber) {
-        // if (true) {
-        // navigator.notification.confirm(`Es ist eine neue App-Version ${latestVersionNumber} vorhanden.`, kvm.openUpdatePage, "Update-Info", ["Später", "zur Download-Seite"]);
-        const runLater = await Util.confirm(`Es ist eine neue App-Version ${latestVersionNumber} vorhanden.`, "Update-Info", "Später", "zur Download-Seite");
-        if (!runLater) {
-          window.open(kvm.appUrl, "_system");
-        }
-      }
-    } catch (error) {
-      console.error("Fehler in checkAppVersion %o", error);
-      throw new Error(`Fehler beim Abfragen der letzten App-Version! Typ: ${error.name} Fehler: ${error.message}`);
-    }
-  }
+  //     if (latestVersionNumber != kvm.versionNumber) {
+  //       // if (true) {
+  //       // navigator.notification.confirm(`Es ist eine neue App-Version ${latestVersionNumber} vorhanden.`, kvm.openUpdatePage, "Update-Info", ["Später", "zur Download-Seite"]);
+  //       const runLater = await Util.confirm(`Es ist eine neue App-Version ${latestVersionNumber} vorhanden.`, "Update-Info", "Später", "zur Download-Seite");
+  //       if (!runLater) {
+  //         window.open(kvm.appUrl, "_system");
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error("Fehler in checkAppVersion %o", error);
+  //     throw new Error(`Fehler beim Abfragen der letzten App-Version! Typ: ${error.name} Fehler: ${error.message}`);
+  //   }
+  // }
 
   /**
    * Function to compare semantic versions
@@ -998,6 +1036,8 @@ export class Kvm extends PropertyChangeSupport {
     // Util.showError("Bei der Initialisierung tratt in Fehler auf.", testErr);
 
     this.initDeltaAnzeige();
+
+    this.checkForUpdate();
   }
 
   /**
@@ -1088,6 +1128,27 @@ export class Kvm extends PropertyChangeSupport {
       layers: this.backgroundLayers[this.getConfigurationOption("activeBackgroundLayerId") || 0].leafletLayer,
       renderer: this.myRenderer,
     });
+    map.on("addLayer", (evt) => {
+      console.error("addLayer", evt);
+    });
+
+    const fct = (evt: LayersControlEvent) => {
+      console.error(evt);
+      const layer = this.getLayers().find((layer, idx) => layer.layerGroup === evt.layer);
+      if (layer) {
+        if (evt.type === "overlayadd") {
+          console.error("added   " + layer.title);
+          layer.settings.visible = true;
+        } else {
+          console.error("removed " + layer.title);
+          layer.settings.visible = false;
+        }
+        kvm.store.setItem("layerSettings_" + layer.getGlobalId(), JSON.stringify(layer.settings));
+      }
+    };
+    map.on("overlayremove", fct);
+    map.on("overlayadd", fct);
+
     const baseMaps = {};
     map.on("popupopen", function (evt) {
       kvm.controls.layerCtrl.collapse();
@@ -1505,7 +1566,22 @@ export class Kvm extends PropertyChangeSupport {
     );
   }
 
-  async deleteFeatureButtonClicked(ect: MouseEvent) {
+  async newFeatureButtonClicked() {
+    sperrBildschirm.show();
+    try {
+      sperrBildschirm.show("neues Objekt wird erzeugt");
+      const layer = this._activeLayer;
+      const newFeature = await layer.createNewFeature();
+      await this.editFeature(newFeature);
+      newFeature.zoomTo(true);
+      sperrBildschirm.close();
+    } catch (error) {
+      console.error(error);
+      sperrBildschirm.close("Fehler beim Anlegen eines neuen Features", error);
+    }
+  }
+
+  async deleteFeatureButtonClicked() {
     if (kvm._activeLayer?.hasDeletePrivilege) {
       sperrBildschirm.show();
       const deleteConfirmed = await Util.confirm("Datensatz wirklich Löschen?", "", "ja", "nein");
@@ -1535,7 +1611,7 @@ export class Kvm extends PropertyChangeSupport {
     }
   }
 
-  async saveFeatureButtonClicked(evt: MouseEvent) {
+  async saveFeatureButtonClicked(newAfterSave: boolean) {
     sperrBildschirm.show();
     let feature = kvm._activeFeature;
     let layer = kvm._activeFeature.layer;
@@ -1590,6 +1666,7 @@ export class Kvm extends PropertyChangeSupport {
               await layer.runUpdateStrategy(feature, changes);
               layer.fire(new PropertyChangeEvent(kvm._activeLayer, Layer.EVENTS.FEATURE_CHANGED, null, null));
             }
+            kvm.isEditMode = false;
             if (this.getConfigurationOption("autoSync") && this.networkStatus.online) {
               const activeLayerId = layer.getGlobalId();
               const activeFeatureId = feature.id;
@@ -1600,7 +1677,13 @@ export class Kvm extends PropertyChangeSupport {
               feature = this._activeFeature;
             }
             if (action === "insert") {
-              await layer.afterCreateDataset(feature);
+              console.log("option newAfterCreate is on");
+              if (newAfterSave) {
+                const newFeature = await this._activeLayer.createNewFeature(feature.data);
+                this.editFeature(newFeature);
+              } else {
+                await layer.afterCreateDataset(feature);
+              }
             } else {
               await layer.afterUpdateDataset(feature);
             }
@@ -1684,12 +1767,15 @@ export class Kvm extends PropertyChangeSupport {
       }
     });
 
-    document.getElementById("deleteFeatureButton").addEventListener("click", (evt) => {
-      this.deleteFeatureButtonClicked(evt);
+    document.getElementById("deleteFeatureButton").addEventListener("click", () => {
+      this.deleteFeatureButtonClicked();
     });
 
     document.getElementById("saveFeatureButton").addEventListener("click", (evt) => {
-      this.saveFeatureButtonClicked(evt);
+      this.saveFeatureButtonClicked(false);
+    });
+    document.getElementById("saveFeatureButton2").addEventListener("click", (evt) => {
+      this.saveFeatureButtonClicked(true);
     });
 
     // $("#tplFeatureButton").on("click", function () {
@@ -1954,36 +2040,24 @@ export class Kvm extends PropertyChangeSupport {
       layer = feature.layer;
     }
     console.info(`editFeature(${layer.title}, ${feature.getDataValue(layer.get("id_attribute"))} editMode=${this.isEditMode}`, this._activeFeature);
-    this.isEditMode = true;
-    // ToDo:
-    //parentLayerId und parentFeatureId müssen woanders hier kommen
-    // denn editFeature kann ja auch von einem subform kommen in dem
-    // der parent aufgerufen wird. Das hier geht nur wenn man von einem
-    // parent ein child feature aufruft zum editieren.
-    // z.B. mit feature.findParentFeature
-    // Anpassungen erforderlich für die Abfrage der default Attribute
-    // Am besten man fragt die Pseudoattribute gleich über sql mit ab.
-    // dann gilt halt die Konvention dass nur Tables in der Query verwendet werden dürfen,
-    // für die es auch layer in der Stelle gibt, um sicher zu gehen dass die Tabellen auch da sind.
-    // Wenn man die Query nimmt kann man auch Joins machen und die in notsaveable-Attributes anzeigen.
-    // Wie in kvwmap halt.
-    if (this._activeFeature && this._activeFeature !== feature) {
-      // rtr TODO ???
-      // layer.parentLayerId = this._activeLayer.getGlobalId();
-      // layer.parentFeatureId = kvm._activeFeature.id;
+    if (this.isEditMode && this._activeFeature && this._activeFeature !== feature) {
       const changes = this._activeLayer.collectChanges(this._activeFeature, this._activeFeature.new ? "insert" : "update");
       if (changes.length > 0) {
-        // console.error(`layer.editFeature: changes: ${this._activeFeature.layer.title} ${this._activeFeature.getDataValue(layer.get("id_attribute"))}`);
         const proceed = await Util.confirm("Es sind noch offene Änderungen. Diese müssen erst gespeichert werden.", "Bitte Bestätigen", "Ohne Speichern Fortfahren", "Abbrechen");
         if (!proceed) {
           return;
         }
       }
-
-      // this.setActiveFeature(null);
     }
+    this.isEditMode = true;
     this.setActiveFeature(feature);
-    layer.editFeature(feature);
+    await layer.editFeature(feature);
+    // $("#deleteFeatureButton").hide();
+    if (layer.hasGeometry && !this.isActiveView("dataView") && !this.isActiveView("formular")) {
+      this.showView("mapEdit");
+    } else {
+      this.showView("formular");
+    }
   }
 
   loadLogLevel() {

@@ -183,7 +183,7 @@ export class Feature {
       const attributes = this.layer.attributes;
       const attributeIdx = this.layer.attribute_index;
       for (const [key, value] of Object.entries(this.data)) {
-        if (copyData[key] && value == undefined && !attributes[attributeIdx[key]].isAutoAttribute("insert")) {
+        if (copyData[key] && value == undefined && !attributes[attributeIdx[key]].isAutoAttribute("insert") && attributes[attributeIdx[key]].settings.form_element_type !== "Dokument") {
           console.log(`Set ${key} of data with value of copy: ${copyData[key]}`);
           this.setDataValue(key, copyData[key]);
         }

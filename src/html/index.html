@@ -84,6 +84,10 @@ child-src * 'self' blob: http:
         <a id="saveFeatureButton" class="menu-button text-button" style="display: none">
           <i class="fa fa-floppy-disk" aria-hidden="true"></i>
         </a>
+        <a id="saveFeatureButton2" class="menu-button text-button" style="position: relative; display: none">
+          <i class="fa fa-floppy-disk" aria-hidden="true"></i>
+          <i class="delta-count-anzeige">+</i>
+        </a>
         <i id="editFeatureButton" class="fa fa-pen fa-2x menu-button" aria-hidden="true" style="display: none"></i>
         <i id="newFeatureButton" class="fa fa-solid fa-square-plus fa-2x menu-button" aria-hidden="true" style="display: none"></i>
         <i id="tplFeatureButton" class="fa fa-clone fa-2x menu-button" aria-hidden="true" style="display: none"></i>
@@ -327,102 +331,6 @@ child-src * 'self' blob: http:
         <hr />
 
         <div class="h2-div">
-          <h2 id="h2_karteneinstellungen" class="b-collapsed">Karteneinstellungen</h2>
-          <div id="mapSettingsDiv" class="conf-panel" style="padding-left: 10px">
-            Startposition neuer Objekte<br />
-            <div id="newPosDiv">
-              <select id="newPosSelect" name="newPosSelect" class="mapSetting">
-                <option value="1">An GPS-Position falls Signal vorhanden</option>
-                <option value="2" selected>Immer am aktuellen Kartenmittelpunkt</option>
-              </select>
-            </div>
-            <br />
-            Mindestdistanz beim Tracking: <span id="minTrackDistance">5</span> m <input id="minTrackDistanceSlider" type="range" min="1" max="100" value="5" class="min-track-distance-slider" /><i class="fa fa-info" aria-hidden="true" onclick="kvm.msg('Stellt die Mindestentfernung zum nächsten aufgezeichneten Wegpunkt beim Linientracking ein. Punkte in kleinerem Abstand werden bei der Aufzeichnung ignoriert.')" style="margin-left: 5px"></i>
-            <p>maximale Kartenausdehnung:</p>
-
-            <div class="settings-label">West:</div>
-            <input id="mapSettings_west" name="west" class="mapSetting" type="number" size="7" />
-            <div style="clear: both"></div>
-            <div class="settings-label">Süd:</div>
-            <input id="mapSettings_south" name="south" class="mapSetting" type="number" size="7" />
-            <div style="clear: both"></div>
-            <div class="settings-label">Ost:</div>
-            <input id="mapSettings_east" name="east" class="mapSetting" type="number" size="7" />
-            <div style="clear: both"></div>
-            <div class="settings-label">Nord:</div>
-            <input id="mapSettings_north" name="north" class="mapSetting" type="number" size="7" />
-            <div style="clear: both"></div>
-            <div class="settings-label">Start Center Lat:</div>
-            <input id="mapSettings_startCenterLat" name="startCenterLat" class="mapSetting" type="number" size="7" />
-            <div style="clear: both"></div>
-            <div class="settings-label">Start Center Lon:</div>
-            <input id="mapSettings_startCenterLon" name="startCenterLon" class="mapSetting" type="number" size="7" />
-            <div style="clear: both"></div>
-            <div class="settings-label">kleinste Zoomstufe:</div>
-            <select id="mapSettings_minZoom" name="minZoom" class="mapSetting">
-              <option value="5">5</option>
-              <option value="6">6</option>
-              <option value="7">7</option>
-              <option value="8">8</option>
-              <option value="9">9</option>
-              <option value="10">10</option>
-              <option value="11">11</option>
-              <option value="12">12</option>
-              <option value="13">13</option>
-              <option value="14">14</option>
-              <option value="15">15</option>
-              <option value="16">16</option>
-              <option value="17">17</option>
-              <option value="18">18</option>
-              <option value="19">19</option>
-              <option value="20">20</option>
-              <option value="21">21</option>
-              <option value="22">22</option>
-            </select>
-            <div style="clear: both"></div>
-            <div class="settings-label">größte Zoomstufe:</div>
-            <select id="mapSettings_maxZoom" name="maxZoom" class="mapSetting">
-              <option value="5">5</option>
-              <option value="6">6</option>
-              <option value="7">7</option>
-              <option value="8">8</option>
-              <option value="9">9</option>
-              <option value="10">10</option>
-              <option value="11">11</option>
-              <option value="12">12</option>
-              <option value="13">13</option>
-              <option value="14">14</option>
-              <option value="15">15</option>
-              <option value="16">16</option>
-              <option value="17">17</option>
-              <option value="18">18</option>
-              <option value="19">19</option>
-            </select>
-            <div style="clear: both"></div>
-            <div class="settings-label">Start Zoomstufe:</div>
-            <select id="mapSettings_startZoom" name="startZoom" class="mapSetting">
-              <option value="5">5</option>
-              <option value="6">6</option>
-              <option value="7">7</option>
-              <option value="8">8</option>
-              <option value="9">9</option>
-              <option value="10">10</option>
-              <option value="11">11</option>
-              <option value="12">12</option>
-              <option value="13">13</option>
-              <option value="14">14</option>
-              <option value="15">15</option>
-              <option value="16">16</option>
-              <option value="17">17</option>
-              <option value="18">18</option>
-              <option value="19">19</option>
-            </select>
-            <div style="clear: both"></div>
-          </div>
-        </div>
-        <hr />
-
-        <div class="h2-div">
           <h2 id="h2_sachdateneinstellungen" class="b-collapsed">Sachdateneinstellungen</h2>
           <div id="viewSettingsDiv" class="conf-panel" style="padding-left: 10px">
             Was soll nach dem Speichern eines neuen Datensatzes angezeigt werden?<i class="fa fa-circle-exclamation" style="color: #f57802" onclick="kvm.msg(`Wirkt sich nur aus wenn kein neuer Datensatz nach dem Speichern erzeugt wird.`, 'Hinweis');"></i><br />
@@ -433,7 +341,6 @@ child-src * 'self' blob: http:
               <option value="dataView">Erzeugter Datensatz zum Lesen</option>
               <option value="formular">Erzeugter Datensatz im Formular</option>
             </select>
-            <input id="newAfterCreate" type="checkbox" style="margin-top: 20px" /> Nach dem Speichern gleich weiteren Datensatz anlegen
             <div style="margin-top: 20px">Was soll nach dem Aktualisieren eines vorhandenen Datensatzes angezeigt werden?</div>
             <select id="viewAfterUpdate" name="viewAfterUpdate">
               <option value="featurelist">Liste der Datensätze</option>

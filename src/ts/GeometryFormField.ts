@@ -210,6 +210,8 @@ export class GeometrieFormField extends AbstractField implements Field {
       const result = await feature.checkInsideParent(geom);
       if (!result.inside) {
         if (result.parentFeatureId) {
+          // const parentFeature = parentFK.parentLayer.getFeature(result.parentFeatureId);
+          // console.error(`parent ${parentFeature.getLabelValue()}`);
           const moveToNewParent = await confirm(`Die Geometrie liegt nicht mehr innerhalb des übergeordneten Objektes (${feature.layer.getParentFK().parentLayer.title}). Soll das Objekt neuzugeordnet werden?`, "Warnung", "JA", "NEIN");
           if (moveToNewParent) {
             this._feature.layer.getAttribute(parentFK.fkColumn).formField.setValue(this._feature, result.parentFeatureId);
