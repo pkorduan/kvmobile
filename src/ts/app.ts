@@ -221,7 +221,7 @@ export class Kvm extends PropertyChangeSupport {
       const lastServerVersion = found[found.length - 1];
       const latestVersionNumber = lastServerVersion.match(/\d+\.\d+\.\d+/)[0];
 
-      console.error("latestVersionNumber=" + latestVersionNumber + "   currentVersion=" + this.versionNumber);
+      // console.error("latestVersionNumber=" + latestVersionNumber + "   currentVersion=" + this.versionNumber);
       if (latestVersionNumber != this.versionNumber) {
         const runLater = await Util.confirm(`Es ist eine neue App-Version ${latestVersionNumber} vorhanden.`, "Update-Info", "Später", "zur Download-Seite");
         if (!runLater) {
@@ -1113,7 +1113,10 @@ export class Kvm extends PropertyChangeSupport {
     // });
     //this.myRenderer = new L.Canvas({ padding: 0.5, tolerance: 5 });
     this.myRenderer = new SVG();
-
+    let activeBackgroundIdIndex = this.getConfigurationOption("activeBackgroundLayerId") || 0;
+    if (activeBackgroundIdIndex > this.backgroundLayers.length - 1) {
+      activeBackgroundIdIndex = 0;
+    };
     const map = new LMap("map", <any>{
       // crs: crs25833,
       editable: true,
@@ -1125,7 +1128,7 @@ export class Kvm extends PropertyChangeSupport {
         [this.mapSettings.south, this.mapSettings.west],
         [this.mapSettings.north, this.mapSettings.east],
       ],
-      layers: this.backgroundLayers[this.getConfigurationOption("activeBackgroundLayerId") || 0].leafletLayer,
+      layers: this.backgroundLayers[activeBackgroundIdIndex].leafletLayer,
       renderer: this.myRenderer,
     });
     map.on("addLayer", (evt) => {
@@ -1137,10 +1140,10 @@ export class Kvm extends PropertyChangeSupport {
       const layer = this.getLayers().find((layer, idx) => layer.layerGroup === evt.layer);
       if (layer) {
         if (evt.type === "overlayadd") {
-          console.error("added   " + layer.title);
+          // console.error("added   " + layer.title);
           layer.settings.visible = true;
         } else {
-          console.error("removed " + layer.title);
+          // console.error("removed " + layer.title);
           layer.settings.visible = false;
         }
         kvm.store.setItem("layerSettings_" + layer.getGlobalId(), JSON.stringify(layer.settings));

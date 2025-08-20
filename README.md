@@ -16,6 +16,9 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 
 # Change log
 
+## 1.20.3
+- Features
+  - Identifizierung ob es eine neue Version gibt an Hand der Versionsnummern der APK-Dateien auf der Webseite zum Download.
 ## 1.20.2
 - Bugfixes
   - Korrekte Anzeige Copyright
@@ -26,6 +29,7 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
   - Richtige Anwendung des Attributes visible zum Ausblenden oder konditionalen Ausblenden
   - Fix Bildanlage
   - Gruppen mit nur ausgeblendeten Attributen ausblenden
+  - Verhalten nach Löschen von Objekten angepasst
 - Features
   - Anzeige des Namen der Stelle nachdem man sie geladen hat.
   - Auswahl eines Layers mit Geometrie nach dem Laden der Layer.
@@ -38,6 +42,7 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
   - Reihenfolge der Layer im Layer-Control nach Drawingorder
   - Anzeige wie viele Änderungen noch nicht Synchronisiert worden sind.
   - Autosync wird ausgeschaltet wenn ein Fehler aufgetreten ist. Nutzer bekommt die Anzahl der offenen Änderungen angezeigt und kann selber das Autosync wieder einschalten um zu prüfen ob der Sync dann geht.
+  - Und neuen Datensatz speichern über neuen Button mit Plussymbol.
 - Maintainance
   - Anpassung des Sync-Modus auf sync_all für alle Layer
   - Anpassung zindex neuer Features
