@@ -1684,6 +1684,7 @@ export class Kvm extends PropertyChangeSupport {
         }
         if (saveConfirmed) {
           feature.setEditable(false);
+          this.isEditMode = false;
           if (changes?.length > 0) {
             if (action == "insert") {
               await layer.runInsertStrategy(feature, changes);

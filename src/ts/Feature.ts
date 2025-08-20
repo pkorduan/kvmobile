@@ -2,7 +2,6 @@ import * as wkx from "wkx";
 import { CircleMarker, GeoJSON, Layer as LeafletLayer, Marker, Path, Point, Polygon, Polyline } from "leaflet";
 import { kvm } from "./app";
 import { Layer } from "./Layer";
-import { Klasse } from "./Klasse";
 import { createHtmlElement } from "./Util";
 import { Mapper } from "./controller/mapper";
 
@@ -54,7 +53,6 @@ export class Feature {
   constructor(data: any = {}, layer: Layer, isNew?: boolean) {
     this.new = isNew ?? true;
     this.layer = layer;
-    // this.globalLayerId = this.layer.getGlobalId(); // Id des Layers zu dem das Feature gehört
     this.setData(data);
     this.isEditable = false; // Feature ist gerade im Modus editierbar oder nicht
     this._isActive = false; // Feature is aktuell gerade ausgewählt, Style in Karte gändert und evtl. Popup offen oder nicht
@@ -78,7 +76,7 @@ export class Feature {
     return this.layer.hasEditiersperreAttribute && this.getDataValue(this.layer.editiersperreAttribute.get("name"));
   }
 
-  setEditable(editable) {
+  setEditable(editable: boolean) {
     if (editable) {
       console.log("Setze feature: %s editierbar.", this.id);
       this.editableLayer = kvm.controller.mapper.createEditable(this);
@@ -751,16 +749,4 @@ export class Feature {
     console.log("style: %o", style);
     return style;
   }
-
-  // setGeomFromData() {
-  //   //console.log('setGeomFromData');
-  //   const dataGeom = this.getDataValue(this.layer.settings.geometry_attribute);
-  //   if (dataGeom) {
-  //     //console.log('Setze geom des neuen Features mit data: %o', this.data);
-  //     this.geom = this.wkbToWkx(dataGeom);
-  //   }
-  //   this.newGeom = this.geom; // Aktuelle WKX-Geometry beim Editieren. Entspricht this.geom wenn das Feature neu geladen wurde und Geometrie in Karte, durch GPS oder Formular noch nicht geändert wurde.
-  //   //console.log('new feature newGeom: %o', this.newGeom);
-  //   //console.log('new feature geom: %o', this.geom);
-  // }
 }
