@@ -65,7 +65,7 @@ export class SelectAutoFormField extends AbstractField implements Field {
     this._oldValue = val;
     this._feature = f;
 
-    console.log("SelectFormField.setValue with value: " + val);
+    // console.log("SelectFormField.setValue with value: " + val);
     if (kvm.coalesce(val, "") == "" && this.settings.default) {
       val = this.settings.default;
     }

@@ -32,7 +32,7 @@ export class TextfeldFormField extends AbstractField {
   }
 
   async setValue(f: Feature, val: string) {
-    console.log("TextFormField.setValue with value: " + val);
+    // console.log("TextFormField.setValue with value: " + val);
     this._oldValue = val;
     this._feature = f;
     if (kvm.coalesce(val, "") == "" && this.attr.settings.default) {

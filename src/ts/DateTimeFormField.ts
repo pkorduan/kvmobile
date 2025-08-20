@@ -34,7 +34,7 @@ export class DateTimeFormField extends AbstractField implements Field {
   }
 
   async setValue(f: Feature, val) {
-    console.log("DateTimeFormField " + this.attr.settings.name + " setValue with value: " + JSON.stringify(val));
+    // console.log("DateTimeFormField " + this.attr.settings.name + " setValue with value: " + JSON.stringify(val));
 
     this._value = val;
     this._oldValue = val;
