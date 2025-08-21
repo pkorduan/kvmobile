@@ -429,7 +429,7 @@ export class LayerCtrl extends Control {
     const type = obj?.overlay ? (e.type === "add" ? "overlayadd" : "overlayremove") : e.type === "add" ? "baselayerchange" : null;
 
     if (type) {
-      this._map.fire(type, obj);
+      this._map?.fire(type, obj);
     }
   }
 
@@ -445,7 +445,7 @@ export class LayerCtrl extends Control {
 
   _addItem(obj) {
     const label = document.createElement("label");
-    const checked = this._map.hasLayer(obj.layer);
+    const checked = this._map?.hasLayer(obj.layer);
     let input: HTMLInputElement;
 
     if (obj.overlay) {
@@ -476,7 +476,9 @@ export class LayerCtrl extends Control {
     const container = obj.overlay ? this._overlaysList : this._baseLayersList;
     container.appendChild(label);
 
-    this._checkDisabledLayers();
+    if (this._map) {
+      this._checkDisabledLayers();
+    }
     return label;
   }
 

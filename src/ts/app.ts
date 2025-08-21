@@ -1086,6 +1086,23 @@ export class Kvm extends PropertyChangeSupport {
     this.store.clear();
     this.store.setItem("configName", configName);
 
+    const foundConfiguration = configurations.find(function (c) {
+      return c.name === configName;
+    });
+    kvm.config = foundConfiguration || configurations[0];
+    await this.fire(new PropertyChangeEvent(this, Kvm.EVENTS.ACTIVE_CONFIGURATION_CHANGED, oldconfigName, configName));
+
+    this.controls.layerCtrl?.remove();
+    this.controls.layerCtrl = null;
+    if (this.map) {
+      this.map.eachLayer((l) => {
+        l.remove();
+      });
+      this.map.remove();
+    }
+    this.map = null;
+    this.initMap();
+
     // const stelle = new Stelle();
     // if (configName) {
     //   const foundConfiguration = configurations.find(function (c) {
@@ -1098,7 +1115,7 @@ export class Kvm extends PropertyChangeSupport {
     //   stelle.settings.login_name = this.getConfigurationOption("kvwmapServerLoginName");
     //   stelle.saveToStore();
     // }
-    await this.fire(new PropertyChangeEvent(this, Kvm.EVENTS.ACTIVE_CONFIGURATION_CHANGED, oldconfigName, configName));
+
     PanelEinstellungen.show("server");
   }
 
@@ -1450,6 +1467,7 @@ export class Kvm extends PropertyChangeSupport {
   initBackgroundLayers() {
     // console.log('initBackgroundLayers');
     try {
+      this.backgroundLayers = [];
       const backgroundLayerSettings = this.getBackgroundLayerSettings();
       for (let i = 0; i < backgroundLayerSettings.length; ++i) {
         try {

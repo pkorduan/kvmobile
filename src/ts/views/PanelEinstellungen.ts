@@ -392,6 +392,7 @@ export class Server extends PanelEinstellungen {
       kvm.msg(errMsg);
       console.log(errMsg, 1);
     }
+    sperrBildschirm.close();
   }
 
   // TODO <i class="fa fa-eye" aria-hidden="true" onclick="this.classList.toggle('fa-eye'); this.classList.toggle('fa-eye-slash'); document.getElementById('kvwmapServerPasswortField').type = (document.getElementById('kvwmapServerPasswortField').type === 'text' ? 'password' : 'text');"></i><br>
