@@ -165,7 +165,9 @@ export async function resolveLocalFileSystemURL(url: string) {
         resolve(entry);
       },
       (error) => {
-        reject(error);
+        console.info(`could not find entry for "${url}"`);
+        resolve(null);
+        // reject(error);
       }
     );
   });

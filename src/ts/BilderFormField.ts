@@ -6,7 +6,7 @@ import { kvm } from "./app";
 import { Attribute, AttributeSetting } from "./Attribute";
 import { Feature } from "./Feature";
 import { AbstractField, Field } from "./Field";
-import { resolveLocalFileSystemURL, confirm, createHtmlElement, fileExists, getWebviewUrl } from "./Util";
+import { resolveLocalFileSystemURL, confirm, createHtmlElement, fileExists, getWebviewUrl, alertOverlay } from "./Util";
 
 export class BilderFormField extends AbstractField {
   images_div_id: string;
@@ -104,28 +104,36 @@ export class BilderFormField extends AbstractField {
       const images = kvm.removeBrackes(val).split(",");
       console.log("images: %s", JSON.stringify(images));
       const fragment = new DocumentFragment();
+      const messages: string[] = [];
       for (let i = 0; i < images.length; i++) {
         const remoteFile = kvm.removeQuotas(images[i]);
         const localFile = kvm.removeOriginalName(kvm.serverToLocalPath(remoteFile));
         console.log("images[" + i + "]: %s", remoteFile);
-
         try {
           const fileEntry = await resolveLocalFileSystemURL(localFile);
-          console.log("Datei " + fileEntry.toURL() + " existiert.");
-          try {
+          if (fileEntry) {
+            console.log("Datei " + fileEntry.toURL() + " existiert.");
             fragment.appendChild(await this._createImage(fileEntry.nativeURL));
-          } catch (ex) {
-            console.error(ex);
+          } else {
+            fragment.appendChild(await this._createImage(null, remoteFile));
           }
         } catch (ex) {
+          messages.push(`Konnte Bild "${remoteFile}" nicht laden. ${ex.message}`);
           console.info("Datei " + localFile + " existiert nicht!");
-          fragment.appendChild(await this._createImage("img/no_image.png", remoteFile));
+          try {
+            fragment.appendChild(await this._createImage(null, remoteFile));
+          } catch {
+            messages.push(`Konnte kein leeres Bild für das Bild ${remoteFile} laden`);
+          }
           if (navigator.onLine) {
             kvm.getActiveLayer().downloadImage(localFile, remoteFile);
           }
         }
       }
       this.imagesDiv.replaceChildren(fragment);
+      if (messages?.length) {
+        alertOverlay("Fehler beim Laden von Bildern\n" + messages.join("\n"));
+      }
     }
   }
 
@@ -158,11 +166,21 @@ export class BilderFormField extends AbstractField {
    * Images not downloaded yet to the device are default no_image.png
    * otherwise src is equal to name
    */
-  private async _createImage(nativeURL: string, name = ""): Promise<HTMLElement> {
+  private async _createImage(nativeURL: string = "/img/no_image.png", name = ""): Promise<HTMLElement> {
     console.log("BilderFormField.addImage", nativeURL, name);
     name = name == "" ? nativeURL : name;
     console.log("BilderFormField: Add Image with src: %s and name: %s", nativeURL, name);
-    const webviewUrl = await getWebviewUrl(nativeURL);
+    let webviewUrl;
+    if (nativeURL !== "/img/no_image.png") {
+      try {
+        webviewUrl = await getWebviewUrl(nativeURL);
+      } catch (error) {
+        throw new Error(`Bild ${nativeURL} konnte nicht geladen werden. ${error.message}`);
+      }
+    } else {
+      webviewUrl = "/img/no_image.png";
+    }
+
     // const url = await getFileUrl(src);
 
     // const src=webviewUrl;
@@ -193,13 +211,13 @@ export class BilderFormField extends AbstractField {
         cordova.plugins.fileOpener2.open(nativeURL, "image/jpeg", {
           error: async (e) => {
             alert("Fehler beim Laden der Datei '" + nativeURL + "'. Fehler: " + e.status);
-            if (await confirm("Bild Löschen?", null, "ja", "nein")) {
+            if (await confirm("Bild Löschen?", "Löschen bestätigen", "ja", "nein")) {
               this.dropImage(imgDiv);
             }
           },
           success: async () => {
             console.log("Datei " + webviewUrl + " erfolgreich geöffnet.");
-            if (await confirm("Bild Löschen?", null, "ja", "nein")) {
+            if (await confirm("Bild Löschen?", "Löschen bestätigen", "ja", "nein")) {
               this.dropImage(imgDiv);
             }
           },
@@ -215,8 +233,8 @@ export class BilderFormField extends AbstractField {
 
     val = val == null ? kvm.addBraces(newImg) : kvm.addBraces(kvm.removeBrackes(val) + "," + newImg);
     this._value = val;
-    this.fireChanged();
     this.hiddenElement.value = val;
+    this.fireChanged();
     // this.hiddenElement.trigger("change");
     return val;
   }

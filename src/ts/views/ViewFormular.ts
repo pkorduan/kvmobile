@@ -132,7 +132,11 @@ export class ViewFormular extends View {
       if (!hasVisibleItems()) {
         attrGroupBody.parentElement.style.display = "none";
       } else {
-        attrGroupBody.parentElement.style.display = "";
+        if (attrGroupBody?.parentElement) {
+          attrGroupBody.parentElement.style.display = "";
+        } else {
+          console.error("attrGroupBody?.parentElement is undefined");
+        }
       }
     }
   }

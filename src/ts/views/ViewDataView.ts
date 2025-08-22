@@ -129,7 +129,7 @@ export class ViewDataView extends View {
         this._createDataView(f.layer);
         await f.layer.loadFeatureToView(f, { editable: false });
       } catch (ex) {
-        await Util.showError("Fehler beim Aktivieren des Features im Formular", ex);
+        await Util.showError("Fehler beim Aktivieren des Features in der DataView", ex);
       }
     }
   }
