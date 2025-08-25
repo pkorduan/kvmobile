@@ -1398,12 +1398,14 @@ export class DeviceInfos extends PanelEinstellungen {
     this.init();
   }
   async init() {
-    (<any>cordova).getAppVersion.getVersionNumber((versionNumber) => {
-      document.getElementById("cordovaAppVersion").innerHTML = versionNumber;
-      document.title = "kvmobile " + versionNumber;
-      kvm.versionNumber = versionNumber;
-    });
     document.getElementById("deviceCordova").innerHTML = device.cordova;
+    // const versionNr = await cordova.getAppVersion.getVersionNumber();
+    document.getElementById("cordovaAppVersion").innerHTML = kvm.versionNumber;
+    // (versionNumber) => {
+    //   document.getElementById("cordovaAppVersion").innerHTML = versionNumber;
+    //   document.title = "kvmobile " + versionNumber;
+    //   kvm.versionNumber = versionNumber;
+    // }
     document.getElementById("deviceModel").innerHTML = device.model;
     document.getElementById("devicePlatform").innerHTML = device.platform;
     document.getElementById("deviceUuid").innerHTML = device.uuid;

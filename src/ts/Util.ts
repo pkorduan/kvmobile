@@ -49,11 +49,14 @@ export function listFiles(dir: string) {
 }
 
 /**
+ * Description placeholder
  *
- * @param filePath deviceFilePath oder FileUrl
- * @returns
+ * @export
+ * @async
+ * @param {string} filePath
+ * @returns {Promise<string|null>}
  */
-export async function getWebviewUrl(filePath: string): Promise<string> {
+export async function getWebviewUrl(filePath: string): Promise<string | null> {
   // console.log("getFileUrl: ", filePath);
 
   //   listFiles(filePath.substring(0, filePath.lastIndexOf("/")));
@@ -73,7 +76,7 @@ export async function getWebviewUrl(filePath: string): Promise<string> {
       },
       (err) => {
         console.error("getFileUrl(" + filePath + ")=>error: ", err);
-        reject(new Error(`Fehler beim Auflösen der LocalFileSystemURL ${filePath}`, { cause: err }));
+        resolve(null);
       }
     );
   });
@@ -157,7 +160,16 @@ export async function tableExists(db: SQLitePlugin.Database, tablename: string):
   });
 }
 
-export async function resolveLocalFileSystemURL(url: string) {
+/**
+ * wenn die URL aufgelöst werden konnte, gibt die Funktion einen Promise mit dem entsprechenden Entry (FileEntry) zurück
+ * sonst einen Promise<null>
+ *
+ * @export
+ * @async
+ * @param {string} url
+ * @returns {Promise<Entry>}
+ */
+export async function resolveLocalFileSystemURL(url: string): Promise<Entry> {
   return new Promise<Entry>((resolve, reject) => {
     window.resolveLocalFileSystemURL(
       url,

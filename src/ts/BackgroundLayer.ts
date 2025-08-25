@@ -14,8 +14,12 @@ export async function prepareBackgrounLayer() {
   const idx = glypsUrl.indexOf("{");
   const dir = glypsUrl.substring(0, idx);
   const webViewUrl = await getWebviewUrl(dir);
-  maplibreStyle.glyphs = webViewUrl + glypsUrl.substring(idx);
-  // console.log("maplibreStyle.glyphs=" + maplibreStyle.glyphs);
+  if (webViewUrl) {
+    maplibreStyle.glyphs = webViewUrl + glypsUrl.substring(idx);
+    // console.log("maplibreStyle.glyphs=" + maplibreStyle.glyphs);
+  } else {
+    throw new Error(`Das Verzeichnis für die Glyphs ${glypsUrl} konnte nicht aufgelöst werden (siehe mapLibreStyles)`);
+  }
   return true;
 }
 

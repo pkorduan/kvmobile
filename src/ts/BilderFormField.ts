@@ -166,14 +166,18 @@ export class BilderFormField extends AbstractField {
    * Images not downloaded yet to the device are default no_image.png
    * otherwise src is equal to name
    */
-  private async _createImage(nativeURL: string = "/img/no_image.png", name = ""): Promise<HTMLElement> {
+  private async _createImage(nativeURL: string, name = ""): Promise<HTMLElement> {
     console.log("BilderFormField.addImage", nativeURL, name);
-    name = name == "" ? nativeURL : name;
+    nativeURL = nativeURL || "/img/no_image.png";
+    name = name || nativeURL;
     console.log("BilderFormField: Add Image with src: %s and name: %s", nativeURL, name);
     let webviewUrl;
     if (nativeURL !== "/img/no_image.png") {
       try {
         webviewUrl = await getWebviewUrl(nativeURL);
+        if (!webviewUrl) {
+          webviewUrl = "/img/no_image.png";
+        }
       } catch (error) {
         throw new Error(`Bild ${nativeURL} konnte nicht geladen werden. ${error.message}`);
       }

@@ -204,7 +204,8 @@ export class Kvm extends PropertyChangeSupport {
       const txt = await response.text();
       const regex = /href="k[^"]*"/g;
       const found = txt.match(regex);
-      found.sort((a, b) => {
+
+      const sortFct = (a: string, b: string) => {
         const av = a.match(/\d+/g);
         const bv = b.match(/\d+/g);
         if (av[0] !== bv[0]) {
@@ -217,12 +218,14 @@ export class Kvm extends PropertyChangeSupport {
         if (av[2] !== bv[2]) {
           return parseInt(av[2]) < parseInt(bv[2]) ? -1 : 1;
         }
-      });
+      };
+
+      found.sort(sortFct);
       const lastServerVersion = found[found.length - 1];
       const latestVersionNumber = lastServerVersion.match(/\d+\.\d+\.\d+/)[0];
 
-      // console.error("latestVersionNumber=" + latestVersionNumber + "   currentVersion=" + this.versionNumber);
-      if (latestVersionNumber != this.versionNumber) {
+      console.error("latestVersionNumber=" + latestVersionNumber + "   currentVersion=" + this.versionNumber + " " + (sortFct(latestVersionNumber, this.versionNumber) > 0));
+      if (latestVersionNumber != this.versionNumber && sortFct(latestVersionNumber, this.versionNumber) > 0) {
         const runLater = await Util.confirm(`Es ist eine neue App-Version ${latestVersionNumber} vorhanden.`, "Update-Info", "Später", "zur Download-Seite");
         if (!runLater) {
           window.open(kvm.appUrl, "_system");
@@ -827,6 +830,8 @@ export class Kvm extends PropertyChangeSupport {
    */
   async startApplication() {
     console.info("startApplication");
+    this.versionNumber = await cordova.getAppVersion.getVersionNumber();
+    document.title = "kvmobile " + this.versionNumber;
     await prepareBackgrounLayer();
     this.store = window.localStorage;
 

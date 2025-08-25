@@ -16,10 +16,18 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 
 # Change log
 
+## 1.20.4
+
+- Bugfixes
+  - Fehler beim Laden von Bildern, die nur uf dem Server liegen.
+
 ## 1.20.3
+
 - Features
   - Identifizierung ob es eine neue Version gibt an Hand der Versionsnummern der APK-Dateien auf der Webseite zum Download.
+
 ## 1.20.2
+
 - Bugfixes
   - Korrekte Anzeige Copyright
   - Korrektur beim Speichern von Datensätzen
@@ -47,12 +55,12 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
   - Anpassung des Sync-Modus auf sync_all für alle Layer
   - Anpassung zindex neuer Features
   - Bessere Ausgaber von Fehlermeldungen
-  - Deltas vom Client werden vom Server robuster behandelt. Falls es die uuid in der Tabelle bei Insert schon gibt oder bei Update und Delete nicht gibt werden die Deltas auf dem Server ignoriert. Außerdem werden bei einem Fehler nicht vorhandene Spalten gelöscht und die so korrigierten SQL noch mal ausgeführt als weiterer Versuch das Delta auf dem Server los zu werden. Der Client wird darüber aber noch nicht informiert. Falls sich der Layer aber geändert hat wird der Layer ja anschließend sowieso aktualisert und dann ist eine Attribut was vorher im Client vorhanden war aber auf dem Server nicht sowieso auch auf dem Client weg. Solche Indiskrepanzen führen nicht mehr zu Sync-Fehlern. 
+  - Deltas vom Client werden vom Server robuster behandelt. Falls es die uuid in der Tabelle bei Insert schon gibt oder bei Update und Delete nicht gibt werden die Deltas auf dem Server ignoriert. Außerdem werden bei einem Fehler nicht vorhandene Spalten gelöscht und die so korrigierten SQL noch mal ausgeführt als weiterer Versuch das Delta auf dem Server los zu werden. Der Client wird darüber aber noch nicht informiert. Falls sich der Layer aber geändert hat wird der Layer ja anschließend sowieso aktualisert und dann ist eine Attribut was vorher im Client vorhanden war aber auf dem Server nicht sowieso auch auf dem Client weg. Solche Indiskrepanzen führen nicht mehr zu Sync-Fehlern.
 
 ## 1.20.1
 
 - Bugfixes
-  - Eventhandler für Karteneinstellung Startposition anlegen und mapSettings im Store speichern nach dem setzen in der Variable mapSettings 
+  - Eventhandler für Karteneinstellung Startposition anlegen und mapSettings im Store speichern nach dem setzen in der Variable mapSettings
   - Beim ZoomTo Feature unterscheiden in panTo und flyTo jenachdem ob mit zoom oder ohne zum Feature gesprungen werden soll.
   - Wenn Attribute Null-Werte haben dürfen, in Auswahllisten eine leere Option anbieten um einen vorhergewählten Wert wieder auf keinen Wert abwählen zu können.
   - Eventhandler für Speichern von Features behoben

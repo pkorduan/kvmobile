@@ -90,7 +90,7 @@ export class DataViewField {
         for (let i = 0; i < images.length; i++) {
           const remoteFile = kvm.removeQuotas(images[i]);
           const localFile = kvm.removeOriginalName(kvm.serverToLocalPath(remoteFile));
-          const imgUrl = await getWebviewUrl(localFile);
+          const imgUrl = (await getWebviewUrl(localFile)) || "/img/no_image.png";
 
           const imgDiv = createHtmlElement("input", null, "img preview", {
             id: `preview_${this.get("index")}_${i}`,
