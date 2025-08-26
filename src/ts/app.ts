@@ -55,7 +55,7 @@ require("proj4leaflet");
 
 require("@maplibre/maplibre-gl-leaflet");
 
-type MapSettings = {
+export type MapSettings = {
   newPosSelect: any;
   minZoom: any;
   maxZoom: any;
@@ -111,8 +111,8 @@ export class Kvm extends PropertyChangeSupport {
 
   private _configName: string;
   private config: Configuration;
-  backgroundLayers: BackgroundLayer[] = [];
-  backgroundLayerSettings: BackgroundLayerSetting[];
+  // _backgroundLayers: BackgroundLayer[] = [];
+  _backgroundLayerSettings: BackgroundLayerSetting[];
   backgroundGeolocation: BackgroundGeolocation;
   isActive: boolean;
   // GpsIsOn: boolean = false;
@@ -224,7 +224,7 @@ export class Kvm extends PropertyChangeSupport {
       const lastServerVersion = found[found.length - 1];
       const latestVersionNumber = lastServerVersion.match(/\d+\.\d+\.\d+/)[0];
 
-      console.error("latestVersionNumber=" + latestVersionNumber + "   currentVersion=" + this.versionNumber + " " + (sortFct(latestVersionNumber, this.versionNumber) > 0));
+      console.info("latestVersionNumber=" + latestVersionNumber + "   currentVersion=" + this.versionNumber + " " + (sortFct(latestVersionNumber, this.versionNumber) > 0));
       if (latestVersionNumber != this.versionNumber && sortFct(latestVersionNumber, this.versionNumber) > 0) {
         const runLater = await Util.confirm(`Es ist eine neue App-Version ${latestVersionNumber} vorhanden.`, "Update-Info", "Später", "zur Download-Seite");
         if (!runLater) {
@@ -806,6 +806,10 @@ export class Kvm extends PropertyChangeSupport {
     return 0;
   }
 
+  clearStore() {
+    console.error("not implemented");
+  }
+
   /**
    * function do neccessary things when the application start
    * load several data, status and settings and update the GUI with up to date values
@@ -834,6 +838,12 @@ export class Kvm extends PropertyChangeSupport {
     document.title = "kvmobile " + this.versionNumber;
     await prepareBackgrounLayer();
     this.store = window.localStorage;
+    if (this.store.getItem("version") !== this.versionNumber) {
+      this.clearStore();
+      this.store.setItem("version", this.versionNumber);
+    }
+
+    console.info(`Konfiguration lt.store: ${kvm.store.getItem("configName")}`);
 
     const configName = (this._configName = kvm.store.getItem("configName") || "Standard");
     const foundConfiguration = configurations.find(function (c) {
@@ -922,14 +932,14 @@ export class Kvm extends PropertyChangeSupport {
       this.loadLogLevel();
       await this.openLogFile();
 
-      // this.loadDeviceData();
-      //    SyncStatus.load(this.store); ToDo: Wenn das nicht gebraucht wird auch in index.html löschen.
       this.networkStatus = NetworkStatus;
       this.gpsStatus = GpsStatus;
       // this.initConfigOptions();
       this.initMap();
-    } catch ({ name, message }) {
-      kvm.msg("Fehler beim initieren der Anwendungskomponenten! Fehlertyp: " + name + " Fehlermeldung: " + message);
+    } catch (ex) {
+      console.error(ex);
+      await Util.showError("Fehler bei der Initialisierung", ex);
+      // kvm.msg("Fehler beim initieren der Anwendungskomponenten! Fehlertyp: " + name + " Fehlermeldung: " + message);
     }
 
     let stelle: Stelle = null;
@@ -1042,7 +1052,7 @@ export class Kvm extends PropertyChangeSupport {
 
     this.initDeltaAnzeige();
 
-    this.checkForUpdate();
+    await this.checkForUpdate();
   }
 
   /**
@@ -1086,15 +1096,19 @@ export class Kvm extends PropertyChangeSupport {
    * @param configName reset
    */
   async setConfiguration(configName: string) {
+    console.error(`config changed ${this._configName} ${configName}`);
     const oldconfigName = this._configName;
     this._configName = configName;
     this.store.clear();
     this.store.setItem("configName", configName);
+    this.mapSettings = null;
+    this._backgroundLayerSettings = null;
 
     const foundConfiguration = configurations.find(function (c) {
       return c.name === configName;
     });
-    kvm.config = foundConfiguration || configurations[0];
+    this.config = foundConfiguration || configurations[0];
+    console.error(`config changed ${this._configName} ${configName}`, this.config);
     await this.fire(new PropertyChangeEvent(this, Kvm.EVENTS.ACTIVE_CONFIGURATION_CHANGED, oldconfigName, configName));
 
     this.controls.layerCtrl?.remove();
@@ -1126,19 +1140,16 @@ export class Kvm extends PropertyChangeSupport {
 
   initMap() {
     console.log("initialisiere backgroundLayers");
-    this.initBackgroundLayers();
 
-    // rtr removed
-    // const crs25833 = new L.Proj.CRS("EPSG:25833", "+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs", {
-    //     origin: [-464849.38, 6310160.14],
-    //     resolutions: [16384, 8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1],
-    // });
-    //this.myRenderer = new L.Canvas({ padding: 0.5, tolerance: 5 });
+    const backgroundLayers = this.initBackgroundLayers();
+
     this.myRenderer = new SVG();
+
     let activeBackgroundIdIndex = this.getConfigurationOption("activeBackgroundLayerId") || 0;
-    if (activeBackgroundIdIndex > this.backgroundLayers.length - 1) {
+    if (activeBackgroundIdIndex > backgroundLayers.length - 1) {
       activeBackgroundIdIndex = 0;
     }
+
     const map = new LMap("map", <any>{
       // crs: crs25833,
       editable: true,
@@ -1150,11 +1161,20 @@ export class Kvm extends PropertyChangeSupport {
         [this.mapSettings.south, this.mapSettings.west],
         [this.mapSettings.north, this.mapSettings.east],
       ],
-      layers: this.backgroundLayers[activeBackgroundIdIndex].leafletLayer,
+      layers: backgroundLayers[activeBackgroundIdIndex].leafletLayer,
       renderer: this.myRenderer,
     });
     map.on("addLayer", (evt) => {
       console.error("addLayer", evt);
+    });
+
+    map.addEventListener("baselayerchange", (ev) => {
+      const idx = backgroundLayers.findIndex((el) => el.leafletLayer === ev.layer);
+      if (idx >= 0) {
+        kvm.setConfigurationOption("activeBackgroundLayerId", idx);
+      } else {
+        kvm.setConfigurationOption("activeBackgroundLayerId", 0);
+      }
     });
 
     const fct = (evt: LayersControlEvent) => {
@@ -1214,10 +1234,10 @@ export class Kvm extends PropertyChangeSupport {
       kvm.mapHint("GPS-Tracking ausgeschaltet!");
     });
 
-    for (let i = 0; i < this.backgroundLayers.length; i++) {
+    for (let i = 0; i < backgroundLayers.length; i++) {
       // todo
       // baseMaps[`<span id="backgroundLayerSpan_${i}">${this.backgroundLayerSettings[i].label}</span>`] = this.backgroundLayers[i].leafletLayer;
-      baseMaps[this.backgroundLayerSettings[i].label] = this.backgroundLayers[i].leafletLayer;
+      baseMaps[this._backgroundLayerSettings[i].label] = backgroundLayers[i].leafletLayer;
     }
 
     // if (this.store.getItem("activeStelleId") && this.store.getItem(`stelleSettings_${this.store.getItem("activeStelleId")}`) != null) {
@@ -1469,35 +1489,36 @@ export class Kvm extends PropertyChangeSupport {
     kvm.store.setItem("mapSettings", JSON.stringify(mapSettings));
   }
 
-  initBackgroundLayers() {
+  initBackgroundLayers(): BackgroundLayer[] {
     // console.log('initBackgroundLayers');
+    const backgroundLayers: BackgroundLayer[] = [];
     try {
-      this.backgroundLayers = [];
       const backgroundLayerSettings = this.getBackgroundLayerSettings();
       for (let i = 0; i < backgroundLayerSettings.length; ++i) {
         try {
-          this.backgroundLayers.push(new BackgroundLayer(this.backgroundLayerSettings[i]));
+          backgroundLayers.push(new BackgroundLayer(backgroundLayerSettings[i]));
         } catch (error) {
           console.error(error);
-          kvm.msg("Fehler beim Einrichten des Hintergrundlayers: " + this.backgroundLayerSettings[i].label, error);
+          kvm.msg("Fehler beim Einrichten des Hintergrundlayers: " + backgroundLayerSettings[i].label, error);
         }
       }
+      return backgroundLayers;
     } catch (error) {
       console.error(error);
       kvm.msg("Fehler beim Einrichten der Hintergrundlayer: " + error);
-      return false;
+      return backgroundLayers;
     }
   }
 
   getBackgroundLayerSettings(): BackgroundLayerSetting[] {
-    if (!this.backgroundLayerSettings) {
-      this.backgroundLayerSettings = kvm.store.backgroundLayerSettings ? JSON.parse(kvm.store.getItem("backgroundLayerSettings")) : kvm.config.backgroundLayerSettings;
+    if (!this._backgroundLayerSettings) {
+      this._backgroundLayerSettings = kvm.store.backgroundLayerSettings ? JSON.parse(kvm.store.getItem("backgroundLayerSettings")) : kvm.config.backgroundLayerSettings;
     }
-    return this.backgroundLayerSettings;
+    return this._backgroundLayerSettings;
   }
 
   saveBackgroundLayerSettings(backgroundLayerSettings: any[]) {
-    this.backgroundLayerSettings = backgroundLayerSettings;
+    this._backgroundLayerSettings = backgroundLayerSettings;
     kvm.store.setItem("backgroundLayerSettings", JSON.stringify(backgroundLayerSettings));
   }
 
@@ -1819,14 +1840,14 @@ export class Kvm extends PropertyChangeSupport {
 
     // TODO rtr
 
-    this.map.addEventListener("baselayerchange", (ev) => {
-      const idx = this.backgroundLayers.findIndex((el) => el.leafletLayer === ev.layer);
-      if (idx >= 0) {
-        kvm.setConfigurationOption("activeBackgroundLayerId", idx);
-      } else {
-        kvm.setConfigurationOption("activeBackgroundLayerId", 0);
-      }
-    });
+    // this.map.addEventListener("baselayerchange", (ev) => {
+    //   const idx = backgroundLayers.findIndex((el) => el.leafletLayer === ev.layer);
+    //   if (idx >= 0) {
+    //     kvm.setConfigurationOption("activeBackgroundLayerId", idx);
+    //   } else {
+    //     kvm.setConfigurationOption("activeBackgroundLayerId", 0);
+    //   }
+    // });
 
     document.getElementById("deleteFeatureButton").addEventListener("click", () => {
       this.deleteFeatureButtonClicked();
@@ -1902,7 +1923,7 @@ export class Kvm extends PropertyChangeSupport {
                 // download the files in background and update the progress div
                 // confirm the finish
                 // hide the progress div and show the delete and update button
-                const bl = kvm.backgroundLayerSettings.filter(function (l) {
+                const bl = this.getBackgroundLayerSettings().filter(function (l) {
                   return String(l.layer_id) == offlineLayerId;
                 })[0];
                 const params = bl.params;

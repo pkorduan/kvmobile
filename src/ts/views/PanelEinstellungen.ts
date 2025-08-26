@@ -1155,18 +1155,25 @@ export class Karteneinstellung extends PanelEinstellungen {
       kvm.setMapSetting("startZoom", mapSettings_startZoom.value);
     });
 
-    const mapSettings = kvm.getMapSettings();
+    this.update();
 
-    newPosSelect.value = mapSettings.newPosSelect;
-    mapSettings_west.value = mapSettings.west;
-    mapSettings_south.value = mapSettings.south;
-    mapSettings_east.value = mapSettings.east;
-    mapSettings_north.value = mapSettings.north;
-    mapSettings_minZoom.value = mapSettings.minZoom;
-    mapSettings_maxZoom.value = mapSettings.maxZoom;
-    mapSettings_startZoom.value = mapSettings.startZoom;
-    mapSettings_startCenterLat.value = mapSettings.startCenterLat;
-    mapSettings_startCenterLon.value = mapSettings.startCenterLon;
+    kvm.addEventListener(Kvm.EVENTS.ACTIVE_CONFIGURATION_CHANGED, () => {
+      this.update();
+    });
+  }
+
+  update() {
+    const mapSettings = kvm.getMapSettings();
+    this.newPosSelect.value = mapSettings.newPosSelect;
+    this.mapSettings_west.value = mapSettings.west;
+    this.mapSettings_south.value = mapSettings.south;
+    this.mapSettings_east.value = mapSettings.east;
+    this.mapSettings_north.value = mapSettings.north;
+    this.mapSettings_minZoom.value = mapSettings.minZoom;
+    this.mapSettings_maxZoom.value = mapSettings.maxZoom;
+    this.mapSettings_startZoom.value = mapSettings.startZoom;
+    this.mapSettings_startCenterLat.value = mapSettings.startCenterLat;
+    this.mapSettings_startCenterLon.value = mapSettings.startCenterLon;
   }
 }
 
@@ -1265,14 +1272,15 @@ export class HintergrundLayer extends PanelEinstellungen {
 
     // TODO
     changeBackgroundLayerSettingsButton.addEventListener("click", () => {
-      kvm.backgroundLayerSettings.forEach((l, i) => {
+      const backgroundLayerSettings = kvm.getBackgroundLayerSettings();
+      backgroundLayerSettings.forEach((l, i) => {
         l.url = <string>$("#backgroundLayerURL_" + i).val();
         if (l.params.layers) {
           l.params.layers = <string>$("#backgroundLayerLayer_" + i).val();
         }
       });
-      console.log("Neue BackgroundLayerSettings: ", kvm.backgroundLayerSettings);
-      kvm.saveBackgroundLayerSettings(kvm.backgroundLayerSettings);
+      console.log("Neue BackgroundLayerSettings: ", backgroundLayerSettings);
+      kvm.saveBackgroundLayerSettings(backgroundLayerSettings);
       kvm.msg("Einstellung zu Hintergrundlayern übernommen. Diese werden erst nach einem Neustart der Anwendung wirksam!");
     });
 

@@ -16,10 +16,15 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 
 # Change log
 
+## 1.20.5
+
+- Bugfixes
+  - Fehler beim Wechseln der Stelle.
+
 ## 1.20.4
 
 - Bugfixes
-  - Fehler beim Laden von Bildern, die nur uf dem Server liegen.
+  - Fehler beim Laden von Bildern, die nur auf dem Server liegen.
 
 ## 1.20.3
 

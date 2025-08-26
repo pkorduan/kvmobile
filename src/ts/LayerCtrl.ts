@@ -150,7 +150,7 @@ export class LayerCtrl extends Control {
       }
       if (layer) {
         this._activeLayer = layer;
-        if (!this._map.hasLayer(layer.layerGroup)) {
+        if (!this._map?.hasLayer(layer.layerGroup)) {
           this._map.addLayer(layer.layerGroup);
         }
         this.markLayer(this._activeLayer, true);
@@ -196,12 +196,11 @@ export class LayerCtrl extends Control {
   }
 
   onRemove() {
+    console.error("onRemove");
     this._map.off("zoomend", this._checkDisabledLayers, this);
 
     for (let i = 0; i < this._layers.length; i++) {
-      this._layers[i].layer.off("add remove", (evt) => {
-        this._onLayerChange(evt);
-      });
+      this._layers[i].layer.off("add remove", this._onLayerChange, this);
     }
   }
 
@@ -222,9 +221,7 @@ export class LayerCtrl extends Control {
   // @method removeLayer(layer: Layer): this
   // Remove the given layer from the control.
   removeLayer(layer: LeafletLayer) {
-    layer.off("add remove", (evt) => {
-      this._onLayerChange(evt);
-    });
+    layer.off("add remove", this._onLayerChange, this);
 
     const obj = this._getLayer(Util.stamp(layer));
     if (obj) {
@@ -352,9 +349,7 @@ export class LayerCtrl extends Control {
   }
 
   private _addLayer(layer: LeafletLayer, name: string, overlay?: boolean) {
-    layer.on("add remove", (evt) => {
-      this._onLayerChange(evt);
-    });
+    layer.on("add remove", this._onLayerChange, this);
 
     this._layers.push({
       layer: layer,
