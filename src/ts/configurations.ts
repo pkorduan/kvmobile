@@ -1079,6 +1079,7 @@ export const configurations: Configuration[] = [
     logLevel: 4,
     debug: true,
     fontSize: "24px",
+    autoSync: true,
     minTrackDistance: 5,
     kvwmapServerId: 1,
     cameraOptionsQuality: 75,

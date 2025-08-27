@@ -150,7 +150,7 @@ export class LayerCtrl extends Control {
       }
       if (layer) {
         this._activeLayer = layer;
-        if (!this._map?.hasLayer(layer.layerGroup)) {
+        if (this._map && !this._map.hasLayer(layer.layerGroup)) {
           this._map.addLayer(layer.layerGroup);
         }
         this.markLayer(this._activeLayer, true);

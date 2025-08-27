@@ -340,7 +340,13 @@ export class Server extends PanelEinstellungen {
       const fileEntry = await download(url, cordova.file.dataDirectory + "stellen.json");
       txt = await readFileAsString(fileEntry);
     } catch (err) {
-      const errMsg = "Fehler beim Download der Stellendaten code: " + err.code + " status: " + err.http_status + " Prüfen Sie ob der Nutzer vom dem Gerät aus mit seiner IP auf die Stelle zugreifen darf und die Domain in config.xml eingetragen ist.";
+      let errMsg: string;
+      if (err?.cause?.http_status) {
+        const httpStatus = err.cause.http_status;
+        errMsg = "Fehler beim Download der Stellendaten code: " + httpStatus + ".\nPrüfen Sie ob der Nutzer vom dem Gerät aus mit seiner IP auf die Stelle zugreifen darf und die Domain in config.xml eingetragen ist.";
+      } else {
+        errMsg = "Fehler beim Download der Stellendaten.\nPrüfen Sie ob der Nutzer vom dem Gerät aus mit seiner IP auf die Stelle zugreifen darf und die Domain in config.xml eingetragen ist.";
+      }
       console.error(err);
       kvm.msg(errMsg);
     }

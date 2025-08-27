@@ -16,6 +16,11 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 
 # Change log
 
+## 1.20.6
+
+- Bugfixes
+  - Setting autosync Layer
+
 ## 1.20.5
 
 - Bugfixes
