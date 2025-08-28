@@ -16,8 +16,11 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 
 # Change log
 
-## 1.20.6
+## 1.20.7
+- Features
+  - Separater Luftbildlayer für die Konfiguration Streuobst KOB
 
+## 1.20.6
 - Bugfixes
   - Setting autosync Layer
 
