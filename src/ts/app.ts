@@ -1292,6 +1292,7 @@ export class Kvm extends PropertyChangeSupport {
       position: "topright",
       setView: "untilPanOrZoom",
       keepCurrentZoomLevel: false,
+      showPopup: true,
       flyTo: true,
       clickBehavior: {
         inView: "stop",

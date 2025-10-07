@@ -196,7 +196,7 @@ export class Layer extends PropertyChangeSupport {
       this.runningSyncVersion = this.get("syncVersion");
     }
     const pane = kvm.map.createPane(this.title);
-    pane.style.zIndex = String(400 + Layer._lastZIndex++);
+    pane.style.zIndex = String(601 + Layer._lastZIndex++);
     this.layerGroup = new LayerGroup([], {
       attribution: this.get("attribution"),
       pane: this.title,
@@ -2201,6 +2201,10 @@ export class Layer extends PropertyChangeSupport {
             oldVal = "";
           }
 
+          if (attr.settings.type === "geometry") {
+            oldVal = oldVal.toLowerCase();
+            newVal = newVal.toLowerCase();
+          }
           console.log("Vergleiche " + attr.get("form_element_type") + " Attribut: " + attrName + " " + oldVal + " (" + typeof oldVal + ") vs. " + newVal + "(" + typeof newVal + "))");
 
           if (oldVal != newVal) {
