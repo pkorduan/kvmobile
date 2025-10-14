@@ -16,21 +16,16 @@ export const FileUtils = {
   //     }, kvm.controller.files.onErrorReadFile);
   // },
 
-  writeFile: function (fileEntry: FileEntry, dataObj: Blob | string | ArrayBuffer, isAppend: boolean) {
+  writeFile: function (fileEntry: FileEntry, dataObj: Blob | string | ArrayBuffer, isAppend: boolean): Promise<Error | void> {
     // Create a FileWriter object for our FileEntry (log.txt).
     // console.log(`writeFile nativeURL=${fileEntry.nativeURL} fullPath=${fileEntry.fullPath} toInternalURL=${fileEntry.toInternalURL()}`, fileEntry);
-    return new Promise<FileEntry>((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       (<FileEntry>fileEntry).createWriter(function (fileWriter) {
-        // fileWriter.onwrite = function (ev: ProgressEvent) {
-        //   console.log(`Successful written file ${fileEntry.fullPath} `);
-        //   // kvm.controller.files.readFile(fileEntry);
-        // };
         fileWriter.onerror = function (e: ProgressEvent) {
-          const msg = `onerror aufgerufen in writeFiles in files.ty: ${JSON.stringify(e)}`;
+          const msg = `Could not write: ${fileEntry.fullPath}`;
           console.error(msg, e);
           reject({ message: `Fehler in writeFile fullPath: ${fileEntry.fullPath} `, errror: e });
         };
-
         // If we are appending data to file, go to the end of the file.
         if (isAppend) {
           try {
@@ -41,6 +36,7 @@ export const FileUtils = {
           }
         }
         fileWriter.write(dataObj);
+        resolve();
       });
     });
   },

@@ -16,6 +16,12 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 
 # Change log
 
+## 1.20.9
+
+- Feature
+  - Separater Luftbildlayer für die Konfiguration Streuobst KOB vom Bundesamtes für Kartographie und Geodäsie (BKG)
+  - Signierung der app über keystore
+
 ## 1.20.8
 
 - Bugfixes
