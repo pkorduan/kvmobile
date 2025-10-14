@@ -8,7 +8,7 @@
     "start": "tsc && cordova run browser",
     "build": "webpack --config webpack.prod.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "buildAndroid": "webpack --config webpack.prod.js && cordova build -d android"
+    "buildAndroid": "webpack --config webpack.prod.js && cordova build --buildConfig=build.json -d android"
   },
   "author": "Peter Korduan",
   "license": "GPL 3.0",
