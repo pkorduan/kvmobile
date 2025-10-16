@@ -37,6 +37,8 @@ import { ViewFormular } from "./views/ViewFormular";
 import { LayerCtrl } from "./LayerCtrl";
 import * as Util from "./Util";
 
+import ApkUpdater from "cordova-plugin-apkupdater";
+
 import { Layer as LeafletLayer } from "leaflet";
 
 require("leaflet");
@@ -202,6 +204,7 @@ export class Kvm extends PropertyChangeSupport {
         throw new Error(`Die Seite ${kvm.appUrl} zur Ermittlung der letzten Programmversion konnte nicht abgefragt werden. Status-code: ${response.status} ${response.statusText}`);
       }
       const txt = await response.text();
+
       const regex = /href="k[^"]*"/g;
       const found = txt.match(regex);
 
@@ -225,10 +228,34 @@ export class Kvm extends PropertyChangeSupport {
       const latestVersionNumber = lastServerVersion.match(/\d+\.\d+\.\d+/)[0];
 
       console.info("latestVersionNumber=" + latestVersionNumber + "   currentVersion=" + this.versionNumber + " " + (sortFct(latestVersionNumber, this.versionNumber) > 0));
-      if (latestVersionNumber != this.versionNumber && sortFct(latestVersionNumber, this.versionNumber) > 0) {
-        const runLater = await Util.confirm(`Es ist eine neue App-Version ${latestVersionNumber} vorhanden.`, "Update-Info", "Später", "zur Download-Seite");
+      const version = await ApkUpdater.getInstalledVersion();
+      console.info("version", version, lastServerVersion);
+
+      let canRequestPackageInstalls = await ApkUpdater.canRequestPackageInstalls();
+      console.info("canRequestPackageInstalls: " + canRequestPackageInstalls);
+      if (!canRequestPackageInstalls) {
+        const vv = await ApkUpdater.openInstallSetting();
+        console.info("vv: " + vv);
+        canRequestPackageInstalls = await ApkUpdater.canRequestPackageInstalls();
+        console.info("canRequestPackageInstalls2: " + canRequestPackageInstalls);
+      }
+      try {
+        const link = kvm.appUrl + lastServerVersion.split('"')[1];
+        console.info(`try download ${link}.`);
+        const downlodResult = await ApkUpdater.download(link);
+        console.info(`downloaded`, downlodResult);
+      } catch (e) {
+        console.error(e.message + "\n" + e.stack);
+      }
+
+      // if (latestVersionNumber != this.versionNumber && sortFct(latestVersionNumber, this.versionNumber) > 0) {
+      if (latestVersionNumber != this.versionNumber) {
+        // const runLater = await Util.confirm(`Es ist eine neue App-Version ${latestVersionNumber} vorhanden.`, "Update-Info", "Später", "zur Download-Seite");
+        const runLater = await Util.confirm(`Es ist eine neue App-Version ${latestVersionNumber} vorhanden.`, "Update-Info", "Später", "Installieren");
         if (!runLater) {
-          window.open(kvm.appUrl, "_system");
+          // window.open(kvm.appUrl, "_system");
+          const installResult = await ApkUpdater.install();
+          console.info("installResult", installResult);
         }
       }
     } catch (ex) {
@@ -835,6 +862,7 @@ export class Kvm extends PropertyChangeSupport {
   async startApplication() {
     console.info("startApplication");
     this.versionNumber = await cordova.getAppVersion.getVersionNumber();
+
     document.title = "kvmobile " + this.versionNumber;
     await prepareBackgrounLayer();
     this.store = window.localStorage;
