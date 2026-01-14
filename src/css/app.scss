@@ -13,3 +13,7 @@
 @import "../../node_modules/leaflet-easybutton/src/easy-button.css";
 @import "../../node_modules/maplibre-gl/dist/maplibre-gl.css";
 @import "./style.scss";
+
+.leaflet-marker-pane {
+  z-index: 700;
+}

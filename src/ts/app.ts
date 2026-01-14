@@ -1646,6 +1646,7 @@ export class Kvm extends PropertyChangeSupport {
     sperrBildschirm.show();
     try {
       sperrBildschirm.show("neues Objekt wird erzeugt");
+      // debugger;
       const layer = this._activeLayer;
       const newFeature = await layer.createNewFeature();
       await this.editFeature(newFeature);

@@ -16,6 +16,11 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 
 # Change log
 
+## 1.20.10
+
+- Bugfixes
+  - Objekte waren nicht verschiebbar, da sie u.U. unterhalb einer Fläche lagen
+
 ## 1.20.9
 
 - Feature
