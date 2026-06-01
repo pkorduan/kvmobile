@@ -104,7 +104,7 @@ export class Menu {
             }
           },
           "Eingabeformular schließen",
-          ["ja", "nein"]
+          ["ja", "nein"],
         );
       } else {
         this.app.cancelEditFeature();
@@ -141,8 +141,12 @@ export class Menu {
   showDefaultMenu() {
     // TODO fff
     const items = [this.showSettings, this.showFeatureList, this.showMap];
-    if (this.app.getActiveLayer()?.hasEditPrivilege && !this.app.getActiveLayer().createOnlyByParent()) {
-      items.push(this.newFeatureButton);
+    try {
+      if (this.app.getActiveLayer()?.hasEditPrivilege && !this.app.getActiveLayer().createOnlyByParent()) {
+        items.push(this.newFeatureButton);
+      }
+    } catch (ex) {
+      console.error(ex);
     }
     this.showItems(items);
   }

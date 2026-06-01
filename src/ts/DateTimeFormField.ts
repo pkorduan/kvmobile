@@ -1,7 +1,7 @@
-import { Attribute, AttributeSetting } from "./Attribute";
+import { Attribute } from "./Attribute";
 import { AbstractField, Field } from "./Field";
 import { kvm } from "./app";
-import { createHtmlElement } from "./Util";
+import { createHtmlElement, now } from "./Util";
 import { Feature } from "./Feature";
 
 /**
@@ -66,7 +66,7 @@ export class DateTimeFormField extends AbstractField implements Field {
 
   getAutoValue(f: Feature) {
     console.log("DateTimeFormField.getAutoValue");
-    return kvm.now("T", "");
+    return now("T", "");
   }
 
   toISO(datetime: string) {

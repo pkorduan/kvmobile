@@ -2,6 +2,7 @@
 
 import type { FingerprintAuth as FingerprintAuthI, FingerprintAuthConfig, FingerprintAuthEncryptSuccess, FingerprintAuthIsAvailableSuccess, IFingerprintAuthErrors } from "cordova-plugin-android-fingerprint-auth";
 import { LatLngTuple } from "leaflet";
+import { kvm } from "./app";
 declare var FingerprintAuth: typeof FingerprintAuthI;
 
 // export type AsyncFunction<T> = (params?: any) => Promise<T>;
@@ -38,13 +39,54 @@ export function listFiles(dir: string) {
           },
           (err) => {
             console.error("Error in Listfiles.readEntries", err);
-          }
+          },
         );
       }
     },
     function (err) {
       console.error("Error in Listfiles", err);
-    }
+    },
+  );
+}
+
+export function listFilesF(dir: string) {
+  window.resolveLocalFileSystemURL(
+    dir,
+    function (entry) {
+      // console.error("listFiles: " + dir);
+      if (entry.isDirectory) {
+        (<DirectoryEntry>entry).createReader().readEntries(
+          (fileSystemEntries) => {
+            let s = "dir: " + dir + " => " + entry.nativeURL;
+            let files = [];
+            let counts = 0;
+            const fct = (metaData: Metadata) => {
+              const fEntry = fileSystemEntries[counts];
+              const typ = fEntry.isDirectory ? "dir " : "file";
+              // s += "\n" + typ + "  " + fileSystemEntries[counts].name;
+              s += "\n" + typ + "  " + fileSystemEntries[counts].name + " " + metaData?.size + " " + metaData?.modificationTime;
+              counts++;
+              if (counts === fileSystemEntries.length) {
+                console.log(s);
+              }
+            };
+            for (let i = 0; i < fileSystemEntries.length; i++) {
+              const fEntry = fileSystemEntries[i];
+              const typ = fEntry.isDirectory ? "d" : "f";
+
+              fEntry.getMetadata(fct);
+            }
+            // console.log(s);
+          },
+          (err) => {
+            console.error("Error in Listfiles.readEntries", err);
+          },
+        );
+      }
+    },
+    function (err) {
+      console.error("Error in Listfiles", err);
+    },
   );
 }
 
@@ -77,7 +119,7 @@ export async function getWebviewUrl(filePath: string): Promise<string | null> {
       (err) => {
         console.error("getFileUrl(" + filePath + ")=>error: ", err);
         resolve(null);
-      }
+      },
     );
   });
 }
@@ -107,7 +149,7 @@ export async function openDatabase(dbname: String) {
       },
       (error) => {
         reject(Error('Fehler beim Anlegen der Datenbank "${dbname}"', { cause: error }));
-      }
+      },
     );
   });
 }
@@ -125,7 +167,7 @@ export async function deleteDatabase(dbname: String) {
       },
       (error) => {
         reject(Error('Fehler beim Löschen der Datenbank "${dbname}"', { cause: error }));
-      }
+      },
     );
   });
 }
@@ -137,7 +179,7 @@ export async function executeSQL(db: SQLitePlugin.Database, statement: string, p
       statement,
       params,
       (results) => resolve(results),
-      (err) => reject(Error(`Fehler beim Ausführen der SQL-Anweisung ${statement}`, { cause: err }))
+      (err) => reject(Error(`Fehler beim Ausführen der SQL-Anweisung ${statement}`, { cause: err })),
     );
   });
 }
@@ -155,7 +197,7 @@ export async function tableExists(db: SQLitePlugin.Database, tablename: string):
       (err) => {
         console.error("error in exists table: ", err);
         reject(Error(`Fehler beim Testen, ib die Tabelle ${tablename} existiert`, { cause: err }));
-      }
+      },
     );
   });
 }
@@ -180,7 +222,7 @@ export async function resolveLocalFileSystemURL(url: string): Promise<Entry> {
         console.info(`could not find entry for "${url}"`);
         resolve(null);
         // reject(error);
-      }
+      },
     );
   });
 }
@@ -229,11 +271,45 @@ export async function fileExists(url: string): Promise<boolean> {
           resolve(false);
         }
         reject(new Error(getFileErrorAsText(e.code) + " in fileExists"));
-      }
+      },
     );
   });
 }
-
+export async function getMetaData(fileEntry: Entry) {
+  return new Promise<Metadata>((resolve, reject) => {
+    fileEntry.getMetadata(
+      (metaData) => {
+        resolve(metaData);
+      },
+      (error) => {
+        reject(error);
+      },
+    );
+  });
+}
+/**
+ *
+ * @param {string} url must start with file://tsdoc
+ * @returns {Promise<number>} size>=0, wenn die Datei existiert sonst NaN
+ */
+export async function getSize(url: string): Promise<number> {
+  return new Promise<number>((resolve, reject) => {
+    window.resolveLocalFileSystemURL(
+      url,
+      (fileEntry: Entry) => {
+        fileEntry.getMetadata((metaData) => {
+          resolve(metaData.size);
+        });
+      },
+      (e: FileError) => {
+        if (e.code === FileError.NOT_FOUND_ERR) {
+          resolve(NaN);
+        }
+        reject(new Error(getFileErrorAsText(e.code) + " in fileExists"));
+      },
+    );
+  });
+}
 export async function writeData(dir: string, file: string, dataObj: Blob | string | ArrayBuffer): Promise<FileEntry> {
   return new Promise<FileEntry>((resolve, reject) => {
     window.resolveLocalFileSystemURL(
@@ -267,13 +343,13 @@ export async function writeData(dir: string, file: string, dataObj: Blob | strin
             },
             (fileError) => {
               reject(Error(`Fehler beim Erzeugen des FileWriter von Entry nativeUrl=${fileEntry.nativeURL} name=${fileEntry.name}`, { cause: fileError }));
-            }
+            },
           );
         });
       },
       (fileError) => {
         reject(Error(`Fehler in resolveLocalFileSystemURL nativeUrl=${dir}`, { cause: fileError }));
-      }
+      },
     );
   });
 }
@@ -297,6 +373,7 @@ export async function readFileAsString(fileEntry: FileEntry, encoding?: string) 
   });
 }
 
+// TODO delete
 export function upload(fileURL: string, server: string, options?: FileUploadOptions, trustAllHosts?: boolean) {
   return new Promise<FileUploadResult>((resolve, reject) => {
     const ft = new FileTransfer();
@@ -306,7 +383,7 @@ export function upload(fileURL: string, server: string, options?: FileUploadOpti
       (result: FileUploadResult) => resolve(result),
       (error: FileTransferError) => reject(error),
       options,
-      trustAllHosts
+      trustAllHosts,
     );
   });
 }
@@ -320,7 +397,7 @@ export function download(fileURL: string, localFile: string, trustAllHosts?: boo
       (result: FileEntry) => resolve(result),
       (error: FileTransferError) => reject(Error("Fehler beim Download", { cause: error })),
       trustAllHosts,
-      options
+      options,
     );
   });
 }
@@ -333,7 +410,7 @@ export async function showAlert(message: string, title?: string, buttonName?: st
         resolve();
       },
       title,
-      buttonName
+      buttonName,
     );
   });
 }
@@ -344,7 +421,7 @@ export async function showAlert(message: string, title?: string, buttonName?: st
  * @param title Titel des Dialoges Default: "Confirm"
  * @param okButtonText
  * @param rejectButtonText
- * @returns {Promise<boolean>} true if ok button is chosen
+ * @returns true if ok button is chosen
  */
 export async function confirm(message: string, title?: string, okButtonText?: string, rejectButtonText?: string) {
   return new Promise<boolean>((resolve, reject) => {
@@ -355,7 +432,7 @@ export async function confirm(message: string, title?: string, okButtonText?: st
         resolve(buttonIndex === 1);
       },
       title,
-      [okButtonText || "ok", rejectButtonText || "Abbruch"]
+      [okButtonText || "ok", rejectButtonText || "Abbruch"],
     );
   });
 }
@@ -376,7 +453,7 @@ export async function alertNative(message: string, title?: string, buttonText?: 
         resolve();
       },
       title,
-      buttonText || "ok"
+      buttonText || "ok",
     );
   });
 }
@@ -420,9 +497,8 @@ export async function alertOverlay(message: string, title?: string, okButtonText
 
   document.body.appendChild(div);
 }
-
-export async function showError(msg: string, ex: Error | any) {
-  console.trace("errorMesg", msg, ex);
+function errorToText(ex: Error | any) {
+  console.trace("errorMesg", ex);
   let exMsg = "";
   if (ex) {
     let indent = "\t";
@@ -437,25 +513,17 @@ export async function showError(msg: string, ex: Error | any) {
       ex = ex.cause;
     }
   }
+  return exMsg;
+}
+
+export async function writeLog(msg: string, ex?: Error | any) {
+  const exMsg = errorToText(ex);
+  kvm.writeLog(msg + kvm.replacePassword(exMsg));
+}
+export async function showError(msg: string, ex: Error | any) {
+  const exMsg = errorToText(ex);
   await alertOverlay(msg, "Fehler", "ok", exMsg);
 }
-// export async function runStrategy(fcts: AsyncFunction<any>[], paramOfFirsFct: any) {
-//     const results = [];
-//     return new Promise((resolve, reject) => {
-//         function _run(idx: number, fcts: AsyncFunction<any>[], params: any, resolve: (result: any) => void) {
-//             fcts[idx](params).then((result) => {
-//                 idx++;
-//                 results.push(result);
-//                 if (idx < fcts.length) {
-//                     _run(idx, fcts, result, resolve);
-//                 } else {
-//                     resolve(results);
-//                 }
-//             });
-//         }
-//         _run(0, fcts, paramOfFirsFct, resolve);
-//     });
-// }
 
 export function createHtmlElement<K extends keyof HTMLElementTagNameMap>(tag: K, parent?: HTMLElement, className?: string, mixin?: any): HTMLElementTagNameMap[K] {
   const el = document.createElement(tag);
@@ -544,7 +612,7 @@ export function isFingerprintAuthAvailable() {
       },
       function (error: string) {
         reject(error);
-      }
+      },
     );
   });
 }
@@ -568,7 +636,7 @@ export function encryptFingerPrint(encryptConfig: FingerprintAuthConfig) {
         } else {
           reject("FingerprintAuth Error: " + err);
         }
-      }
+      },
     );
   });
 }
@@ -606,7 +674,7 @@ export function getCurrentPosition() {
         maximumAge: 2000, // duration to cache current position
         timeout: 5000, // timeout for try to call successFunction, else call errorFunction
         enableHighAccuracy: true, // take position from gps not network-based method
-      }
+      },
     );
   });
 }
@@ -635,4 +703,50 @@ export function showShort(el: HTMLElement, showTime: number, fadeTime: number) {
     el.style.transitionProperty = "opacity";
     el.style.opacity = "0";
   }, showTime);
+}
+
+export function now(datePrefix = "T", timePrefix = "Z", timeSeparator = ":") {
+  const now = new Date();
+  const jahr = now.getFullYear();
+  const monat = String("0" + (now.getMonth() + 1).toString()).slice(-2);
+  const tag = String("0" + now.getDate()).slice(-2);
+  const stunde = String("0" + now.getHours()).slice(-2);
+  const minute = String("0" + now.getMinutes()).slice(-2);
+  const sekunde = String("0" + now.getSeconds()).slice(-2);
+  return `${jahr}-${monat}-${tag}${datePrefix}${[stunde, minute, sekunde].join(timeSeparator)}${timePrefix}`;
+}
+
+export function getCordovaCustomConfigParameters(key: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    (<any>window).CustomConfigParameters.get(
+      (configData: any) => {
+        resolve(configData[key]);
+      },
+      function (err: any) {
+        reject(err);
+      },
+      [key],
+    );
+  });
+}
+
+/**
+ * Gibt true zurück, wenn version2 höher ist als version1.
+ */
+export function isHigherVersion(version1: string, version2: string): boolean {
+  const v1 = version1.split(".").map(Number);
+  const v2 = version2.split(".").map(Number);
+
+  // Wir gehen die Segmente der längeren Versionsnummer durch
+  const length = Math.max(v1.length, v2.length);
+
+  for (let i = 0; i < length; i++) {
+    // Falls ein Segment fehlt (z.B. 1.2 vs 1.2.1), setzen wir es auf 0
+    const num1 = v1[i] || 0;
+    const num2 = v2[i] || 0;
+
+    if (num2 > num1) return true;
+    if (num2 < num1) return false;
+  }
+  return false;
 }

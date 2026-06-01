@@ -10,6 +10,10 @@ export class ViewEinstellungen extends View {
   panelLayerParams: PanelEinstellungen.LayerParams;
   panelSortierung: PanelEinstellungen.Sortierung;
   panelAnzeigeFilter: PanelEinstellungen.AnzeigeFilter;
+
+  panelZugangsdaten: PanelEinstellungen.Zugangsdaten;
+  panelStellePanel: PanelEinstellungen.Stellenauswahl;
+
   panelConfiguration: PanelEinstellungen.Konfiguration;
   panelServer: PanelEinstellungen.Server;
   panelColorSection: PanelEinstellungen.ColorSection;
@@ -33,6 +37,8 @@ export class ViewEinstellungen extends View {
 
   constructor(app: Kvm) {
     super(app, "settings");
+    this.panelZugangsdaten = new PanelEinstellungen.Zugangsdaten();
+    this.panelStellePanel = new PanelEinstellungen.Stellenauswahl();
     this.panelConfiguration = new PanelEinstellungen.Konfiguration(configurations);
     this.panelServer = new PanelEinstellungen.Server();
     this.panelLayer = new PanelEinstellungen.Layers();
@@ -54,6 +60,7 @@ export class ViewEinstellungen extends View {
     this.panelDatabase = new PanelEinstellungen.Database();
     this.panelProtokoll = new PanelEinstellungen.Protokoll();
     this.panelUpdate = new PanelEinstellungen.Update();
+    this.panelUpdate = new PanelEinstellungen.Reset();
   }
 
   show() {

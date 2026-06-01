@@ -2,7 +2,7 @@ import { kvm } from "./app";
 import { Attribute, AttributeSetting } from "./Attribute";
 import { Feature } from "./Feature";
 import { Field } from "./Field";
-import { alertNative, createHtmlElement } from "./Util";
+import { alertNative, createHtmlElement, writeLog, showError } from "./Util";
 
 /*
  * create a SubFormEmbeddedPK form field in the structure
@@ -69,8 +69,8 @@ export class SubFormEmbeddedPKFormField implements Field {
         parentFeatureId: kvm.getActiveFeature().id,
       });
     } catch (err) {
-      await alertNative(err.message, "Warnung");
-      kvm.writeLog(err.message);
+      await writeLog(`Fehler beim Anlegen eines SubFeatures`, err);
+      await showError(`Fehler beim Anlegen eines SubFeatures`, err);
     }
   }
 

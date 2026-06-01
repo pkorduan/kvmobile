@@ -232,6 +232,7 @@ export class ViewFormular extends View {
    * - Startet das GPS-Tracking
    */
   async loadFeatureToForm(feature: Feature, options = { editable: false }) {
+    console.error(`loadFeatureToForm ${feature?.layer.title} ${feature?.getDataValue(feature.layer.settings.id_attribute)}`);
     const layer = feature.layer;
     console.group(`ViewFormular.loadFeatureToForm layer=´${layer.title}`, feature.getDataValue(layer.settings.id_attribute));
 
@@ -277,6 +278,11 @@ export class ViewFormular extends View {
         await this.loadFeatureToForm(f, { editable: false });
       }
     } catch (ex) {
+      if (f) {
+        Util.writeLog(`Fehler beim Aktivieren des Features ${f.getDataValue(f.layer.get("id_attribute"))} vom Typ "${f.layer.title}" im Formular`, ex);
+      } else {
+        Util.writeLog("Fehler beim Aktivieren des Features im Formular ", ex);
+      }
       await Util.showError("Fehler beim Aktivieren des Features im Formular", ex);
     }
   }

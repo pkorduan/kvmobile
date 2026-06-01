@@ -1,7 +1,7 @@
 /// <reference types="cordova-plugin-file-transfer" />
 /// <reference types="cordova-plugin-device" />
 
-import { Polygon, CircleMarker, LatLngExpression, LatLngTuple, LayerGroup, Polyline, LeafletEvent, Path } from "leaflet";
+import { Polygon, CircleMarker, LatLngExpression, LatLngTuple, LayerGroup, Polyline } from "leaflet";
 import { kvm } from "./app";
 import { Attribute } from "./Attribute";
 import { AttributeSetting } from "./Attribute";
@@ -223,10 +223,13 @@ export class Layer extends PropertyChangeSupport {
         return attr;
       });
 
-      this.attribute_index = this.attributes.reduce((hash, elem) => {
-        hash[elem.settings.name] = Object.keys(hash).length;
-        return hash;
-      }, <{ [key: string]: number }>{});
+      this.attribute_index = this.attributes.reduce(
+        (hash, elem) => {
+          hash[elem.settings.name] = Object.keys(hash).length;
+          return hash;
+        },
+        <{ [key: string]: number }>{},
+      );
 
       this.hasDocumentAttribute = this.attributes.some((a) => a.get("form_element_type") === "Dokument");
       this.hasEditiersperreAttribute = this.attributes.some((a) => a.get("form_element_type") === "Editiersperre");
@@ -280,7 +283,7 @@ export class Layer extends PropertyChangeSupport {
     return new Map(
       [...this._features].filter(([id, feature]) => {
         return feature.getDataValue(fkAttr) === featureId;
-      })
+      }),
     );
   }
 
@@ -392,9 +395,11 @@ export class Layer extends PropertyChangeSupport {
     const fkAttribute: String = attribute.getFKAttribute();
     const vorschauOption: String = attribute.getVorschauOption();
     const subLayer: Layer = kvm.getLayer(subLayerId);
+    if (!subLayer) {
+      throw new Error(`SubLayer wurde nicht gefunden. ${this.title} featureId=${featureId} ${attribute.name}`);
+    }
     const where: string[] = [`${subLayer.settings.table_alias}.${fkAttribute} = '${featureId}'`];
     const filter: string = this.stelle.replaceParams(this.settings.filter);
-
     if (kvm.getConfigurationOption("historyFilter")) {
       where.push(`${subLayer.settings.table_alias}.endet IS NOT NULL`);
     } else {
@@ -441,7 +446,7 @@ export class Layer extends PropertyChangeSupport {
       }
     } catch (error) {
       console.error(`Fehler bei der Abfrage der Vorschauattribute mit sql: ${sql} Fehler: ${error.message}`);
-      kvm.writeLog(`Fehler bei der Abfrage der Vorschauattribute mit sql: ${sql} Fehler: ${error.message}`);
+      Util.writeLog(`Fehler bei der Abfrage der Vorschauattribute mit sql: ${sql}`, error);
     }
   }
 
@@ -582,11 +587,11 @@ export class Layer extends PropertyChangeSupport {
         console.error(`readData ${msg}`);
         throw new Error(msg, { cause: ex });
       }
-      kvm.writeLog(`Layer ${this.title} gelesen AnzahlFeature=${this._features.size}`);
+      Util.writeLog(`Layer ${this.title} gelesen AnzahlFeature=${this._features.size}`);
     } catch (error) {
       const msg = `Fehler bei der Abfrage der Daten für den Layer ${this.title} aus lokaler Datenbank. Fehler: ${error.message}`;
       console.error(`readData ${msg}`, error);
-      kvm.writeLog(msg);
+      Util.writeLog(`Fehler bei der Abfrage der Daten für den Layer ${this.title} aus lokaler Datenbank.`, error);
       sperrBildschirm.close(msg);
     }
     await this.fire(new PropertyChangeEvent(this, Layer.EVENTS.FEATURE_CHANGED, null, null));
@@ -635,10 +640,11 @@ export class Layer extends PropertyChangeSupport {
    * Will be called in requestData
    * @param items
    */
-  async writeData(items) {
+  async writeData(items: any[]) {
     console.info("Layer %s: Schreibe %s Datensätze in die lokale Datebank.", this.title, items.length);
     // sperrBildschirm.tick("Schreibe Layerdaten in Datenbank.");
     const keys = this.getTableColumns().join(", ");
+    const mainTableAttributes = this.getMainTableAttributes();
     console.info("keys", keys);
     const values =
       "(" +
@@ -657,22 +663,93 @@ export class Layer extends PropertyChangeSupport {
               //console.log('type: %s value: %s', type, value);
               const v = attr.toSqliteValue(type, value);
               return v;
-            }
+            },
           ).join(", ");
           //					}
         })
         .join("), (") +
       ")";
 
-    const sql =
-      items.length === 0
-        ? `SELECT * FROM ${this.getSqliteTableName()}`
-        : `
-      INSERT INTO ${this.getSqliteTableName()} (${keys})
-      VALUES ${values}
-		`;
+    // const sql =
+    //   items.length === 0
+    //     ? `SELECT * FROM ${this.getSqliteTableName()}`
+    //     : `
+    //   INSERT INTO ${this.getSqliteTableName()} (${keys})
+    //   VALUES ${values}
+    // `;
 
-    //console.log("Schreibe Daten mit Sql: " + sql.substring(0, 1000));
+    const sql = items.length === 0 ? `SELECT * FROM ${this.getSqliteTableName()}` : "INSERT INTO " + this.getSqliteTableName() + "(" + keys + ") VALUES " + values;
+
+    console.log("Schreibe Daten mit Sql: " + sql.substring(0, 2000));
+    try {
+      const tblExists = await Util.tableExists(kvm.db, this.getSqliteTableName());
+      // console.error(`writeData ${this.title} => ${this.getSqliteTableName()} tblExists: ${tblExists}`);
+      await Util.executeSQL(kvm.db, sql);
+    } catch (error) {
+      const msg = `Fehler beim Schreiben des Layers "${this.title}" ${error.message}`;
+      this.set("syncVersion", 0);
+      // TODO jquery
+      $("#syncVersionSpan_" + this.getGlobalId()).html("0");
+      // console.error(`writeData of layer ${this.title} ${msg}`);
+      console.error(error);
+      alert(msg);
+      await Util.writeLog(`Fehler beim Schreiben des Layers "${this.title}" ${error.message}`, sql);
+      throw new Error(msg, { cause: error });
+    }
+
+    // sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Daten erfolgreich in Datenbank geschrieben.`);
+    this.isLoaded = true; // Layer successfully loaded. All other requestData calls will only sync
+    if (parseInt(this.get("sync"))) {
+      console.log("Setze layerSettings syncVersion auf Layer.runningSyncVersion: ", this.runningSyncVersion);
+      this.set("syncVersion", this.runningSyncVersion);
+      // TODO jquery
+      $("#syncVersionSpan_" + this.getGlobalId()).html(this.runningSyncVersion.toString());
+      this.set("syncLastLocalTimestamp", Date());
+    }
+  }
+
+  /**
+   * Function write layer data to the database
+   * saveToStore > readData
+   * Will be called in requestData
+   * @param items
+   */
+  async writeDataN(items: any[]) {
+    console.info("Layer %s: Schreibe %s Datensätze in die lokale Datebank.", this.title, items.length);
+    // sperrBildschirm.tick("Schreibe Layerdaten in Datenbank.");
+    const keys = this.getTableColumns().join(", ");
+    const mainTableAttributes = this.getMainTableAttributes();
+    console.info("keys", keys);
+    const values =
+      "(" +
+      items
+        .map((item) => {
+          //console.log('item.geometry %', item.geometry);
+          //					if (item.geometry) {
+          return mainTableAttributes
+            .map((attr) => {
+              const type = attr.get("type");
+              const value = type == "geometry" ? item.geometry : item.properties[attr.get("name")];
+              //console.log('type: %s value: %s', type, value);
+              const v = attr.toSqliteValue(type, value);
+              return v;
+            })
+            .join(", ");
+        })
+        .join("), (") +
+      ")";
+
+    // const sql =
+    //   items.length === 0
+    //     ? `SELECT * FROM ${this.getSqliteTableName()}`
+    //     : `
+    //   INSERT INTO ${this.getSqliteTableName()} (${keys})
+    //   VALUES ${values}
+    // `;
+
+    const sql = items.length === 0 ? `SELECT * FROM ${this.getSqliteTableName()}` : "INSERT INTO " + this.getSqliteTableName() + "(" + keys + ") VALUES " + values;
+
+    console.log("Schreibe Daten mit Sql: " + sql.substring(0, 2000));
     try {
       const tblExists = await Util.tableExists(kvm.db, this.getSqliteTableName());
       // console.error(`writeData ${this.title} => ${this.getSqliteTableName()} tblExists: ${tblExists}`);
@@ -814,17 +891,17 @@ export class Layer extends PropertyChangeSupport {
                 },
                 (tx, error) => {
                   reject(new Error("Fehler beim Anlegen der Tabelle: " + tableName + " " + error.message, { cause: error }));
-                }
+                },
               );
             },
             (tx, error) => {
               reject(new Error("Fehler beim Löschen der Tabelle: " + tableName + " " + error.message, { cause: error }));
-            }
+            },
           );
         },
         (error) => {
           reject(new Error("Fehler beim Update der Tabellefür den Layer: " + this.get("title") + " " + error.message, { cause: error }));
-        }
+        },
       );
     });
   }
@@ -838,7 +915,7 @@ export class Layer extends PropertyChangeSupport {
       // this.attributes.filter(function (attr) {
       //   return (attr.layer.hasEditPrivilege && attr.get("saveable") == "1") || !attr.layer.hasEditPrivilege;
       // })
-      this.getMainTableAttributes(),
+      this.getMainTableAttributes(true),
       function (attr) {
         const excludeDefaultWords = ["gdi_conditional_val", "gdi_conditional_nextval", "gdi_current_date", "nextval"];
         const excludeWordExists = excludeDefaultWords.some((word) => attr.get("default").includes(word));
@@ -849,9 +926,28 @@ export class Layer extends PropertyChangeSupport {
           defaultValue = "";
         }
         return attr.get("name") + " " + attr.getSqliteType() + (attr.get("nullable") === "0" ? " NOT NULL" : "") + (defaultValue ? " DEFAULT " + defaultValue : "");
-      }
+      },
     );
-    return tableColumnDefinitions;
+
+    const mainTableAttributes = this.getMainTableAttributes(true);
+    // Variante ohne jquery
+    const tableColumnDefinitions2 = [];
+    const excludeDefaultWords = ["gdi_conditional_val", "gdi_conditional_nextval", "gdi_current_date", "nextval"];
+    for (const attr of mainTableAttributes) {
+      let defaultValue = "";
+      const excludeWordExists = excludeDefaultWords.some((word) => attr.get("default").includes(word));
+      if (attr.get("default") && !excludeWordExists) {
+        defaultValue = JSON.stringify(attr.get("default")).replace(/"/g, "'").replace(/''/g, "'");
+      }
+      const columnDef = attr.get("name") + " " + attr.getSqliteType() + (attr.get("nullable") === "0" ? " NOT NULL" : "") + (defaultValue ? " DEFAULT " + defaultValue : "");
+      tableColumnDefinitions2.push(columnDef);
+    }
+    // if (this.title === "Obstsorten") {
+    //   debugger;
+    // }
+    console.error(tableColumnDefinitions);
+    console.error(tableColumnDefinitions2);
+    return tableColumnDefinitions2;
   }
 
   /**
@@ -862,40 +958,26 @@ export class Layer extends PropertyChangeSupport {
    * - it returns all attributes
    * @returns
    */
-  getMainTableAttributes() {
+  getMainTableAttributes(all?: boolean) {
     // Bevor 2024-08-01 this logic has been used (attr.layer.hasEditPrivilege && attr.get("saveable") == "1") || !attr.layer.hasEditPrivilege;
-    const maintableAttributes = this.attributes.filter((attr) => {
+    let maintableAttributes = this.attributes.filter((attr) => {
       if (attr.layer.hasEditPrivilege) {
         return attr.get("saveable") == "1" && attr.settings.table_name === attr.layer.settings.table_name && attr.settings.schema_name === attr.layer.settings.schema_name;
       } else {
         return true;
       }
     });
+    if (!all) {
+      maintableAttributes = maintableAttributes.filter((attr) => {
+        return attr.get("privilege") != null;
+      });
+    }
     return maintableAttributes;
   }
 
   getTableColumns() {
     return this.getMainTableAttributes().map((attr) => attr.settings.name);
   }
-
-  // getColumnValues() {
-  //   kvm.alog("getColumnValues", "", 4);
-  //   const values = $.map(
-  //     this.attributes.filter(function (attr) {
-  //       return attr.get("saveable") == "1";
-  //     }),
-  //     function (attr) {
-  //       const type = attr.get("type"),
-  //         // TODO BugXX
-  //         value = (<any>this).activeFeature.getDataValue(attr.get("name"));
-
-  //       const v = attr.toSqliteValue(type, value);
-  //       return v;
-  //     }
-  //   );
-  //   kvm.alog("values: %o", values, 4);
-  //   return values;
-  // }
 
   /**
    * Erzeugt und liefert das SQL zum Anlegen der Datentabelle
@@ -909,57 +991,58 @@ export class Layer extends PropertyChangeSupport {
     return sql;
   }
 
-  /**
-   * Function returns an array with column expressions for select statement
-   * use attribute name, if difference from real_name use it in stead
-   */
-  getSelectExpressions() {
-    const selectExpressions = $.map(this.attributes, function (attr) {
-      return attr.get("name") != attr.get("real_name") ? attr.get("real_name") + " AS " + attr.get("name") : attr.get("name");
-    });
-    return selectExpressions;
-  }
+  // /**
+  //  * Function returns an array with column expressions for select statement
+  //  * use attribute name, if difference from real_name use it in stead
+  //  */
+  // getSelectExpressions() {
+  //   const selectExpressions = $.map(this.attributes, function (attr) {
+  //     return attr.get("name") != attr.get("real_name") ? attr.get("real_name") + " AS " + attr.get("name") : attr.get("name");
+  //   });
+  //   return selectExpressions;
+  // }
 
-  /**
-   * ToDo: Prüfen ob die Funktion noch gebraucht wird.
-   */
-  async requestDataVersion() {
-    console.log("Layer %s: requestDataVersion", this.title);
-    const url = this.getDataVersionUrl();
-    sperrBildschirm.tick(`${this.title}`);
+  // /**
+  //  * ToDo: Prüfen ob die Funktion noch gebraucht wird.
+  //  */
+  // async requestDataVersion() {
+  //   console.log("Layer %s: requestDataVersion", this.title);
+  //   const url = this.getDataVersionUrl();
+  //   sperrBildschirm.tick(`${this.title}`);
 
-    const filename = "data_version_layer_" + this.getGlobalId() + ".json";
-    const fileEntry = await Util.download(url, cordova.file.dataDirectory + filename);
-    const txt = await Util.readFileAsString(fileEntry);
-    console.log("Download Ergebnis: %s", txt);
-    const response = JSON.parse(txt);
-    console.log("Download Object: %o", response);
-    if ("success" in response && !response.success) {
-      kvm.msg(response.msg, `Fehler beim Laden der Datenversion vom Layer ${this.title} auf dem Server.`);
-      return 0;
-    }
-    if ("dataVersion" in response && response.dataVersion != this.get("data_version")) {
-      console.log(`Setze data_version von layer ${this.title} auf den neuen Wert: ${response.dataVersion}`);
-      this.set("data_version", response.dataVersion);
-    }
-  }
+  //   const filename = "data_version_layer_" + this.getGlobalId() + ".json";
+  //   const fileEntry = await Util.download(url, cordova.file.dataDirectory + filename);
+  //   const txt = await Util.readFileAsString(fileEntry);
+  //   console.log("Download Ergebnis: %s", txt);
+  //   const response = JSON.parse(txt);
+  //   console.log("Download Object: %o", response);
+  //   if ("success" in response && !response.success) {
+  //     kvm.msg(response.msg, `Fehler beim Laden der Datenversion vom Layer ${this.title} auf dem Server.`);
+  //     return 0;
+  //   }
+  //   if ("dataVersion" in response && response.dataVersion != this.get("data_version")) {
+  //     console.log(`Setze data_version von layer ${this.title} auf den neuen Wert: ${response.dataVersion}`);
+  //     this.set("data_version", response.dataVersion);
+  //   }
+  // }
 
-  /**
-   * ToDo: Prüfen ob die Funktion noch gebraucht wird.
-   */
-  getDataVersionUrl() {
-    console.log(this.get("title") + ": Layer.getDataVersionUrl");
-    let url = this.stelle.settings.url;
-    const file = Stelle.getUrlFile(url);
-    url += `${file}go=mobile_get_data_version&Stelle_ID=${this.stelle.get("Stelle_ID")}&login_name=${this.stelle.get("login_name")}&passwort=${encodeURIComponent(this.stelle.get("passwort"))}&selected_layer_id=${this.get("id")}`;
-    console.log(this.get("title") + ": Hole Datenversion mit Url: %s", url);
-    return url;
-  }
+  // /**
+  //  * ToDo: Prüfen ob die Funktion noch gebraucht wird.
+  //  */
+  // getDataVersionUrl() {
+  //   console.log(this.get("title") + ": Layer.getDataVersionUrl");
+  //   let url = this.stelle.settings.url;
+  //   const file = Stelle.getUrlFile(url);
+  //   url += `${file}go=mobile_get_data_version&Stelle_ID=${this.stelle.get("Stelle_ID")}&login_name=${this.stelle.get("login_name")}&passwort=${encodeURIComponent(this.stelle.get("passwort"))}&selected_layer_id=${this.get("id")}`;
+  //   console.log(this.get("title") + ": Hole Datenversion mit Url: %s", url);
+  //   return url;
+  // }
 
   /**
    * Function request layer with the last_delta_version data from server and writes the data to database
    */
   async requestData(last_delta_version: number) {
+    // #Request mobile_get_data
     const filename = "data_layer_" + this.getGlobalId() + ".json";
     if (this.isLoaded) {
       throw new Error("Daten wurden schon runtergeladen");
@@ -974,21 +1057,22 @@ export class Layer extends PropertyChangeSupport {
       last_delta_version: String(last_delta_version),
     });
 
-    // sperrBildschirm.tick(`${this.title}:<br>&nbsp;&nbsp;Frage Layerdaten ab mit URL: ${url}`);
+    const response = await kvm.serverConnection.runGetRequest({
+      go: "mobile_get_data",
+      selected_layer_id: this.get("id"),
+      last_delta_version: String(last_delta_version),
+    });
+    console.info("#Request mobile_get_data", response);
 
-    const fileEntry = await Util.download(url, cordova.file.dataDirectory + filename);
-    const txt = await Util.readFileAsString(fileEntry);
+    // const collection = JSON.parse(response.data);
 
-    let collection: any;
-
-    console.log("Download Ergebnis (Head 1000): %s", txt?.substring(0, 1000));
-
-    collection = JSON.parse(txt);
+    const collection = response;
 
     if (("success" in collection && !collection.success) || ("type" in collection && collection.type != "FeatureCollection")) {
       console.info(collection.msg, `url: ${url}`);
       kvm.msg(collection.msg, `Fehler beim Laden des Layers ${this.title} vom Server.`);
-      return 0;
+      // TODO
+      // return 0;
     }
     console.log("Layer %s: Anzahl empfangene Datensätze: %s", this.title, collection.features.length);
     console.log("Layer " + this.get("title") + ": Version in Response: " + collection.lastDeltaVersion);
@@ -1023,7 +1107,7 @@ export class Layer extends PropertyChangeSupport {
           // ToDo handling choices after error
         },
         "Datenbank",
-        ["Abbruch"]
+        ["Abbruch"],
       );
       console.error("Fehler clearData", ex);
     }
@@ -1100,10 +1184,19 @@ export class Layer extends PropertyChangeSupport {
     });
   }
 
-  downloadImage(localFile: string, remoteFile: string) {
-    console.info("downloadImage(localFile=" + localFile + ", remoteFile=" + remoteFile + ")");
+  getImgDownloadUrl(f: Feature, image: string) {
+    console.log("Layer.getImgDownloadUrl for image: %s", image);
+    let url = kvm.getConfigurationOption("kvwmapServerUrl");
+    const file = Stelle.getUrlFile(url);
+
+    url += file + "Stelle_ID=" + this.stelle.get("ID") + "&" + "login_name=" + kvm.getConfigurationOption("kvwmapServerLoginName") + "&" + "passwort=" + encodeURIComponent(kvm.getConfigurationOption("kvwmapServerPasswort")) + "&" + "go=mobile_download_image" + "&" + "image=" + image + "&layer_id=" + f.layer.get("id") + "&feature_id=" + f.getFeatureId();
+    return url;
+  }
+
+  downloadImage(f: Feature, localFile: string, remoteFile: string) {
     const fileTransfer = new FileTransfer();
-    const downloadURL = this.getImgDownloadUrl(remoteFile);
+    const downloadURL = this.getImgDownloadUrl(f, remoteFile);
+    console.info("downloadImage(localFile=" + localFile + ", remoteFile=" + remoteFile + ")", downloadURL);
 
     //kvm.log("Download Datei von URL: " + downloadURL, 3);
     //kvm.log("Speicher die Datei auf dem Gerät in Datei: " + localFile, 3);
@@ -1114,6 +1207,7 @@ export class Layer extends PropertyChangeSupport {
       (fileEntry: FileEntry) => {
         console.log("Download des Bildes abgeschlossen: %s", fileEntry.fullPath);
         console.log("Set div[name$]=%s and src and background-image=%s", remoteFile, localFile);
+        Util.readFileAsString(fileEntry).then((f) => console.info(f));
         const imageDiv = $('div[name$="' + remoteFile + '"]');
         imageDiv.attr("src", localFile);
         imageDiv.css("background-image", "url('" + localFile + "')");
@@ -1121,8 +1215,59 @@ export class Layer extends PropertyChangeSupport {
       (error) => {
         console.log("Fehler beim Download der Bilddatei: " + error.code, 1);
       },
-      true
+      true,
     );
+  }
+
+  // #Request mobile_download_image
+  async downloadImageNew(localFile: string, remoteFile: string) {
+    console.info("downloadImage(localFile=" + localFile + ", remoteFile=" + remoteFile + ")");
+    // const fileTransfer = new FileTransfer();
+
+    // let downloadURL = this.stelle.settings.url;
+    // const file = Stelle.getUrlFile(downloadURL);
+    // downloadURL += file + "Stelle_ID=" + this.stelle.get("Stelle_ID") + "&" + "login_name=" +
+    // this.stelle.get("login_name") + "&" + "passwort=" + encodeURIComponent(this.stelle.get("passwort")) + "&" +
+    // "go=mobile_download_image" + "&" + "image=" + remoteFile;
+
+    // const downloadURL = this.getImgDownloadUrl(remoteFile);
+
+    //kvm.log("Download Datei von URL: " + downloadURL, 3);
+    //kvm.log("Speicher die Datei auf dem Gerät in Datei: " + localFile, 3);
+
+    try {
+      const fileEntry = await kvm.serverConnection.runDownloadFile(
+        {
+          go: "mobile_download_image",
+          image: remoteFile,
+        },
+        localFile,
+      );
+      console.info("#Request mobile_download_image", fileEntry);
+      console.log("Download des Bildes abgeschlossen: %s", fileEntry.fullPath);
+      console.log("Set div[name$]=%s and src and background-image=%s", remoteFile, localFile);
+      const imageDiv = $('div[name$="' + remoteFile + '"]');
+      imageDiv.attr("src", localFile);
+      imageDiv.css("background-image", "url('" + localFile + "')");
+    } catch (error) {
+      console.log("Fehler beim Download der Bilddatei: ", error.code);
+    }
+
+    // fileTransfer.download(
+    //   downloadURL,
+    //   localFile,
+    //   (fileEntry: FileEntry) => {
+    //     console.log("Download des Bildes abgeschlossen: %s", fileEntry.fullPath);
+    //     console.log("Set div[name$]=%s and src and background-image=%s", remoteFile, localFile);
+    //     const imageDiv = $('div[name$="' + remoteFile + '"]');
+    //     imageDiv.attr("src", localFile);
+    //     imageDiv.css("background-image", "url('" + localFile + "')");
+    //   },
+    //   (error) => {
+    //     console.log("Fehler beim Download der Bilddatei: " + error.code, 1);
+    //   },
+    //   true,
+    // );
   }
 
   /**
@@ -1212,6 +1357,7 @@ export class Layer extends PropertyChangeSupport {
    * Setzt die Werte des Features im dataView
    */
   async loadFeatureToView(feature: Feature, options = {}) {
+    console.error(`loadFeatureToView ${this.title} ${feature?.getDataValue(this.settings.id_attribute)}`);
     console.group(this.get("title") + ": Lade Feature in View.");
 
     for (const attr of this.attributes) {
@@ -1560,10 +1706,6 @@ export class Layer extends PropertyChangeSupport {
         const options = attribute.get("options");
         let value;
 
-        // if (attribute_name === "kartierergruppe_id") {
-        //   attribute.settings.default = "$layerparam_kartierergruppe_id";
-        // }
-
         switch (true) {
           case attribute_name == this.get("id_attribute"):
             {
@@ -1609,18 +1751,6 @@ export class Layer extends PropertyChangeSupport {
               switch (true) {
                 case defAttr.startsWith("gdi_conditional_val"):
                   {
-                    // debugger;
-                    // const parentLayer = kvm.getLayer(this.parentLayerId);
-                    // const parentFeature = parentLayer.getFeature(this.parentFeatureId);
-                    // Frage den Spaltennamen ab, von dem der Defaultwert des parentLayers abgefragt werden soll.
-                    //z.B: entwicklungsphase_id aus gdi_conditional_val('kob', 'baum', 'entwicklungsphase_id', 'uuid = ''$baum_uuid''')
-                    // const column = attribute
-                    //   .get("default")
-                    //   .split(",")[2]
-                    //   .trim()
-                    //   .replace(/^["'](.+(?=["']$))["']$/, "$1");
-                    // value = parentFeature.getDataValue(column);
-                    // value = kvm.layers[this.parentLayerId].features.get(this.parentFeatureId).get(column)
                     if (copyData) {
                       const args = kvm.get_args(attribute.get("default"), copyData);
                       if (args?.length === 4) {
@@ -2183,7 +2313,7 @@ export class Layer extends PropertyChangeSupport {
       .map((attr: Attribute): AttributteDelta => {
         console.log("attr name: %s", attr.get("name"));
         //console.log('attr.privilege: %s', attr.get('privilege'));
-        if (attr.get("name") != id_attribute && !attr.isAutoAttribute(action) && !attr.isPseudoAttribute() && attr.get("saveable") !== "0" && attr.get("table_name") === this.get("table_name")) {
+        if (attr.get("privilege") && attr.get("name") != id_attribute && !attr.isAutoAttribute(action) && !attr.isPseudoAttribute() && attr.get("saveable") !== "0" && attr.get("table_name") === this.get("table_name")) {
           const attrName = attr.settings.name;
           let oldVal = f.getDataValue(attrName) == "null" ? null : f.getDataValue(attrName);
           let newVal = attr.formField.getValue(action);
@@ -2444,53 +2574,6 @@ export class Layer extends PropertyChangeSupport {
     }
   }
 
-  // /**
-  //  * function called after writing a delete Statement into Client sqlite DB
-  //  * Do every thing to delete the feature, geometry, Layer and listelement
-  //  *
-  //  */
-  // afterDeleteDataset(feature: Feature) {
-  //   debugger;
-  //   console.log("afterDeleteDataset");
-  //   // let layerId = this.activeFeature.leafletLayer;
-  //   const parentFK = this.getParentFK();
-  //   // let parentFeatureId = this.parentFeatureId;
-
-  //   if (this.hasGeometry) {
-  //     //console.log('Remove Editable Geometrie');
-  //     kvm.controller.mapper.removeEditable(feature);
-
-  //     //console.log('Löscht Layer mit layerId: %s aus Layergroup', layer.activeFeature.layerId);
-  //     this.layerGroup.removeLayer(feature.leafletLayer);
-  //   }
-
-  //   //console.log('Löscht Feature aus FeatureList : %o', layer.activeFeature);
-  //   // $("#" + this.activeFeature.id).remove();
-
-  //   //console.log('Lösche Feature aus features Array des activeLayer');
-  //   this.removeFeature(feature);
-
-  //   //console.log('Lösche activeFeature')
-  //   // delete this._activeFeature;
-
-  //   const parentFeature = this.getParentFeature(feature);
-  //   if (parentFeature) {
-  //     kvm.editFeature(parentFeature);
-  //   } else {
-  //     //console.log('Wechsel die Ansicht zur Featurelist.');
-  //     kvm.showView(!kvm.menu.isActiveView("map") ? "featurelist" : "map");
-  //     //console.log('Scroll die FeatureListe nach ganz oben');
-  //     kvm.showNextItem(kvm.getConfigurationOption("viewAfterDelete"), this);
-  //   }
-
-  //   //console.log('Blende Sperrdiv aus');
-  //   // Sperrdiv entfernen
-  //   sperrBildschirm.close(`${this.title}: Datensatz erfolgreich gelöscht.`);
-
-  //   // ToDo: Layer gleich syncronisieren
-  //   //kvm.msg(this.succMsg, "Hinweis");
-  // }
-
   /**
    * function return insert delta based on changes of a dataset
    * @param changes
@@ -2515,7 +2598,11 @@ export class Layer extends PropertyChangeSupport {
                 return "null";
               }
               if (["TEXT", "DATE"].includes(change.type)) {
-                return "'" + change.newVal + "'";
+                if (typeof change.newVal === "string") {
+                  return "'" + (<string>change.newVal).replaceAll("'", "''") + "'";
+                } else {
+                  return "null";
+                }
               } else {
                 return change.newVal;
               }
@@ -2731,7 +2818,7 @@ export class Layer extends PropertyChangeSupport {
           }
         },
         "",
-        ["ja", "nein"]
+        ["ja", "nein"],
       );
     }
   }
@@ -2759,7 +2846,7 @@ export class Layer extends PropertyChangeSupport {
           }
         },
         "",
-        ["ja", "nein"]
+        ["ja", "nein"],
       );
     }
   }
@@ -2793,7 +2880,7 @@ export class Layer extends PropertyChangeSupport {
           }
         },
         "",
-        ["ja", "nein"]
+        ["ja", "nein"],
       );
     }
   }
@@ -2818,6 +2905,13 @@ export class Layer extends PropertyChangeSupport {
       }
     }
   }
+
+  // geomChanged(feature: Feature, event: CustomEvent<any>) {
+  //   const attr = this.getAttribute(this.settings.geometry_attribute);
+  //   if (attr.formField instanceof GeometrieFormField) {
+  //     attr.formField.geomChanged(event);
+  //   }
+  // }
 
   /*
    * Erzeugt die Events für die Auswahl, Synchronisierung und das Zurücksetzen von Layern
@@ -3078,48 +3172,6 @@ export class Layer extends PropertyChangeSupport {
         s += "</div>";
       })
       .join("");
-  }
-
-  getSyncUrl() {
-    console.log(this.get("title") + ": Layer.getSyncUrl");
-    var url = this.stelle.get("url"),
-      file = Stelle.getUrlFile(url);
-
-    url += file + "Stelle_ID=" + this.stelle.get("Stelle_ID") + "&" + "login_name=" + this.stelle.get("login_name") + "&" + "selected_layer_id=" + this.get("id") + "&" + "passwort=" + encodeURIComponent(this.stelle.get("passwort"));
-
-    if (this.runningSyncVersion == 0) {
-      // get all data as new base for deltas
-      url += "&go=Daten_Export_Exportieren&without_filter=1&export_format=GeoJSONPlus&all=1&epsg=4326";
-      console.log(this.get("title") + ": Hole initial alle Daten mit Url: %s", url);
-    } else {
-      // sync deltas
-      url += "&" + "go=mobile_sync" + "&" + "pullVersionFrom=1";
-      console.log(this.get("title") + ": Hole Deltas mit Url: %s", url);
-    }
-
-    return url;
-  }
-
-  // getDataUrl() {
-  //   console.log(this.get("title") + ": Layer.getDataUrl");
-  //   const url = this.stelle.get("url");
-  //   const file = Stelle.getUrlFile(url);
-
-  //   url += file + "Stelle_ID=" + this.stelle.get("Stelle_ID") + "&" + "login_name=" + this.stelle.get("login_name") + "&" + "selected_layer_id=" + this.get("id") + "&" + "passwort=" + encodeURIComponent(this.stelle.get("passwort"));
-
-  //   // get all data as new base for deltas
-  //   url += "&go=Daten_Export_Exportieren&without_filter=1&export_format=GeoJSONPlus&all=1&epsg=4326";
-  //   console.log(this.get("title") + ": Hole initial alle Daten mit Url: %s", url);
-  //   return url;
-  // }
-
-  getImgDownloadUrl(image: string) {
-    console.log("Layer.getImgDownloadUrl for image: %s", image);
-    let url = this.stelle.settings.url;
-    const file = Stelle.getUrlFile(url);
-
-    url += file + "Stelle_ID=" + this.stelle.get("Stelle_ID") + "&" + "login_name=" + this.stelle.get("login_name") + "&" + "passwort=" + encodeURIComponent(this.stelle.get("passwort")) + "&" + "go=mobile_download_image" + "&" + "image=" + image;
-    return url;
   }
 
   downloadError(error) {
@@ -3482,8 +3534,12 @@ export class Layer extends PropertyChangeSupport {
         hasSubFormFK = true;
         if (this.hasGeometry) {
           const parentLayer = kvm.getLayer(attr.getGlobalParentLayerId());
-          if (parentLayer.hasGeometry) {
-            return false;
+          if (parentLayer) {
+            if (parentLayer?.hasGeometry) {
+              return false;
+            }
+          } else {
+            throw new Error(`Der Parent-Layer für ${this.settings.table_name} wurde nicht gefunden.`);
           }
         }
       }

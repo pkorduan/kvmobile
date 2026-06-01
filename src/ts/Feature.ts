@@ -290,7 +290,7 @@ export class Feature {
             return interiorRing.map(function (point) {
               return [point.y, point.x];
             });
-          })
+          }),
         );
       } else {
         /* return a latlngs array for MultiPolygon in the form
@@ -314,7 +314,7 @@ export class Feature {
               return interiorRing.map(function (point) {
                 return [point.y, point.x];
               });
-            })
+            }),
           );
         });
       }
@@ -356,7 +356,7 @@ export class Feature {
                 return point.lng + " " + point.lat;
               })
               .join(", ") +
-            ")"
+            ")",
         );
         break;
       case "Line":
@@ -367,7 +367,7 @@ export class Feature {
                 return point.lng + " " + point.lat;
               })
               .join(", ") +
-            ")"
+            ")",
         );
         break;
       case "MultiLinestring":
@@ -386,7 +386,7 @@ export class Feature {
                 );
               })
               .join(", ") +
-            ")"
+            ")",
         );
         break;
       case "Polygon":
@@ -407,7 +407,7 @@ export class Feature {
                   );
                 })
                 .join(", ") +
-              ")"
+              ")",
           );
         }
         break;
@@ -436,7 +436,7 @@ export class Feature {
                 );
               })
               .join(",") +
-            ")"
+            ")",
         );
         break;
       default:
@@ -471,18 +471,8 @@ export class Feature {
         // kvm.map.panTo(layer.getLatLng());
       } else {
         console.log("flyToBounds %s %o", this.isEditable ? "editableLayer: " : "feature bounds: ", layer.getBounds().getCenter());
-        // let isVisible = $("#map").is(":visible");
-        // if (!isVisible) {
-        //   $("#map").show();
-        // }
-        // kvm.map.invalidateSize();
-        //kvm.map.flyToBounds(layer.getBounds());
         kvm.map.fitBounds(layer.getBounds());
-        // if (!isVisible) {
-        //   $("#map").hide();
-        // }
       }
-      // kvm.viewMap.set(zoomLevel, layer.getLatLng())
     } else {
       if (this.editableLayer && this.layer.settings.geometry_type != "Point") {
         kvm.map.fitBounds(this.editableLayer.getBounds());

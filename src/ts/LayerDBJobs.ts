@@ -1,7 +1,7 @@
 import { Feature } from "./Feature";
-import { Layer } from "./Layer";
 import { executeSQL, underlineToPointName } from "./Util";
 import { kvm } from "./app";
+import * as Util from "./Util";
 
 /**
  * insert den Datensatz, liest die Datensätze des Layers neu, und gibt diese zurück
@@ -68,23 +68,6 @@ export async function runDelete(feature: Feature, delta: { action: "delete"; sql
   });
 }
 
-// export async function runDeleteStrategy(layer: Layer, delta: { type: string; change: string; delta: string }) {
-//     //console.log('runDeleteStrategy');
-//     return new Promise<SQLitePlugin.Results>(async (resolve, reject) => {
-//         try {
-//             const rsBackupDS = await backupDataset(layer);
-//             const sql = delta.delta + " AND endet IS NULL";
-//             const rsUpdate = await executeSQL(kvm.db, sql);
-//             await writeDelta(layer, delta);
-//             const rsNew = readDataset(layer);
-//             console.error("resolve....");
-//             resolve(rsNew);
-//         } catch (ex) {
-//             reject(ex);
-//         }
-//     });
-// }
-
 /**
  * Function copy a dataset with endet = current date as a backup of activeFeature
  * if not allready exists
@@ -109,7 +92,7 @@ async function backupDataset(feature: Feature) {
       SELECT " +
     tableColumns.join(", ") +
     ", '" +
-    kvm.now() +
+    Util.now() +
     "'\
       FROM " +
     table +
@@ -138,55 +121,7 @@ async function backupDataset(feature: Feature) {
     ";
 
   return executeSQL(kvm.db, sql);
-  // kvm.db.executeSql(sql, [], layer[this.next.succFunc].bind(this.next), function (err) {
-  //     console.log("Fehler", err);
-  //     kvm.msg("Fehler beim Ausführen von " + sql + " in backupDataset! Fehler: " + (<any>err).code + "\nMeldung: " + err.message, "Fehler");
-  // });
 }
-
-// function getDelta(layer: Layer) {
-//     console.log("updateDataset");
-
-//     let changes = layer.collectChanges("update");
-
-//     if (changes.length == 0) {
-//         const msg = "Keine Änderungen! Zum Abbrechen verwenden Sie den Button neben Speichen.";
-//         kvm.closeSperrDiv(msg);
-//         //kvm.msg(msg);
-//     } else {
-//         kvm.alog("Changes gefunden: ", changes, 4);
-//         const imgChanges = changes.filter(function (change) {
-//             return $.inArray(change.key, layer.getDokumentAttributeNames()) > -1;
-//         });
-
-//         if (imgChanges.length == 0) {
-//             //console.log('no imgChanges');
-//         } else {
-//             layer.createImgDeltas(imgChanges);
-//         }
-
-//         //kvm.log("Layer.updateDataset addAutoChanges", 4);
-//         changes = layer.addAutoChanges(changes, "update");
-
-//         return layer.getUpdateDelta(changes);
-//         // const sql = delta.delta + " AND endet IS NULL";
-
-//         // // this.next.context = layer;
-//         // this.delta = delta;
-//         // //  this.changes = changes;
-//         // return executeSQL(kvm.db, sql);
-//     }
-// }
-
-// function updateDataset(delta: string) {
-//     // console.log("updateDataset rs: %o", rs);
-//     try {
-//         const sql = delta + " AND endet IS NULL";
-//         return executeSQL(kvm.db, sql);
-//     } catch (ex) {
-//         console.log("Error in updateDataset", ex);
-//     }
-// }
 
 /**
  * write delta dataset to database expect:
@@ -212,7 +147,7 @@ async function writeDelta(feature: Feature, delta: { action: "insert" | "delete"
     '${delta.action}' AS action,
     '${underlineToPointName(delta.sql, layer.get("schema_name"), layer.get("table_name")).replace(/\'/g, "''")}' AS sql,
     '${feature.id}' as uuid,
-    '${kvm.now()}' AS created_at,
+    '${Util.now()}' AS created_at,
     '${schemaName}', 
     '${tableName}'
   WHERE
@@ -260,7 +195,7 @@ export async function writeImgDelta(feature: Feature, delta: { action: "insert" 
     '${delta.action}',
     '${delta.file}',
     '${feature.id}',
-    '${kvm.now()}',
+    '${Util.now()}',
     '${layer.get("id")}'
   )`;
 
@@ -285,16 +220,3 @@ async function readDataset(f: Feature) {
   console.log("LayerDBJobs->readDataset: ", [sql]);
   return executeSQL(kvm.db, sql);
 }
-
-// async function deleteDeltas(f: Feature, layer: Layer) {
-//   // console.log("deleteDeltas");
-//   let sql = `
-//     DELETE FROM ${layer.getSqliteTableName()}_deltas
-//     WHERE
-//       type = 'sql' AND
-//       (change = 'update' OR change = 'insert') AND
-//       INSTR(delta, '${f.id}') > 0
-//   `;
-//   console.log("Lösche Deltas mit sql: %s", sql);
-//   return executeSQL(kvm.db, sql);
-// }

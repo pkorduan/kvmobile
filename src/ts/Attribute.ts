@@ -30,7 +30,7 @@ export type OptionsAttributtes = {
 export type ReferenceKeys = {
   pk_id: string;
   fk_id: string;
-}
+};
 export interface AttributeOptions {
   ref_layer_id: number;
   keys: ReferenceKeys[];
@@ -160,45 +160,49 @@ export class Attribute {
     return this.settings.stelleId + "_" + this.settings.layerId;
   }
 
-  getOptions() {
-    let options:AttributeOptions;
-    if (this.settings.options.startsWith('{')) {
-      options = JSON.parse(this.settings.options);
+  getOptions(): any {
+    let options: AttributeOptions;
+    if (!this.settings.options) {
+      console.error(`${this.layer.title} Attribue "${this.settings.name}" ohne options`);
+      return {};
     }
-    else {
+    if (this.settings.options.startsWith("{")) {
+      options = JSON.parse(this.settings.options);
+    } else {
       const keyType = this.settings.form_element_type.toLowerCase().slice(-2);
       const semicolonParts = this.settings.options.split(";");
       const commaParts = semicolonParts[0].split(",");
       let display;
       let colonParts = [];
-      let keys:ReferenceKeys[] = [];
+      let keys: ReferenceKeys[] = [];
       // loop over commaParts starting whith second element
       for (let i = 1; i < commaParts.length; i++) {
-        colonParts = commaParts[i].split(':');
-        if (keyType === 'pk') { // pk first fk second
+        colonParts = commaParts[i].split(":");
+        if (keyType === "pk") {
+          // pk first fk second
           keys.push({
-            "pk_id": colonParts[0],
-            "fk_id": colonParts[colonParts.length - 1]
+            pk_id: colonParts[0],
+            fk_id: colonParts[colonParts.length - 1],
           });
-        }
-        else { // fk first pk second
+        } else {
+          // fk first pk second
           keys.push({
-            "pk_id": colonParts[colonParts.length - 1],
-            "fk_id": colonParts[0]
+            pk_id: colonParts[colonParts.length - 1],
+            fk_id: colonParts[0],
           });
         }
       }
-      if (keyType === 'pk') {
+      if (keyType === "pk") {
         // for only two comma parts (id and keys), take display from the only or second key, else the last comma part, Note: SubFormFK normaly have not display (Vorschau)
-        display = (commaParts.length === 2 ? commaParts[1].split(':')[commaParts[1].split(':').length - 1] : commaParts[commaParts.length - 1]);
+        display = commaParts.length === 2 ? commaParts[1].split(":")[commaParts[1].split(":").length - 1] : commaParts[commaParts.length - 1];
       }
 
       options = {
-        "ref_layer_id": parseInt(commaParts[0]),
-        "keys": keys,
-        "window_type": semicolonParts[1],
-        "display": display
-      }
+        ref_layer_id: parseInt(commaParts[0]),
+        keys: keys,
+        window_type: semicolonParts[1],
+        display: display,
+      };
     }
     return options;
   }
@@ -329,13 +333,13 @@ export class Attribute {
     let slType = "";
 
     switch (true) {
-      case $.inArray(pgType, ["character varying", "text", "character", "bool"]) > -1:
+      case ["character varying", "text", "character", "bool"].includes(pgType):
         slType = "TEXT";
         break;
-      case $.inArray(pgType, ["int4", "int2", "int8", "int16", "bigint", "integer"]) > -1:
+      case ["int4", "int2", "int8", "int16", "bigint", "integer"].includes(pgType):
         slType = "INTEGER";
         break;
-      case $.inArray(pgType, ["double precision", "numeric"]) > -1:
+      case ["double precision", "numeric"].includes(pgType):
         slType = "REAL";
         break;
       case pgType == "date":
@@ -453,7 +457,7 @@ export class Attribute {
                     return p.join(" ");
                   })
                   .join(", ") +
-                ")"
+                ")",
             )
               .toEwkb()
               .toString("hex", 0, maxByte)
@@ -471,7 +475,7 @@ export class Attribute {
                     return p.join(" ");
                   })
                   .join(", ") +
-                ")"
+                ")",
             )
               .toEwkb()
               .toString("hex", 0, maxByte)
@@ -532,7 +536,11 @@ export class Attribute {
         slValue = "'" + this.formField.toISO(pgValue) + "'";
         break;
       default:
-        slValue = "'" + pgValue + "'";
+        if (typeof pgValue === "string") {
+          slValue = "'" + pgValue.replace("'", "''") + "'";
+        } else {
+          slValue = "'" + pgValue + "'";
+        }
     }
     //kvm.alog("slValue: " + slValue, 5);
     return slValue;
@@ -660,7 +668,7 @@ export class Attribute {
           </g>\
         </svg>\
         <i id="rtr2goToGpsPositionButton" class="fa fa-pencil fa-2x" aria-hidden="true" style="float: right; margin-right: 20px; margin-left: 7px; color: rgb(38, 50, 134);"></i>\
-        <!--input type="text" id="geom_wkt" value=""//-->'
+        <!--input type="text" id="geom_wkt" value=""//-->',
         );
       }
       valueDiv.append('<textarea cols="40" rows="5" id="geom_wkt"></textarea>');
@@ -710,7 +718,7 @@ export class Attribute {
 							onclick="kvm.newSubFeature({ parentLayerId: '${this.getGlobalLayerId()}', subLayerId: '${this.getGlobalSubLayerId()}', fkAttribute: '${this.getFKAttribute()}'})"
 							style="float: right; padding: 2px; margin-right: 5px"
 						/>
-					`)
+					`),
         )
         .append(valueDiv.append(formField.element));
     } else {

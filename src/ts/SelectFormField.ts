@@ -25,7 +25,7 @@ export class SelectFormField extends AbstractField {
 
     this.element = createHtmlElement("select");
     this.element.id = String(attr.settings.index);
-    this.element.name = attr.settings.name;
+    this.element.name = attr.settings.name || "";
     this.element.multiple = this.isArrayType();
     this.element.disabled = attr.settings.privilege == "0";
     if (attr.settings.required_by) {
@@ -54,28 +54,6 @@ export class SelectFormField extends AbstractField {
       // find attribute with the name in required_by
       // apply the filter on the options, call filter_by_required
     }
-
-    // this.element = $(`
-    // 	<select
-    // 		id="${this.settings.index}"
-    // 		name="${this.settings.name}"
-    //     ${this.isArrayType() ? "multiple" : ""}
-    // 		${this.settings.privilege == "0" ? " disabled" : ""}
-    // 		${kvm.coalesce(this.settings.required_by, "") != "" ? ' required_by="' + this.settings.required_by + '"' : ""}
-    // 		${kvm.coalesce(this.settings.requires, "") != "" ? ' requires="' + this.settings.requires + '"' : ""}
-    // 	>
-    //     ${this.isArrayType() ? "" : '<option value="">Bitte wählen</option>'}
-    // 		${$.map(this.settings.enums, function (option: any) {
-    //       //          option = option.replace(/(^')|('$)/g, '')
-    //       return `
-    //     <option
-    //       value="${option.value}"
-    //       ${kvm.coalesce(option.requires_value, "") != "" ? 'requires="' + option.requires_value + '"' : ""}
-    //     >${option.output}</option>
-    //   `;
-    //     }).join("\n")}
-    // 	</select>
-    // `);
   }
 
   // get(key:string) {

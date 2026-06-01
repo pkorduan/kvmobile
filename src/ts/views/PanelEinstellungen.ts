@@ -1,12 +1,17 @@
 import { Kvm, kvm } from "../app";
 import { Configuration, configurations } from "../configurations";
 import { FileUtils } from "../controller/files";
+import { AccessError } from "../KVWMapServerConnection";
 import { AttributFilter, Layer } from "../Layer";
 import { sperrBildschirm } from "../SperrBildschirm";
 import { RequestStellenResponse, Stelle } from "../Stelle";
-import { createHtmlElement, removeOptions, setValueOfElement, getSqliteVersion, getSpatialLiteVersion, download, readFileAsString, executeSQL, confirm, deleteDatabase, openDatabase } from "../Util";
+import { createHtmlElement, removeOptions, setValueOfElement, getSqliteVersion, getSpatialLiteVersion, executeSQL, confirm, deleteDatabase, alertNative, showError, showAlert, writeLog } from "../Util";
 
-abstract class PanelEinstellungen {
+export type KeysMatching<T, VALUE> = {
+  [K in keyof T]: T[K] extends VALUE ? K : never;
+}[keyof T];
+
+export abstract class PanelEinstellungen {
   domHeader: HTMLElement;
 
   static currentPanel: PanelEinstellungen;
@@ -36,7 +41,10 @@ abstract class PanelEinstellungen {
     }
   }
 
-  expand() {
+  expand(expand?: boolean) {
+    if (expand && !this.domHeader.classList.contains("b-collapsed")) {
+      return;
+    }
     if (!this.domHeader.classList.toggle("b-collapsed")) {
       if (PanelEinstellungen.currentPanel) {
         PanelEinstellungen.currentPanel.domHeader.classList.add("b-collapsed");
@@ -100,6 +108,264 @@ export function showWeniger() {
   toggleWeniger.style.display = "none";
 }
 
+export class Zugangsdaten extends PanelEinstellungen {
+  stelle: Stelle;
+
+  kvwmapServerUrlField: HTMLInputElement;
+
+  kvwmapServerLoginNameField: HTMLInputElement;
+  kvwmapServerPasswortField: HTMLInputElement;
+
+  bttnConfigCredential: HTMLButtonElement;
+  bttnConfigCredentialCancel: HTMLButtonElement;
+
+  constructor() {
+    super("h2_credential");
+    console.error("h2_credential");
+    this.kvwmapServerUrlField = <HTMLInputElement>document.getElementById("kvwmapServerUrlFieldX");
+
+    this.kvwmapServerLoginNameField = <HTMLInputElement>document.getElementById("kvwmapServerLoginNameFieldX");
+    this.kvwmapServerPasswortField = <HTMLInputElement>document.getElementById("kvwmapServerPasswortFieldX");
+    this.bttnConfigCredential = <HTMLButtonElement>document.getElementById("bttnConfigCredential");
+    this.bttnConfigCredentialCancel = <HTMLButtonElement>document.getElementById("bttnConfigCredentialCancel");
+
+    this.kvwmapServerLoginNameField.addEventListener("input", (ev) => {
+      this.changed(ev);
+    });
+    this.kvwmapServerPasswortField.addEventListener("input", (ev) => {
+      this.changed(ev);
+    });
+    this.bttnConfigCredential.addEventListener("click", () => this.bttnConfigCredentialClicked());
+    kvm.addEventListener(Kvm.EVENTS.ACTIVE_CONFIGURATION_CHANGED, (evt) => {
+      this.init();
+    });
+    this.bttnConfigCredentialCancel.addEventListener("click", () => {
+      this.init();
+    });
+    this.init();
+  }
+
+  private async bttnConfigCredentialClicked() {
+    sperrBildschirm.show();
+    try {
+      kvm.serverConnection.credential.login = this.kvwmapServerLoginNameField.value.trim();
+      kvm.serverConnection.credential.password = this.kvwmapServerPasswortField.value.trim();
+      try {
+        const result = await kvm.serverConnection.runLogin();
+        console.error(result);
+        if (result.success !== true) {
+          await kvm.msg("Die Zugangsdaten sind fehlhaft.", "Fehler");
+        } else if (result.success === true) {
+          kvm.setConfigurationOption("kvwmapServerLoginName", kvm.serverConnection.credential.login);
+          kvm.setConfigurationOption("kvwmapServerPasswort", kvm.serverConnection.credential.password);
+          await kvm.msg("Die Zugangsdaten wurden übernommen.", "Bestätigung");
+          this.bttnConfigCredential.style.display = "none";
+          this.bttnConfigCredentialCancel.style.display = "none";
+        }
+      } catch (ex) {
+        await kvm.msg("Die Zugangsdaten konnten nicht geprüft werden. " + ex.message, "Fehler");
+      }
+    } catch (ex) {
+      console.error(ex);
+    }
+    sperrBildschirm.close();
+  }
+
+  private changed(ev: Event) {
+    console.info(ev);
+    const loginName = this.kvwmapServerLoginNameField.value.trim();
+    const pwd = this.kvwmapServerPasswortField.value.trim();
+
+    const loginNameCurrent = kvm.getConfigurationOption("kvwmapServerLoginName");
+    const pwdCurrent = kvm.getConfigurationOption("kvwmapServerPasswort");
+
+    if (loginNameCurrent === loginName && pwdCurrent === pwd) {
+      this.bttnConfigCredential.style.display = "none";
+      this.bttnConfigCredentialCancel.style.display = "none";
+    } else {
+      this.bttnConfigCredential.style.display = "";
+      this.bttnConfigCredentialCancel.style.display = "";
+    }
+  }
+
+  private init() {
+    this.kvwmapServerUrlField.value = kvm.getConfigurationOption("kvwmapServerUrl") || "";
+    this.kvwmapServerLoginNameField.value = kvm.getConfigurationOption("kvwmapServerLoginName") || "";
+    this.kvwmapServerPasswortField.value = kvm.getConfigurationOption("kvwmapServerPasswort") || "";
+    this.bttnConfigCredential.style.display = "none";
+    this.bttnConfigCredentialCancel.style.display = "none";
+  }
+}
+
+export type StelleSettings = RequestStellenResponse["stellen"][number];
+
+export class Stellenauswahl extends PanelEinstellungen {
+  stelle: Stelle;
+  stellenSettings: StelleSettings[];
+  kvwmapStelleX: HTMLInputElement;
+  requestStellenButton: HTMLButtonElement;
+  kvwmapServerStelleSelectField: HTMLSelectElement;
+  changeStellenButton: HTMLButtonElement;
+  cancelChangeStellenButton: HTMLButtonElement;
+  kvwmapServerStelleTxt: HTMLElement;
+
+  constructor() {
+    super("h2_stelle");
+    this.kvwmapStelleX = <HTMLInputElement>document.getElementById("kvwmapStelleX");
+    this.requestStellenButton = <HTMLButtonElement>document.getElementById("requestStellenButtonX");
+
+    this.requestStellenButton.addEventListener("click", () => this.requestStellenButtonClicked());
+
+    this.kvwmapServerStelleSelectField = <HTMLSelectElement>document.getElementById("kvwmapServerStelleSelectFieldX");
+
+    this.changeStellenButton = <HTMLButtonElement>document.getElementById("changeStellenButtonX");
+    this.changeStellenButton.addEventListener("click", () => {
+      this.changeStellenButtonClicked();
+    });
+    this.cancelChangeStellenButton = <HTMLButtonElement>document.getElementById("cancelChangeStellenButtonX");
+    this.cancelChangeStellenButton.addEventListener("click", () => this.resetForm());
+
+    this.kvwmapServerStelleTxt = <HTMLElement>document.getElementById("kvwmapServerStelleTxt");
+
+    kvm.addEventListener(Kvm.EVENTS.ACTIVE_STELLE_CHANGED, (evt) => {
+      this.setStelle(evt.newValue);
+    });
+  }
+
+  show() {
+    super.show();
+    const activeStelle = kvm.getActiveStelle();
+    if (activeStelle) {
+      this.setStelle(activeStelle);
+    }
+  }
+
+  setStelle(stelle: Stelle) {
+    //kvm.log("ServerSettings.viewSettings", 4);
+    if (stelle !== this.stelle) {
+      console.log(`setStelle(${stelle?.get("ID")})`);
+      this.stelle = stelle;
+      this.kvwmapStelleX.value = stelle.get("Bezeichnung");
+    }
+  }
+
+  private resetForm() {
+    this.requestStellenButton.style.display = "";
+    this.changeStellenButton.style.display = "none";
+    this.cancelChangeStellenButton.style.display = "none";
+    this.kvwmapServerStelleSelectField.style.display = "none";
+    this.kvwmapServerStelleTxt.style.display = "none";
+  }
+
+  private async changeStellenButtonClicked() {
+    console.info("", this.kvwmapServerStelleSelectField.value);
+    const stelleSetting = this.stellenSettings.find((value) => value.ID === this.kvwmapServerStelleSelectField.value);
+    if (stelleSetting) {
+      console.error("new Stelle:", stelleSetting, kvm);
+      const confirmed = await confirm("Wollen Sie wirklich die Stelle ändern? Dabei gehen alle lokalen Änderungen verloren, die Layer und Einstellungen werden gelöscht und die Anwendung wird mit den Default-Werten der anderen Stellen initialisiert!", "Stellenauswahl", "Ja", "Abbruch");
+      if (confirmed) {
+        sperrBildschirm.show();
+        try {
+          await kvm.updateStelle(stelleSetting);
+          kvm.showSetting("panelLayer");
+        } catch (ex) {
+          await writeLog("Die Stellen konnten nicht abgefragt werden.", ex);
+          await showError("Die Stellen konnten nicht abgefragt werden.", ex);
+        }
+        sperrBildschirm.close();
+      } else {
+        this.show();
+      }
+    }
+    this.resetForm();
+  }
+
+  private async clickedSaveServerSettingsButton() {
+    // this.saveServerSettingsButton.style.display = "none";
+    // if (!navigator.onLine) {
+    //   kvm.msg("Stellen Sie eine Netzverbindung her zum Laden der Layer und speichern Sie noch mal die Servereinstellungen.");
+    // }
+    // const stellen = this.kvwmapServerStellenField.value;
+    // const selectedStelleId = this.kvwmapServerStelleSelectField.value;
+    // const stelleSettings = this.requestStellenResponse.stellen.find((stelle) => {
+    //   return stelle.ID == selectedStelleId;
+    // });
+    // stelleSettings["id"] = this.kvwmapServerIdField.value;
+    // stelleSettings["name"] = this.kvwmapServerNameField.value;
+    // stelleSettings["bezeichnung"] = this.kvwmapServerStelleSelectField.selectedOptions[0].text;
+    // stelleSettings["url"] = this.kvwmapServerUrlField.value;
+    // stelleSettings["login_name"] = this.kvwmapServerLoginNameField.value.trim();
+    // stelleSettings["passwort"] = this.kvwmapServerPasswortField.value;
+    // stelleSettings["Stelle_ID"] = this.kvwmapServerStelleSelectField.value;
+    // const stelle = (this.stelle = new Stelle(stelleSettings));
+    // stelle.saveToStore();
+    // // stelle.activate();
+    // sperrBildschirm.show();
+    // kvm.serverConnection.setServerParameter({
+    //   url: stelle.settings.url,
+    //   login: stelle.settings.login_name,
+    //   password: stelle.settings.passwort,
+    //   stelleId: stelle.settings.Stelle_ID,
+    // });
+    // await kvm.setActiveStelle(stelle);
+    // await stelle.requestLayers();
+    // const layers = kvm.getLayers();
+    // kvm.setActiveLayer(layers.find((obj) => obj.get("geometry_attribute") !== null));
+    // this.kvwmapServerStelleSelectField.style.display = "none";
+    // // this.saveServerSettingsButton.style.display = "none";
+    // this.requestStellenButton.style.display = "";
+    // show("layer");
+    // sperrBildschirm.close();
+  }
+
+  private async requestStellenButtonClicked() {
+    // (serverCredential: { url: string; login: string; password: string }) {
+    // const serverCredential = null;
+    // kvm.serverConnection.setServerParameter(serverCredential);
+    try {
+      const resultObj = <RequestStellenResponse>await kvm.serverConnection.runGetRequest({ go: "mobile_get_stellen" });
+      kvm.store.setItem("userId", resultObj.user_id);
+      kvm.userId = String(resultObj.user_id);
+      kvm.store.setItem("userName", resultObj.user_name);
+      kvm.userName = String(resultObj.user_name);
+      if (resultObj) {
+        if (resultObj.stellen.length === 1) {
+          await showAlert(`Sie sind nur der Stelle ${resultObj.stellen[0].Bezeichnung} zugeordnet. Ein Wechsel der Stelle ist nicht möglich.`);
+          return;
+        }
+
+        const selectField = this.kvwmapServerStelleSelectField;
+        removeOptions(this.kvwmapServerStelleSelectField);
+        this.stellenSettings = resultObj.stellen;
+        resultObj.stellen.forEach((stelle) => {
+          if (stelle.Bezeichnung !== this.stelle?.get("Bezeichnung")) {
+            selectField.append(createHtmlElement("option", selectField, null, { value: stelle.ID, innerText: stelle.Bezeichnung }));
+          }
+        });
+        // setValueOfElement("kvwmapServerStellenField", JSON.stringify(resultObj.stellen));
+        this.requestStellenButton.style.display = "none";
+
+        this.kvwmapServerStelleSelectField.value = resultObj.stellen[0].ID;
+
+        this.changeStellenButton.style.display = "";
+        this.cancelChangeStellenButton.style.display = "";
+        this.kvwmapServerStelleSelectField.style.display = "";
+        this.kvwmapServerStelleTxt.style.display = "";
+      }
+    } catch (ex) {
+      if (ex instanceof AccessError) {
+        alertNative(ex.message);
+      } else {
+        writeLog("Die Stellen konnten nicht abgefragt werden.", ex);
+        await showError("Die Stellen konnten nicht abgefragt werden.", ex);
+      }
+    }
+
+    sperrBildschirm.close();
+  }
+  // this.requestStellen({ url: this.kvwmapServerUrlField.value, login: this.kvwmapServerLoginNameField.value, password: this.kvwmapServerPasswortField.value });
+}
+
 export class Konfiguration extends PanelEinstellungen {
   // dom: HTMLElement;
   selectField: HTMLSelectElement;
@@ -112,7 +378,8 @@ export class Konfiguration extends PanelEinstellungen {
       this.selectFieldChanged();
     });
 
-    const activeConf = kvm.store.getItem("configName");
+    // const activeConf = kvm.store.getItem("configName");
+    const activeConf = kvm.getConfigName();
     for (const configuration of configurations) {
       const option = createHtmlElement("option", selectField);
       option.value = configuration.name;
@@ -140,6 +407,8 @@ export class Konfiguration extends PanelEinstellungen {
       if (confirmed) {
         await kvm.setConfiguration(this.selectField.value);
         show("server");
+      } else {
+        this.show();
       }
     }
   }
@@ -212,11 +481,19 @@ export class Server extends PanelEinstellungen {
     kvm.addEventListener(Kvm.EVENTS.ACTIVE_STELLE_CHANGED, (evt) => {
       this.setStelle(evt.newValue);
     });
-    this.setStelle(kvm.getActiveStelle());
+    const activeStelle = kvm.getActiveStelle();
+    if (activeStelle) {
+      this.setStelle(kvm.getActiveStelle());
+    } else {
+      this.setConfiguration(kvm.getConfigName());
+    }
   }
 
   show() {
     super.show();
+    this.kvwmapServerUrlField.value = kvm.getConfigurationOption("kvwmapServerUrl") || "";
+    this.kvwmapServerNameField.value = kvm.getConfigurationOption("kvwmapServerName") || "";
+    this.kvwmapServerPasswortField.value = kvm.getConfigurationOption("kvwmapServerPasswort") || "";
   }
 
   private setConfiguration(configName: string) {
@@ -238,13 +515,6 @@ export class Server extends PanelEinstellungen {
       this.kvwmapServerPasswortField.value = stelle?.get("passwort") || "";
       this.setActiveStellenBezeichnung(stelle.get("Bezeichnung"));
     }
-
-    // $("#kvwmapServerStelleSelectField").find("option").remove();
-    // // $.each(JSON.parse(this.get("stellen")), function (index, stelle) {
-    // // 	$("#kvwmapServerStelleSelectField").append('<option value="' + stelle.ID + '">' + stelle.Bezeichnung + "</option>");
-    // // });
-    // $("#kvwmapServerStelleSelectField").val(this.get("Stelle_ID"));
-    // $("#kvwmapServerStellenField").val(this.get("stellen"));
   }
 
   private clickedRequestStellenButton() {
@@ -265,7 +535,8 @@ export class Server extends PanelEinstellungen {
               // console.log("Stellenobjekt erzeugt um Stellen abfragen zu können: " + JSON.stringify(stelle));
               //kvm.log("Stellenobjekt erzeugt um Stellen abfragen zu können: " + JSON.stringify(stelle), 4);
               // stelle.reloadLayer;
-              this.requestStellen();
+
+              this.requestStellen({ url: this.kvwmapServerUrlField.value, login: this.kvwmapServerLoginNameField.value, password: this.kvwmapServerPasswortField.value });
             } else {
               kvm.msg("Sie müssen erst die Server URL, Nutzername und Password angeben!");
             }
@@ -279,7 +550,7 @@ export class Server extends PanelEinstellungen {
         }
       },
       "Stellen abfragen",
-      ["ja", "nein"]
+      ["ja", "nein"],
     );
   }
 
@@ -302,12 +573,17 @@ export class Server extends PanelEinstellungen {
     stelleSettings["Stelle_ID"] = this.kvwmapServerStelleSelectField.value;
 
     const stelle = (this.stelle = new Stelle(stelleSettings));
-    // stelle.set("last_delta_version", this.requestStellenResponse.last_delta_version);
 
     stelle.saveToStore();
     // stelle.activate();
     sperrBildschirm.show();
-    kvm.setActiveStelle(stelle);
+    kvm.serverConnection.setServerParameter({
+      url: stelle.settings.url,
+      login: stelle.settings.login_name,
+      password: stelle.settings.passwort,
+      stelleId: stelle.settings.Stelle_ID,
+    });
+    await kvm.setActiveStelle(stelle);
     await stelle.requestLayers();
     const layers = kvm.getLayers();
     kvm.setActiveLayer(layers.find((obj) => obj.get("geometry_attribute") !== null));
@@ -323,81 +599,53 @@ export class Server extends PanelEinstellungen {
     this.activeStelleBezeichnungDiv.style.display = "";
   }
 
-  private getStellenUrl() {
-    let url = this.kvwmapServerUrlField.value;
-    const file = Stelle.getUrlFile(url);
-    url += file + "go=mobile_get_stellen" + "&login_name=" + this.kvwmapServerLoginNameField.value + "&passwort=" + encodeURIComponent(this.kvwmapServerPasswortField.value) + "&format=json";
-    return url;
-  }
-
-  async requestStellen() {
-    const url = this.getStellenUrl();
-
-    console.log("Download Stellen von Url: " + url);
-
-    let txt: string;
+  // #Request mobile_get_stellen
+  async requestStellen(serverCredential: { url: string; login: string; password: string }) {
+    // const url = this.getStellenUrl();
+    kvm.serverConnection.setServerParameter(serverCredential);
     try {
-      const fileEntry = await download(url, cordova.file.dataDirectory + "stellen.json");
-      txt = await readFileAsString(fileEntry);
-    } catch (err) {
-      let errMsg: string;
-      if (err?.cause?.http_status) {
-        const httpStatus = err.cause.http_status;
-        errMsg = "Fehler beim Download der Stellendaten code: " + httpStatus + ".\nPrüfen Sie ob der Nutzer vom dem Gerät aus mit seiner IP auf die Stelle zugreifen darf und die Domain in config.xml eingetragen ist.";
-      } else {
-        errMsg = "Fehler beim Download der Stellendaten.\nPrüfen Sie ob der Nutzer vom dem Gerät aus mit seiner IP auf die Stelle zugreifen darf und die Domain in config.xml eingetragen ist.";
-      }
-      console.error(err);
-      kvm.msg(errMsg);
-    }
-    let errMsg: string;
-    let resultObj: RequestStellenResponse;
-    if (txt) {
-      // const txt = await response.text();
-      if (txt.indexOf('form name="login"') === -1) {
-        try {
-          resultObj = JSON.parse(txt);
-        } catch (err) {
-          errMsg = "Fehler beim Abfragen der Stellendaten. Abfrage liefert keine korrekten Daten vom Server. Entweder sind keine auf dem Server vorhanden oder die URL der Anfrage ist nicht korrekt. Prüfen Sie die Parameter unter Einstellungen.";
+      const resultObj = await kvm.serverConnection.runGetRequest({ go: "mobile_get_stellen" });
+      if (resultObj) {
+        console.log("Download erfolgreich. Antwortobjekt: %o", resultObj);
+        const selectField = this.kvwmapServerStelleSelectField;
+        // this.stellen = resultObj.stellen;
+        this.requestStellenResponse = resultObj;
+
+        removeOptions(this.kvwmapServerStelleSelectField);
+
+        kvm.store.setItem("userId", resultObj.user_id);
+        kvm.userId = String(resultObj.user_id);
+        kvm.store.setItem("userName", resultObj.user_name);
+        kvm.userName = String(resultObj.user_name);
+        resultObj.stellen.forEach((stelle) => {
+          selectField.append(createHtmlElement("option", selectField, null, { value: stelle.ID, innerText: stelle.Bezeichnung }));
+        });
+        setValueOfElement("kvwmapServerStellenField", JSON.stringify(resultObj.stellen));
+        this.requestStellenButton.style.display = "none";
+        if (resultObj.stellen.length === 1) {
+          this.kvwmapServerStelleSelectField.value = resultObj.stellen[0].ID;
+          this.saveServerSettingsButton.style.display = "";
+          // Hier gleich das Laden der Layer starten
+          this.clickedSaveServerSettingsButton();
+        } else {
+          this.saveServerSettingsButton.style.display = "none";
+          this.kvwmapServerStelleSelectField.style.display = "";
         }
+      }
+    } catch (ex) {
+      if (ex instanceof AccessError) {
+        alertNative(ex.message);
       } else {
-        errMsg = "Zugang zum Server verweigert! Prüfen Sie Ihre Zugangsdaten unter Einstellungen.";
+        writeLog("Die Stellen konnten nicht abgefragt werden.", ex);
+        await showError("Die Stellen konnten nicht abgefragt werden.", ex);
       }
     }
+    // }
 
-    if (resultObj) {
-      console.log("Download erfolgreich. Antwortobjekt: %o", resultObj);
-      const selectField = this.kvwmapServerStelleSelectField;
-      // this.stellen = resultObj.stellen;
-      this.requestStellenResponse = resultObj;
-
-      removeOptions(this.kvwmapServerStelleSelectField);
-
-      kvm.store.setItem("userId", resultObj.user_id);
-      kvm.userId = String(resultObj.user_id);
-      kvm.store.setItem("userName", resultObj.user_name);
-      kvm.userName = String(resultObj.user_name);
-      resultObj.stellen.forEach((stelle) => {
-        selectField.append(createHtmlElement("option", selectField, null, { value: stelle.ID, innerText: stelle.Bezeichnung }));
-      });
-      setValueOfElement("kvwmapServerStellenField", JSON.stringify(resultObj.stellen));
-      this.requestStellenButton.style.display = "none";
-      if (resultObj.stellen.length === 1) {
-        this.kvwmapServerStelleSelectField.value = resultObj.stellen[0].ID;
-        this.saveServerSettingsButton.style.display = "";
-        // Hier gleich das Laden der Layer starten
-        this.clickedSaveServerSettingsButton();
-      } else {
-        this.saveServerSettingsButton.style.display = "none";
-        this.kvwmapServerStelleSelectField.style.display = "";
-        sperrBildschirm.close();
-      }
-    }
-
-    if (errMsg) {
-      kvm.msg(errMsg);
-      console.log(errMsg, 1);
-    }
+    // if (errMsg) {
+    //   kvm.msg(errMsg);
+    //   console.log(errMsg, 1);
+    // }
     sperrBildschirm.close();
   }
 
@@ -502,14 +750,21 @@ export class Layers extends PanelEinstellungen {
         try {
           const result = await kvm.syncLayers();
           if (result.hasLayerStrucureChanged) {
-            await kvm.msg(`Es wurden\n${result.sendDataDeltas} Datensätze gesendet\n${result.addedImages} Bilder wurden hinzugefügt\n${result.deletedImages} Bilder wurden gelöscht\nDie Datenstruktur hat sich geändert. Die Layer wurden aktualisiert.`);
+            await kvm.msg(`Es wurden\n${result.sendDataDeltas} Datensätze gesendet\n${result.addedImages} Bilder wurden hinzugefügt\n${result.deletedImages} Bilder wurden gelöscht\n${result.notSucceedAddedImages} Bilder wurden nicht hochgeladen\nDie Datenstruktur hat sich geändert. Die Layer wurden aktualisiert.`);
           } else {
-            await kvm.msg(`Es wurden\n${result.sendDataDeltas} Datensätze gesendet\n${result.addedImages} Bilder wurden hinzugefügt\n${result.deletedImages} Bilder wurden gelöscht\n${result.numExecutedDeltas} Änderungen empfangen.`);
+            await kvm.msg(`Es wurden\n${result.sendDataDeltas} Datensätze gesendet\n${result.addedImages} Bilder wurden hinzugefügt\n${result.deletedImages} Bilder wurden gelöscht\n${result.notSucceedAddedImages} Bilder wurden nicht hochgeladen\n${result.numExecutedDeltas} Änderungen empfangen.`);
           }
           sperrBildschirm.close();
         } catch (ex) {
-          console.error("Fehler beim Synchronisieren", ex);
-          sperrBildschirm.close("Fehler beim Synchronisieren: ", ex);
+          if (ex instanceof AccessError) {
+            await kvm.msg("Die Zugangsdaten sind fehlerhaft. Bitte ändern Sie diese unter Einstellungen|Zugangsdaten");
+            kvm.showSetting("panelZugangsdaten");
+            sperrBildschirm.close();
+          } else {
+            console.error("Fehler beim Synchronisieren", ex);
+            writeLog("Fehler beim Synchronisieren", ex);
+            sperrBildschirm.close("Fehler beim Synchronisieren: ", ex);
+          }
         }
       } else {
         sperrBildschirm.close();
@@ -536,7 +791,7 @@ export class Layers extends PanelEinstellungen {
     radioInput.addEventListener("change", (evt) => {
       this.setActiveLayer(layer);
     });
-    (radioInput.name = "activeLayerId"), (radioInput.value = `${layer.getGlobalId()}`);
+    ((radioInput.name = "activeLayerId"), (radioInput.value = `${layer.getGlobalId()}`));
     const label = createHtmlElement("span", dom, "layer-list-element");
     label.innerText = layer.get("alias") || layer.get("title");
     const menuBttn = createHtmlElement("i", dom, "layer-functions-button fa-regular fa-ellipsis-vertical");
@@ -603,30 +858,12 @@ export class Layers extends PanelEinstellungen {
 
     values.sort((l1, l2) => {
       return l1.layer.get("legendorder") < l2.layer.get("legendorder") ? -1 : 1;
-
-      // const l01standAlone = !l1.layer.createOnlyByParent() && l1.layer.hasEditPrivilege;
-      // const l02standAlone = !l2.layer.createOnlyByParent() && l2.layer.hasEditPrivilege;
-      // if (l01standAlone && !l02standAlone) {
-      //   return -1;
-      // }
-      // if (!l01standAlone && l02standAlone) {
-      //   return 1;
-      // }
-      // return l1.layer.title < l2.layer.title ? -1 : 1;
-
-      // console.info(`${l1.layer.title} ${l1.layer.hasEditPrivilege} > ${l2.layer.title} ${l2.layer.hasEditPrivilege} ==> ${returnV}`);
-      // return returnV;
     });
-    const fragment = document.createDocumentFragment();
+
     for (const item of values) {
-      // const item = newArr[i];
       console.error(item.layer.title + "  " + item.layer.hasEditPrivilege);
       this.divLayerList.appendChild(item.dom);
     }
-    // this.divLayerList.innerHTML = "";
-    // console.info(this.divLayerList);
-    // this.divLayerList.appendChild(fragment);
-    // console.info(this.divLayerList);
   }
 
   removeLayer(layer: Layer) {
@@ -1304,7 +1541,7 @@ export class HintergrundLayer extends PanelEinstellungen {
           }
         },
         "Kacheln für Hintergrundlayer runterladen",
-        ["ja", "nein"]
+        ["ja", "nein"],
       );
     });
   }
@@ -1344,7 +1581,7 @@ export class GPSStatus extends PanelEinstellungen {
         {
           enableHighAccuracy: true,
           timeout: 5000,
-        }
+        },
       );
     } else {
       this.gpsStatusText.innerHTML = "GPS wird vom Browser nicht unterstützt.";
@@ -1380,7 +1617,7 @@ export class GPSStatus extends PanelEinstellungen {
         {
           enableHighAccuracy: true,
           timeout: 5000,
-        }
+        },
       );
     }
   }
@@ -1486,7 +1723,7 @@ export class Database extends PanelEinstellungen {
           }
         },
         "Datenbanksicherung",
-        ["OK", "Abbrechen"]
+        ["OK", "Abbrechen"],
       );
     });
 
@@ -1508,7 +1745,7 @@ export class Database extends PanelEinstellungen {
           }
         },
         "Bilddaten sichern?",
-        ["ja", "nein"]
+        ["ja", "nein"],
       );
     });
 
@@ -1686,5 +1923,39 @@ export class Protokoll extends PanelEinstellungen {
 export class Update extends PanelEinstellungen {
   constructor() {
     super("h2_update");
+  }
+}
+
+export class Reset extends PanelEinstellungen {
+  constructor() {
+    super("h2_reset");
+    document.getElementById("bttn-reset").addEventListener("click", () => {
+      this.resetBttnClicked();
+    });
+  }
+
+  async resetBttnClicked() {
+    const confirmed = await confirm("Wollen Sie wirklich die APP zurücksetzen? Dabei gehen alle lokalen Änderungen verloren, die Layer und Einstellungen werden gelöscht und die Anwendung wird mit den Default-Werten der anderen Stellen initialisiert!", "Zurücksetzen", "Ja", "Abbruch");
+    if (confirmed) {
+      // wir merken uns Username/Password
+      const kvwmobileLoginName = kvm.store.getItem("kvwmapServerLoginName");
+      const kvwmobilePassword = kvm.store.getItem("kvwmapServerPasswort");
+      kvm.store.clear();
+      if (kvwmobileLoginName) {
+        kvm.store.setItem("kvwmapServerLoginName", kvwmobileLoginName);
+      }
+      if (kvwmobilePassword) {
+        kvm.store.setItem("kvwmapServerPasswort", kvwmobilePassword);
+      }
+      try {
+        const deleted = await deleteDatabase(kvm.getConfigurationOption("dbname"));
+        if (deleted) {
+          await alertNative("Die App wird jetzt neugestartet.", "");
+          window.location.reload();
+        }
+      } catch (ex) {
+        alertNative("Fehler beim Löschen der Datenbank.", "Fehler");
+      }
+    }
   }
 }

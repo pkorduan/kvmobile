@@ -71,7 +71,12 @@ export class SelectAutoFormField extends AbstractField implements Field {
     }
 
     if (typeof val === "string" && this.isArrayType()) {
-      val = val.replace(/[{}]+/g, "").split(",");
+      const x = val.match(/ARRAY\[(\d+)\]/);
+      if (x) {
+        val = x[1];
+      } else {
+        val = val.replace(/[{}]+/g, "").split(",");
+      }
     }
 
     // this.element.val(val == "null" ? "" : val);

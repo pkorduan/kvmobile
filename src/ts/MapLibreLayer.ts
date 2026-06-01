@@ -206,7 +206,7 @@ export class MapLibreLayer extends LLayer {
           for (let i = 0; i < style.layers.length; i++) {
             MapLibreLayer.maplibreGLMap.addLayer(style.layers[i], layer.id);
           }
-        })
+        }),
       );
     }
   }
@@ -242,7 +242,7 @@ export class MapLibreLayer extends LLayer {
     kvm.store.setItem("layerSettings_" + this.getGlobalId(), settings);
     //console.log("%s: layerSettings_%s eingetragen.", this.title, this.getGlobalId());
 
-    if ($.inArray(this.get("id"), layerIds) < 0) {
+    if (layerIds.includes(this.get("id"))) {
       console.log("%s->saveToStore: Insert layerId %s in layerIds List at index %s", this.title, this.get("id"), this.stelle.getLayerDrawingIndex(this));
       layerIds.splice(this.stelle.getLayerDrawingIndex(this), 0, this.get("id"));
       kvm.store.setItem("layerIds_" + this.stelle.get("ID"), JSON.stringify(layerIds));

@@ -16,6 +16,14 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 
 # Change log
 
+## 1.21.00
+
+- Feature
+  - Kommunikation mit dem Server über die Klasse KVWMapServerConnection
+  - Eine Standard-Konfiguration wird in der config.xml (Parameter: kvw-konfig) festgelegt
+- Bugfixes
+  - etliche
+
 ## 1.20.10
 
 - Bugfixes

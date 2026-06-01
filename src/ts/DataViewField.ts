@@ -1,5 +1,5 @@
 import { kvm } from "./app";
-import { createHtmlElement, getWebviewUrl, confirm } from "./Util";
+import { createHtmlElement, getWebviewUrl, confirm, listFilesF, getSize } from "./Util";
 import { Attribute, AttributeSetting } from "./Attribute";
 import { Feature } from "./Feature";
 
@@ -9,6 +9,7 @@ export class DataViewField {
   images_div_id: string;
   attribute: Attribute;
   private dom: HTMLElement;
+  private _feature: Feature;
 
   /**
    * create a field in data view in the form
@@ -69,9 +70,14 @@ export class DataViewField {
     return this.dom && this.dom.style.display !== "none";
   }
 
-  async setDocumentValue(val) {
+  async setDocumentValue(val: string) {
     try {
       // console.error(`DataViewField.setDocumentValue(${val})`);
+      try {
+        listFilesF("file:///data/user/0/de.gdiservice.kvmobile.dev/cache/");
+      } catch (ex) {
+        console.error(ex);
+      }
       val = kvm.coalesce(val, "");
       this.element.innerHTML = "";
       const imgPrevDiv = createHtmlElement("div", this.element);
@@ -79,24 +85,29 @@ export class DataViewField {
       this.element.append(imgPrevDiv);
 
       // create new images if exists
-      if (val == "") {
+      if (val == "" || /^\{\s*\}$/.test(val)) {
         imgPrevDiv.style.display = "none";
       } else {
         imgPrevDiv.style.display = "";
         //console.log("setValue add images to previews div: %s", val);
         // console.log(this);
         const images = kvm.removeBrackes(val).split(",");
+        const feature = this._feature;
 
         for (let i = 0; i < images.length; i++) {
           const remoteFile = kvm.removeQuotas(images[i]);
           const localFile = kvm.removeOriginalName(kvm.serverToLocalPath(remoteFile));
+          const size = await getSize(localFile);
+
+          console.error("size='" + size + "'");
           const imgUrl = (await getWebviewUrl(localFile)) || "/img/no_image.png";
 
           const imgDiv = createHtmlElement("input", null, "img preview", {
             id: `preview_${this.get("index")}_${i}`,
             field_id: this.get("index"),
           });
-          imgDiv.style.backgroundImage = `url('${imgUrl}')`;
+          kvm.imageLoader.loadImage(this._feature, remoteFile, imgDiv);
+          // imgDiv.style.backgroundImage = `url('${imgUrl}')`;
 
           imgDiv.addEventListener("click", (evt) => {
             cordova.plugins.fileOpener2.open(localFile, "image/jpeg", {
@@ -111,47 +122,48 @@ export class DataViewField {
           });
           imgPrevDiv.append(imgDiv);
 
-          window.resolveLocalFileSystemURL(
-            localFile,
-            function (fileEntry) {
-              console.log("Datei " + fileEntry.toURL() + " existiert.");
-              // Hier muss nix mehr gemacht werden weil Bild schon Einstellungen hat.
-              //const src = fileEntry.toURL();
-              //console.log("Set img src: %s", src);
-              //this.imgDiv.attr("src", src);
-            }.bind({
-              context: this,
-              localFile: localFile,
-              remoteFile: remoteFile,
-              imgDiv: imgDiv,
-            }),
-            function () {
-              //console.log("Datei " + this.localFile + " existiert nicht!");
-              if (navigator.onLine) {
-                //console.log("Try to download file: %s", this.remoteFile);
-                kvm.getActiveLayer().downloadImage(this.localFile, this.remoteFile);
-              } else {
-                console.log("Kein Netz set src: img/no_image.png");
-                this.imgDiv.css("background-image", "img/no_image.png");
-                /*
-              let imgDiv = $(
-                '<div class="img" src="img/no_image.png" style="background-image: url(' +
-                  this.localFile +
-                  ');" field_id="' +
-                  this.context.get("index") +
-                  '"name="preview_' +
-                  this.localFile +
-                  '"></div>'
-              );
-              */
-              }
-            }.bind({
-              context: this,
-              localFile: localFile,
-              remoteFile: remoteFile,
-              imgDiv: imgDiv,
-            })
-          );
+          // RTR
+          // window.resolveLocalFileSystemURL(
+          //   localFile,
+          //   function (fileEntry) {
+          //     console.log("Datei " + fileEntry.toURL() + " existiert.");
+          //     // Hier muss nix mehr gemacht werden weil Bild schon Einstellungen hat.
+          //     //const src = fileEntry.toURL();
+          //     //console.log("Set img src: %s", src);
+          //     //this.imgDiv.attr("src", src);
+          //   }.bind({
+          //     context: this,
+          //     localFile: localFile,
+          //     remoteFile: remoteFile,
+          //     imgDiv: imgDiv,
+          //   }),
+          //   function () {
+          //     //console.log("Datei " + this.localFile + " existiert nicht!");
+          //     if (navigator.onLine) {
+          //       //console.log("Try to download file: %s", this.remoteFile);
+          //       kvm.getActiveLayer().downloadImage(feature, this.localFile, this.remoteFile);
+          //     } else {
+          //       console.log("Kein Netz set src: img/no_image.png");
+          //       this.imgDiv.css("background-image", "img/no_image.png");
+          //       /*
+          //     let imgDiv = $(
+          //       '<div class="img" src="img/no_image.png" style="background-image: url(' +
+          //         this.localFile +
+          //         ');" field_id="' +
+          //         this.context.get("index") +
+          //         '"name="preview_' +
+          //         this.localFile +
+          //         '"></div>'
+          //     );
+          //     */
+          //     }
+          //   }.bind({
+          //     context: this,
+          //     localFile: localFile,
+          //     remoteFile: remoteFile,
+          //     imgDiv: imgDiv,
+          //   }),
+          // );
         }
       }
     } catch (ex) {
@@ -215,6 +227,7 @@ export class DataViewField {
   }
 
   setValue(f: Feature, val: any) {
+    this._feature = f;
     if (val == "null") {
       val = null;
     }
@@ -247,6 +260,7 @@ export class DataViewField {
     switch (this.get("form_element_type")) {
       case "Dokument":
         // open image in viewer
+        const feature = this._feature;
         $('div[name$="' + name + '"]').on("click", function (evt) {
           var target = $(evt.target),
             src = target.attr("src"),
@@ -260,7 +274,7 @@ export class DataViewField {
                   var remoteFile = target.attr("name"),
                     localFile = kvm.getActiveLayer().attributes[fieldId].formField.serverToLocalPath(remoteFile);
 
-                  kvm.getActiveLayer().downloadImage(localFile, remoteFile);
+                  kvm.getActiveLayer().downloadImage(feature, localFile, remoteFile);
                 }
                 if (buttonIndex == 2) {
                   // nein
@@ -268,7 +282,7 @@ export class DataViewField {
                 }
               },
               "",
-              ["ja", "nein"]
+              ["ja", "nein"],
             );
           } else {
             console.log("Versuche das Bild zu öffnen: " + src);
@@ -297,6 +311,7 @@ export class DataViewField {
     // TODO jquery
     //console.log("DataViewField: Add Image with src: %s and name: %s", src, name);
     // console.log("DataViewField.addimage", src, name);
+    const feature = this._feature;
     name = name == "" ? src : name;
     const imgDiv = $('<div class="img" src="' + src + '" style="background-image: url(' + src + ');" field_id="' + this.get("index") + '"name="' + name + '"></div>');
     $("#" + this.images_div_id)
@@ -318,7 +333,7 @@ export class DataViewField {
                 var remoteFile = target.attr("name"),
                   localFile = kvm.getActiveLayer().attributes[fieldId].formField.serverToLocalPath(remoteFile);
 
-                kvm.getActiveLayer().downloadImage(localFile, remoteFile);
+                kvm.getActiveLayer().downloadImage(feature, localFile, remoteFile);
               }
               if (buttonIndex == 2) {
                 // nein
@@ -326,7 +341,7 @@ export class DataViewField {
               }
             },
             "",
-            ["ja", "nein"]
+            ["ja", "nein"],
           );
         } else {
           kvm.msg("Kein Internet! Bild kann gerade nicht heruntergeladen werden.", "Bilder Download");
@@ -354,7 +369,7 @@ export class DataViewField {
                 }
               },
               "",
-              ["ja", "nein"]
+              ["ja", "nein"],
             );
           },
         });

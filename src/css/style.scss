@@ -13,7 +13,11 @@ body {
   margin: 0px;
   padding: 0px;
   overflow: hidden;
-  font: 100.01% Verdana, Arial, Helvetica, sans-serif;
+  font:
+    100.01% Verdana,
+    Arial,
+    Helvetica,
+    sans-serif;
   font-size: 24px;
   // display: flex;
   // flex-direction: column;
@@ -1328,4 +1332,33 @@ i .fa-undo {
   position: absolute;
   left: 100%;
   font-size: 24px;
+}
+
+#login-box {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+  border: 1px solid #ccc;
+  width: 100%;
+  margin: 20px auto;
+  z-index: 3900;
+}
+
+#login-box button {
+  height: 2.8em;
+  font-size: 0.7em;
+  font-weight: bold;
+}
+
+#login-box .title {
+  font-weight: bold;
+  text-align: center;
+  font-size: 1.2em;
+}
+
+#login-box .emphasis {
+  border-color: red;
+  border-width: thick;
 }

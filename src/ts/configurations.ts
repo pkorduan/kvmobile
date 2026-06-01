@@ -1080,9 +1080,166 @@ export const configurations: Configuration[] = [
      * der verwendete Pfad ermittelt und die Einstellung überschrieben.
      */
     //  localImgPath: 'file:///storage/' + 'BAB2-4AA9' + '/Android/data/de.gdiservice.kvmobile/cache/',
-    localImgPath: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/",
-    localTilePath: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/",
-    localBackupPath: "file:///storage/emulated/0/Documents/",
+    // localImgPath: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/",
+    // localTilePath: "file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/files/",
+    // localBackupPath: "file:///storage/emulated/0/Documents/",
+    get localImgPath() {
+      return `${cordova.file.cacheDirectory}`;
+    },
+    get localTilePath() {
+      return `${cordova.file.externalDataDirectory}`;
+    },
+    get localBackupPath() {
+      return `${cordova.file.externalRootDirectory}Documents/`;
+    },
+    projZone: 33,
+    logLevel: 4,
+    debug: true,
+    fontSize: "24px",
+    autoSync: true,
+    minTrackDistance: 5,
+    kvwmapServerId: 1,
+    cameraOptionsQuality: 75,
+    cameraOptionsSaveToPhotoAlbum: true,
+    kvwmapServerName: "kvwmap",
+    markerStyles: {
+      "0": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#dd8181" },
+      "1": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#465dc0" },
+      "2": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#23a325" },
+      "3": { color: "#000000", weight: 4, fill: true, fillOpacity: 0.8, fillColor: "#26a7f1" },
+    },
+    mapSettings: {
+      newPosSelect: 1,
+      minZoom: 7,
+      maxZoom: 20,
+      startZoom: 8,
+      west: 5.5,
+      south: 45.5,
+      east: 17.0,
+      north: 55.0682,
+      startCenterLat: 48.63346,
+      startCenterLon: 9.03363,
+    },
+    kvwmapServerUrl: "https://obstbaum.pomologen-verein.de/kvwmap",
+    kvwmapServerLoginName: "",
+    kvwmapServerPasswort: "",
+    backgroundLayerSettings: [
+      {
+        layer_id: 1,
+        label: "TopPlus",
+        online: true,
+        type: "wms",
+        url: "https://sgx.geodatenzentrum.de/wms_topplus_open",
+        params: {
+          layers: "web_scale",
+          format: "image/png",
+          attribution: "© BKG (Jahr des letzten Datenbezugs) dl-de/by-2-0",
+        },
+      },
+      {
+        layer_id: 2,
+        label: "TopPlus Grau",
+        online: true,
+        type: "wms",
+        url: "https://sgx.geodatenzentrum.de/wms_topplus_open",
+        params: {
+          layers: "web_scale_grau",
+          format: "image/png",
+          attribution: "© BKG (Jahr des letzten Datenbezugs) dl-de/by-2-0",
+        },
+      },
+      {
+        layer_id: 3,
+        label: "TopPlus Light",
+        online: true,
+        type: "wms",
+        url: "https://sgx.geodatenzentrum.de/wms_topplus_open",
+        params: {
+          layers: "web_light",
+          format: "image/png",
+          attribution: "© BKG (Jahr des letzten Datenbezugs) dl-de/by-2-0",
+        },
+      },
+      {
+        layer_id: 4,
+        label: "BaseMap DE",
+        online: true,
+        type: "wms",
+        url: "https://sgx.geodatenzentrum.de/wms_basemapde",
+        params: {
+          layers: "de_basemapde_web_raster_farbe",
+          format: "image/png",
+          attribution: "Basemap DE dl-de/by-2-0",
+        },
+      },
+      {
+        layer_id: 15,
+        label: "Luftbilder WMS",
+        online: true,
+        type: "wms",
+        url: "https://obstbaum.pomologen-verein.de/luftbild",
+        params: {
+          layers: "rgb",
+          format: "image/png",
+          attribution: "OpenData der Länder",
+          maxZoom: 20,
+        },
+      },
+      {
+        layer_id: 16,
+        label: "Luftbilder Österreich",
+        online: true,
+        type: "tile",
+        url: "https://mapsneu.wien.gv.at/basemap/bmaporthofoto30cm/normal/google3857/{z}/{y}/{x}.jpeg",
+        params: {
+          layers: "rgb",
+          format: "image/png",
+          attribution: 'Datenquelle: <a ref="basemap.at">basemap.at</a>',
+          maxZoom: 20,
+        },
+      },
+      {
+        layer_id: 17,
+        label: "Luftbilder Schweiz",
+        online: true,
+        type: "tile",
+        url: "https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/{z}/{x}/{y}.jpeg",
+        params: {
+          layers: "rgb",
+          format: "image/png",
+          attribution: "© Data: swisstopo",
+          maxZoom: 20,
+        },
+      },
+    ],
+  },
+  {
+    name: "StreuobstDev",
+    dbname: "kvmobile",
+    fingerprintAuth: false,
+    confirmSaveNew: false,
+    viewAfterCreate: "formular",
+    viewAfterUpdate: "dataView",
+    newAfterCreate: false,
+    /*
+     * Beispiele für Pfade in denen Bilder gespeichert werden
+     * file:///storage/emulated/0/Android/data/de.gdiservice.kvmobile/cache/
+     * file:///storage/BA82-4AA9/Android/data/de.gdiservice.kvmobile/cache/
+     * emulated/0 wird als default in den Einstellungen gesetzt
+     * der Nutzer kann die Angabe unter Einstellungen setzen
+     * wenn das erste Foto gespeichert wird mit dem Camera Plugin, wird
+     * der verwendete Pfad ermittelt und die Einstellung überschrieben.
+     */
+    //  localImgPath: 'file:///storage/' + 'BAB2-4AA9' + '/Android/data/de.gdiservice.kvmobile/cache/',
+    get localImgPath() {
+      return `${cordova.file.cacheDirectory}`;
+    },
+    get localTilePath() {
+      return `${cordova.file.externalDataDirectory}`;
+    },
+    get localBackupPath() {
+      return `${cordova.file.externalRootDirectory}Documents/`;
+    },
     projZone: 33,
     logLevel: 4,
     debug: true,
@@ -1111,12 +1268,48 @@ export const configurations: Configuration[] = [
       startCenterLat: 48.63346,
       startCenterLon: 9.03363,
     },
-    kvwmapServerUrl: "https://obstbaum.pomologen-verein.de/kvwmap",
+    kvwmapServerUrl: "https://streuobst-dev.gdi-service.de/",
     kvwmapServerLoginName: "",
     kvwmapServerPasswort: "",
     backgroundLayerSettings: [
       {
         layer_id: 1,
+        label: "TopPlus",
+        online: true,
+        type: "wms",
+        url: "https://sgx.geodatenzentrum.de/wms_topplus_open",
+        params: {
+          layers: "web_scale",
+          format: "image/png",
+          attribution: "© BKG (Jahr des letzten Datenbezugs) dl-de/by-2-0",
+        },
+      },
+      {
+        layer_id: 2,
+        label: "TopPlus Grau",
+        online: true,
+        type: "wms",
+        url: "https://sgx.geodatenzentrum.de/wms_topplus_open",
+        params: {
+          layers: "web_scale_grau",
+          format: "image/png",
+          attribution: "© BKG (Jahr des letzten Datenbezugs) dl-de/by-2-0",
+        },
+      },
+      {
+        layer_id: 3,
+        label: "TopPlus Light",
+        online: true,
+        type: "wms",
+        url: "https://sgx.geodatenzentrum.de/wms_topplus_open",
+        params: {
+          layers: "web_light",
+          format: "image/png",
+          attribution: "© BKG (Jahr des letzten Datenbezugs) dl-de/by-2-0",
+        },
+      },
+      {
+        layer_id: 4,
         label: "BaseMap DE",
         online: true,
         type: "wms",
@@ -1128,21 +1321,7 @@ export const configurations: Configuration[] = [
         },
       },
       {
-        layer_id: 3,
-        label: "Luftbilder WMS - old",
-        online: true,
-        type: "wms",
-        url: "https://obstbaum.pomologen-verein.de/ows/luftbilder?TRANSPARENT=true",
-        params: {
-          layers: "Luftbilder",
-          format: "image/png",
-          transparent: "true",
-          attribution: "OpenData der Länder",
-          maxZoom: 20,
-        },
-      },
-      {
-        layer_id: 2,
+        layer_id: 15,
         label: "Luftbilder WMS",
         online: true,
         type: "wms",
@@ -1151,6 +1330,32 @@ export const configurations: Configuration[] = [
           layers: "rgb",
           format: "image/png",
           attribution: "OpenData der Länder",
+          maxZoom: 20,
+        },
+      },
+      {
+        layer_id: 16,
+        label: "Luftbilder Österreich",
+        online: true,
+        type: "tile",
+        url: "https://mapsneu.wien.gv.at/basemap/bmaporthofoto30cm/normal/google3857/{z}/{y}/{x}.jpeg",
+        params: {
+          layers: "rgb",
+          format: "image/png",
+          attribution: 'Datenquelle: <a ref="basemap.at">basemap.at</a>',
+          maxZoom: 20,
+        },
+      },
+      {
+        layer_id: 17,
+        label: "Luftbilder Schweiz",
+        online: true,
+        type: "tile",
+        url: "https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/{z}/{x}/{y}.jpeg",
+        params: {
+          layers: "rgb",
+          format: "image/png",
+          attribution: "© Data: swisstopo",
           maxZoom: 20,
         },
       },

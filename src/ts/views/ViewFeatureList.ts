@@ -75,7 +75,7 @@ export class ViewFeatureList extends View {
   }
 
   setActiveLayer(layer: Layer) {
-    // console.error(`ViewFeatureList.setActiveLayer ${layer?.title}`);
+    console.error(`ViewFeatureList.setActiveLayer ${layer?.title}`);
     if (layer === this.activeLayer) {
       return;
     }
@@ -94,9 +94,7 @@ export class ViewFeatureList extends View {
     } else {
       document.getElementById("featurelistHeading").style.display = "none";
       document.getElementById("featurelistHeadingNoLayer").style.display = "";
-      // this.featurelistHeading.innerHTML = "Noch kein Layer ausgewählt";
-      // this.featurelistBody.innerHTML = 'Wählen Sie unter Einstellungen in der Gruppe "Layer" einen Layer aus. Öffnen Sie dann das Optionen Menü und wählen die Funktion "Daten synchronisieren"!';
-      // this.showSearch.style.display = "none";
+      document.getElementById("featurelistBody").replaceChildren();
     }
   }
 

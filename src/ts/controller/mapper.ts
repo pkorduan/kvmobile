@@ -4,27 +4,6 @@ import * as L from "leaflet";
 import { Buffer } from "buffer";
 import { Feature } from "../Feature";
 
-// kvm.views.mapper = {};
-/*
-auch ne Variante wie man die Features in die Karte bekommt:
-$.getJSON("script_dass_geojson_liefert.php?id=xy", function(data) {
-  L.geoJson(data, {
-      pointToLayer: function (feature, latlng) {
-          return L.circleMarker(latlng, geojsonMarkerOptions);
-
-      },
-       onEachFeature: function (feature, layer) {
-           popupOptions = {maxWidth: 200};
-          layer.bindPopup(feature.properties.popupContent);
-      },
-      coordsToLatLng: function (coords) {
-      return new L.heatLayer(coords);
-      }
-
-  }).addTo(map);
-});
-*/
-
 /**
  * Es gibt 3 Zustände des GPS Trackings, die aber in dieser Anwendung so nicht umgesetzt sind.
  * Statt dessen wird das L.control.locate Control in app.js verwendet.
@@ -195,7 +174,7 @@ export class Mapper {
           gpsSignalIcon.className = "";
         }
         this.signalLevel = 0;
-      }
+      },
     );
   }
 
@@ -256,7 +235,7 @@ export class Mapper {
         }
       },
       "GPS-Position",
-      ["ok", "abbrechen"]
+      ["ok", "abbrechen"],
     );
   }
 

@@ -120,12 +120,15 @@ export class GeometrieFormField extends AbstractField implements Field {
   // }
 
   async setValue(f: Feature, val: any) {
-    this._feature = f;
-    this._value = val;
-    this._oldValue = val;
+    // this._feature = f;
+    // this._value = val;
+    // this._oldValue = val;
+    super.setValue(f, val);
     // console.log("GeometrieFormField.setValue with value:" + val);
     if (val) {
-      const geom = wkx.Geometry.parse(<any>new Buffer(val, "hex"));
+      // ACHTUNG
+      // const geom = wkx.Geometry.parse(<any>new Buffer(val, "hex"));
+      const geom = wkx.Geometry.parse(Buffer.from(val, "hex"));
       this.hiddenElement.value = geom.toEwkb().toString("hex");
       this.geomWkt.value = geom.toWkt();
     } else {
@@ -170,7 +173,7 @@ export class GeometrieFormField extends AbstractField implements Field {
         maximumAge: 2000, // duration to cache current position
         timeout: 5000, // timeout for try to call successFunction, else call errorFunction
         enableHighAccuracy: true, // take position from gps not network-based method
-      }
+      },
     );
   }
 
@@ -212,7 +215,13 @@ export class GeometrieFormField extends AbstractField implements Field {
         if (result.parentFeature) {
           // const parentFeature = parentFK.parentLayer.getFeature(result.parentFeatureId);
           // console.error(`parent ${parentFeature.getLabelValue()}`);
-          const moveToNewParent = await confirm(`Die Geometrie liegt nicht mehr innerhalb des übergeordneten Objektes (${feature.layer.getParentFK().parentLayer.title}:${feature.getLabelValue()}). Soll das Objekt neuzugeordnet werden?`, "Warnung", "JA", "NEIN");
+          let moveToNewParent;
+          if (result.oldParentFeature) {
+            moveToNewParent = await confirm(`Die Geometrie liegt nicht mehr innerhalb des übergeordneten Objektes (${feature.layer.getParentFK().parentLayer.title}:${result.oldParentFeature.getLabelValue()}). Soll das Objekt zu "${result.parentFeature.getLabelValue()}" neuzugeordnet werden?`, "Warnung", "JA", "NEIN");
+          } else {
+            await alertNative(`Die Geometrie liegt innerhalb des übergeordneten Objektes (${feature.layer.getParentFK().parentLayer.title}:${result.parentFeature.getLabelValue()}). Das Objekt wird zugeordnet.`, "Info");
+            moveToNewParent = true;
+          }
           if (moveToNewParent) {
             this._feature.layer.getAttribute(parentFK.fkColumn).formField.setValue(this._feature, result.parentFeature.id);
           } else {
@@ -221,7 +230,11 @@ export class GeometrieFormField extends AbstractField implements Field {
         } else {
           if (!this._alertIsShown) {
             this._alertIsShown = true;
-            await alertNative(`Die Geometrie liegt nicht mehr innerhalb des übergeordneten Objektes (${feature.layer.getParentFK().parentLayer.title}). Die Geometrie wird nicht übernommen.`, "Warnung");
+            if (result.oldParentFeature) {
+              await alertNative(`Die Geometrie liegt nicht mehr innerhalb des übergeordneten Objektes (${feature.layer.getParentFK().parentLayer.title}). Die Geometrie wird nicht übernommen.`, "Warnung");
+            } else {
+              await alertNative(`Die Geometrie liegt nicht innerhalb eines übergeordneten Objektes (${feature.layer.getParentFK().parentLayer.title}). Die Geometrie wird nicht übernommen.`, "Warnung");
+            }
             this._alertIsShown = false;
           }
           return;

@@ -4,6 +4,7 @@ import { MapLibreLayer } from "./MapLibreLayer";
 import { download, executeSQL, readFileAsString } from "./Util";
 import { sperrBildschirm } from "./SperrBildschirm";
 import * as Util from "./Util";
+import { AccessError } from "./KVWMapServerConnection";
 
 /**
  * zum Upload
@@ -84,7 +85,7 @@ type StelleSetting = {
   version: any;
 };
 
-export type RequestStellenResponse = {
+export interface RequestStellenResponse {
   success: boolean;
   user_id: string;
   user_name: string;
@@ -101,9 +102,9 @@ export type RequestStellenResponse = {
     startCenterLon: number;
     layer_params: [];
   }[];
-};
+}
 
-type SendDeltasResponse = {
+export type SendDeltasResponse = {
   success: boolean;
   last_delta_version: number;
   // syncData: {
@@ -353,142 +354,10 @@ export class Stelle {
     return str;
   }
 
-  // /*
-  //  * Request all stellen from active serversetting
-  //  */
-  // async requestStellen() {
-  //   //kvm.log('Stelle.requestStellen: "' + this.getStellenUrl() + '"');
-  //   // const fileTransfer = new FileTransfer();
-  //   // const filename = cordova.file.dataDirectory + "stellen.json";
-  //   const url = this.getStellenUrl();
-
-  //   kvm.log("Download Stellen von Url: " + url);
-  //   //kvm.log("Speicher die Datei auf dem Gerät in Datei: " + filename);
-
-  //   let response: Response;
-  //   try {
-  //     response = await fetch(url);
-  //   } catch (err) {
-  //     const errMsg = "Fehler beim Download der Stellendaten code: " + err.code + " status: " + err.http_status + " Prüfen Sie ob der Nutzer vom dem Gerät aus mit seiner IP auf die Stelle zugreifen darf und die Domain in config.xml eingetragen ist.";
-  //     console.error(err);
-  //     kvm.msg(errMsg);
-  //   }
-  //   let errMsg: string;
-  //   let resultObj: RequestStellenResponse;
-  //   if (response) {
-  //     const txt = await response.text();
-  //     if (txt.indexOf('form name="login"') === -1) {
-  //       try {
-  //         resultObj = JSON.parse(txt);
-  //       } catch (err) {
-  //         errMsg = "Fehler beim Abfragen der Stellendaten. Abfrage liefert keine korrekten Daten vom Server. Entweder sind keine auf dem Server vorhanden oder die URL der Anfrage ist nicht korrekt. Prüfen Sie die Parameter unter Einstellungen.";
-  //       }
-  //     } else {
-  //       errMsg = "Zugang zum Server verweigert! Prüfen Sie Ihre Zugangsdaten unter Einstellungen.";
-  //     }
-  //   }
-
-  //   if (resultObj) {
-  //     console.log("Download erfolgreich. Antwortobjekt: %o", resultObj);
-
-  //     const selectField = <HTMLSelectElement>document.getElementById("kvwmapServerStelleSelectField");
-  //     removeOptions(selectField);
-
-  //     kvm.store.setItem("userId", resultObj.user_id);
-  //     kvm.userId = String(resultObj.user_id);
-  //     kvm.store.setItem("userName", resultObj.user_name);
-  //     kvm.userName = String(resultObj.user_name);
-  //     resultObj.stellen.forEach((stelle) => {
-  //       selectField.append(createHtmlElement("option", selectField, null, { value: stelle.ID, innerText: stelle.Bezeichnung }));
-  //     });
-  //     setValueOfElement("kvwmapServerStellenField", JSON.stringify(resultObj.stellen));
-  //     hideElement("requestStellenButton");
-  //     if (resultObj.stellen.length == 1) {
-  //       setValueOfElement("kvwmapServerStelleSelectField", resultObj.stellen[0].ID);
-  //       showElement("saveServerSettingsButton");
-  //     } else {
-  //       hideElement("saveServerSettingsButton");
-  //     }
-  //     showElement("kvwmapServerStelleSelectField");
-  //   }
-
-  //   if (errMsg) {
-  //     kvm.msg(errMsg);
-  //     kvm.log(errMsg, 1);
-  //   }
-  //   sperrBildschirm.close();
-
-  // }
-
-  getStellenUrl() {
-    //kvm.log("Stellen.getStellenUrl", 4);
-    let url = this.get("url");
-    const file = Stelle.getUrlFile(url);
-
-    url += file + "go=mobile_get_stellen" + "&login_name=" + this.get("login_name") + "&passwort=" + encodeURIComponent(this.get("passwort")) + "&format=json";
-    return url;
-  }
-
-  // finishLayerLoading(layer) {
-  //   // console.log("finishLayerReading: readAllLayers= %s, numLayersLoaded=%s, numLayers=%s", this.readAllLayers, this.numLayersLoaded, this.numLayers);
-  //   if (this.loadAllLayers) {
-  //     if (this.numLayersLoaded < this.numLayers - 1) {
-  //       this.numLayersLoaded += 1;
-  //       sperrBildschirm.tick(`${layer.title}:<br>&nbsp;&nbsp;${this.numLayersLoaded} Layer geladen. Noch ${this.numLayers - this.numLayersLoaded} Layer zu laden.`);
-  //     } else {
-  //       sperrBildschirm.tick(`${layer.title}:<br>&nbsp;&nbsp;Laden beeendet.`);
-  //       this.numLayersLoaded = 0;
-  //       this.loadAllLayers = false;
-  //       this.tableNames = this.getTableNames();
-  //       // read all layers
-  //       kvm.reloadFeatures();
-  //     }
-  //   } else {
-  //     // read only this layer
-  //     this.readAllLayers = false;
-  //     layer.readData();
-  //   }
-  // }
-
-  // finishLayerReading(layer: Layer | MapLibreLayer) {
-  //   // console.log("finishLayerReading: readAllLayers= %s, numLayersRead=%s, numLayers=%s", this.readAllLayers, this.numLayersRead, this.numLayers);
-  //   // console.log(`finishLayerReading ${layer.title}`);
-
-  //   if (this.readAllLayers) {
-  //     if (this.numLayersRead < this.numLayers - 1) {
-  //       this.numLayersRead += 1;
-  //       sperrBildschirm.tick(`${layer.title}:<br>&nbsp;&nbsp;${this.numLayersRead} Layer geladen. Noch ${this.numLayers - this.numLayersRead} Layer zu laden.`);
-  //     } else {
-  //       sperrBildschirm.tick(`${layer.title}:<br>&nbsp;&nbsp;Laden beeendet.`);
-  //       this.numLayersRead = 0;
-  //       this.readAllLayers = false;
-  //       // const globalLayerId = `${kvm.store.getItem("activeStelleId")}_${kvm.store.getItem("activeLayerId")}`;
-  //       // const activeLayer = kvm.getLayer(globalLayerId);
-  //       // if (activeLayer) {
-  //       //   activeLayer.activate(); // activate latest active
-  //       // } else {
-  //       //   layer.activate(); // activate latest loaded
-  //       // }
-  //       // this.tableNames = this.getTableNames();
-  //       // kvm.showActiveItem();
-  //       // kvm.closeSperrDiv("Laden der Layer beendet. Schließe Sperr-Bildschirm.");
-  //       sperrBildschirm.close("");
-  //     }
-  //   } else {
-  //     sperrBildschirm.tick(layer.title + ": Laden beeendet.");
-  //     this.sortOverlays();
-  //     // layer.activate();
-  //     // this.tableNames = this.getTableNames();
-  //     // kvm.showActiveItem();
-  //     // kvm.closeSperrDiv();
-  //   }
-  //   // console.log("activeLayer after finishLayerReading: ", kvm.activeLayer ? kvm.activeLayer.get("id") : "keiner aktiv");
-  //   // console.log(`finishLayerReading ${layer.title} done`);
-  // }
-
   /*
    * get missing parts to url when server.de, server.de/ oder server.de/index.php
    */
+  // toDo
   static getUrlFile(url: string) {
     let file = "";
 
@@ -500,8 +369,9 @@ export class Stelle {
     return file;
   }
 
+  // todo
   createUrl(params: { [key: string]: string }) {
-    let url = this.get("url");
+    let url = kvm.getConfigurationOption("kvwmapServerUrl");
     if (!url.includes("index.php")) {
       if (url.endsWith("/")) {
         url += "index.php";
@@ -520,9 +390,9 @@ export class Stelle {
   getTableNames() {
     return this._tableNames || [];
   }
-  setTableNames(tableNames: string[]) {
-    this._tableNames = tableNames;
-  }
+  // setTableNames(tableNames: string[]) {
+  //   this._tableNames = tableNames;
+  // }
 
   /**
    * Load layer definitions with attributes for stelle
@@ -653,12 +523,7 @@ export class Stelle {
   //   throw new Error("Method not implemented.");
   // }
 
-  /**
-   * Fragt die Layerstruktur beim Server ab. Für jedes Layersetting wird ein Checksum erstellt.
-   *
-   * @returns Promise<LayerRequestResponse> das Ergebnis der Abfrage
-   */
-  async runGetLayersRequest(): Promise<LayerRequestResponse> {
+  async runGetLayersRequestAlt(): Promise<LayerRequestResponse> {
     const filename = cordova.file.dataDirectory + "layers_stelle_" + this.get("ID") + ".json";
     // const url = this.getLayerUrl();
 
@@ -677,6 +542,46 @@ export class Stelle {
     // sperrBildschirm.tick("Download der Layerdaten abgeschlossen.");
     const fileContent = await readFileAsString(fileEntry);
     const layerRequestResponse = <LayerRequestResponse>kvm.parseLayerResult(fileContent);
+    if (layerRequestResponse.success) {
+      for (const layer of layerRequestResponse.layers) {
+        const dataVersion = layer.dataVersion;
+        layer.dataVersion = "0";
+        layer.checksum = await Util.checksum(layer);
+        layer.dataVersion = dataVersion;
+      }
+    }
+    return layerRequestResponse;
+  }
+
+  /**
+   * Fragt die Layerstruktur beim Server ab. Für jedes Layersetting wird ein Checksum erstellt.
+   *
+   * @returns Promise<LayerRequestResponse> das Ergebnis der Abfrage
+   */
+  async runGetLayersRequest(): Promise<LayerRequestResponse> {
+    const filename = cordova.file.dataDirectory + "layers_stelle_" + this.get("ID") + ".json";
+
+    // #Request mobile_get_layers
+    // const url = this.createUrl({
+    //   go: "mobile_get_layers",
+    //   login_name: this.get("login_name"),
+    //   passwort: encodeURIComponent(this.get("passwort")),
+    //   Stelle_ID: this.get("Stelle_ID"),
+    //   kvmobile_version: kvm.versionNumber,
+    //   format: "json",
+    // });
+
+    const layerRequestResponse = <LayerRequestResponse>await kvm.serverConnection.runGetRequest({
+      go: "mobile_get_layers",
+      kvmobile_version: kvm.versionNumber,
+    });
+    console.info("#Request mobile_get_layers", layerRequestResponse);
+
+    // console.log("runGetLayersRequest mit url: ", kvm.replacePassword(url));
+    // const fileEntry = await download(url, filename);
+
+    // const fileContent = await readFileAsString(fileEntry);
+    // const layerRequestResponse = <LayerRequestResponse>kvm.parseLayerResult(fileContent);
     if (layerRequestResponse.success) {
       for (const layer of layerRequestResponse.layers) {
         const dataVersion = layer.dataVersion;
@@ -782,9 +687,9 @@ export class Stelle {
       // kvm.setConnectionStatus();
       //console.log('Store after save layer: %o', kvm.store);
       // todo rtr
-      // $("#requestLayersButton").hide();
-      // $("#featurelistBody").html('Wählen Sie unter Einstellungen in der Gruppe "Layer" einen Layer aus. Öffnen Sie dann das Optionen Menü und wählen die Funktion "Daten synchronisieren"!');
-      // $("#showSearch").hide();
+      // $("# requestLayersButton").hide();
+      // $("# featurelistBody").html('Wählen Sie unter Einstellungen in der Gruppe "Layer" einen Layer aus. Öffnen Sie dann das Optionen Menü und wählen die Funktion "Daten synchronisieren"!');
+      // $("# showSearch").hide();
       // hier nicht schließen, sonden am Ende von requestData kvm.closeSperrDiv();
     } else {
       console.log("Fehlerausgabe von parseLayerResult!", 4);
@@ -828,11 +733,11 @@ export class Stelle {
         const dstFile = "deltas.json";
 
         const fileEntry = await Util.writeData(dstDir, dstFile, dataObj);
-        // console.log(`Successful written deltas of layer "${this.title}" into File.`);
-        const fileUploadResult = await this._upload(fileEntry);
 
-        const response = <SendDeltasResponse>JSON.parse(fileUploadResult.response);
-        resolve(response);
+        const sendDeltasResponse = await kvm.serverConnection.mobileSyncAll(fileEntry, this.getLastDeltaVersion());
+
+        // const response = <SendDeltasResponse>JSON.parse(fileUploadResult.response);
+        resolve(sendDeltasResponse);
       } catch (ex) {
         console.error(`Fehler beim Erstellen oder Senden der Deltas.`, ex);
         reject({
@@ -844,21 +749,13 @@ export class Stelle {
   }
 
   /*
-   * Sync images
-   * ToDos
-   * -- Uploader, der in regelmäßigen Abständen schaut ob es neue Bilder hochzuladen und ob es welche zu löschen gibt.
-   * -- Wenn es welche zum hochladen gibt, versucht er die Bilder der Reihe nach hochzuladen.
-   *    - Wenn es geklappt hat, aus der Liste der hochzuladenen Bilder löschen
-   * -- Wenn es welche zu löschen gibt, versucht er die Info an den Server zu schicken.
-   *    - Wenn der Server gemeldet hat, dass er das Bild erfolgreich gelöscht hat, aus der Liste der zu löschenden Bilder entfernen.
-   * -- Registrieren wenn alle Bilder synchronisiert wurden, dann sperr_div aus und Erfolgsmeldung.
-   * Anforderung von Dirk
-   * Metainfos zu einem Bild speichern. Da könnte auch die Info ran ob Bild schon geuploaded oder zu löschen ist. Wenn upload
-   * geklappt hat, könnte Status von to_upload zu uploaded geändert werden und wenn löschen auf dem Server geklappt hat,
-   * kann das Bild auch in der Liste der Bilder und somit auch deren Metadaten gelöscht werden.
+   *
+   * Überträgt neue Bilder auf den Server bzw. sendet Requests zum Löschen von Bildern auf dem Server.
+   * -- Deltas werdenn nicht aus der DB gelöscht.
+   *
    *
    */
-  async syncImages(): Promise<{ deletedImages: number; addedImages: number }> {
+  async syncImages(): Promise<{ deletedImages: number; addedImages: number; notSucceedAddedImages: number }> {
     console.log(`syncImages`);
 
     try {
@@ -873,11 +770,16 @@ export class Stelle {
         //kvm.log(numRows + " deltas gefunden.", 3);
         let deletedImages = 0;
         let addedImages = 0;
+        let notSucceedAddedImages = 0;
         for (let i = 0; i < numRows; i++) {
           const deltaRow = <DeltaImageRow>rs.rows.item(i);
           if (deltaRow.action === "insert") {
-            await this.sendNewImage(deltaRow);
-            addedImages++;
+            const succeed = await this.sendNewImage(deltaRow);
+            if (succeed) {
+              addedImages++;
+            } else {
+              notSucceedAddedImages++;
+            }
           }
           if (deltaRow.action === "delete") {
             //kvm.log('Lösche Bild auf dem Server mit SQL: ' + rs.rows.item(i).delta, 3);
@@ -885,70 +787,61 @@ export class Stelle {
             deletedImages++;
           }
         }
-        return { deletedImages: deletedImages, addedImages: addedImages };
+        return { deletedImages: deletedImages, addedImages: addedImages, notSucceedAddedImages: notSucceedAddedImages };
       } else {
-        return { deletedImages: 0, addedImages: 0 };
+        return { deletedImages: 0, addedImages: 0, notSucceedAddedImages: 0 };
       }
     } catch (ex) {
       console.error("Fehler beim synchronisieren der Bilder", ex);
       throw new Error("Fehler beim synchronisieren der Bilder", { cause: ex });
     }
   }
-
-  async sendNewImage(deltaRow: DeltaImageRow) {
+  // #Request mobile_upload_image
+  async sendNewImage(deltaRow: DeltaImageRow): Promise<boolean> {
     const img = deltaRow.file;
-    //kvm.log("Layer.sendNewImage", 4);
-    console.log(`sendNewImage ${img} `);
-    console.log("Bild " + img + " wird hochgeladen.");
-    // const icon = $("#syncImagesIcon_" + this.getGlobalId());
-    // const ft = new FileTransfer();
-    const fileURL = "file://" + kvm.getConfigurationOption("localImgPath") + img.substring(img.lastIndexOf("/") + 1);
-    const url = this.get("url");
-    const file = Stelle.getUrlFile(url);
-    const server = url + file;
+    console.log(`sendNewImage ${img} wird hochgeladen.`, deltaRow);
 
-    const options: FileUploadOptions = {};
-    //var options = new FileUploadOptions();
+    const fileURL = kvm.getConfigurationOption("localImgPath") + img.substring(img.lastIndexOf("/") + 1);
+    // const url = kvm.getConfigurationOption("kvwmapServerUrl");
+    // const file = Stelle.getUrlFile(url);
+    // const server = url + file;
+    // const options: FileUploadOptions = {};
 
-    // console.log("toggle class fa-upload");
-    // when the upload begin
-    // if (icon.hasClass("fa-upload")) {
-    //   icon.toggleClass("fa-upload fa-spinner fa-spin");
-    // }
+    // console.log("set options");
+    // options.fileKey = "image";
+    // options.fileName = fileURL.substr(fileURL.lastIndexOf("/") + 1);
+    // options.mimeType = "image/jpeg";
+    // console.log("set params");
+    // options.params = {
+    //   device_id: device.uuid,
+    //   Stelle_ID: this.get("ID"),
+    //   selected_layer_id: deltaRow.layer_id,
+    //   go: "mobile_upload_image",
+    // };
+    // options.chunkedMode = false;
+    // options.headers = {
+    //   Connection: "close",
+    // };
 
-    console.log("set options");
-    options.fileKey = "image";
-    options.fileName = fileURL.substr(fileURL.lastIndexOf("/") + 1);
-    options.mimeType = "image/jpeg";
-    console.log("set params");
-    options.params = {
+    const params = {
       device_id: device.uuid,
-      Stelle_ID: this.get("Stelle_ID"),
-      login_name: this.get("login_name"),
-      passwort: this.get("passwort"),
+      // Stelle_ID: this.get("ID"),
       selected_layer_id: deltaRow.layer_id,
       go: "mobile_upload_image",
     };
-    options.chunkedMode = false;
-    options.headers = {
-      Connection: "close",
-    };
 
-    console.log("upload to url: " + server);
-    console.log("Upload img to url: " + server + " with options: " + JSON.stringify(options).replace((<any>options.params).passwort, "secret"));
+    // console.log("upload to url: " + server);
+    // console.log("Upload img to url: " + server + " with options: " + JSON.stringify(options).replace((<any>options.params).passwort, "secret"));
     try {
-      const fileUploadResult = await Util.upload(fileURL, encodeURI(server), options);
+      const fileEntry = <FileEntry>await Util.resolveLocalFileSystemURL(fileURL);
+      const fileUploadResult = await kvm.serverConnection.runUploadFile(params, fileEntry, "image");
       try {
-        const response = JSON.parse(fileUploadResult.response);
-        if (response.success) {
+        if (fileUploadResult.success) {
           console.log("Bild " + img + " wurde erfolgreich auf den Server geladen.");
-          //kvm.log("Code = " + r.responseCode, 4);
-          //kvm.log("Response = " + r.response, 4);
-          //kvm.log("Sent = " + r.bytesSent, 4);
-          // TODO !!!!!! Achtung
           await this.clearImageDelta(deltaRow);
+          return true;
         } else {
-          const err_msg = "Fehler beim Hochladen des Bildes " + img + " Fehler: " + response.msg;
+          const err_msg = "Fehler beim Hochladen des Bildes " + img + " Fehler: " + fileUploadResult.msg;
           sperrBildschirm.close(err_msg);
         }
       } catch (error) {
@@ -958,20 +851,41 @@ export class Stelle {
       }
     } catch (error) {
       console.error("err: %o", error);
-      // if (icon.hasClass("fa-spinner")) {
-      //   icon.toggleClass("fa-upload fa-spinner fa-spin");
-      // }
-      const msg = "Fehler beim Hochladen der Datei: " + error.code + " source: " + error.code;
-      // sperrBildschirm.close(msg);
     }
-
-    // when the upload has been finished
-    // if (icon.hasClass("fa-spinner")) {
-    //   icon.toggleClass("fa-upload fa-spinner fa-spin");
-    // }
+    return false;
   }
 
   async sendDropImage(deltaRow: DeltaImageRow) {
+    //kvm.log("Layer.sendDropImage", 4);
+    const img = deltaRow.file;
+    try {
+      const params = {
+        go: "mobile_delete_images",
+        device_id: device.uuid,
+        selected_layer_id: deltaRow.layer_id,
+        images: deltaRow.file,
+      };
+      // const response = await kvm.serverConnection.mobileDeleteImages(deltaRow.layer_id, deltaRow.file);
+      const response = await kvm.serverConnection.runGetRequest(params);
+
+      if (response.success) {
+        console.log("Bild: " + img + " erfolgreich auf dem Server gelöscht.");
+        await this.clearImageDelta(deltaRow);
+      } else {
+        if (!img) {
+          // console.error("Bild: file war leer.", 4);
+          await this.clearImageDelta(deltaRow);
+        } else {
+          throw new Error(`Beim Löschen des Bildes "${img}" meldet der Server nicht erfolreich. Antwort: ${JSON.stringify(response)}`);
+        }
+      }
+    } catch (ex) {
+      throw new Error(`Fehler bei der Verabeitung des Delta zum Löschen des Bildes ${img}`, { cause: ex });
+    }
+  }
+
+  // #Request mobile_delete_images
+  async sendDropImageOrg(deltaRow: DeltaImageRow) {
     //kvm.log("Layer.sendDropImage", 4);
     const img = deltaRow.file;
     try {
@@ -1143,7 +1057,10 @@ export class Stelle {
               }
               result.countOfNoSyncLayersChanged = changedNoSyncLayers.length;
             }
+          } else if (sendDeltasResponse["success"] === false && sendDeltasResponse["error"] === "LOGIN_FAILED") {
+            throw new AccessError("Die Zugangsdaten sind fehlerhaft. Bitte ändern Sie diese unter Einstellungen|Zugangsdaten");
           } else {
+            console.error("Negative Antwort auf Upload der Deltas.", { response: sendDeltasResponse, deltas: deltas });
             reject(new Error("Negative Antwort auf Upload der Deltas.", { cause: { response: sendDeltasResponse, deltas: deltas } }));
           }
         } else {
@@ -1156,6 +1073,37 @@ export class Stelle {
       }
     });
   }
+
+  // async _uploadOrg(fileEntry: FileEntry): Promise<FileUploadResult> {
+  //   // const fileURL = fileEntry.toURL();
+  //   const fileURL = fileEntry.nativeURL;
+  //   // console.log(`going to upload deltas fileURL: "${fileURL}`);
+
+  //   const url = this.get("url");
+  //   const file = Stelle.getUrlFile(url);
+  //   const server = url + file;
+
+  //   const options: FileUploadOptions = {
+  //     params: {
+  //       Stelle_ID: this.get("Stelle_ID"),
+  //       login_name: this.get("login_name"),
+  //       passwort: this.get("passwort"),
+  //       client_id: device.uuid,
+  //       client_time: kvm.now(),
+  //       last_delta_version: this.getLastDeltaVersion(),
+  //       // version: this.get("version"),
+  //       mime_type: "json",
+  //       format: "json_result",
+  //       go: "mobile_sync_all",
+  //     },
+  //     fileKey: "client_deltas",
+  //     fileName: fileURL.substring(fileURL.lastIndexOf("/") + 1),
+  //     mimeType: "application/json",
+  //   };
+
+  //   console.log(`going to upload deltas fileURL: "${fileURL} to url: "${url}"`, options);
+  //   return Util.upload(fileURL, encodeURI(server), options);
+  // }
 
   async _upload(fileEntry: FileEntry): Promise<FileUploadResult> {
     // const fileURL = fileEntry.toURL();
@@ -1172,7 +1120,7 @@ export class Stelle {
         login_name: this.get("login_name"),
         passwort: this.get("passwort"),
         client_id: device.uuid,
-        client_time: kvm.now(),
+        client_time: Util.now(),
         last_delta_version: this.getLastDeltaVersion(),
         // version: this.get("version"),
         mime_type: "json",
@@ -1185,14 +1133,65 @@ export class Stelle {
     };
 
     console.log(`going to upload deltas fileURL: "${fileURL} to url: "${url}"`, options);
-    return Util.upload(fileURL, encodeURI(server), options);
+    return await kvm.serverConnection.upload(fileURL, encodeURI(server), options);
   }
+
+  // TODO Delete
+  async _uploadX(fileEntry: FileEntry): Promise<FileUploadResult> {
+    const fileURL = fileEntry.nativeURL;
+    console.log(`going to upload deltas`);
+    return await kvm.serverConnection.runUploadFile(
+      {
+        client_id: device.uuid,
+        client_time: Util.now(),
+        last_delta_version: this.getLastDeltaVersion(),
+        mime_type: "json",
+        format: "json_result",
+        go: "mobile_sync_all",
+      },
+      fileEntry,
+      fileURL.substring(fileURL.lastIndexOf("/") + 1),
+    );
+  }
+
+  /*
+   * #Request mobile_sync_all
+   */
+  // async _upload(fileEntry: FileEntry): Promise<FileUploadResult> {
+  //   // const fileURL = fileEntry.toURL();
+  //   const fileURL = fileEntry.nativeURL;
+  //   // console.log(`going to upload deltas fileURL: "${fileURL}`);
+
+  //   const url = this.get("url");
+  //   const file = Stelle.getUrlFile(url);
+  //   const server = url + file;
+
+  //   const options: FileUploadOptions = {
+  //     params: {
+  //       Stelle_ID: this.get("Stelle_ID"),
+  //       login_name: this.get("login_name"),
+  //       passwort: this.get("passwort"),
+  //       client_id: device.uuid,
+  //       client_time: kvm.now(),
+  //       last_delta_version: this.getLastDeltaVersion(),
+  //       // version: this.get("version"),
+  //       mime_type: "json",
+  //       format: "json_result",
+  //       go: "mobile_sync_all",
+  //     },
+  //     fileKey: "client_deltas",
+  //     fileName: fileURL.substring(fileURL.lastIndexOf("/") + 1),
+  //     mimeType: "application/json",
+  //   };
+
+  //   console.log(`going to upload deltas fileURL: "${fileURL} to url: "${url}"`, options);
+  // return Util.upload(fileURL, encodeURI(server), options);
+  // }
 
   async applyDeltas(response: SendDeltasResponse): Promise<{ numExecutedDeltas: number; numReturnedDeltas: number }> {
     console.error(`applyDeltas`, response);
 
     if (response.success) {
-      kvm.writeLog(`Deltas wurden empfangen.`);
       console.log(`applyDeltas ${this.get("Bezeichnung")} last_delta_version: ${this.getLastDeltaVersion()} => ${response.last_delta_version}`, response);
 
       let numExecutedDeltas = 0;
@@ -1201,8 +1200,9 @@ export class Stelle {
       console.log("numReturendDeltas: %s", numReturnedDeltas);
       // ToDo pk: Fehler: Hier kommen zur Zeit auch Deltas zurück, die zuvor zum Server geschickt wurden. Das sind nicht die Serverdeltas! Deshalb werden die dann noch mal auf dem Client ausgeführt.
       if (numReturnedDeltas > 0) {
+        Util.writeLog(`Deltas wurden empfangen.`, response.deltas);
         const msg = `${numReturnedDeltas} Änderungen von Daten auf dem Server gefunden. Die Datenbank wurde gesichert und die Änderungen in die lokale Datenbank eingespielt.`;
-        kvm.writeLog(msg);
+        Util.writeLog(msg);
         // kvm.msg(msg, "Datenänderung");
         // TODO backupDatabase auch nur ein mal machen wenn irgend ein Delta vom Server gekommen ist (Weiß man aber vorher nicht ob irgend ein layer ein Delta bekommen wird.)
         // Wenn ein mal ein backDatabase gemacht wurde bei den anderen layern in der gleichen syncLayers Runde nicht mehr ausführen.
@@ -1215,9 +1215,12 @@ export class Stelle {
             }
           }
         } catch (ex) {
+          Util.writeLog(`Fehler beim Schreiben der Deltas`, response);
           throw new Error(`Fehler beim Schreiben der Deltas in die DB:<br>&nbsp;&nbsp;${ex}`, { cause: ex });
         }
-        kvm.writeLog(`Layer ${this.get("Bezeichnung")}: ${numExecutedDeltas} Deltas vom Server auf Client ausgeführt.`);
+        Util.writeLog(`Layer ${this.get("Bezeichnung")}: ${numExecutedDeltas} Deltas vom Server auf Client ausgeführt.`);
+      } else {
+        Util.writeLog(`Deltas wurden empfangen. keine Änderungen.`);
       }
       this._lastDeltaVersion = response.last_delta_version;
       kvm.store.setItem("last_delta_version_" + this.get("ID"), JSON.stringify(this._lastDeltaVersion));

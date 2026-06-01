@@ -16,7 +16,7 @@ export const FileUtils = {
   //     }, kvm.controller.files.onErrorReadFile);
   // },
 
-  writeFile: function (fileEntry: FileEntry, dataObj: Blob | string | ArrayBuffer, isAppend: boolean): Promise<Error | void> {
+  writeFile: async function (fileEntry: FileEntry, dataObj: Blob | string | ArrayBuffer, isAppend: boolean): Promise<Error | void> {
     // Create a FileWriter object for our FileEntry (log.txt).
     // console.log(`writeFile nativeURL=${fileEntry.nativeURL} fullPath=${fileEntry.fullPath} toInternalURL=${fileEntry.toInternalURL()}`, fileEntry);
     return new Promise<void>((resolve, reject) => {
@@ -35,8 +35,13 @@ export const FileUtils = {
             console.error(msg);
           }
         }
+        fileWriter.onwriteend = () => {
+          resolve();
+        };
+        fileWriter.onerror = (e) => {
+          reject();
+        };
         fileWriter.write(dataObj);
-        resolve();
       });
     });
   },
@@ -98,12 +103,12 @@ export const FileUtils = {
           },
           function () {
             console.log("unsuccessful copying");
-          }
+          },
         );
       },
       function () {
         console.log("failure! file was not found");
-      }
+      },
     );
   },
 
@@ -138,12 +143,12 @@ export const FileUtils = {
             },
             function (error) {
               console.log("copying FAILED %o", error);
-            }
+            },
           );
         },
         function (e) {
           console.log(JSON.stringify(e));
-        }
+        },
       );
     });
   },
@@ -169,12 +174,12 @@ export const FileUtils = {
           },
           function (err) {
             console.log(err);
-          }
+          },
         );
       },
       function (err) {
         console.log(err);
-      }
+      },
     );
   },
 };

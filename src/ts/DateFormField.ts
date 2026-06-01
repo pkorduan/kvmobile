@@ -37,6 +37,9 @@ export class DateFormField extends AbstractField {
   //     return this.settings[key];
   // }
   async setValue(f: Feature, val) {
+    if (val === "now()") {
+      val = new Date().toISOString().split("T")[0];
+    }
     this._oldValue = val;
     this._feature = f;
     console.debug("val: " + val, 4);

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
     <title>kvmobile</title>
@@ -23,7 +23,7 @@ For worker-src use instead
 child-src * 'self' blob: http:
 /-->
 
-    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline'; style-src * 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src-elem *; worker-src * 'self' blob: file:; media-src *; img-src * filesystem: cdvfile: data: content://com.android.providers.media.documents 'unsafe-inline' 'unsafe-eval';" />
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline'; style-src * 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src-elem *; worker-src * 'self' blob: file:; media-src *; img-src * filesystem: cdvfile: data: content://com.android.providers.media.documents 'unsafe-inline' 'unsafe-eval'; connect-src * webpack:;" />
 
     <link rel="stylesheet" type="text/css" href="style.css" />
     <style>
@@ -100,32 +100,45 @@ child-src * 'self' blob: http:
     <div id="settings" class="view" style="display: none; overflow: auto; flex: auto">
       <h1>Einstellungen</h1>
       <div class="h2-div">
-        <h2 id="h2_konfiguration" class="b-collapsed">Konfiguration</h2>
-        <div id="configFileDiv" class="conf-panel"></div>
+        <h2 id="h2_credential" class="b-collapsed">Zugangsdaten</h2>
+        <div id="configCredential" class="conf-panel">
+          URL<br />
+          <input id="kvwmapServerUrlFieldX" name="kvwmapServerUrl" type="text" disabled="true" /><br />
+          Nutzername<br />
+          <input id="kvwmapServerLoginNameFieldX" name="kvwmapServerLoginName" type="text" value="" /><br />
+          Passwort
+          <i
+            class="fa fa-eye"
+            aria-hidden="true"
+            onclick="
+              this.classList.toggle('fa-eye');
+              this.classList.toggle('fa-eye-slash');
+              document.getElementById('kvwmapServerPasswortFieldX').type = document.getElementById('kvwmapServerPasswortFieldX').type === 'text' ? 'password' : 'text';
+            "
+          ></i>
+          <input id="kvwmapServerPasswortFieldX" name="kvwmapServerPasswort" type="password" value="" /><br />
+          <div style="text-align: right">
+            <button id="bttnConfigCredentialCancel" style="display: none; padding: 0.2rem; margin-top: 0.5rem; font-size: 0.8rem; width: 4.5rem">abbrechen</button>
+            <button id="bttnConfigCredential" style="display: none; padding: 0.2rem; margin-top: 0.5rem; font-size: 0.8rem; width: 4.5rem">ok</button>
+          </div>
+        </div>
       </div>
       <hr />
-
       <div class="h2-div">
-        <h2 id="h2_server" class="b-collapsed">Server</h2>
-        <div id="kvwmapServerDataForm" class="conf-panel">
-          <!-- <input id="kvwmapServerIdField" name="kvwmapServerId" type="hidden" value="1">
-        Name<br> -->
-          <input id="kvwmapServerNameField" name="kvwmapServerName" type="text" value="Server kvwmap LK-ROS" /><br />
-          URL<br />
-          <input id="kvwmapServerUrlField" name="kvwmapServerUrl" type="text" /><br />
-          Nutzername<br />
-          <input id="kvwmapServerLoginNameField" name="kvwmapServerLoginName" type="text" value="" /><br />
-          Passwort <i class="fa fa-eye" aria-hidden="true" onclick="this.classList.toggle('fa-eye'); this.classList.toggle('fa-eye-slash'); document.getElementById('kvwmapServerPasswortField').type = (document.getElementById('kvwmapServerPasswortField').type === 'text' ? 'password' : 'text');"></i><br />
-          <input id="kvwmapServerPasswortField" name="kvwmapServerPasswort" type="password" value="" /><br />
-          Stelle<br />
-          <div id="activeStelleBezeichnungDiv"></div>
-          <button id="requestStellenButton" class="settings-button"><i class="fa fa-key" aria-hidden="true"></i> Stellen abfragen</button>
-          <select id="kvwmapServerStelleSelectField" name="kvwmapServerStelleId" style="display: none">
-            <option value="">Stelle Wählen</option>
-          </select>
-          <input id="kvwmapServerStellenField" name="kvwmapServerStellen" type="hidden" value="" />
-
-          <button id="saveServerSettingsButton" class="settings-button" style="display: none"><i class="fa fa-regular fa-floppy-disk" aria-hidden="true"></i> Einstellungen Speichern</button>
+        <h2 id="h2_stelle" class="b-collapsed">Stellenauswahl</h2>
+        <div id="configStelle" class="conf-panel">
+          aktuelle Stelle:<br />
+          <input id="kvwmapStelleX" name="kvwmapStelleX" type="text" disabled="true" /><br />
+          <br />
+          <div>
+            <button id="requestStellenButtonX" class="settings-button"><i class="fa fa-key" aria-hidden="true"></i>Stelle wechseln</button>
+            <span id="kvwmapServerStelleTxt" style="display: none">Bitte w&aumlhlen Sie eine Stelle!</span><br />
+            <select id="kvwmapServerStelleSelectFieldX" name="kvwmapServerStelleId" style="display: none">
+              <option value="">Stelle Wählen</option>
+            </select>
+            <button id="changeStellenButtonX" class="settings-button" style="display: none"><i class="fa fa-key" aria-hidden="true"></i>Stelle übernehmen</button>
+            <button id="cancelChangeStellenButtonX" class="settings-button" style="display: none"><i class="fa fa-key" aria-hidden="true"></i>abbrechen</button>
+          </div>
         </div>
       </div>
       <hr />
@@ -333,7 +346,7 @@ child-src * 'self' blob: http:
         <div class="h2-div">
           <h2 id="h2_sachdateneinstellungen" class="b-collapsed">Sachdateneinstellungen</h2>
           <div id="viewSettingsDiv" class="conf-panel" style="padding-left: 10px">
-            Was soll nach dem Speichern eines neuen Datensatzes angezeigt werden?<i class="fa fa-circle-exclamation" style="color: #f57802" onclick="kvm.msg(`Wirkt sich nur aus wenn kein neuer Datensatz nach dem Speichern erzeugt wird.`, 'Hinweis');"></i><br />
+            Was soll nach dem Speichern eines neuen Datensatzes angezeigt werden?<i class="fa fa-circle-exclamation" style="color: #f57802" onclick="kvm.msg(`Wirkt sich nur aus wenn kein neuer Datensatz nach dem Speichern erzeugt wird.`, 'Hinweis')"></i><br />
             <select id="viewAfterCreate" name="viewAfterCreate">
               <option value="featurelist">Liste der Datensätze</option>
               <option value="map">Kartenansicht</option>
@@ -506,7 +519,55 @@ child-src * 'self' blob: http:
             </p>
 
             <p>
-              <a href="https://gdi-service.de/public/kvmobile" onclick="window.open('https://gdi-service.de/public/kvmobile', '_system');">Download-Bereich</a>
+              <a href="https://gdi-service.de/public/kvmobile" onclick="window.open('https://gdi-service.de/public/kvmobile', '_system')">Download-Bereich</a>
+            </p>
+          </div>
+        </div>
+        <hr />
+        <div class="h2-div">
+          <h2 id="h2_konfiguration" class="b-collapsed">Konfiguration</h2>
+          <div id="configFileDiv" class="conf-panel"></div>
+        </div>
+        <hr />
+        <div class="h2-div">
+          <h2 id="h2_server" class="b-collapsed">Server</h2>
+          <div id="kvwmapServerDataForm" class="conf-panel">
+            <!-- <input id="kvwmapServerIdField" name="kvwmapServerId" type="hidden" value="1">
+        Name<br> -->
+            <input id="kvwmapServerNameField" name="kvwmapServerName" type="text" value="Server kvwmap LK-ROS" /><br />
+            URL<br />
+            <input id="kvwmapServerUrlField" name="kvwmapServerUrl" type="text" /><br />
+            Nutzername<br />
+            <input id="kvwmapServerLoginNameField" name="kvwmapServerLoginName" type="text" value="" /><br />
+            Passwort
+            <i
+              class="fa fa-eye"
+              aria-hidden="true"
+              onclick="
+                this.classList.toggle('fa-eye');
+                this.classList.toggle('fa-eye-slash');
+                document.getElementById('kvwmapServerPasswortField').type = document.getElementById('kvwmapServerPasswortField').type === 'text' ? 'password' : 'text';
+              "
+            ></i
+            ><br />
+            <input id="kvwmapServerPasswortField" name="kvwmapServerPasswort" type="password" value="" /><br />
+            Stelle<br />
+            <div id="activeStelleBezeichnungDiv"></div>
+            <button id="requestStellenButton" class="settings-button"><i class="fa fa-key" aria-hidden="true"></i> Stellen abfragen</button>
+            <select id="kvwmapServerStelleSelectField" name="kvwmapServerStelleId" style="display: none">
+              <option value="">Stelle Wählen</option>
+            </select>
+            <input id="kvwmapServerStellenField" name="kvwmapServerStellen" type="hidden" value="" />
+
+            <button id="saveServerSettingsButton" class="settings-button" style="display: none"><i class="fa fa-regular fa-floppy-disk" aria-hidden="true"></i> Einstellungen Speichern</button>
+          </div>
+        </div>
+        <hr />
+        <div class="h2-div">
+          <h2 id="h2_reset" class="b-collapsed">APP zurücksetzen</h2>
+          <div class="conf-panel">
+            <p style="text-align: center">
+              <button id="bttn-reset" style="padding: 1em; font-weight: bold; color: red">APP zurücksetzen</button>
             </p>
           </div>
         </div>

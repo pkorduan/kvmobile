@@ -1,12 +1,12 @@
 /// <reference types="cordova-plugin-camera"/>
 /// <reference types="cordova-plugin-file-opener2"/>
 
-import { Util } from "leaflet";
 import { kvm } from "./app";
-import { Attribute, AttributeSetting } from "./Attribute";
+import { Attribute } from "./Attribute";
 import { Feature } from "./Feature";
-import { AbstractField, Field } from "./Field";
+import { AbstractField } from "./Field";
 import { resolveLocalFileSystemURL, confirm, createHtmlElement, fileExists, getWebviewUrl, alertOverlay } from "./Util";
+import * as Util from "./Util";
 
 export class BilderFormField extends AbstractField {
   images_div_id: string;
@@ -83,7 +83,8 @@ export class BilderFormField extends AbstractField {
   async setValue(f: Feature, pics: string) {
     // console.error("BilderFormField.setValue kvwmapFilePath=" + pics);
     // console.log("BilderFormField.setValue with value: " + val);
-    this._oldValue = pics;
+    super.setValue(f, pics);
+    // this._oldValue = pics;
 
     const val = kvm.coalesce(pics, "");
     // let images;
@@ -95,7 +96,7 @@ export class BilderFormField extends AbstractField {
     // remove images from preview div
     this.imagesDiv.innerHTML = "";
 
-    if (val == "") {
+    if (val == "" || /^\{\s*\}$/.test(val)) {
       if (this.attr.settings.privilege === "1") {
         this.dropAllPictureButton.style.display = "none";
       }
@@ -107,28 +108,39 @@ export class BilderFormField extends AbstractField {
       const messages: string[] = [];
       for (let i = 0; i < images.length; i++) {
         const remoteFile = kvm.removeQuotas(images[i]);
-        const localFile = kvm.removeOriginalName(kvm.serverToLocalPath(remoteFile));
-        console.log("images[" + i + "]: %s", remoteFile);
-        try {
-          const fileEntry = await resolveLocalFileSystemURL(localFile);
-          if (fileEntry) {
-            console.log("Datei " + fileEntry.toURL() + " existiert.");
-            fragment.appendChild(await this._createImage(fileEntry.nativeURL));
-          } else {
-            fragment.appendChild(await this._createImage(null, remoteFile));
-          }
-        } catch (ex) {
-          messages.push(`Konnte Bild "${remoteFile}" nicht laden. ${ex.message}`);
-          console.info("Datei " + localFile + " existiert nicht!");
-          try {
-            fragment.appendChild(await this._createImage(null, remoteFile));
-          } catch {
-            messages.push(`Konnte kein leeres Bild für das Bild ${remoteFile} laden`);
-          }
-          if (navigator.onLine) {
-            kvm.getActiveLayer().downloadImage(localFile, remoteFile);
-          }
-        }
+        // const localFile = kvm.removeOriginalName(kvm.serverToLocalPath(remoteFile));
+        fragment.appendChild(this._createImage(remoteFile));
+        // console.log("images[" + i + "]: %s", remoteFile);
+        // try {
+        //   const fileEntry = await resolveLocalFileSystemURL(localFile);
+        //   if (fileEntry) {
+        //     let metaData: Metadata = null;
+        //     try {
+        //       metaData = await Util.getMetaData(fileEntry);
+        //     } catch (ex) {
+        //       console.error(ex);
+        //     }
+        //     if (metaData) {
+        //       console.log("Datei " + fileEntry.toURL() + " existiert.", metaData);
+        //     } else {
+        //       console.log("Datei " + fileEntry.toURL() + " existiert.");
+        //     }
+        //     fragment.appendChild(await this._createImage(fileEntry.nativeURL));
+        //   } else {
+        //     fragment.appendChild(await this._createImage(null, remoteFile));
+        //   }
+        // } catch (ex) {
+        //   messages.push(`Konnte Bild "${remoteFile}" nicht laden. ${ex.message}`);
+        //   console.info("Datei " + localFile + " existiert nicht!");
+        //   try {
+        //     fragment.appendChild(await this._createImage(null, remoteFile));
+        //   } catch {
+        //     messages.push(`Konnte kein leeres Bild für das Bild ${remoteFile} laden`);
+        //   }
+        //   if (navigator.onLine) {
+        //     kvm.getActiveLayer().downloadImage(f, localFile, remoteFile);
+        //   }
+        // }
       }
       this.imagesDiv.replaceChildren(fragment);
       if (messages?.length) {
@@ -166,7 +178,79 @@ export class BilderFormField extends AbstractField {
    * Images not downloaded yet to the device are default no_image.png
    * otherwise src is equal to name
    */
-  private async _createImage(nativeURL: string, name = ""): Promise<HTMLElement> {
+  private _createImage(nativeURL: string, name = ""): HTMLElement {
+    console.log("BilderFormField.addImage", nativeURL, name);
+    // nativeURL = nativeURL || "/img/no_image.png";
+    // name = name || nativeURL;
+    // console.log("BilderFormField: Add Image with src: %s and name: %s", nativeURL, name);
+    // let webviewUrl;
+    // if (nativeURL !== "/img/no_image.png") {
+    //   try {
+    //     webviewUrl = await getWebviewUrl(nativeURL);
+    //     if (!webviewUrl) {
+    //       webviewUrl = "/img/no_image.png";
+    //     }
+    //   } catch (error) {
+    //     throw new Error(`Bild ${nativeURL} konnte nicht geladen werden. ${error.message}`);
+    //   }
+    // } else {
+    //   webviewUrl = "/img/no_image.png";
+    // }
+
+    // const url = await getFileUrl(src);
+
+    // const src=webviewUrl;
+    // const field_id=this.settings.index;
+    // const xname=name;
+
+    const imgDiv = createHtmlElement("div", null, "img");
+    // imgDiv.style.backgroundImage = "url(" + webviewUrl + ")";
+    // imgDiv.dataset.src = webviewUrl;
+    imgDiv.dataset.field_id = this.attr.settings.index + "name=" + name;
+    kvm.imageLoader.loadImage(this._feature, nativeURL, imgDiv);
+
+    this.dropAllPictureButton.style.display = "";
+
+    imgDiv.addEventListener("click", async (evt) => {
+      if (imgDiv.dataset.src == "img/no_image.png") {
+        if (navigator.onLine) {
+          const confirmDownload = await confirm("Bild herunterladen?", "Bestätigung");
+          if (confirmDownload) {
+            const remoteFile = name;
+            const localFile = kvm.serverToLocalPath(remoteFile);
+            kvm.getActiveLayer().downloadImage(this._feature, localFile, remoteFile);
+          }
+        } else {
+          kvm.msg("Kein Internet! Bild kann gerade nicht heruntergeladen werden.", "Bilder Download");
+        }
+      } else {
+        console.log("Versuche das Bild zu öffnen: " + nativeURL);
+        cordova.plugins.fileOpener2.open(nativeURL, "image/jpeg", {
+          error: async (e) => {
+            alert("Fehler beim Laden der Datei '" + nativeURL + "'. Fehler: " + e.status);
+            if (await confirm("Bild Löschen?", "Löschen bestätigen", "ja", "nein")) {
+              this.dropImage(imgDiv);
+            }
+          },
+          success: async () => {
+            console.log("Datei " + imgDiv.dataset.src + " erfolgreich geöffnet.");
+            if (await confirm("Bild Löschen?", "Löschen bestätigen", "ja", "nein")) {
+              this.dropImage(imgDiv);
+            }
+          },
+        });
+      }
+    });
+    return imgDiv;
+  }
+
+  /*
+   * src is the file shown in view
+   * name is the file stored in database
+   * Images not downloaded yet to the device are default no_image.png
+   * otherwise src is equal to name
+   */
+  private async _createImageO(nativeURL: string, name = ""): Promise<HTMLElement> {
     console.log("BilderFormField.addImage", nativeURL, name);
     nativeURL = nativeURL || "/img/no_image.png";
     name = name || nativeURL;
@@ -205,7 +289,7 @@ export class BilderFormField extends AbstractField {
           if (confirmDownload) {
             const remoteFile = name;
             const localFile = kvm.serverToLocalPath(remoteFile);
-            kvm.getActiveLayer().downloadImage(localFile, remoteFile);
+            kvm.getActiveLayer().downloadImage(this._feature, localFile, remoteFile);
           }
         } else {
           kvm.msg("Kein Internet! Bild kann gerade nicht heruntergeladen werden.", "Bilder Download");
@@ -262,19 +346,7 @@ export class BilderFormField extends AbstractField {
     const newValue = kvm.addBraces(newArr.join(","));
 
     this.hiddenElement.value = newValue;
-    // ToDo implement this function and bind to delte choice of after dialog from image click
-    // remove image string from field value
-    // imageField.value = (
-    //   kvm.addBraces(
-    //     $.map(kvm.removeBrackes(imageField.val()).split(","), function (path) {
-    //       if (path.indexOf(src.substring(src.lastIndexOf("/") + 1)) < 0) {
-    //         return path;
-    //       }
-    //     }).join(",")
-    //   )
-    // );
 
-    // imageField.trigger("change");
     imgDiv.remove();
     this.fireChanged();
   }
@@ -321,15 +393,17 @@ export class BilderFormField extends AbstractField {
 
         if (kvm.hasFilePath(fileURL, kvm.getConfigurationOption("localImgPath"))) {
           this.addImgNameToVal(kvm.localToServerPath(fileURL));
-          getWebviewUrl(fileURL).then((webviewUrl) => {
-            console.info(`takePicture fileURL=${fileURL} webviewUrl=${webviewUrl}`);
-            this._createImage(webviewUrl).then((value) => this.imagesDiv.appendChild(value));
-          });
+          // getWebviewUrl(fileURL).then((webviewUrl) => {
+          //   console.info(`takePicture fileURL=${fileURL} webviewUrl=${webviewUrl}`);
+          // RTR
+          // this._createImage(fileURL).then((value) => this.imagesDiv.appendChild(value));
+          this.imagesDiv.appendChild(this._createImage(fileURL));
+          // });
         } else {
           console.info(`takePicture moveFile fileURL=${fileURL}`);
           this.moveFile(fileURL, kvm.getConfigurationOption("localImgPath"));
         }
-        $("#featureFormular input[name=bilder_updated_at]").val(kvm.now("T", "")).show();
+        $("#featureFormular input[name=bilder_updated_at]").val(Util.now("T", "")).show();
         this.fireChanged();
       },
       (message) => {
@@ -343,7 +417,7 @@ export class BilderFormField extends AbstractField {
         allowEdit: false, // $("#cameraOptionsAllowEdit").is(":checked"),
         sourceType: Camera.PictureSourceType.CAMERA,
         destinationType: Camera.DestinationType.FILE_URI,
-      }
+      },
     );
   }
 
@@ -384,7 +458,7 @@ export class BilderFormField extends AbstractField {
         // TODO
         sourceType: Camera.PictureSourceType.PHOTOLIBRARY,
         destinationType: Camera.DestinationType.FILE_URI,
-      }
+      },
     );
   }
 
@@ -415,24 +489,26 @@ export class BilderFormField extends AbstractField {
               () => {
                 // TODO
                 // kvm.log('Datei: ' + fileEntry.name + ' nach: ' + dstDirEntry.toURL() + ' verschoben.');
-                this._createImage(dstFile).then((imgDiv) => this.imagesDiv.appendChild(imgDiv));
+                // RTR
+                // this._createImage(dstFile).then((imgDiv) => this.imagesDiv.appendChild(imgDiv));
+                this.imagesDiv.appendChild(this._createImage(dstFile));
                 this.addImgNameToVal(kvm.localToServerPath(dstFile));
               },
               () => {
                 console.log("copying FAILED");
-              }
+              },
             );
           },
           (e: FileError) => {
             console.log("could not resolveLocalFileSystemURL: " + srcFile);
             console.log(JSON.stringify(e));
-          }
+          },
         );
       },
       (e: FileError) => {
         console.log("could not resolveLocalFileSystemURL: " + dstDir);
         console.log(JSON.stringify(e));
-      }
+      },
     );
   }
 
