@@ -100,6 +100,7 @@ class InitScreen {
       this.userInput.disabled = true;
       this.passInput.disabled = true;
       this.loginBttn.disabled = true;
+
       await this.requestStellen(user, pass);
     } else {
       alert("Bitte Benutzername und Passwort eingeben!");
@@ -117,50 +118,64 @@ class InitScreen {
       login: user,
       password: pass,
     });
+    let loginResult = null;
     try {
-      const resultObj = <RequestStellenResponse>await this.app.serverConnection.runGetRequest({ go: "mobile_get_stellen" });
-      this.app.store.setItem("userId", resultObj.user_id);
-      this.app.userId = String(resultObj.user_id);
-      this.app.store.setItem("userName", resultObj.user_name);
-      this.app.userName = String(resultObj.user_name);
+      loginResult = await this.app.serverConnection.runLogin();
+    } catch (ex) {
+      await showError("Fehler bei der Kommunikation mit dem Server. Bitte Prüfen Sie die URL.", ex);
+    }
+    if (loginResult) {
+      try {
+        if (loginResult?.success) {
+          const resultObj = <RequestStellenResponse>await this.app.serverConnection.runGetRequest({ go: "mobile_get_stellen" });
+          this.app.store.setItem("userId", resultObj.user_id);
+          this.app.userId = String(resultObj.user_id);
+          this.app.store.setItem("userName", resultObj.user_name);
+          this.app.userName = String(resultObj.user_name);
 
-      if (resultObj) {
-        this.app.setConfigurationOption("kvwmapServerLoginName", user);
-        this.app.setConfigurationOption("kvwmapServerPasswort", pass);
-        if (resultObj.stellen.length === 1) {
-          this.loginContainer.remove();
-          this.resolve(resultObj.stellen[0]);
-        } else {
-          this.loginBttn.remove();
-          const selectField = this.selectField;
-          selectField.addEventListener("change", () => {
-            if (selectField.value !== "-") {
-              this.nextBttn.disabled = false;
+          if (resultObj) {
+            this.app.setConfigurationOption("kvwmapServerLoginName", user);
+            this.app.setConfigurationOption("kvwmapServerPasswort", pass);
+            if (resultObj.stellen.length === 1) {
+              this.loginContainer.remove();
+              this.resolve(resultObj.stellen[0]);
+            } else {
+              this.loginBttn.remove();
+              const selectField = this.selectField;
+              selectField.addEventListener("change", () => {
+                if (selectField.value !== "-") {
+                  this.nextBttn.disabled = false;
+                }
+              });
+              this.stellenSettings = resultObj.stellen;
+              selectField.append(createHtmlElement("option", selectField, undefined, { value: "-", innerText: "Bitte Stelle wählen" }));
+              resultObj.stellen.forEach((stelle) => {
+                selectField.append(createHtmlElement("option", selectField, undefined, { value: stelle.ID, innerText: stelle.Bezeichnung }));
+              });
+              this.loginContainer.append(selectField);
+              this.nextBttn.disabled = true;
+              this.loginContainer.append(this.nextBttn);
             }
-          });
-          this.stellenSettings = resultObj.stellen;
-          selectField.append(createHtmlElement("option", selectField, undefined, { value: "-", innerText: "Bitte Stelle wählen" }));
-          resultObj.stellen.forEach((stelle) => {
-            selectField.append(createHtmlElement("option", selectField, undefined, { value: stelle.ID, innerText: stelle.Bezeichnung }));
-          });
-          this.loginContainer.append(selectField);
-          this.nextBttn.disabled = true;
-          this.loginContainer.append(this.nextBttn);
+          }
+        } else {
+          console.error("Login war nicht erfolgreich");
+          alertNative("Zugang zum Server wurde verweigert. Bitte Prüfen Sie Ihre Zugangsdaten.", "");
+        }
+      } catch (ex) {
+        if (ex instanceof AccessError) {
+          alertNative("Zugang zum Server wurde verweigert. Bitte Prüfen Sie Ihre Zugangsdaten.", "");
+        } else if (ex instanceof AgreementNotAcceptError) {
+          alertNative("Die Datenschutzerklärung wurde von Ihnen nicht akzeptiert.", "");
+        } else {
+          writeLog("Die Stellen konnten nicht abgefragt werden.", ex);
+          await showError("Die Stellen konnten nicht abgefragt werden.", ex);
         }
       }
-    } catch (ex) {
-      if (ex instanceof AccessError) {
-        alertNative("Zugang zum Server wurde verweigert. Bitte Prüfen Sie Ihre Zugangsdaten.", "");
-      } else if (ex instanceof AgreementNotAcceptError) {
-        alertNative("Die Datenschutzerklärung wurde von Ihnen nicht akzeptiert.", "");
-      } else {
-        writeLog("Die Stellen konnten nicht abgefragt werden.", ex);
-        await showError("Die Stellen konnten nicht abgefragt werden.", ex);
-      }
-      this.userInput.disabled = false;
-      this.passInput.disabled = false;
-      this.loginBttn.disabled = false;
     }
+    this.userInput.disabled = false;
+    this.passInput.disabled = false;
+    this.loginBttn.disabled = false;
+
     sperrBildschirm.close();
   }
 
@@ -169,7 +184,7 @@ class InitScreen {
     sperrBildschirm.show();
     const stelleSetting = this.stellenSettings.find((value) => value.ID === this.selectField.value);
     if (stelleSetting) {
-      console.error("new Stelle:", stelleSetting, this.app);
+      console.info("new Stelle:", stelleSetting, this.app);
       this.loginContainer.remove();
       this.resolve(stelleSetting);
     }

@@ -121,7 +121,7 @@ export class Zugangsdaten extends PanelEinstellungen {
 
   constructor() {
     super("h2_credential");
-    console.error("h2_credential");
+    // console.error("h2_credential");
     this.kvwmapServerUrlField = <HTMLInputElement>document.getElementById("kvwmapServerUrlFieldX");
 
     this.kvwmapServerLoginNameField = <HTMLInputElement>document.getElementById("kvwmapServerLoginNameFieldX");
@@ -152,7 +152,7 @@ export class Zugangsdaten extends PanelEinstellungen {
       kvm.serverConnection.credential.password = this.kvwmapServerPasswortField.value.trim();
       try {
         const result = await kvm.serverConnection.runLogin();
-        console.error(result);
+        console.table(result);
         if (result.success !== true) {
           await kvm.msg("Die Zugangsdaten sind fehlhaft.", "Fehler");
         } else if (result.success === true) {
@@ -850,7 +850,7 @@ export class Layers extends PanelEinstellungen {
   }
 
   orderList() {
-    console.error("orderList");
+    console.debug("orderList");
     const values = Array.from(this.layerId2layerListIem.values());
     for (const item of values) {
       item.dom.remove();
@@ -861,7 +861,7 @@ export class Layers extends PanelEinstellungen {
     });
 
     for (const item of values) {
-      console.error(item.layer.title + "  " + item.layer.hasEditPrivilege);
+      console.debug(item.layer.title + "  " + item.layer.hasEditPrivilege);
       this.divLayerList.appendChild(item.dom);
     }
   }
@@ -904,6 +904,10 @@ export class LayerParams extends PanelEinstellungen {
     kvm.addEventListener(Kvm.EVENTS.ACTIVE_STELLE_CHANGED, (evt) => {
       this.setStelle(evt.newValue);
     });
+    const stelle = kvm.getActiveStelle();
+    if (stelle) {
+      this.setStelle(stelle);
+    }
   }
 
   setStelle(stelle: Stelle) {

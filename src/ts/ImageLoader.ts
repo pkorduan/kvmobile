@@ -9,6 +9,8 @@ export class ImageLoader {
   }
 
   async loadImage(f: Feature, remoteFile: string, imageElement: HTMLElement) {
+    console.debug("csrfToken", this.app.serverConnection);
+
     const idx = remoteFile.indexOf("&");
     if (idx > 0) {
       remoteFile = remoteFile.substring(0, idx);
@@ -21,7 +23,7 @@ export class ImageLoader {
       try {
         metaData = await Util.getMetaData(fileEntry);
         Util.writeLog(`ImageLoader.loadImage found ${remoteFile} ${fileEntry.toURL()} size=${metaData.size}`);
-        console.error(`ImageLoader.loadImage found ${remoteFile} ${fileEntry.toURL()} size=${metaData.size}`);
+        console.debug(`ImageLoader.loadImage found ${remoteFile} ${fileEntry.toURL()} size=${metaData.size}`);
       } catch (ex) {
         Util.writeLog(`ImageLoader.loadImage found ${remoteFile} ${fileEntry.toURL()}. Error with getting metadata`, ex);
         console.error(`ImageLoader.loadImage found ${remoteFile} ${fileEntry.toURL()}. Error with getting metadata`);
@@ -37,46 +39,100 @@ export class ImageLoader {
       imageElement.style.backgroundImage = "url(" + imgSrc + ")";
       imageElement.dataset.src = imgSrc;
     } else {
-      console.error(`ImageLoader.loadImage not_found ${remoteFile} Datei`);
-      Util.writeLog(`ImageLoader.loadImage not_found ${remoteFile} Datei`);
-      imageElement.style.backgroundImage = "url(img/no_image.png)";
-      imageElement.dataset.src = "img/no_image.png";
-      const urlParams = {
-        go: "mobile_download_image",
-        image: remoteFile,
-        layer_id: f.layer.get("id"),
-        feature_id: f.getFeatureId(),
-      };
-      const paramKey = JSON.stringify(urlParams);
-      if (this.pendingRequest.has(paramKey)) {
-        const elements = this.pendingRequest.get(paramKey);
-        elements?.push(imageElement);
-        console.error(`ImageLoader.loadImage pending ${remoteFile} Datei`);
-        Util.writeLog(`ImageLoader.loadImage pending ${remoteFile} Datei`);
-      } else {
-        this.pendingRequest.set(paramKey, [imageElement]);
-        console.error(`ImageLoader.loadImage runDownloading ${remoteFile}`);
-        Util.writeLog(`ImageLoader.loadImage runDownloading ${remoteFile}`);
-        try {
-          const fileEntry = await this.app.serverConnection.runDownloadFile(urlParams, localFile);
-          const metaData = await Util.getMetaData(fileEntry);
-          console.error(`ImageLoader.loadImage downloaded ${fileEntry.toURL()} size=${metaData.size}`);
-          Util.writeLog(`ImageLoader.loadImage downloaded ${fileEntry.toURL()} size=${metaData.size}`);
+      this.loadExternImage(f, localFile, remoteFile, imageElement);
+      // await this.checkLoginStatus();
 
-          const imageElements = this.pendingRequest.get(paramKey);
-          if (imageElements) {
-            for (const el of imageElements) {
-              const imgSrc = fileEntry.toURL();
-              el.style.backgroundImage = "url(" + imgSrc + ")";
-              el.dataset.src = imgSrc;
-              console.error(`ImageLoader.loadImage setting src on ImageElement ${remoteFile} ${fileEntry.toURL()} size=${metaData.size}`);
-            }
-            this.pendingRequest.delete(paramKey);
+      // console.error(`ImageLoader.loadImage not_found ${remoteFile} Datei`);
+      // Util.writeLog(`ImageLoader.loadImage not_found ${remoteFile} Datei`);
+      // imageElement.style.backgroundImage = "url(img/no_image.png)";
+      // imageElement.dataset.src = "img/no_image.png";
+      // const urlParams = {
+      //   go: "mobile_download_image",
+      //   image: remoteFile,
+      //   layer_id: f.layer.get("id"),
+      //   feature_id: f.getFeatureId(),
+      // };
+      // const paramKey = JSON.stringify(urlParams);
+      // if (this.pendingRequest.has(paramKey)) {
+      //   const elements = this.pendingRequest.get(paramKey);
+      //   elements?.push(imageElement);
+      //   console.error(`ImageLoader.loadImage pending ${remoteFile} Datei`);
+      //   Util.writeLog(`ImageLoader.loadImage pending ${remoteFile} Datei`);
+      // } else {
+      //   this.pendingRequest.set(paramKey, [imageElement]);
+      //   console.error(`ImageLoader.loadImage runDownloading ${remoteFile}`);
+      //   Util.writeLog(`ImageLoader.loadImage runDownloading ${remoteFile}`);
+      //   try {
+      //     const fileEntry = await this.app.serverConnection.runDownloadFile(urlParams, localFile);
+      //     const metaData = await Util.getMetaData(fileEntry);
+      //     console.error(`ImageLoader.loadImage downloaded ${fileEntry.toURL()} size=${metaData.size}`);
+      //     Util.writeLog(`ImageLoader.loadImage downloaded ${fileEntry.toURL()} size=${metaData.size}`);
+
+      //     const imageElements = this.pendingRequest.get(paramKey);
+      //     if (imageElements) {
+      //       for (const el of imageElements) {
+      //         const imgSrc = fileEntry.toURL();
+      //         el.style.backgroundImage = "url(" + imgSrc + ")";
+      //         el.dataset.src = imgSrc;
+      //         console.error(`ImageLoader.loadImage setting src on ImageElement ${remoteFile} ${fileEntry.toURL()} size=${metaData.size}`);
+      //       }
+      //       this.pendingRequest.delete(paramKey);
+      //     }
+      //   } catch (ex) {
+      //     console.error(ex);
+      //   }
+      // }
+    }
+  }
+
+  async loadExternImage(f: Feature, localFile: string, remoteFile: string, imageElement: HTMLElement) {
+    await this.checkLoginStatus();
+
+    console.debug(`ImageLoader.loadImage not_found ${remoteFile} Datei`);
+    Util.writeLog(`ImageLoader.loadImage not_found ${remoteFile} Datei`);
+    imageElement.style.backgroundImage = "url(img/no_image.png)";
+    imageElement.dataset.src = "img/no_image.png";
+    const urlParams = {
+      go: "mobile_download_image",
+      image: remoteFile,
+      layer_id: f.layer.get("id"),
+      feature_id: f.getFeatureId(),
+    };
+    const paramKey = JSON.stringify(urlParams);
+    if (this.pendingRequest.has(paramKey)) {
+      const elements = this.pendingRequest.get(paramKey);
+      elements?.push(imageElement);
+      console.info(`ImageLoader.loadImage pending ${remoteFile} Datei`);
+      Util.writeLog(`ImageLoader.loadImage pending ${remoteFile} Datei`);
+    } else {
+      this.pendingRequest.set(paramKey, [imageElement]);
+      console.info(`ImageLoader.loadImage runDownloading ${remoteFile}`);
+      Util.writeLog(`ImageLoader.loadImage runDownloading ${remoteFile}`);
+      try {
+        const fileEntry = await this.app.serverConnection.runDownloadFile(urlParams, localFile);
+        const metaData = await Util.getMetaData(fileEntry);
+        console.info(`ImageLoader.loadImage downloaded ${fileEntry.toURL()} size=${metaData.size}`);
+        Util.writeLog(`ImageLoader.loadImage downloaded ${fileEntry.toURL()} size=${metaData.size}`);
+
+        const imageElements = this.pendingRequest.get(paramKey);
+        if (imageElements) {
+          for (const el of imageElements) {
+            const imgSrc = fileEntry.toURL();
+            el.style.backgroundImage = "url(" + imgSrc + ")";
+            el.dataset.src = imgSrc;
+            console.debug(`ImageLoader.loadImage setting src on ImageElement ${remoteFile} ${fileEntry.toURL()} size=${metaData.size}`);
           }
-        } catch (ex) {
-          console.error(ex);
+          this.pendingRequest.delete(paramKey);
         }
+      } catch (ex) {
+        console.error(ex);
       }
+    }
+  }
+  async checkLoginStatus() {
+    console.info("checkLoginStatus", this.app.serverConnection);
+    if (!this.app.serverConnection.csrfToken) {
+      await this.app.serverConnection.runLogin();
     }
   }
 }

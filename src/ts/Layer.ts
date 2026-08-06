@@ -253,19 +253,6 @@ export class Layer extends PropertyChangeSupport {
     this._features = new Map();
   }
 
-  // get activeFeature() {
-  //   return this._activeFeature;
-  // }
-
-  // setActiveFeature(feature: Feature) {
-  //   // console.error(`layer.setActiveFeature ${this.title}`, feature);
-  //   if (this._activeFeature === feature) {
-  //     return;
-  //   }
-  //   this._activeFeature = feature;
-  //   kvm.setActiveFeature(feature);
-  // }
-
   get<K extends keyof LayerSetting>(key: K): LayerSetting[K] {
     return this.settings[key];
   }
@@ -945,8 +932,8 @@ export class Layer extends PropertyChangeSupport {
     // if (this.title === "Obstsorten") {
     //   debugger;
     // }
-    console.error(tableColumnDefinitions);
-    console.error(tableColumnDefinitions2);
+    // console.error(tableColumnDefinitions);
+    // console.error(tableColumnDefinitions2);
     return tableColumnDefinitions2;
   }
 
@@ -1957,7 +1944,7 @@ export class Layer extends PropertyChangeSupport {
   }
 
   async checkInsideParent(f: Feature, geom: any) {
-    console.error("Layer.checkInsideParent", f, geom);
+    // console.error("Layer.checkInsideParent", f, geom);
     const parentFK = this.getParentFK();
     if (parentFK) {
       const currentParent = f.getDataValue(parentFK.fkColumn);
@@ -2120,7 +2107,7 @@ export class Layer extends PropertyChangeSupport {
       if (feature.editableLayer) {
         kvm.map.removeLayer(feature.editableLayer);
       } else {
-        console.error("feature.editableLayer was null");
+        console.info("feature.editableLayer was null");
       }
       // Löscht die editierbare Geometrie
       feature.deactivate();
@@ -3229,7 +3216,7 @@ export class Layer extends PropertyChangeSupport {
    * - Wenn dieser Layer gesynct wurde und aktiv ist
    */
   activate() {
-    console.error(`xxxxxx Layer.activate ${this.title}`);
+    console.info(`xxxxxx Layer.activate ${this.title}`);
     // console.error("Setze Layer " + this.get("title") + " (" + (this.get("alias") ? this.get("alias") : "kein Aliasname") + ") aktiv.");
     try {
       this.isActive = true;

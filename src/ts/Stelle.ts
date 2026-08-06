@@ -1189,7 +1189,7 @@ export class Stelle {
   // }
 
   async applyDeltas(response: SendDeltasResponse): Promise<{ numExecutedDeltas: number; numReturnedDeltas: number }> {
-    console.error(`applyDeltas`, response);
+    console.info(`applyDeltas`, response);
 
     if (response.success) {
       console.log(`applyDeltas ${this.get("Bezeichnung")} last_delta_version: ${this.getLastDeltaVersion()} => ${response.last_delta_version}`, response);

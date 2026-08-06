@@ -52,6 +52,8 @@ declare namespace CordovaHttp {
 
     uploadFile(url: string, params: any, headers: any, filePath: string, name: string, success: (response: HttpResponse) => void, failure: (error: HttpError) => void): any;
 
+    setRequestTimeout(timeInSec: number);
+
     setDataSerializer(serializer: "json" | "urlencoded" | "utf8" | "multipart"): void;
 
     clearCookies(): void;
@@ -67,3 +69,9 @@ interface Cordova {
 }
 
 declare var cordova: Cordova;
+
+interface Navigator {
+  app: {
+    exitApp: () => void;
+  };
+}

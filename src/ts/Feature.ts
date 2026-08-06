@@ -212,7 +212,7 @@ export class Feature {
   }
 
   async checkInsideParent(geom: any) {
-    console.error("checkInsideParent", geom);
+    console.info("checkInsideParent", geom);
     return this.layer.checkInsideParent(this, geom);
   }
 

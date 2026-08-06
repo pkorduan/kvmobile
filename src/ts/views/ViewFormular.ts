@@ -29,7 +29,7 @@ export class ViewFormular extends View {
 
     document.addEventListener("geomChanged", (event: CustomEvent) => {
       try {
-        console.error(`GeometrieFormField.geom changed ${this.feature?.layer.title} ${this.feature?.id}`);
+        console.info(`GeometrieFormField.geom changed ${this.feature?.layer.title} ${this.feature?.id}`);
         sperrBildschirm.show();
         if (this.feature) {
           const layer = this.feature?.layer;
@@ -232,7 +232,7 @@ export class ViewFormular extends View {
    * - Startet das GPS-Tracking
    */
   async loadFeatureToForm(feature: Feature, options = { editable: false }) {
-    console.error(`loadFeatureToForm ${feature?.layer.title} ${feature?.getDataValue(feature.layer.settings.id_attribute)}`);
+    console.info(`loadFeatureToForm ${feature?.layer.title} ${feature?.getDataValue(feature.layer.settings.id_attribute)}`);
     const layer = feature.layer;
     console.group(`ViewFormular.loadFeatureToForm layer=´${layer.title}`, feature.getDataValue(layer.settings.id_attribute));
 

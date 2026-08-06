@@ -16,6 +16,12 @@ Download von gebauten Versionen für Android (apk-Dateien): https://gdi-service.
 
 # Change log
 
+## 1.22.00
+
+- Änderungen bei der allerersten Initialisierung
+- Bugfixes
+  - Layer-Parameter wurden unter Einstellungen nicht angezeigt
+
 ## 1.21.00
 
 - Feature

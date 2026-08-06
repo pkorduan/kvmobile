@@ -204,7 +204,7 @@ export class GeometrieFormField extends AbstractField implements Field {
   }
 
   async geomChanged(event: CustomEvent) {
-    console.error("GeometrieFormField.geomChanged", event, event.detail);
+    console.debug("GeometrieFormField.geomChanged", event, event.detail);
     const feature = this._feature;
     const geom = event.detail.geom;
     const exclude = event.detail.exclude;

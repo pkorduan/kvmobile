@@ -99,7 +99,6 @@ export class DataViewField {
           const localFile = kvm.removeOriginalName(kvm.serverToLocalPath(remoteFile));
           const size = await getSize(localFile);
 
-          console.error("size='" + size + "'");
           const imgUrl = (await getWebviewUrl(localFile)) || "/img/no_image.png";
 
           const imgDiv = createHtmlElement("input", null, "img preview", {

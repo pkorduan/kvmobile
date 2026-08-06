@@ -6,3 +6,4 @@ platforms/
 jsdoc/
 build.json
 kvmobile.keystore
+res/android/adi-registration.properties

@@ -40,7 +40,7 @@ import { ViewFormular } from "./views/ViewFormular";
 import { LayerCtrl } from "./LayerCtrl";
 import { showInitScreen } from "./InitScreen";
 
-import { AccessError, KVWMapServerConnection } from "./KVWMapServerConnection";
+import { AccessError, AgreementNotAcceptError, KVWMapServerConnection } from "./KVWMapServerConnection";
 import { ImageLoader } from "./ImageLoader";
 import * as Util from "./Util";
 
@@ -320,7 +320,7 @@ export class Kvm extends PropertyChangeSupport {
   }
 
   async updateStelle(stelleSettings: PanelEinstellungen.StelleSettings) {
-    console.error("updateStelle", stelleSettings);
+    console.info("updateStelle", stelleSettings);
     const stelle = new Stelle(stelleSettings);
     const oldLayer = this._activeLayer;
     if (this._activeStelle) {
@@ -336,7 +336,7 @@ export class Kvm extends PropertyChangeSupport {
   }
 
   async setActiveStelle(stelle: Stelle) {
-    console.error(`setActiveStelle ${stelle?.get("ID")}`, stelle);
+    console.info(`setActiveStelle ${stelle?.get("ID")}`, stelle);
     const oldStelle = this._activeStelle;
     this._activeStelle = stelle;
     if (oldStelle) {
@@ -582,6 +582,10 @@ export class Kvm extends PropertyChangeSupport {
       syncResultData = await this._activeStelle.syncData();
     } catch (ex) {
       if (ex instanceof AccessError) {
+        throw ex;
+      }
+
+      if (ex instanceof AgreementNotAcceptError) {
         throw ex;
       }
       const autoSync = kvm.getConfigurationOption("autoSync");
@@ -1106,6 +1110,9 @@ export class Kvm extends PropertyChangeSupport {
                   await kvm.msg("Die Zugangsdaten sind fehlerhaft. Bitte ändern Sie diese unter Einstellungen|Zugangsdaten");
                   kvm.showSetting("panelZugangsdaten");
                   activeView = null;
+                }
+                if (ex instanceof AgreementNotAcceptError) {
+                  console.error("AgreementNotAcceptError");
                 } else {
                   kvm.setConfigurationOption("autoSync", false);
                   throw ex;
@@ -1158,6 +1165,8 @@ export class Kvm extends PropertyChangeSupport {
     }
     sperrBildschirm.close();
 
+    await this.serverConnection.runLogin();
+
     this.initDeltaAnzeige();
 
     await this.checkForUpdate();
@@ -1208,7 +1217,7 @@ export class Kvm extends PropertyChangeSupport {
    * @param configName reset
    */
   async setConfiguration(configName: string) {
-    console.error(`config changed ${this._configName} ${configName}`);
+    console.info(`config changed ${this._configName} ${configName}`);
     const oldconfigName = this._configName;
     this._configName = configName;
     this.store.clear();
@@ -1220,7 +1229,7 @@ export class Kvm extends PropertyChangeSupport {
       return c.name === configName;
     });
     this.config = foundConfiguration || configurations[0];
-    console.error(`config changed ${this._configName} ${configName}`, this.config);
+    console.info(`config changed ${this._configName} ${configName}`, this.config);
     await this.fire(new PropertyChangeEvent(this, Kvm.EVENTS.ACTIVE_CONFIGURATION_CHANGED, oldconfigName, configName));
 
     this.controls.layerCtrl?.remove();
@@ -1287,7 +1296,7 @@ export class Kvm extends PropertyChangeSupport {
     });
 
     const fct = (evt: LayersControlEvent) => {
-      console.error(evt);
+      console.debug(evt);
       const layer = this.getLayers().find((layer, idx) => layer.layerGroup === evt.layer);
       if (layer) {
         if (evt.type === "overlayadd") {

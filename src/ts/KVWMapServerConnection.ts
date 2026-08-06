@@ -58,9 +58,13 @@ export class KVWMapServerConnection {
   credential: ServerParameter | null = null;
 
   csrfToken: string | null;
+  isLoginPending: boolean = false;
 
   setServerParameter(serverParam: ServerParameter) {
-    this.csrfToken = window.localStorage.getItem("csrf_token");
+    const csrfToken = window.localStorage.getItem("csrf_token");
+    if (csrfToken && csrfToken !== "undefined") {
+      this.csrfToken = csrfToken;
+    }
     this.credential = serverParam;
     if (serverParam && serverParam.url) {
       const url = serverParam.url;
@@ -71,7 +75,7 @@ export class KVWMapServerConnection {
       if (file == "") file = "/index.php?";
       serverParam.url = url + file;
     }
-    console.error("this.setCredential", serverParam);
+    console.info("this.setCredential", serverParam);
   }
 
   private async handleError(resultObj: ErrorResponse): Promise<any> {
@@ -103,6 +107,10 @@ export class KVWMapServerConnection {
     //   Stelle_ID: this.credential.stelleId || "",
     //   kvmobile_version: kvm.versionNumber,
     // };
+    if (this.isLoginPending) {
+      return;
+    }
+    this.isLoginPending = true;
     cordova.plugin.http.clearCookies();
 
     const options: CordovaHttp.HttpOptions = {
@@ -118,13 +126,17 @@ export class KVWMapServerConnection {
     };
     try {
       const response = await this.httpSendRequest(this.credential.url, options);
-      console.error("runGetRequest=>response", response);
+      console.info("runGetRequest=>response", response);
       const responseData = JSON.parse(response.data);
       Util.writeLog("runLogin", responseData);
-      this.csrfToken = responseData.csrf_token;
-      window.localStorage.setItem("csrf_token", responseData.csrf_token);
+      if (responseData.csrf_token) {
+        this.csrfToken = responseData.csrf_token;
+        window.localStorage.setItem("csrf_token", responseData.csrf_token);
+      }
+      this.isLoginPending = false;
       return responseData;
     } catch (ex) {
+      this.isLoginPending = false;
       throw new Error("Fehler bei der Kommunikation mit dem Server.", { cause: ex });
     }
   }
@@ -158,7 +170,7 @@ export class KVWMapServerConnection {
           null,
           null,
           (response) => {
-            console.error(response);
+            console.info(response);
             if (response.status === 200) {
               divDatenschutz.remove();
               resolve(true);
@@ -179,8 +191,10 @@ export class KVWMapServerConnection {
       bttnCancel.style.cssText = "width:40%";
       bttnCancel.innerText = "ablehnen";
       bttnCancel.addEventListener("click", () => {
-        divDatenschutz.remove();
-        reject(new AgreementNotAcceptError());
+        // divDatenschutz.remove();
+        Util.showAlert("Sie haben den Datenschutzerklärungen nicht zugestimmt. Ohne Ihre Zustimmung ist die App nicht verwendbar.");
+        // navigator.app.exitApp();
+        // reject(new AgreementNotAcceptError());
       });
 
       document.body.append(divDatenschutz);
@@ -207,7 +221,7 @@ export class KVWMapServerConnection {
     let response: CordovaHttp.HttpResponse;
     try {
       response = await this.httpSendRequest(this.credential.url, options);
-      console.error("runGetRequest=>response", response);
+      console.info("runGetRequest=>response", response);
       Util.writeLog("runGetRequest=>response", response);
     } catch (ex) {
       throw new Error("Fehler bei der Kommunikation mit dem Server.", { cause: ex });
@@ -306,12 +320,46 @@ export class KVWMapServerConnection {
         go: "mobile_sync_all",
         kvmobile_version: kvm.versionNumber,
       },
+      chunkedMode: true,
       fileKey: "client_deltas",
       fileName: fileURL.substring(fileURL.lastIndexOf("/") + 1),
       mimeType: "application/json",
     };
     console.log(`going to upload deltas fileURL: "${fileURL} to url: "${this.credential.url}"`, options);
     const response = await this.upload(fileURL, encodeURI(server), options);
+    try {
+      return <SendDeltasResponse>JSON.parse(response.response);
+    } catch (ex) {
+      throw new Error("Konnte Antwort nicht parsen", { cause: ex });
+    }
+  }
+  /**
+   * Description placeholder
+   *
+   * @async
+   * @param {FileEntry} fileEntry
+   * @param {number} lastDeltaVersion
+   * @returns {Promise<FileUploadResult>}
+   */
+  async mobileSyncAllX(fileEntry: FileEntry, lastDeltaVersion: number): Promise<SendDeltasResponse> {
+    const fileURL = fileEntry.nativeURL;
+    // console.log(`going to upload deltas fileURL: "${fileURL}`);
+
+    const server = this.credential.url;
+
+    const params = {
+      client_id: device.uuid,
+      client_time: Util.now(),
+      last_delta_version: lastDeltaVersion,
+      mime_type: "json",
+      format: "json_result",
+      go: "mobile_sync_all",
+      kvmobile_version: kvm.versionNumber,
+    };
+    console.log(`going to upload deltas fileURL: "${fileURL} to url: "${this.credential.url}"`, params);
+
+    const response = await this.runUploadFile(params, fileEntry, "client_deltas");
+    // urlParams: any, fileEntry: FileEntry, paramName: string
     try {
       return <SendDeltasResponse>JSON.parse(response.response);
     } catch (ex) {
@@ -338,6 +386,82 @@ export class KVWMapServerConnection {
     });
   }
 
+  async mobileSyncAllNew(fileEntry: FileEntry, lastDeltaVersion: number): Promise<SendDeltasResponse> {
+    // 1. Das native File-Objekt aus dem FileEntry extrahieren
+    // xxxxx
+    if (!this.credential) {
+      throw new Error("Serverparameter nicht gesetzt");
+    }
+
+    const params = {
+      login_name: this.credential.login,
+      passwort: this.credential.password,
+      Stelle_ID: this.credential.stelleId || "",
+      kvmobile_version: kvm.versionNumber,
+      client_id: device.uuid,
+      client_time: Util.now(),
+      last_delta_version: lastDeltaVersion,
+      mime_type: "json",
+      format: "json_result",
+      go: "mobile_sync_all",
+    };
+    let url = this.credential.url;
+    let i = 0;
+    for (let k in params) {
+      if (i === 0) {
+        url += "?";
+      } else {
+        url += "&";
+      }
+      url += k + "=" + params[k];
+      i++;
+    }
+    debugger;
+
+    fileEntry.file(
+      function (file) {
+        // 2. FormData-Objekt erstellen (entspricht einem HTML-Formular)
+        const formData = new FormData();
+
+        // 3. Die Datei an das Formular anhängen
+        // 'file' ist der Name des POST-Parameters, den PHP in $_FILES['file'] erwartet
+        formData.append("client_deltas", file, fileEntry.name);
+
+        // // 4. Zusätzliche POST-Parameter anhängen (falls vorhanden)
+        // Object.keys(additionalFields).forEach(key => {
+        //     formData.append(key, additionalFields[key]);
+        // });
+
+        console.log("Starte ressourcenschonenden Upload via fetch()...");
+
+        // 5. Den Request absenden
+        fetch(url, {
+          method: "POST",
+          body: formData,
+          // WICHTIG: Keine Content-Type Header setzen!
+          // Der Browser/WebView setzt den Content-Type inkl. Boundary automatisch korrekt.
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error("Server-Fehler: " + response.statusText);
+            }
+            // Erwartet dein PHP-Skript JSON, Text oder XML als Antwort?
+            return response.text(); // Ändere zu response.json(), falls JSON zurückkommt
+          })
+          .then((responseText) => {
+            console.log("Upload erfolgreich! Server-Antwort:", responseText);
+          })
+          .catch((error) => {
+            console.error("Fehler beim fetch-Upload:", error);
+          });
+      },
+      function (fileError) {
+        console.error("Fehler beim Lesen des FileEntry:", fileError);
+      },
+    );
+    return;
+  }
+
   async runUploadFile(urlParams: any, fileEntry: FileEntry, paramName: string): Promise<any> {
     if (!this.credential) {
       throw new Error("Serverparameter nicht gesetzt");
@@ -354,8 +478,10 @@ export class KVWMapServerConnection {
     }
     let response: CordovaHttp.HttpResponse;
     try {
+      // cordova.plugin.http.setDataSerializer("json");
+      cordova.plugin.http.setRequestTimeout(60.0);
       response = await this.httpUploadFile(this.credential.url, urlParams, null, fileEntry, paramName);
-      console.error("runUploadFile=>response", response);
+      console.info("runUploadFile=>response", response);
     } catch (ex) {
       throw new Error("Fehler bei der Kommunikation mit dem Server.", { cause: ex });
     }
@@ -384,7 +510,7 @@ export class KVWMapServerConnection {
     }
   }
 
-  private httpDownloadFile(url: string, urlParam: any, headers: any, filePath: string) {
+  private httpDownloadFile(url: string, urlParam: any, headers: any, filePath: string, isRetry?: boolean) {
     return new Promise<FileEntry>((resolve, reject) => {
       cordova.plugin.http.downloadFile(
         url,
@@ -392,10 +518,16 @@ export class KVWMapServerConnection {
         headers,
         filePath,
         (response) => {
-          console.error(response);
+          console.info(response);
           resolve(response);
         },
         (err) => {
+          if (err.status === 405) {
+            if (!isRetry) {
+              this.runLogin();
+              this.httpDownloadFile(url, urlParam, headers, filePath, true);
+            }
+          }
           console.error(err);
           reject(err);
         },

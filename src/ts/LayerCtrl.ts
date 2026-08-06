@@ -196,7 +196,7 @@ export class LayerCtrl extends Control {
   }
 
   onRemove() {
-    console.error("onRemove");
+    // console.error("onRemove");
     this._map.off("zoomend", this._checkDisabledLayers, this);
 
     for (let i = 0; i < this._layers.length; i++) {
@@ -272,7 +272,7 @@ export class LayerCtrl extends Control {
         () => {
           this.collapse();
         },
-        this
+        this,
       );
 
       // DomEvent.on(
@@ -326,7 +326,7 @@ export class LayerCtrl extends Control {
           this._expandSafely();
         },
       },
-      this
+      this,
     );
 
     if (!collapsed) {
